@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://dgvuhwql6xsq7"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ik31s"]
+
+[node name="main" type="Node3D" unique_id=1827930512]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=590326958]
+mesh = SubResource("BoxMesh_ik31s")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=460136893]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1244024141]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
