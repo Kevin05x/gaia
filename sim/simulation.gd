@@ -25,6 +25,7 @@ var _comunicaciones: CommsSystem
 var _movimiento: MovementSystem
 var _resultado: OutcomeSystem
 var _seleccion: String = ""
+var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
 
 
 func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog) -> void:
@@ -41,6 +42,8 @@ func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog) ->
 func reiniciar() -> void:
 	estado = MissionState.new(_balance, _reglas)
 	_mapa.aplicar_a(estado)
+	_revision_mapa += 1
+	estado.revision_mapa = _revision_mapa
 	estado.fase = "workshop"
 	informe = {}
 	_seleccion = ""

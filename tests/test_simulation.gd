@@ -312,7 +312,9 @@ func test_reiniciar_vuelve_al_taller_con_la_mision_limpia() -> void:
 	sim.estado.enviados = 200.0
 	sim.avanzar(0.1)
 	assert_false(sim.informe.is_empty())
+	var revision: int = sim.snapshot()["map_revision"]
 	sim.reiniciar()
+	assert_gt(sim.snapshot()["map_revision"], revision, "la vista reconstruye el mapa al reiniciar")
 	assert_true(sim.informe.is_empty())
 	var datos := sim.snapshot()
 	assert_eq(datos["phase"], "workshop")
