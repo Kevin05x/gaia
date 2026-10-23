@@ -67,6 +67,14 @@ TOO_FAR,Acerca el rover al objetivo,Move the rover closer to the target
 LOW_ENERGY,Energía insuficiente,Insufficient energy
 OUT_OF_BOUNDS,Fuera del área operativa,Outside the operating area
 NO_PATH,Casilla bloqueada o sin ruta,Blocked tile or no route
+ALREADY_NEAR,Ya estás junto al objetivo,Already next to the target
+WRONG_PHASE,Orden no válida en esta fase,Command not valid in this phase
+WARN_SAFE_MODE,Modo seguro: recuperando energía,Safe mode: recovering energy
+WARN_LOW_BATTERY,Batería baja: %d %%,Low battery: %d %%
+WARN_STORM_ACTIVE,Tormenta de polvo activa,Dust storm active
+WARN_STORM_SOON,Tormenta de polvo en %.1f soles,Dust storm in %.1f sols
+WARN_MEMORY_ALMOST_FULL,Memoria casi llena: %d %%,Memory almost full: %d %%
+WARN_LINK_OPENING_SOON,Enlace en %.1f h,Link in %.1f h
 MEMORY_FULL,Memoria llena: transmite primero,Memory full: transmit first
 NO_LINK,Sin ventana de comunicación,No communication window
 NO_DATA,No hay datos para transmitir,No data to transmit

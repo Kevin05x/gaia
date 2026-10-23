@@ -148,7 +148,7 @@ Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (
  "link_next": {"opens": true, "hour": 17.0, "sol": 1},   # próximo cambio del enlace; opens=false: próximo cierre
  "bounds": {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)},   # últimas casillas válidas
  "warnings": [
-   {"id": "LOW_BATTERY", "severity": "warning", "key": "WARN_LOW_BATTERY", "values": {"pct": 18}}
+   {"id": "LOW_BATTERY", "severity": "warning", "key": "WARN_LOW_BATTERY", "values": [18]}
  ],
  "targets": [{"id": "JZ-01", "tile": Vector2i(2, -2), "type": "rock", "revealed": true, "depleted": false,
    "actions": [{"id": "spectrometer", "enabled": true, "reason": ""}, {"id": "drill", "enabled": false, "reason": "TOO_FAR"}],
@@ -156,14 +156,14 @@ Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (
 }
 ```
 
-- **`warnings`**: ordenados por prioridad (críticos primero). `severity` es `"warning"` o `"critical"`. Ids previstos: `SAFE_MODE` (crítico), `LOW_BATTERY`, `STORM_ACTIVE`, `STORM_SOON`, `LINK_OPENING_SOON`, `MEMORY_ALMOST_FULL`. Los umbrales viven en `content/balance.json` (sección `avisos`, por definir), no en la vista. Las claves de texto `WARN_*` las registra A.
+- **`warnings`**: ordenados por prioridad (críticos primero). `severity` es `"warning"` o `"critical"`. Ids previstos: `SAFE_MODE` (crítico), `LOW_BATTERY`, `STORM_ACTIVE`, `STORM_SOON`, `LINK_OPENING_SOON`, `MEMORY_ALMOST_FULL`. `values` son los argumentos del formato del texto (`texto % values`, igual que las causas del informe). Los umbrales viven en `content/balance.json` (sección `avisos`, valores provisionales), no en la vista. Los textos `WARN_*` ya están en `strings_ui.csv`.
 - **`targets[].actions`**: solo en objetivos **revelados**; ordenadas, con la principal en `primary`. La vista no decide qué acción es pertinente ni cuál es la principal. Los objetivos sin revelar siguen llegando con `revealed: false` y la vista **nunca** los señala (ni marcador ni flecha de borde).
 - **Acciones por tipo de objetivo (propuesta)**: `rock` → principal `spectrometer`, luego `drill`; `mineral` → principal `drill`, luego `spectrometer`; `buried` (ya revelado) → solo `drill`. `panorama`, `radar`, `drone`, `companion`, `upgrade` y `transmit` no dependen del objetivo y siguen en `available_actions`.
 - **`bounds`**: la cuadrícula visible y la previsualización de ruta terminan en la última casilla válida.
 
 ### Motivos de rechazo
 
-Se conservan los de v1: `LANDING`, `MISSION_END`, `PAUSED`, `SAFE`, `MOVING`, `BUSY`, `NO_TARGET`, `NO_INSTRUMENT`, `LOW_ENERGY`, `TOO_FAR`, `DEPLETED`, `MEMORY_FULL`, `WEATHER`, `NIGHT`, `FLIGHT_USED`, `MAX_LEVEL`, `NO_MINERAL`, `NO_LINK`, `NO_DATA`. Nuevos: **`OUT_OF_BOUNDS`** («Fuera del área operativa») y **`NO_PATH`** («Casilla bloqueada o sin ruta»). `move` a una casilla fuera de `bounds` se responde con `port.reject("OUT_OF_BOUNDS")`; a un obstáculo, la estación, un objetivo o una casilla sin ruta, con `port.reject("NO_PATH")`. Ambos textos ya están en `strings_ui.csv`.
+Se conservan los de v1: `LANDING`, `MISSION_END`, `PAUSED`, `SAFE`, `MOVING`, `BUSY`, `NO_TARGET`, `NO_INSTRUMENT`, `LOW_ENERGY`, `TOO_FAR`, `DEPLETED`, `MEMORY_FULL`, `WEATHER`, `NIGHT`, `FLIGHT_USED`, `MAX_LEVEL`, `NO_MINERAL`, `NO_LINK`, `NO_DATA`. Nuevos: **`OUT_OF_BOUNDS`** («Fuera del área operativa») y **`NO_PATH`** («Casilla bloqueada o sin ruta»). `move` a una casilla fuera de `bounds` se responde con `port.reject("OUT_OF_BOUNDS")`; a un obstáculo, la estación, un objetivo o una casilla sin ruta, con `port.reject("NO_PATH")`. Ambos textos ya están en `strings_ui.csv`. También: **`ALREADY_NEAR`** (`approach` cuando el rover ya está junto al objetivo) y **`WRONG_PHASE`** (orden fuera de su fase).
 
 ### Taller (`phase == "workshop"`)
 
@@ -219,7 +219,7 @@ La luz depende de `hour` (amanecer 06:00, atardecer 18:00) y de `dust` (0..1). L
 
 ### Por decidir (A y B)
 
-- Umbrales de los avisos.
+- Valores finales de los umbrales de los avisos (hoy provisionales).
 
 ### Decidido (Kevin, 23 oct 2026)
 

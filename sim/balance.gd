@@ -34,6 +34,10 @@ const RUTAS_NUMERICAS: Array[String] = [
 	"comunicaciones.rele.costo_wh_por_unidad",
 	"comunicaciones.directa.unidades_por_s",
 	"comunicaciones.directa.costo_wh_por_unidad",
+	"avisos.bateria_baja_pct",
+	"avisos.tormenta_pronto_soles",
+	"avisos.enlace_pronto_h",
+	"avisos.memoria_casi_llena_pct",
 ]
 
 ## Acciones con costo y duración obligatorios (ids del contrato con la interfaz).
