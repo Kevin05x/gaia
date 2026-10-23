@@ -5,6 +5,9 @@ func check(ok: bool,description: String) -> void:
  if not ok:failures.append(description);push_error(description)
 func run() -> void:
  var host=load("res://scenes/b/review.tscn").instantiate();root.add_child(host)
+ var escape=InputEventKey.new();escape.physical_keycode=KEY_ESCAPE;escape.pressed=true
+ host.view.hud._unhandled_input(escape)
+ check(not host.state.paused,"Landing blocks pause shortcut")
  await create_timer(6).timeout
  check(host.state.phase=="operations","EDL unlocks operations")
  var view=host.view;var port=host.port

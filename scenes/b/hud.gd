@@ -214,5 +214,5 @@ func _unhandled_input(e: InputEvent) -> void:
   if e.physical_keycode==KEY_ESCAPE:
    if settings.visible:settings.hide()
    elif review_panel.visible:review_panel.hide()
-   else:emit_command("pause",{"paused":not snapshot.get("paused",false)})
+   elif not pause_button.disabled:emit_command("pause",{"paused":not snapshot.get("paused",false)})
    get_viewport().set_input_as_handled()
