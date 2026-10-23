@@ -44,6 +44,9 @@ var proximo_cambio_enlace: Dictionary = {"opens": true, "hour": 0.0, "sol": 1}  
 var ventanas_enlace: Array = []
 var en_movimiento: bool = false
 var ocupado: bool = false
+var accion_en_curso: Dictionary = {}  ## {"action", "target_id", "seconds", "elapsed"}; vacío si no hay ninguna
+var dron_sol: int = 0  ## sol del último vuelo de dron
+var dron_usos: int = 0  ## vuelos de dron hechos en ese sol
 
 var revision_mapa: int = 1
 var objetivos: Array[Dictionary] = []
