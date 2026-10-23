@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "estado": "provisional: cifras del proveedor de prueba de B (scenes/b/review_host.gd); no son reglas definitivas",
+  "tiempo": {
+    "duracion_sol_s": 686,
+    "hora_inicio": 8.0,
+    "amanecer": 6.0,
+    "atardecer": 18.0
+  },
+  "energia": {
+    "capacidad_base_wh": 1000,
+    "consumo_base_w": 15,
+    "calefaccion_nocturna_w": { "solar": 30, "rtg": 10 },
+    "factor_solar_tormenta": 0.15,
+    "polvo_inicial": 0.06,
+    "umbral_salida_modo_seguro": 0.25,
+    "modos_seguros_para_fallar": 2
+  },
+  "movimiento": {
+    "costo_wh_por_casilla": 18,
+    "segundos_por_casilla": 0.65
+  },
+  "acciones": {
+    "panorama": { "costo_wh": 25, "duracion_s": 2.5 },
+    "spectrometer": { "costo_wh": 40, "duracion_s": 3.0 },
+    "drill": { "costo_wh": 120, "duracion_s": 4.0 },
+    "radar": { "costo_wh": 35, "duracion_s": 3.0 },
+    "drone": { "costo_wh": 60, "duracion_s": 8.0, "usos_por_sol": 1 },
+    "companion": { "costo_wh": 15, "duracion_s": 6.0 }
+  },
+  "ciencia": {
+    "memoria_capacidad": 60,
+    "rendimiento": { "spectrometer": 8, "drill": 15, "drill_enterrado": 20 },
+    "meteo_por_sol": 2,
+    "minerales_por_mineral": 1,
+    "minerales_companero": 3,
+    "minerales_mejora_antena": 3,
+    "nivel_antena_max": 3
+  },
+  "comunicaciones": {
+    "rele": { "ventanas": [[8, 11], [17, 20]], "unidades_por_s": 6, "costo_wh_por_unidad": 1 },
+    "directa": { "ventanas": [[6, 18]], "unidades_por_s": 1, "costo_wh_por_unidad": 3 }
+  }
+}
