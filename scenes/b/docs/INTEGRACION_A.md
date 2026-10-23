@@ -201,8 +201,9 @@ Los ids de categoría y pieza son ids de datos (`content/parts.json`), no textos
 | `espectrometro`, `taladro`, `radar`, `dron` | `spectrometer`, `drill`, `radar`, `drone` |
 | `meteo` | `meteo` |
 | `bateria` | efecto sobre la capacidad: pendiente de datos |
+| `companero` | `companion: true` |
 
-*Por decidir*: el compañero (`companion`) no es hoy una pieza de `parts.json`. O viene de serie o se añade como pieza.
+El compañero es la pieza `companero` (decidido), con masa, costo y potencia pendientes.
 
 ### Informe
 
@@ -218,6 +219,11 @@ La luz depende de `hour` (amanecer 06:00, atardecer 18:00) y de `dust` (0..1). L
 
 ### Por decidir (A y B)
 
-- Posición de la estación y si el rover puede acercarse a ella: hoy `station_tile` está en (3,3); el diseño la plantea lejana.
-- Si el compañero es pieza del taller o viene de serie.
 - Umbrales de los avisos.
+
+### Decidido (Kevin, 23 oct 2026)
+
+- Mapa fijo en `content/mapa.json` (límites, inicio del rover, estación, obstáculos y objetivos). `MapData` lo valida y lo vuelca en el estado.
+- La estación está lejos, en un extremo (casilla (-9, -9)), es solo referencia visual y bloquea el paso. El enlace y la antena funcionan desde cualquier lugar.
+- Los objetivos también bloquean el paso: el rover se acerca a una casilla contigua.
+- Movimiento: ruta más corta en 4 direcciones; toda la energía de la ruta se descuenta al aceptar la orden y, si no alcanza, se rechaza con `LOW_ENERGY`.
