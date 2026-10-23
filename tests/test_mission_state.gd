@@ -46,9 +46,9 @@ func test_configurar_diseno_invalido_no_cambia_nada() -> void:
 
 func test_snapshot_tiene_las_claves_del_contrato() -> void:
 	var snapshot := MissionState.new(balance, reglas).a_snapshot()
-	var claves := ["phase", "paused", "safe_mode", "safe_entries", "sol", "hour", "rover_tile",
+	var claves := ["phase", "paused", "safe_mode", "safe_entries", "sol", "hour", "is_night", "rover_tile",
 		"station_tile", "battery", "design", "data", "memory_capacity", "sent", "goal", "mineral",
-		"antenna_level", "dust", "storm", "storm_in", "transmitting", "link_open", "comms_windows",
+		"antenna_level", "dust", "storm", "storm_in", "transmitting", "link_open", "link_next", "comms_windows",
 		"moving", "busy", "map_revision", "targets", "obstacles"]
 	for clave in claves:
 		assert_true(snapshot.has(clave), "falta la clave %s" % clave)
@@ -79,3 +79,18 @@ func test_snapshot_refleja_cambios_de_estado() -> void:
 	assert_eq(snapshot["sol"], 3)
 	assert_eq(snapshot["rover_tile"], Vector2i(2, -1))
 	assert_eq(snapshot["battery"]["wh"], 420.0)
+
+
+func test_snapshot_incluye_noche_enlace_y_polvo_visual() -> void:
+	var estado := MissionState.new(balance, reglas)
+	estado.es_noche = true
+	estado.proximo_cambio_enlace = {"opens": true, "hour": 8.0, "sol": 2}
+	estado.polvo = 0.2
+	var snapshot := estado.a_snapshot()
+	assert_true(snapshot["is_night"])
+	assert_eq(snapshot["link_next"], {"opens": true, "hour": 8.0, "sol": 2})
+	assert_eq(snapshot["dust"], 0.2)
+	estado.tormenta = true
+	assert_eq(estado.a_snapshot()["dust"], 1.0)
+	snapshot["link_next"]["hour"] = 99.0
+	assert_eq(estado.proximo_cambio_enlace["hour"], 8.0)
