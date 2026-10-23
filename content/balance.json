@@ -40,5 +40,11 @@
   "comunicaciones": {
     "rele": { "ventanas": [[8, 11], [17, 20]], "unidades_por_s": 6, "costo_wh_por_unidad": 1 },
     "directa": { "ventanas": [[6, 18]], "unidades_por_s": 1, "costo_wh_por_unidad": 3 }
+  },
+  "avisos": {
+    "bateria_baja_pct": 20,
+    "tormenta_pronto_soles": 1.0,
+    "enlace_pronto_h": 1.0,
+    "memoria_casi_llena_pct": 85
   }
 }

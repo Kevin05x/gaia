@@ -16,11 +16,11 @@ var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
 var errores: PackedStringArray = PackedStringArray()
 
 
-static func desde_archivo(ruta: String) -> MapData:
-	var texto := FileAccess.get_file_as_string(ruta)
+static func desde_archivo(archivo: String) -> MapData:
+	var texto := FileAccess.get_file_as_string(archivo)
 	if texto.is_empty():
 		var vacio := MapData.new()
-		vacio.errores.append("FILE_UNREADABLE:%s" % ruta)
+		vacio.errores.append("FILE_UNREADABLE:%s" % archivo)
 		return vacio
 	return desde_texto(texto)
 
