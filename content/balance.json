@@ -10,14 +10,14 @@
   "energia": {
     "capacidad_base_wh": 1000,
     "consumo_base_w": 15,
-    "calefaccion_nocturna_w": { "solar": 30, "rtg": 10 },
+    "calefaccion_nocturna_w": { "solar": 10, "rtg": 10 },
     "factor_solar_tormenta": 0.15,
     "polvo_inicial": 0.06,
     "umbral_salida_modo_seguro": 0.25,
     "modos_seguros_para_fallar": 2
   },
   "movimiento": {
-    "costo_wh_por_casilla": 18,
+    "costo_wh_por_casilla": 10,
     "segundos_por_casilla": 0.65
   },
   "acciones": {
