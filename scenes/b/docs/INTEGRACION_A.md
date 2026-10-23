@@ -189,6 +189,8 @@ snapshot["workshop"] = {
 }
 ```
 
+Reglas del taller (A): `design_add` rechaza con `CATEGORY_FULL` si la categoría ya tiene su máximo (quitar primero con `design_remove`) y con `UNKNOWN_PART` si el id no existe; `design_remove` rechaza con `UNKNOWN_PART` si la pieza no estaba elegida; `design_validate` y `design_start` rechazan con `INVALID_DESIGN` (los detalles están en `workshop.validation`). `parts[].available` y `reason` dicen si esa pieza se puede agregar ahora. `redesign` devuelve al taller desde cualquier otra fase, limpia la misión y **conserva las piezas elegidas**. Los textos de cada pieza (`PIEZA_*`) ya están en `strings_ui.csv`; los nombres de categoría los pone la vista.
+
 Los ids de categoría y pieza son ids de datos (`content/parts.json`), no textos de interfaz. `null` significa dato aún no definido y la tarjeta muestra «Pendiente». `validation` y `notices` usan los códigos de `MissionDesign` (`BELOW_MIN:cat`, `ABOVE_MAX:cat`, `OVER_MASS`, `OVER_BUDGET`, `PENDING_DATA:id`). La vista no calcula totales ni valida.
 
 ### De piezas del taller a diseño de misión

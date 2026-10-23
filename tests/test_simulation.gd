@@ -12,7 +12,7 @@ func before_each() -> void:
 	balance = Balance.desde_archivo("res://content/balance.json")
 	reglas = Rules.desde_archivo("res://content/rules.json")
 	mapa = MapData.desde_archivo("res://content/mapa.json")
-	sim = Simulation.new(balance, reglas, mapa)
+	sim = Simulation.new(balance, reglas, mapa, Catalog.desde_archivo("res://content/parts.json"))
 
 
 ## Deja la simulación lista para operar (taller -> aterrizaje -> operaciones).

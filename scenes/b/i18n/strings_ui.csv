@@ -69,6 +69,24 @@ OUT_OF_BOUNDS,Fuera del área operativa,Outside the operating area
 NO_PATH,Casilla bloqueada o sin ruta,Blocked tile or no route
 ALREADY_NEAR,Ya estás junto al objetivo,Already next to the target
 WRONG_PHASE,Orden no válida en esta fase,Command not valid in this phase
+PIEZA_COHETE_LIGERO,Cohete ligero,Light rocket
+PIEZA_COHETE_PESADO,Cohete pesado,Heavy rocket
+PIEZA_CHASIS_BASE,Chasis base,Base chassis
+PIEZA_PANEL_SOLAR,Panel solar,Solar panel
+PIEZA_MMRTG,Generador nuclear MMRTG,MMRTG nuclear generator
+PIEZA_ANTENA_DIRECTA,Antena directa,Direct antenna
+PIEZA_ANTENA_RELE,Antena de relé,Relay antenna
+PIEZA_ESPECTROMETRO,Espectrómetro,Spectrometer
+PIEZA_TALADRO,Taladro,Drill
+PIEZA_CAMARA,Cámara,Camera
+PIEZA_METEO,Estación meteorológica,Weather station
+PIEZA_RADAR,Radar de subsuelo,Subsurface radar
+PIEZA_BATERIA,Batería extra,Extra battery
+PIEZA_DRON,Dron,Drone
+PIEZA_COMPANERO,Compañero Nódulo,Companion Nódulo
+CATEGORY_FULL,Categoría completa: quita la pieza actual,Category full: remove the current part
+INVALID_DESIGN,Diseño no válido: revisa los requisitos,Invalid design: check the requirements
+UNKNOWN_PART,Pieza no disponible,Part not available
 WARN_SAFE_MODE,Modo seguro: recuperando energía,Safe mode: recovering energy
 WARN_LOW_BATTERY,Batería baja: %d %%,Low battery: %d %%
 WARN_STORM_ACTIVE,Tormenta de polvo activa,Dust storm active
