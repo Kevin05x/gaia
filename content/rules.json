@@ -6,7 +6,7 @@
     "sol_limite": 6
   },
   "eventos": [
-    { "tipo": "tormenta_polvo", "soles": [4, 5] }
+    { "tipo": "tormenta_polvo", "soles": [3] }
   ],
   "limites_piezas": {
     "chasis": { "min": 1, "max": 1 },

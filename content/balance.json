@@ -2,7 +2,7 @@
   "version": 1,
   "estado": "provisional: cifras del proveedor de prueba de B (scenes/b/review_host.gd); no son reglas definitivas",
   "tiempo": {
-    "duracion_sol_s": 686,
+    "duracion_sol_s": 300,
     "hora_inicio": 8.0,
     "amanecer": 6.0,
     "atardecer": 18.0
