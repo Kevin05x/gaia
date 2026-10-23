@@ -1,8 +1,11 @@
 [gd_scene format=3 uid="uid://dgvuhwql6xsq7"]
 
+[ext_resource type="Script" path="res://scenes/main/nasa_test.gd" id="1_nasa"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_ik31s"]
 
 [node name="main" type="Node3D" unique_id=1827930512]
+script = ExtResource("1_nasa")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=590326958]
 mesh = SubResource("BoxMesh_ik31s")
