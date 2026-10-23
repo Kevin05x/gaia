@@ -163,7 +163,7 @@ Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (
 
 ### Motivos de rechazo
 
-Se conservan los de v1: `LANDING`, `MISSION_END`, `PAUSED`, `SAFE`, `MOVING`, `BUSY`, `NO_TARGET`, `NO_INSTRUMENT`, `LOW_ENERGY`, `TOO_FAR`, `DEPLETED`, `MEMORY_FULL`, `WEATHER`, `NIGHT`, `FLIGHT_USED`, `MAX_LEVEL`, `NO_MINERAL`, `NO_LINK`, `NO_DATA`. Nuevo: **`OUT_OF_BOUNDS`** (texto sugerido: «Fuera del área operativa»). `move` a una casilla fuera de `bounds` se responde con `port.reject("OUT_OF_BOUNDS")`.
+Se conservan los de v1: `LANDING`, `MISSION_END`, `PAUSED`, `SAFE`, `MOVING`, `BUSY`, `NO_TARGET`, `NO_INSTRUMENT`, `LOW_ENERGY`, `TOO_FAR`, `DEPLETED`, `MEMORY_FULL`, `WEATHER`, `NIGHT`, `FLIGHT_USED`, `MAX_LEVEL`, `NO_MINERAL`, `NO_LINK`, `NO_DATA`. Nuevos: **`OUT_OF_BOUNDS`** («Fuera del área operativa») y **`NO_PATH`** («Casilla bloqueada o sin ruta»). `move` a una casilla fuera de `bounds` se responde con `port.reject("OUT_OF_BOUNDS")`; a un obstáculo, la estación, un objetivo o una casilla sin ruta, con `port.reject("NO_PATH")`. Ambos textos ya están en `strings_ui.csv`.
 
 ### Taller (`phase == "workshop"`)
 

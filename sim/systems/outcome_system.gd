@@ -54,6 +54,7 @@ func _terminar(estado: MissionState, exito: bool, causa_principal: String) -> Di
 	estado.accion_en_curso = {}
 	estado.ocupado = false
 	estado.en_movimiento = false
+	estado.movimiento_en_curso = {}
 	var causas: Array[String] = [causa_principal]
 	causas.append(CAUSA_SOLAR if estado.energia == "solar" else CAUSA_RTG)
 	causas.append(CAUSA_RELE if estado.enlace == "relay" else CAUSA_DIRECTA)
