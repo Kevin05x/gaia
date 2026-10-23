@@ -39,6 +39,8 @@ var tormenta: bool = false
 var tormenta_en: float = 0.0  ## soles que faltan para la tormenta
 var transmitiendo: bool = false
 var enlace_abierto: bool = false
+var es_noche: bool = false
+var proximo_cambio_enlace: Dictionary = {"opens": true, "hour": 0.0, "sol": 1}  ## opens=false: próximo cierre
 var ventanas_enlace: Array = []
 var en_movimiento: bool = false
 var ocupado: bool = false
@@ -82,6 +84,7 @@ func a_snapshot() -> Dictionary:
 		"safe_entries": entradas_modo_seguro,
 		"sol": sol,
 		"hour": hora,
+		"is_night": es_noche,
 		"rover_tile": casilla_rover,
 		"station_tile": casilla_estacion,
 		"battery": {"wh": bateria_wh, "capacity": bateria_capacidad_wh, "generation_w": generacion_w, "load_w": carga_w},
@@ -92,11 +95,12 @@ func a_snapshot() -> Dictionary:
 		"goal": meta,
 		"mineral": minerales,
 		"antenna_level": nivel_antena,
-		"dust": polvo,
+		"dust": maxf(polvo, 1.0 if tormenta else 0.0),  ## nivel visual 0..1: la tormenta cuenta como polvo máximo
 		"storm": tormenta,
 		"storm_in": tormenta_en,
 		"transmitting": transmitiendo,
 		"link_open": enlace_abierto,
+		"link_next": proximo_cambio_enlace.duplicate(),
 		"comms_windows": ventanas_enlace.duplicate(true),
 		"moving": en_movimiento,
 		"busy": ocupado,
