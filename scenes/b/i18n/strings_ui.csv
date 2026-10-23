@@ -85,6 +85,8 @@ CAUSE_SOLAR,Los paneles producen de día; polvo y noche reducen la autonomía.,P
 CAUSE_RTG,El RTG mantiene generación durante noche y tormenta.,RTG maintains generation during night and storms.
 CAUSE_SAFE,El consumo agotó la batería y activó el modo seguro.,Consumption depleted the battery and triggered safe mode.
 CAUSE_RELAY,El relé concentra la transmisión en pasadas orbitales.,Relay concentrates transmission into orbital passes.
+CAUSE_DIRECT,La antena directa transmite durante el día pero es lenta y consume más.,The direct antenna transmits during the day but is slow and uses more power.
+CAUSE_SAFE_FAIL,Los modos seguros repetidos terminaron la misión antes de transmitir toda la ciencia.,Repeated safe-mode entries ended the mission before all science was transmitted.
 REDESIGN,Volver al diseño de misión,Return to mission design
 PHOTO_FALLBACK,Ilustración original · imagen NASA no disponible,Original illustration · NASA image unavailable
 PHOTO_SOURCE,Abrir fuente de la imagen,Open image source

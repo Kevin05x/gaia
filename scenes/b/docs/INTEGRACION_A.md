@@ -206,7 +206,7 @@ Los ids de categoría y pieza son ids de datos (`content/parts.json`), no textos
 
 ### Informe
 
-`present_report` no cambia de forma. Propuesta de reglas (calculadas por A): **3 estrellas**, una por cada criterio cumplido: (1) `sent >= goal`; (2) `safe_entries == 0`; (3) misión terminada dentro del límite de soles. Las causas usan claves `CAUSE_*`; A reutiliza las del catálogo de B y añade las que falten. La foto sale de una lista corta verificada incluida en el juego (título, crédito, enlace), elegida según el resultado; la descarga en vivo es opcional y, si falla, B muestra su ilustración de respaldo.
+`present_report` no cambia de forma. Propuesta de reglas (calculadas por A): **3 estrellas**, una por cada criterio cumplido: (1) `sent >= goal`; (2) `safe_entries == 0`; (3) misión terminada con al menos un sol de margen (`sol < límite de soles`). El límite se lee así: la misión termina al acabar el sol 6; si pasa a sol 7 sin la meta, fracasa. Fracasa también con la segunda entrada en modo seguro. Las causas usan claves `CAUSE_*`; A reutiliza las del catálogo de B y añade las que falten. La foto sale de una lista corta verificada incluida en el juego (título, crédito, enlace), elegida según el resultado; la descarga en vivo es opcional y, si falla, B muestra su ilustración de respaldo.
 
 ### Aterrizaje
 
