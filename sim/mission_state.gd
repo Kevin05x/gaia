@@ -16,6 +16,8 @@ var sol: int = 1
 var hora: float = 8.0
 var casilla_rover: Vector2i = Vector2i.ZERO
 var casilla_estacion: Vector2i = Vector2i.ZERO
+var limite_min: Vector2i = Vector2i(-11, -11)  ## últimas casillas válidas del mapa
+var limite_max: Vector2i = Vector2i(11, 11)
 
 var bateria_wh: float = 0.0
 var bateria_capacidad_wh: float = 0.0
@@ -90,6 +92,7 @@ func a_snapshot() -> Dictionary:
 		"is_night": es_noche,
 		"rover_tile": casilla_rover,
 		"station_tile": casilla_estacion,
+		"bounds": {"min": limite_min, "max": limite_max},
 		"battery": {"wh": bateria_wh, "capacity": bateria_capacidad_wh, "generation_w": generacion_w, "load_w": carga_w},
 		"design": {"power": energia, "comms": enlace, "instruments": instrumentos.duplicate(), "companion": companero},
 		"data": datos,

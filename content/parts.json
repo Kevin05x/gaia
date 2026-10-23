@@ -59,6 +59,7 @@
     { "id": "meteo", "nombre_clave": "PIEZA_METEO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
     { "id": "radar", "nombre_clave": "PIEZA_RADAR", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
     { "id": "bateria", "nombre_clave": "PIEZA_BATERIA", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "dron", "nombre_clave": "PIEZA_DRON", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true }
+    { "id": "dron", "nombre_clave": "PIEZA_DRON", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "companero", "nombre_clave": "PIEZA_COMPANERO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true }
   ]
 }

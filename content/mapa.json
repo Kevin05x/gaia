@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "estado": "provisional: objetivos y obstáculos tomados de la prueba de B (scenes/b/review_host.gd); la estación se movió a un extremo. Los tipos son ids del contrato con la vista: rock, mineral, buried.",
+  "limites": { "min": [-11, -11], "max": [11, 11] },
+  "inicio_rover": [0, 0],
+  "estacion": [-9, -9],
+  "obstaculos": [
+    [-1, -2], [-2, -2], [4, -1], [4, 0], [4, 1], [-3, 3], [-4, 3], [0, 4], [1, 4], [6, -6]
+  ],
+  "objetivos": [
+    { "id": "JZ-01", "casilla": [2, -2], "tipo": "rock", "revelado": true },
+    { "id": "JZ-02", "casilla": [-3, -2], "tipo": "rock", "revelado": true },
+    { "id": "JZ-03", "casilla": [5, -4], "tipo": "rock", "revelado": true },
+    { "id": "JZ-04", "casilla": [-5, 3], "tipo": "rock", "revelado": true },
+    { "id": "JZ-05", "casilla": [-2, -6], "tipo": "buried", "revelado": false },
+    { "id": "JZ-06", "casilla": [6, 2], "tipo": "mineral", "revelado": true },
+    { "id": "JZ-07", "casilla": [-6, -5], "tipo": "buried", "revelado": false },
+    { "id": "JZ-08", "casilla": [1, 6], "tipo": "rock", "revelado": true },
+    { "id": "JZ-09", "casilla": [7, -1], "tipo": "mineral", "revelado": false }
+  ]
+}

@@ -47,7 +47,7 @@ func test_configurar_diseno_invalido_no_cambia_nada() -> void:
 func test_snapshot_tiene_las_claves_del_contrato() -> void:
 	var snapshot := MissionState.new(balance, reglas).a_snapshot()
 	var claves := ["phase", "paused", "safe_mode", "safe_entries", "sol", "hour", "is_night", "rover_tile",
-		"station_tile", "battery", "design", "data", "memory_capacity", "sent", "goal", "mineral",
+		"station_tile", "bounds", "battery", "design", "data", "memory_capacity", "sent", "goal", "mineral",
 		"antenna_level", "dust", "storm", "storm_in", "transmitting", "link_open", "link_next", "comms_windows",
 		"moving", "busy", "map_revision", "targets", "obstacles"]
 	for clave in claves:
@@ -94,3 +94,10 @@ func test_snapshot_incluye_noche_enlace_y_polvo_visual() -> void:
 	assert_eq(estado.a_snapshot()["dust"], 1.0)
 	snapshot["link_next"]["hour"] = 99.0
 	assert_eq(estado.proximo_cambio_enlace["hour"], 8.0)
+
+
+func test_snapshot_incluye_los_limites_del_mapa() -> void:
+	var estado := MissionState.new(balance, reglas)
+	estado.limite_min = Vector2i(-5, -6)
+	estado.limite_max = Vector2i(7, 8)
+	assert_eq(estado.a_snapshot()["bounds"], {"min": Vector2i(-5, -6), "max": Vector2i(7, 8)})
