@@ -41,7 +41,7 @@ Es un Dictionary de GDScript (Vector2i son coordenadas, no cadenas). Ejemplo mí
 
 ```gdscript
 {
- "phase": "operations", # landing / operations / report
+ "phase": "operations", # workshop / landing / operations / report
  "paused": false, "safe_mode": false, "safe_entries": 0,
  "sol": 1, "hour": 8.0,
  "rover_tile": Vector2i(0, 0), "station_tile": Vector2i(3, 3),
@@ -128,3 +128,96 @@ B entrega las vistas y su frontera de integración. No certifica la simulación 
 ## Editar textos
 
 La fuente es `i18n/strings_ui.csv`. Ejecutar `python scenes/b/tools/sync_i18n.py` tras editarla y confirmar también el `catalog.gd` generado. El catálogo embebido evita depender de archivos de traducción generados durante la primera importación, que causaron los errores anteriores. Las dos lenguas deben conservar los mismos parámetros de formato.
+
+## Contrato v2 (diseño nuevo, 23 oct 2026)
+
+Propuesta de A para el diseño visual consolidado (`GAIA_DISENO_VISUAL_CONSOLIDADO.md`). **Solo añade**: las claves y órdenes de arriba siguen igual. Kevin autorizó modificar el trabajo de B donde el diseño lo pida; los puntos marcados como *por decidir* los resuelven A y B juntos.
+
+Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (`camera.size`); el diseño objetivo es perspectiva elevada. Afecta a la selección por clic y a la proyección de marcadores (`Camera3D.unproject_position`), y es trabajo de B.
+
+### Fases
+
+`phase` admite ahora `"workshop"` además de `landing`, `operations` y `report`. En `workshop` el snapshot incluye la clave `workshop` (más abajo).
+
+### Campos nuevos del snapshot de operaciones
+
+```gdscript
+{
+ "is_night": false,                 # hora fuera de [amanecer, atardecer) de balance.json
+ "dust": 0.12,                      # 0..1; incluye la tormenta. A lo sube y baja de forma continua
+ "link_next": {"opens": true, "hour": 17.0, "sol": 1},   # próximo cambio del enlace; opens=false: próximo cierre
+ "bounds": {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)},   # últimas casillas válidas
+ "warnings": [
+   {"id": "LOW_BATTERY", "severity": "warning", "key": "WARN_LOW_BATTERY", "values": {"pct": 18}}
+ ],
+ "targets": [{"id": "JZ-01", "tile": Vector2i(2, -2), "type": "rock", "revealed": true, "depleted": false,
+   "actions": [{"id": "spectrometer", "enabled": true, "reason": ""}, {"id": "drill", "enabled": false, "reason": "TOO_FAR"}],
+   "primary": "spectrometer"}]
+}
+```
+
+- **`warnings`**: ordenados por prioridad (críticos primero). `severity` es `"warning"` o `"critical"`. Ids previstos: `SAFE_MODE` (crítico), `LOW_BATTERY`, `STORM_ACTIVE`, `STORM_SOON`, `LINK_OPENING_SOON`, `MEMORY_ALMOST_FULL`. Los umbrales viven en `content/balance.json` (sección `avisos`, por definir), no en la vista. Las claves de texto `WARN_*` las registra A.
+- **`targets[].actions`**: solo en objetivos **revelados**; ordenadas, con la principal en `primary`. La vista no decide qué acción es pertinente ni cuál es la principal. Los objetivos sin revelar siguen llegando con `revealed: false` y la vista **nunca** los señala (ni marcador ni flecha de borde).
+- **Acciones por tipo de objetivo (propuesta)**: `rock` → principal `spectrometer`, luego `drill`; `mineral` → principal `drill`, luego `spectrometer`; `buried` (ya revelado) → solo `drill`. `panorama`, `radar`, `drone`, `companion`, `upgrade` y `transmit` no dependen del objetivo y siguen en `available_actions`.
+- **`bounds`**: la cuadrícula visible y la previsualización de ruta terminan en la última casilla válida.
+
+### Motivos de rechazo
+
+Se conservan los de v1: `LANDING`, `MISSION_END`, `PAUSED`, `SAFE`, `MOVING`, `BUSY`, `NO_TARGET`, `NO_INSTRUMENT`, `LOW_ENERGY`, `TOO_FAR`, `DEPLETED`, `MEMORY_FULL`, `WEATHER`, `NIGHT`, `FLIGHT_USED`, `MAX_LEVEL`, `NO_MINERAL`, `NO_LINK`, `NO_DATA`. Nuevo: **`OUT_OF_BOUNDS`** (texto sugerido: «Fuera del área operativa»). `move` a una casilla fuera de `bounds` se responde con `port.reject("OUT_OF_BOUNDS")`.
+
+### Taller (`phase == "workshop"`)
+
+Órdenes nuevas, además de las de v1:
+
+| Orden | Payload |
+| --- | --- |
+| `design_add` | `{part_id: String}` |
+| `design_remove` | `{part_id: String}` |
+| `design_validate` | `{}` |
+| `design_start` | `{}`; solo se acepta tras una validación correcta; A pasa a `landing` |
+
+```gdscript
+snapshot["workshop"] = {
+ "categories": [{"id": "cohetes", "parts": [
+   {"id": "cohete_ligero", "name_key": "PIEZA_COHETE_LIGERO", "capacity_kg": 600, "mass_kg": null,
+    "cost_musd": 150, "power_w": null, "pending": false, "available": true, "reason": ""}]}],
+ "selection": {"cohetes": ["cohete_ligero"], "chasis": [], "energia": [], "comunicaciones": [], "extras": []},
+ "totals": {"mass_kg": 0.0, "cost_musd": 150.0, "capacity_kg": 600.0, "power_w": 0.0, "budget_musd": 700.0},
+ "validation": ["BELOW_MIN:energia", "OVER_MASS"],
+ "notices": ["PENDING_DATA:radar"],
+ "valid": false
+}
+```
+
+Los ids de categoría y pieza son ids de datos (`content/parts.json`), no textos de interfaz. `null` significa dato aún no definido y la tarjeta muestra «Pendiente». `validation` y `notices` usan los códigos de `MissionDesign` (`BELOW_MIN:cat`, `ABOVE_MAX:cat`, `OVER_MASS`, `OVER_BUDGET`, `PENDING_DATA:id`). La vista no calcula totales ni valida.
+
+### De piezas del taller a diseño de misión
+
+| Pieza (`parts.json`) | `design` del snapshot |
+| --- | --- |
+| `panel_solar` / `mmrtg` | `power`: `"solar"` / `"rtg"` |
+| `antena_rele` / `antena_directa` | `comms`: `"relay"` / `"direct"` |
+| `camara` | instrumento `panorama` |
+| `espectrometro`, `taladro`, `radar`, `dron` | `spectrometer`, `drill`, `radar`, `drone` |
+| `meteo` | `meteo` |
+| `bateria` | efecto sobre la capacidad: pendiente de datos |
+
+*Por decidir*: el compañero (`companion`) no es hoy una pieza de `parts.json`. O viene de serie o se añade como pieza.
+
+### Informe
+
+`present_report` no cambia de forma. Propuesta de reglas (calculadas por A): **3 estrellas**, una por cada criterio cumplido: (1) `sent >= goal`; (2) `safe_entries == 0`; (3) misión terminada dentro del límite de soles. Las causas usan claves `CAUSE_*`; A reutiliza las del catálogo de B y añade las que falten. La foto sale de una lista corta verificada incluida en el juego (título, crédito, enlace), elegida según el resultado; la descarga en vivo es opcional y, si falla, B muestra su ilustración de respaldo.
+
+### Aterrizaje
+
+Sin datos nuevos. El texto «Descenso en curso» es fijo. `landing_finished` no cambia.
+
+### Luz
+
+La luz depende de `hour` (amanecer 06:00, atardecer 18:00) y de `dust` (0..1). La simulación sigue siendo la única que decide la producción de energía; la luz es solo apariencia.
+
+### Por decidir (A y B)
+
+- Posición de la estación y si el rover puede acercarse a ella: hoy `station_tile` está en (3,3); el diseño la plantea lejana.
+- Si el compañero es pieza del taller o viene de serie.
+- Umbrales de los avisos.
