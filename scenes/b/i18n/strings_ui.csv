@@ -65,6 +65,8 @@ NO_INSTRUMENT,Instrumento no instalado,Instrument not installed
 NO_TARGET,Selecciona un objetivo,Select a target
 TOO_FAR,Acerca el rover al objetivo,Move the rover closer to the target
 LOW_ENERGY,Energía insuficiente,Insufficient energy
+OUT_OF_BOUNDS,Fuera del área operativa,Outside the operating area
+NO_PATH,Casilla bloqueada o sin ruta,Blocked tile or no route
 MEMORY_FULL,Memoria llena: transmite primero,Memory full: transmit first
 NO_LINK,Sin ventana de comunicación,No communication window
 NO_DATA,No hay datos para transmitir,No data to transmit

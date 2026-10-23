@@ -45,6 +45,7 @@ var es_noche: bool = false
 var proximo_cambio_enlace: Dictionary = {"opens": true, "hour": 0.0, "sol": 1}  ## opens=false: próximo cierre
 var ventanas_enlace: Array = []
 var en_movimiento: bool = false
+var movimiento_en_curso: Dictionary = {}  ## {"path", "seconds_per_tile", "elapsed"}; vacío si no se mueve
 var ocupado: bool = false
 var accion_en_curso: Dictionary = {}  ## {"action", "target_id", "seconds", "elapsed"}; vacío si no hay ninguna
 var dron_sol: int = 0  ## sol del último vuelo de dron
