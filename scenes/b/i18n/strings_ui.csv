@@ -1,0 +1,111 @@
+keys,es,en
+SUBTITLE,OPERACIONES DE SUPERFICIE,SURFACE OPERATIONS
+LOCATION,JEZERO / MARTE,JEZERO / MARS
+INSPECTION,ENTORNO DE REVISIÓN B,B REVIEW ENVIRONMENT
+LIVE,SIMULACIÓN CONECTADA,SIMULATION CONNECTED
+WAIT,Esperando estado de la simulación de A,Waiting for A simulation state
+SOL,SOL %02d  ·  %02d:%02d,SOL %02d  ·  %02d:%02d
+ENERGY,ENERGÍA,ENERGY
+DATA,CIENCIA,SCIENCE
+SENT,ENVIADO A TIERRA,SENT TO EARTH
+MINERAL,MINERAL,MINERAL
+ANTENNA,ANTENA NIVEL %d,ANTENNA LEVEL %d
+DUST,POLVO %d %%,DUST %d %%
+MISSION,01 / LA ÚLTIMA SEÑAL,01 / THE LAST SIGNAL
+BRIEF,Investiga el antiguo lago de Jezero. Reúne ciencia y envíala a la Tierra antes de que termine el sol 6.,Investigate Jezero ancient lake. Collect science and send it to Earth before sol 6 ends.
+OBJECTIVE,Transmitir %d unidades de ciencia,Transmit %d science units
+NO_SAFE,Evitar el modo seguro,Avoid safe mode
+EARLY,Terminar antes del sol 6,Finish before sol 6
+MAP,MAPA DEL SECTOR,SECTOR MAP
+SELECT,Selecciona un objetivo en el terreno,Select a target on the terrain
+TARGET,OBJETIVO SELECCIONADO,SELECTED TARGET
+ROCK,Afloramiento sedimentario,Sedimentary outcrop
+MINERAL_TARGET,Depósito mineral,Mineral deposit
+BURIED,Capa enterrada del antiguo lago,Buried layer of the ancient lake
+DEPLETED,Muestra estudiada,Sample studied
+AVAILABLE,Objetivo disponible,Target available
+APPROACH,Acercar rover,Approach target
+ACTIONS,INSTRUMENTOS Y OPERACIONES,INSTRUMENTS & OPERATIONS
+PANORAMA,Panorámica,Panorama
+SPECTROMETER,Espectrómetro,Spectrometer
+DRILL,Taladro y muestra,Drill & sample
+RADAR,Radar de subsuelo,Subsurface radar
+DRONE,Explorar con dron,Explore with drone
+COMPANION,Buscar minerales,Search for minerals
+UPGRADE,Mejorar antena,Upgrade antenna
+TRANSMIT,Iniciar transmisión,Start transmission
+STOP_TRANSMIT,Detener transmisión,Stop transmission
+WINDOW,VENTANA DE COMUNICACIÓN,COMMUNICATION WINDOW
+OPEN,Enlace disponible,Link available
+CLOSED,Esperando próxima pasada,Waiting for next pass
+DIRECT,DIRECTO A TIERRA,DIRECT TO EARTH
+RELAY,RELÉ ORBITAL,ORBITAL RELAY
+CONTROLS,Clic: seleccionar / mover   ·   Derecho: desplazar   ·   Rueda: zoom   ·   Q/E: girar   ·   F: centrar,Click: select / move   ·   Right drag: pan   ·   Wheel: zoom   ·   Q/E: rotate   ·   F: focus
+PAUSE,Pausar,Pause
+RESUME,Continuar,Resume
+PAUSED,MISIÓN EN PAUSA,MISSION PAUSED
+SETTINGS,Ajustes,Settings
+SOUND,Sonido,Sound
+VOLUME,Volumen general,Master volume
+LANGUAGE,Idioma,Language
+QUALITY,Partículas y sombras,Particles & shadows
+CLOSE,Cerrar,Close
+GRID,Cuadrícula,Grid
+HELP,Ayuda,Help
+HELP_TEXT,"Selecciona una roca y pulsa Acercar rover. Al llegar, elige un instrumento. Transmite cuando haya enlace. El polvo afecta los paneles solares; cuida tu batería. Las acciones se habilitan según el estado que entrega la simulación.","Select a rock and press Approach target. Once there, choose an instrument. Transmit when a link is available. Dust affects solar panels; watch your battery. Actions are enabled by the simulation state."
+LANDING,DESCENSO A JEZERO,DESCENT TO JEZERO
+LANDING_NOTE,Liberando el rover · controles bloqueados,Releasing rover · controls locked
+READY,Operaciones listas,Operations ready
+MOVING,Rover en desplazamiento,Rover moving
+BUSY,Instrumento en operación,Instrument operating
+STORM,Tormenta de polvo activa,Dust storm active
+STORM_WARNING,Frente de polvo en %.1f soles,Dust front in %.1f sols
+SAFE,Modo seguro: esperando recuperar energía,Safe mode: waiting to recover energy
+NO_INSTRUMENT,Instrumento no instalado,Instrument not installed
+NO_TARGET,Selecciona un objetivo,Select a target
+TOO_FAR,Acerca el rover al objetivo,Move the rover closer to the target
+LOW_ENERGY,Energía insuficiente,Insufficient energy
+MEMORY_FULL,Memoria llena: transmite primero,Memory full: transmit first
+NO_LINK,Sin ventana de comunicación,No communication window
+NO_DATA,No hay datos para transmitir,No data to transmit
+NIGHT,El dron necesita luz de día,Drone needs daylight
+FLIGHT_USED,Vuelo del sol ya utilizado,Flight for this sol already used
+WEATHER,Tormenta: vuelo bloqueado,Storm: flight blocked
+NO_MINERAL,Se necesitan 3 minerales,Requires 3 minerals
+MAX_LEVEL,Antena en nivel máximo,Antenna at maximum level
+ACTION_DONE,Operación completada,Operation complete
+REPORT,INFORME DE MISIÓN,MISSION REPORT
+WIN,La señal llegó a la Tierra,The signal reached Earth
+LOSE,La misión ha concluido,The mission has ended
+REPORT_STATS,%d / %d datos enviados · sol %d,%d / %d data sent · sol %d
+CAUSES,DECISIONES Y CONSECUENCIAS,DECISIONS & CONSEQUENCES
+CAUSE_SUCCESS,La ciencia transmitida cumplió el objetivo de misión.,Transmitted science met the mission objective.
+CAUSE_FAIL,No se transmitió toda la ciencia requerida antes del plazo.,Required science was not fully transmitted before the deadline.
+CAUSE_SOLAR,Los paneles producen de día; polvo y noche reducen la autonomía.,Panels generate in daylight; dust and night reduce autonomy.
+CAUSE_RTG,El RTG mantiene generación durante noche y tormenta.,RTG maintains generation during night and storms.
+CAUSE_SAFE,El consumo agotó la batería y activó el modo seguro.,Consumption depleted the battery and triggered safe mode.
+CAUSE_RELAY,El relé concentra la transmisión en pasadas orbitales.,Relay concentrates transmission into orbital passes.
+REDESIGN,Volver al diseño de misión,Return to mission design
+PHOTO_FALLBACK,Ilustración original · imagen NASA no disponible,Original illustration · NASA image unavailable
+PHOTO_SOURCE,Abrir fuente de la imagen,Open image source
+CREDITS,"Modelos, interfaz y audio originales del equipo GAIA · sin afiliación oficial con NASA","Original models, interface & audio for GAIA · no official NASA affiliation"
+REVIEW_HELP,Revisión B: F2 abre escenarios de prueba. A reemplaza este proveedor de estado.,B review: F2 opens test scenarios. A replaces this state provider.
+REVIEW_TITLE,REVISIÓN DE ESTADOS VISUALES,VISUAL STATE REVIEW
+REVIEW_NOTE,Estos botones inyectan estados de prueba. No forman parte de las reglas finales de A.,These buttons inject test states. They are not A final rules.
+R_SOLAR,Diseño solar,Solar design
+R_RTG,Diseño RTG,RTG design
+R_STORM,Alternar tormenta,Toggle storm
+R_NIGHT,Alternar día / noche,Toggle day / night
+R_SAFE,Alternar modo seguro,Toggle safe mode
+R_WIN,Ver informe de éxito,View success report
+R_LOSE,Ver informe de fallo,View failure report
+R_RESET,Reiniciar inspección,Restart inspection
+HINT,Explora los afloramientos marcados en verde.,Explore the outcrops marked in green.
+REJECTED,Orden no disponible en el estado actual,Command unavailable in current state
+SAVED_SETTINGS,Preferencias guardadas en este equipo,Preferences saved on this device
+COST,%.0f Wh,%.0f Wh
+FPS,%d FPS,%d FPS
+WARNINGS,ESTADO DE LA MISIÓN,MISSION STATUS
+COMPANION_NAME,NÓDULO / UNIDAD DE APOYO,NODULE / SUPPORT UNIT
+MISSION_END,Misión finalizada,Mission ended
+UI_ONLY,Presentación de B lista. Conecta A para una misión real.,B presentation ready. Connect A for a real mission.

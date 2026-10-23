@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="GAIA"
-run/main_scene="uid://dgvuhwql6xsq7"
+run/main_scene="res://scenes/b/review.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -21,6 +21,10 @@ EventBus="*res://autoload/event_bus.gd"
 
 [display]
 
+window/size/viewport_width=1440
+window/size/viewport_height=900
+window/size/window_width_override=1280
+window/size/window_height_override=800
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
