@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "chasis": [
+    {
+      "id": "chasis_base",
+      "nombre_clave": "PIEZA_CHASIS_BASE",
+      "masa_kg": 500,
+      "costo_musd": 180
+    }
+  ],
+  "cohetes": [
+    {
+      "id": "cohete_ligero",
+      "nombre_clave": "PIEZA_COHETE_LIGERO",
+      "capacidad_kg": 600,
+      "costo_musd": 150
+    },
+    {
+      "id": "cohete_pesado",
+      "nombre_clave": "PIEZA_COHETE_PESADO",
+      "capacidad_kg": 1200,
+      "costo_musd": 300
+    }
+  ],
+  "energia": [
+    {
+      "id": "panel_solar",
+      "nombre_clave": "PIEZA_PANEL_SOLAR",
+      "masa_kg": 20,
+      "costo_musd": 20,
+      "potencia_max_w": 140
+    },
+    {
+      "id": "mmrtg",
+      "nombre_clave": "PIEZA_MMRTG",
+      "masa_kg": 45,
+      "costo_musd": 120,
+      "potencia_w": 110
+    }
+  ],
+  "comunicaciones": [
+    {
+      "id": "antena_directa",
+      "nombre_clave": "PIEZA_ANTENA_DIRECTA",
+      "masa_kg": 10,
+      "costo_musd": 15
+    },
+    {
+      "id": "antena_rele",
+      "nombre_clave": "PIEZA_ANTENA_RELE",
+      "masa_kg": 5,
+      "costo_musd": 30
+    }
+  ],
+  "extras": [
+    { "id": "espectrometro", "nombre_clave": "PIEZA_ESPECTROMETRO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "taladro", "nombre_clave": "PIEZA_TALADRO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "camara", "nombre_clave": "PIEZA_CAMARA", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "meteo", "nombre_clave": "PIEZA_METEO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "radar", "nombre_clave": "PIEZA_RADAR", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "bateria", "nombre_clave": "PIEZA_BATERIA", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
+    { "id": "dron", "nombre_clave": "PIEZA_DRON", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "presupuesto_musd": 700,
+  "victoria": {
+    "datos_requeridos": 100,
+    "sol_limite": 6
+  },
+  "eventos": [
+    { "tipo": "tormenta_polvo", "soles": [4, 5] }
+  ],
+  "limites_piezas": {
+    "chasis": { "min": 1, "max": 1 },
+    "cohetes": { "min": 1, "max": 1 },
+    "energia": { "min": 1, "max": 1 },
+    "comunicaciones": { "min": 1, "max": 1 },
+    "extras": { "min": 0 }
+  }
+}
