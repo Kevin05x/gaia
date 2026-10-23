@@ -22,6 +22,10 @@ func before_each() -> void:
 	movimiento = MovementSystem.new(balance, energia, mapa)
 
 
+func _costo_casilla() -> float:
+	return balance.numero("movimiento.costo_wh_por_casilla")
+
+
 func _tramo() -> float:
 	return balance.numero("movimiento.segundos_por_casilla")
 
@@ -31,7 +35,7 @@ func test_mover_descuenta_toda_la_ruta_y_deja_al_rover_en_marcha() -> void:
 	assert_true(resultado["ok"])
 	assert_eq(resultado["path"].size(), 3)
 	assert_eq(resultado["seconds_per_tile"], _tramo())
-	assert_almost_eq(estado.bateria_wh, 1000.0 - 3 * 18.0, 0.001)
+	assert_almost_eq(estado.bateria_wh, 1000.0 - 3 * _costo_casilla(), 0.001)
 	assert_true(estado.en_movimiento)
 	assert_eq(estado.casilla_rover, Vector2i(0, 0), "la posición se confirma al llegar")
 
@@ -86,13 +90,14 @@ func test_destinos_bloqueados_no_tienen_ruta() -> void:
 
 
 func test_energia_insuficiente_rechaza_sin_gastar() -> void:
-	estado.bateria_wh = 53.0
+	var justo := 3 * _costo_casilla()
+	estado.bateria_wh = justo - 1.0
 	var resultado := movimiento.iniciar_mover(estado, Vector2i(3, 0))
 	assert_false(resultado["ok"])
 	assert_eq(resultado["reason"], "LOW_ENERGY")
-	assert_eq(estado.bateria_wh, 53.0)
+	assert_eq(estado.bateria_wh, justo - 1.0)
 	assert_false(estado.en_movimiento)
-	estado.bateria_wh = 54.0
+	estado.bateria_wh = justo
 	assert_true(movimiento.iniciar_mover(estado, Vector2i(3, 0))["ok"], "justo alcanza")
 
 
