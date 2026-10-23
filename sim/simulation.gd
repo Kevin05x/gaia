@@ -16,6 +16,8 @@ var informe: Dictionary = {}  ## vacío mientras la misión sigue; al terminar, 
 var _balance: Balance
 var _reglas: Rules
 var _mapa: MapData
+var _catalogo: Catalog
+var _diseno: MissionDesign  ## piezas elegidas en el taller; sobrevive a reiniciar()
 var _reloj: ClockSystem
 var _energia: EnergySystem
 var _ciencia: ScienceSystem
@@ -25,14 +27,17 @@ var _resultado: OutcomeSystem
 var _seleccion: String = ""
 
 
-func _init(balance: Balance, reglas: Rules, mapa: MapData) -> void:
+func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog) -> void:
 	_balance = balance
 	_reglas = reglas
 	_mapa = mapa
+	_catalogo = catalogo
+	_diseno = MissionDesign.new(catalogo, reglas)
 	reiniciar()
 
 
-## Vuelve al taller con una misión limpia (mapa y objetivos como al principio).
+## Vuelve al taller con una misión limpia (mapa y objetivos como al principio). Conserva las piezas
+## elegidas para poder ajustarlas al rediseñar.
 func reiniciar() -> void:
 	estado = MissionState.new(_balance, _reglas)
 	_mapa.aplicar_a(estado)
@@ -83,6 +88,10 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			return _pausar(bool(carga.get("paused", false)))
 		"landing_finished":
 			return _terminar_aterrizaje()
+		"redesign":
+			return _redisenar()
+		"design_add", "design_remove", "design_validate", "design_start":
+			return _orden_de_taller(orden, str(carga.get("part_id", "")))
 		_:
 			return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 
@@ -119,6 +128,8 @@ func snapshot() -> Dictionary:
 	datos["targets"] = _objetivos_para_la_vista()
 	datos["warnings"] = _avisos()
 	datos["available_actions"] = _acciones_disponibles()
+	if estado.fase == "workshop":
+		datos["workshop"] = _taller()
 	return datos
 
 
@@ -180,6 +191,75 @@ func _terminar_aterrizaje() -> Dictionary:
 	estado.fase = "operations"
 	_reloj.actualizar(estado)
 	return {"ok": true, "reason": ""}
+
+
+func _redisenar() -> Dictionary:
+	if estado.fase == "workshop":
+		return {"ok": false, "reason": "WRONG_PHASE"}
+	reiniciar()
+	return {"ok": true, "reason": ""}
+
+
+func _orden_de_taller(orden: String, pieza_id: String) -> Dictionary:
+	if estado.fase != "workshop":
+		return {"ok": false, "reason": "WRONG_PHASE"}
+	match orden:
+		"design_add":
+			var disponible := _disponibilidad_pieza(pieza_id)
+			if disponible["enabled"]:
+				_diseno.agregar(pieza_id)
+			return {"ok": disponible["enabled"], "reason": disponible["reason"]}
+		"design_remove":
+			return {"ok": true, "reason": ""} if _diseno.quitar(pieza_id) else {"ok": false, "reason": "UNKNOWN_PART"}
+		"design_validate":
+			return {"ok": true, "reason": ""} if _diseno.es_valido() else {"ok": false, "reason": "INVALID_DESIGN"}
+		_:
+			return _comenzar_mision()
+
+
+## Valida el diseño, lo traduce a la configuración de la misión y pasa al aterrizaje.
+func _comenzar_mision() -> Dictionary:
+	if not _diseno.es_valido():
+		return {"ok": false, "reason": "INVALID_DESIGN"}
+	var configuracion := _diseno.a_configuracion()
+	if not configurar_diseno(configuracion["energia"], configuracion["enlace"], configuracion["instrumentos"],
+			configuracion["companero"], configuracion["potencia_nominal_w"]):
+		return {"ok": false, "reason": "INVALID_DESIGN"}
+	iniciar_aterrizaje()
+	return {"ok": true, "reason": ""}
+
+
+## {"enabled", "reason"}: una pieza se puede agregar si existe y su categoría no está completa.
+func _disponibilidad_pieza(pieza_id: String) -> Dictionary:
+	if not _catalogo.tiene(pieza_id):
+		return {"enabled": false, "reason": "UNKNOWN_PART"}
+	var categoria: String = _catalogo.obtener(pieza_id)["categoria"]
+	var maximo := _reglas.limite_max(categoria)
+	if maximo >= 0 and _diseno.cantidad(categoria) >= maximo:
+		return {"enabled": false, "reason": "CATEGORY_FULL"}
+	return {"enabled": true, "reason": ""}
+
+
+## Todo lo que el taller muestra, ya calculado: piezas por categoría, elegidas, totales y validación.
+func _taller() -> Dictionary:
+	var categorias: Array[Dictionary] = []
+	for categoria in Catalog.CATEGORIAS:
+		var piezas: Array[Dictionary] = []
+		for id in _catalogo.ids_de(categoria):
+			var pieza := _catalogo.obtener(id)
+			var disponible := _disponibilidad_pieza(id)
+			piezas.append({"id": id, "name_key": pieza["nombre_clave"], "capacity_kg": pieza.get("capacidad_kg"),
+				"mass_kg": pieza.get("masa_kg"), "cost_musd": pieza.get("costo_musd"),
+				"power_w": pieza.get("potencia_w", pieza.get("potencia_max_w")),
+				"pending": pieza.get("pendiente", false) == true,
+				"available": disponible["enabled"], "reason": disponible["reason"]})
+		categorias.append({"id": categoria, "parts": piezas})
+	var validacion := _diseno.validar()
+	return {"categories": categorias, "selection": _diseno.seleccion.duplicate(true),
+		"totals": {"mass_kg": _diseno.masa_total_kg(), "cost_musd": _diseno.costo_total_musd(),
+			"capacity_kg": _diseno.capacidad_kg(), "power_w": _diseno.potencia_nominal_w(),
+			"budget_musd": _reglas.presupuesto_musd},
+		"validation": Array(validacion), "notices": Array(_diseno.avisos()), "valid": validacion.is_empty()}
 
 
 func _resultado_simple(resultado: Dictionary) -> Dictionary:

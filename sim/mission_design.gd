@@ -7,6 +7,13 @@ extends RefCounted
 ## Categorías que suman masa a la nave. El cohete no suma: su "capacidad_kg" es el tope.
 const CATEGORIAS_CON_MASA: Array[String] = ["chasis", "energia", "comunicaciones", "extras"]
 
+## De piezas del taller a diseño de misión (vocabulario de la vista; ver INTEGRACION_A.md).
+const ENERGIA_POR_PIEZA: Dictionary = {"panel_solar": "solar", "mmrtg": "rtg"}
+const ENLACE_POR_PIEZA: Dictionary = {"antena_rele": "relay", "antena_directa": "direct"}
+const INSTRUMENTO_POR_PIEZA: Dictionary = {"camara": "panorama", "espectrometro": "spectrometer", "taladro": "drill",
+	"radar": "radar", "dron": "drone", "meteo": "meteo"}
+const PIEZA_COMPANERO := "companero"
+
 var seleccion: Dictionary = {}  ## categoria -> Array de ids elegidos
 
 var _catalogo: Catalog
@@ -98,6 +105,26 @@ func avisos() -> PackedStringArray:
 
 func es_valido() -> bool:
 	return validar().is_empty()
+
+
+## Lo que la simulación necesita saber del diseño elegido: {"energia", "enlace", "instrumentos",
+## "companero", "potencia_nominal_w"}. "energia" o "enlace" quedan vacíos si la pieza no se reconoce.
+func a_configuracion() -> Dictionary:
+	var energia := ""
+	for id in seleccion["energia"]:
+		energia = ENERGIA_POR_PIEZA.get(id, "")
+	var enlace := ""
+	for id in seleccion["comunicaciones"]:
+		enlace = ENLACE_POR_PIEZA.get(id, "")
+	var instrumentos: Array[String] = []
+	var companero := false
+	for id in seleccion["extras"]:
+		if id == PIEZA_COMPANERO:
+			companero = true
+		elif INSTRUMENTO_POR_PIEZA.has(id) and not instrumentos.has(INSTRUMENTO_POR_PIEZA[id]):
+			instrumentos.append(INSTRUMENTO_POR_PIEZA[id])
+	return {"energia": energia, "enlace": enlace, "instrumentos": instrumentos, "companero": companero,
+		"potencia_nominal_w": potencia_nominal_w()}
 
 
 func _suma(campo: String, categorias: Array) -> float:
