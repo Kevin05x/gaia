@@ -255,7 +255,7 @@ func _update_hover() -> void:
 		return
 	var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
 	var dentro: bool = terrain.in_bounds(tile)
-	var libre: bool = dentro and not tile in terrain.obstacles
+	var libre: bool = dentro and not tile in _blocked_tiles() or dentro and target_at_tile(tile) != ""
 	if dentro or Vector2(point.x, point.z).length() < 34.0:
 		terrain.show_cursor(tile, libre)
 	else:
@@ -306,13 +306,43 @@ func _unhandled_input(e: InputEvent) -> void:
 		if point == null:
 			return
 		var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
+		# Un clic en la casilla de un objetivo revelado lo selecciona y lleva al rover a la casilla libre más cercana.
+		var en_casilla := target_at_tile(tile)
+		if not en_casilla.is_empty():
+			selected_target = en_casilla
+			terrain.select(en_casilla)
+			hud.set_target(en_casilla)
+			port.submit("select", {"target_id": en_casilla})
+			port.submit("approach", {"target_id": en_casilla})
+			return
 		hud.close_actions()
 		port.submit("move", {"tile": nearest_free_tile(tile)})
 
 
+## Objetivo revelado cuya casilla es «tile» ("" si no hay).
+func target_at_tile(tile: Vector2i) -> String:
+	for t in state.get("targets", []):
+		if t.get("revealed", false) and t.get("tile", Vector2i(9999, 9999)) == tile:
+			return str(t["id"])
+	return ""
+
+
+## Casillas que el simulador no deja pisar: obstáculos, la estación y todos los objetivos.
+func _blocked_tiles() -> Array[Vector2i]:
+	var lista: Array[Vector2i] = []
+	for o in state.get("obstacles", []):
+		lista.append(o)
+	if state.has("station_tile"):
+		lista.append(state["station_tile"])
+	for t in state.get("targets", []):
+		lista.append(t["tile"])
+	return lista
+
+
 ## Casilla libre más cercana a «tile» (y al rover si hay empate). Si «tile» ya está libre, la devuelve igual.
 func nearest_free_tile(tile: Vector2i) -> Vector2i:
-	if not terrain.in_bounds(tile) or not tile in terrain.obstacles:
+	var bloqueadas := _blocked_tiles()
+	if not terrain.in_bounds(tile) or not tile in bloqueadas:
 		return tile
 	var origen := Vector2(actors.rover.position.x / 2.0, actors.rover.position.z / 2.0)
 	var mejor := tile
@@ -323,7 +353,7 @@ func nearest_free_tile(tile: Vector2i) -> Vector2i:
 				if maxi(absi(dx), absi(dy)) != radio:
 					continue
 				var c := tile + Vector2i(dx, dy)
-				if not terrain.in_bounds(c) or c in terrain.obstacles:
+				if not terrain.in_bounds(c) or c in bloqueadas:
 					continue
 				var d := Vector2(c).distance_to(origen)
 				if d < mejor_d:
@@ -350,7 +380,7 @@ func project_target(id: String) -> Dictionary:
 ## Objetivo revelado más cercano al clic en pantalla (zona de 44×44 px), aunque lo tape una roca.
 func pick_target(screen: Vector2) -> String:
 	var best := ""
-	var best_distance := 26.0
+	var best_distance := 40.0
 	for id in terrain.targets:
 		if not terrain.targets[id].visible:
 			continue
