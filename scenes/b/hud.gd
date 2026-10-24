@@ -1281,10 +1281,10 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif tecla == KEY_F2 and inspection:
 		review_panel.visible = not review_panel.visible
 		get_viewport().set_input_as_handled()
-	elif tecla == KEY_F3:
+	elif tecla == KEY_F3 or tecla == KEY_P:  # P: alternativa para teclados donde F3 exige Fn o lo captura el editor/navegador
 		_debug.visible = not _debug.visible
 		get_viewport().set_input_as_handled()
-	elif tecla == KEY_F1:
+	elif tecla == KEY_F1 or tecla == KEY_H:
 		show_help()
 		get_viewport().set_input_as_handled()
 	elif HOTKEYS.has(tecla) and not settings.visible and not review_panel.visible and not snapshot.get("paused", false):
