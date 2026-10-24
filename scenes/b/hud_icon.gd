@@ -97,6 +97,94 @@ func _draw() -> void:
 			for i in range(8):
 				var d := Vector2.from_angle(i * PI / 4.0)
 				draw_line(Vector2(8, 8) + d * 5.2, Vector2(8, 8) + d * 7.2, color, 2.0, true)
+		"rocket":
+			draw_polyline(PackedVector2Array([Vector2(8, 1.5), Vector2(10.6, 6), Vector2(10.6, 11), Vector2(5.4, 11), Vector2(5.4, 6), Vector2(8, 1.5)]), color, w, true)
+			draw_polyline(PackedVector2Array([Vector2(5.4, 8.6), Vector2(3.4, 12.4), Vector2(5.4, 11.6)]), color, w, true)
+			draw_polyline(PackedVector2Array([Vector2(10.6, 8.6), Vector2(12.6, 12.4), Vector2(10.6, 11.6)]), color, w, true)
+			draw_arc(Vector2(8, 6.6), 1.1, 0, TAU, 12, color, 1.2, true)
+			draw_line(Vector2(8, 12.4), Vector2(8, 14.8), color, w, true)
+		"chassis":
+			_rect_outline(Rect2(2.5, 5.0, 11.0, 4.2), w)
+			draw_line(Vector2(10.5, 5.0), Vector2(10.5, 2.6), color, w, true)
+			for x in [4.6, 8.0, 11.4]:
+				draw_arc(Vector2(x, 11.9), 1.9, 0, TAU, 14, color, w, true)
+		"bolt":
+			draw_polyline(PackedVector2Array([Vector2(9.2, 1.4), Vector2(4.0, 9.0), Vector2(7.6, 9.0), Vector2(6.6, 14.6), Vector2(12.0, 6.6), Vector2(8.4, 6.6), Vector2(9.2, 1.4)]), color, w, true)
+		"flask":
+			draw_polyline(PackedVector2Array([Vector2(6, 2), Vector2(6, 6.2), Vector2(2.8, 13), Vector2(13.2, 13), Vector2(10, 6.2), Vector2(10, 2)]), color, w, true)
+			draw_line(Vector2(5, 2), Vector2(11, 2), color, w, true)
+			draw_line(Vector2(4.4, 10), Vector2(11.6, 10), color, 1.2, true)
+		"check":
+			draw_polyline(PackedVector2Array([Vector2(3.2, 8.6), Vector2(6.8, 12.0), Vector2(12.8, 4.4)]), color, 1.9, true)
+		"check_circle":
+			var anillo := PackedVector2Array()
+			for i in range(25):
+				anillo.append(Vector2(8, 8) + Vector2.from_angle(i * TAU / 24.0) * 6.6)
+			draw_polyline(anillo, color, 1.3, true)
+			draw_polyline(PackedVector2Array([Vector2(4.8, 8.3), Vector2(7.1, 10.6), Vector2(11.2, 5.6)]), color, 1.5, true)
+		"coin":
+			var moneda := PackedVector2Array()
+			for i in range(25):
+				moneda.append(Vector2(8, 8) + Vector2.from_angle(i * TAU / 24.0) * 6.4)
+			draw_polyline(moneda, color, 1.3, true)
+			draw_polyline(PackedVector2Array([Vector2(10.2, 5.4), Vector2(6.4, 5.4), Vector2(6.4, 8.0), Vector2(9.6, 8.0), Vector2(9.6, 10.6), Vector2(5.8, 10.6)]), color, 1.2, true)
+		"weight":
+			draw_polyline(PackedVector2Array([Vector2(4.6, 5.0), Vector2(11.4, 5.0), Vector2(14.0, 14.0), Vector2(2.0, 14.0), Vector2(4.6, 5.0)]), color, w, true)
+			var aro := PackedVector2Array()
+			for i in range(17):
+				aro.append(Vector2(8, 3.4) + Vector2.from_angle(i * TAU / 16.0) * 1.6)
+			draw_polyline(aro, color, 1.2, true)
+		"list":
+			for i in range(3):
+				var y := 3.6 + i * 4.4
+				draw_circle(Vector2(2.8, y), 1.0, color)
+				draw_line(Vector2(5.4, y), Vector2(14.0, y), color, 1.4, true)
+		"drill":
+			_rect_outline(Rect2(6.4, 1.8, 3.2, 5.6), w)
+			draw_polyline(PackedVector2Array([Vector2(5.2, 7.4), Vector2(8, 14.6), Vector2(10.8, 7.4), Vector2(5.2, 7.4)]), color, w, true)
+			draw_line(Vector2(6.3, 10.0), Vector2(9.7, 10.0), color, 1.1, true)
+		"spectrometer":
+			_rect_outline(Rect2(1.8, 5.0, 5.0, 6.0), w)
+			draw_line(Vector2(6.8, 8.0), Vector2(12.4, 8.0), color, w, true)
+			for a in [-0.7, 0.0, 0.7]:
+				draw_line(Vector2(12.6, 8.0), Vector2(12.6, 8.0) + Vector2.from_angle(a) * 2.4, color, 1.2, true)
+		"radar":
+			draw_arc(Vector2(8, 13), 4.2, -PI * 0.85, -PI * 0.15, 12, color, w, true)
+			draw_arc(Vector2(8, 13), 8.0, -PI * 0.85, -PI * 0.15, 16, color, w, true)
+			draw_circle(Vector2(8, 13), 1.3, color)
+			draw_line(Vector2(8, 13), Vector2(11.4, 6.2), color, 1.2, true)
+		"camera":
+			_rect_outline(Rect2(1.8, 5.0, 12.4, 8.2), w)
+			_rect_outline(Rect2(5.6, 2.8, 3.6, 2.2), 1.2)
+			draw_arc(Vector2(8, 9.1), 2.5, 0, TAU, 14, color, w, true)
+		"meteo":
+			draw_line(Vector2(1.8, 5.2), Vector2(10.0, 5.2), color, w, true)
+			draw_arc(Vector2(10.0, 3.6), 1.6, -PI / 2.0, PI * 0.6, 8, color, w, true)
+			draw_line(Vector2(1.8, 8.6), Vector2(13.4, 8.6), color, w, true)
+			draw_line(Vector2(1.8, 12.0), Vector2(9.0, 12.0), color, w, true)
+			draw_arc(Vector2(9.0, 13.6), 1.6, PI / 2.0, -PI * 0.6, 8, color, w, true)
+		"drone":
+			draw_line(Vector2(4, 4), Vector2(12, 12), color, w, true)
+			draw_line(Vector2(12, 4), Vector2(4, 12), color, w, true)
+			for c in [Vector2(3.6, 3.6), Vector2(12.4, 3.6), Vector2(3.6, 12.4), Vector2(12.4, 12.4)]:
+				draw_arc(c, 1.9, 0, TAU, 10, color, 1.2, true)
+			draw_rect(Rect2(6.4, 6.4, 3.2, 3.2), color)
+		"companion":
+			_rect_outline(Rect2(2.6, 6.6, 10.8, 4.2), w)
+			for x in [5.0, 11.0]:
+				draw_arc(Vector2(x, 12.6), 1.6, 0, TAU, 10, color, w, true)
+			draw_line(Vector2(10.4, 6.6), Vector2(10.4, 3.4), color, 1.2, true)
+			draw_circle(Vector2(10.4, 3.0), 0.9, color)
+		"solar":
+			draw_polyline(PackedVector2Array([Vector2(3, 4.6), Vector2(13, 4.6), Vector2(14.6, 10.6), Vector2(1.4, 10.6), Vector2(3, 4.6)]), color, w, true)
+			draw_line(Vector2(6.3, 4.6), Vector2(5.4, 10.6), color, 1.1, true)
+			draw_line(Vector2(9.7, 4.6), Vector2(10.6, 10.6), color, 1.1, true)
+			draw_line(Vector2(2.2, 7.6), Vector2(13.8, 7.6), color, 1.1, true)
+			draw_line(Vector2(8, 10.6), Vector2(8, 14.2), color, w, true)
+		"atom":
+			draw_circle(Vector2(8, 8), 1.4, color)
+			for i in range(3):
+				draw_arc(Vector2(8, 8), 4.6, i * TAU / 3.0 - 0.65, i * TAU / 3.0 + 0.65, 8, color, 2.6, true)
 		"antenna":
 			draw_line(Vector2(8, 7), Vector2(8, 14), color, w, true)
 			draw_line(Vector2(5, 14), Vector2(11, 14), color, w, true)
