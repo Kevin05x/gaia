@@ -47,6 +47,7 @@ func _ready() -> void:
 		logo.texture = load(LOGOTIPO)
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		UI.place(logo, "tl", 44, 30, 300, 85)
 		add_child(logo)
 	etiqueta = UI.label(self, tr("M_LOADING"), 14, Color(UI.AMBER, 0.95))

@@ -18,6 +18,12 @@ var segment_start=Vector3.ZERO
 var segment_time=0.0
 var seconds_per_tile=.65
 var active_action: Dictionary={}
+var work_target=Vector3.ZERO  ## punto del mineral donde se trabaja (mundo)
+var work_beam: MeshInstance3D
+var work_ring: MeshInstance3D
+var work_column: MeshInstance3D
+var arm_home=Vector3.ZERO
+const TIP_OFFSET := .355  ## rad: la punta del brazo queda a la derecha del frente del rover
 var animation_clock=0.0
 var flight=0.0
 var paused=false
@@ -49,6 +55,13 @@ func _ready() -> void:
  dust=Art.dust(self,130,Vector3(20,3,20));dust.position.y=2
  drilling=Art.dust(rover,30,Vector3(.12,.1,.12));drilling.position=Vector3(.6,.3,-1.5)
  drilling.lifetime=.4;drilling.initial_velocity_min=.4;drilling.initial_velocity_max=1.2;drilling.gravity=Vector3(0,-1,0)
+ arm_home=parts.arm.position
+ var beam_mat=StandardMaterial3D.new();beam_mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;beam_mat.albedo_color=Color(.59,.8,.76,.8);beam_mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;beam_mat.no_depth_test=true
+ work_beam=MeshInstance3D.new();var cyl=CylinderMesh.new();cyl.top_radius=.04;cyl.bottom_radius=.04;cyl.radial_segments=6;work_beam.mesh=cyl;work_beam.material_override=beam_mat;work_beam.visible=false;add_child(work_beam)
+ work_ring=Art.ring(self,.8,Vector3.ZERO,Color("f2c070"));work_ring.visible=false;work_ring.material_override=_glow(Color(.95,.75,.44,.9))
+ work_column=MeshInstance3D.new();var col=CylinderMesh.new();col.top_radius=.05;col.bottom_radius=.35;col.height=2.2;col.radial_segments=10;work_column.mesh=col;work_column.material_override=_glow(Color(.95,.75,.44,.22));work_column.visible=false;add_child(work_column)
+ drilling.direction=Vector3(0,1,0);drilling.spread=55;drilling.gravity=Vector3(0,-5,0);drilling.lifetime=.9;drilling.amount=48
+ drilling.initial_velocity_min=1.4;drilling.initial_velocity_max=3.0;drilling.scale_amount_min=1.4;drilling.scale_amount_max=2.6
  crane=Node3D.new();crane.name="SkyCrane";add_child(crane)
  Art.box(crane,Vector3(3.4,.3,2.4),Vector3.ZERO,Art.DARK)
  for x in [-1.3,1.3]:
@@ -86,7 +99,7 @@ func start_action(a: Dictionary) -> void:
 func start_landing() -> void:
  landing_active=true;landing_clock=0;landed=false;crane.visible=true
 func cancel_actions() -> void:
- route.clear();active_action.clear();drilling.emitting=false
+ route.clear();active_action.clear();drilling.emitting=false;_end_work()
 func _process(delta: float) -> void:
  if paused:return
  animation_clock+=delta
@@ -112,10 +125,14 @@ func _process(delta: float) -> void:
  if not active_action.is_empty():
   active_action.elapsed+=delta
   var action=str(active_action.get("action",""))
-  drilling.emitting=action=="drill"
-  parts.arm.rotation.x=sin(animation_clock*8)*.12 if action in ["drill","spectrometer"] else 0
+  var aims=action in ["drill","spectrometer"]
+  if aims and active_action.has("tile"):_work_on_target(action,delta)
+  else:
+   drilling.emitting=action=="drill"
+   parts.arm.rotation.x=sin(animation_clock*8)*.12 if aims else 0
   if active_action.elapsed>=float(active_action.get("seconds",2.0)):
-   active_action.clear();drilling.emitting=false;parts.arm.rotation=Vector3.ZERO
+   active_action.clear();drilling.emitting=false;_end_work()
+ elif work_beam.visible or parts.visual.position!=Vector3.ZERO:_end_work()
  var scanning=not active_action.is_empty() and active_action.get("action") in ["radar","panorama"]
  scanner.visible=scanning
  if scanning:
@@ -132,3 +149,45 @@ func _process(delta: float) -> void:
  companion.position.y=(dust_ground.call(companion.position.x,companion.position.z) if dust_ground.is_valid() else 0)+absf(sin(animation_clock*3))*.05
  dust.position=Vector3(rover.position.x,2,rover.position.z)
  link.base=station.global_position+antenna_top
+
+func _end_work() -> void:
+ work_beam.visible=false;work_ring.visible=false;work_column.visible=false;drilling.emitting=false
+ parts.arm.rotation=Vector3.ZERO;parts.arm.position=arm_home;parts.visual.position=Vector3.ZERO
+## El rover se gira hacia el mineral, adelanta un poco el cuerpo si hace falta y el brazo trabaja sobre la roca.
+func _work_on_target(action: String, delta: float) -> void:
+ var tile=active_action["tile"]
+ if tile is Array:tile=Vector2i(int(tile[0]),int(tile[1]))
+ work_target=at_tile(tile)
+ var to=work_target-rover.position
+ var flat=Vector3(to.x,0,to.z)
+ if flat.length_squared()>.01:
+  rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-flat.x,-flat.z)+TIP_OFFSET,minf(1,delta*5))
+  var reach=maxf(0.0,flat.length()-.8-1.73)
+  var local_dir=(rover.global_transform.basis.inverse()*flat.normalized())
+  parts.visual.position=parts.visual.position.move_toward(local_dir*reach,delta*.8)
+ var hit=work_target+Vector3(0,.35,0)
+ var t=float(active_action.get("elapsed",0.0))
+ parts.arm.rotation.x=-.15+sin(animation_clock*10)*.05
+ if action=="drill":
+  parts.arm.position=arm_home+Vector3(0,-absf(sin(animation_clock*9))*.1,0)
+  drilling.global_position=hit;drilling.emitting=true
+  work_beam.visible=false
+ else:
+  drilling.emitting=false
+  var a=parts.spectrometer.global_position
+  var mid=(a+hit)*.5
+  var len=a.distance_to(hit)
+  (work_beam.mesh as CylinderMesh).height=len
+  work_beam.global_position=mid
+  work_beam.look_at(hit,Vector3.UP)
+  work_beam.rotate_object_local(Vector3.RIGHT,PI*.5)
+  work_beam.visible=true
+ work_ring.visible=true;work_column.visible=true
+ work_column.global_position=work_target+Vector3(0,1.1,0)
+ work_ring.global_position=Vector3(work_target.x,work_target.y+.08,work_target.z)
+ work_ring.scale=Vector3.ONE*(.9+.25*sin(animation_clock*6))
+
+func _glow(color: Color) -> StandardMaterial3D:
+ var m=StandardMaterial3D.new();m.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;m.albedo_color=color
+ m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.no_depth_test=true;m.render_priority=10
+ return m

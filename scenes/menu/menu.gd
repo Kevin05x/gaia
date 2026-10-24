@@ -129,10 +129,14 @@ func _crear_logotipo() -> Control:
 		imagen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		imagen.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		imagen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		imagen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		UI.place(imagen, "tl", 70, 56, 580, 164)
-		var flota := imagen.create_tween().set_loops()
-		flota.tween_property(imagen, "position:y", imagen.position.y + 5.0, 3.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		flota.tween_property(imagen, "position:y", imagen.position.y, 3.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		# La flotación se hace en el sombreador: mover un Control por tween lo ajusta a píxeles enteros y se ve a saltitos.
+		var sombreador := Shader.new()
+		sombreador.code = "shader_type canvas_item;\nuniform float amplitud = 5.0;\nuniform float periodo = 6.4;\nvoid vertex() {\n\tVERTEX.y += (0.5 - 0.5 * cos(TIME * 6.2831853 / periodo)) * amplitud;\n}\n"
+		var material := ShaderMaterial.new()
+		material.shader = sombreador
+		imagen.material = material
 		return imagen
 	var logo := Logo.new()
 	logo.disposicion = "horizontal"

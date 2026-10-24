@@ -174,6 +174,7 @@ func _build_top_left() -> void:
 		imagen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		imagen.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		imagen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		imagen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		_mark = imagen
 	else:
 		_mark = GaiaLogo.new()
