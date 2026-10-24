@@ -378,6 +378,17 @@ func _abrir_ajustes() -> void:
 		fila.add_child(b)
 	var nota := UI.label(cuerpo, tr("M_SET_GRAPHICS_NOTE"), 13, Color(UI.CREAM, 0.6))
 	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Tamaño de ventana (solo en escritorio)
+	if not Texto.tamanos_disponibles().is_empty():
+		var ventana := HFlowContainer.new()
+		ventana.add_theme_constant_override("h_separation", 8)
+		ventana.add_theme_constant_override("v_separation", 6)
+		cuerpo.add_child(ventana)
+		var etiqueta := UI.label(ventana, tr("M_SET_WINDOW"), 17, UI.CREAM)
+		etiqueta.custom_minimum_size.x = 640
+		Texto.botones_tamano(ventana, func() -> void: _abrir_ajustes())
+		var aviso := UI.label(cuerpo, tr("M_SET_WINDOW_NOTE"), 13, Color(UI.CREAM, 0.6))
+		aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Pantalla completa y tutorial
 	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(v: bool) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if v else DisplayServer.WINDOW_MODE_WINDOWED))

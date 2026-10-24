@@ -42,15 +42,15 @@ Son arte original del proyecto creado con IA; no copian el logotipo, la mascota 
 | Archivo | Uso | Origen |
 | --- | --- | --- |
 | `assets/audio/gaia_menu.ogg` | Intro, menú y carga (83 s, en bucle) | Música original sintetizada por código |
-| `assets/audio/gaia_juego.ogg` | Ambiente dentro de la misión (94 s, en bucle) | Música original sintetizada por código |
+| `assets/audio/gaia_juego.ogg` | Música dentro de la misión (74 s, en bucle; re lidio, 104 BPM) | Música original sintetizada por código |
 
-Se generan con `tools/sintetizar_musica.py` (numpy y scipy: pads, bajo, pulso, campanas FM y reverberación; do# menor, 92 BPM). No usan muestras, grabaciones ni fragmentos de terceros. El vídeo de referencia solo sirvió para fijar la atmósfera (oscura, crecimiento lento); no se copió su música. `scenes/menu/musica.gd` las reproduce con fundido cruzado y respeta el volumen y el silencio guardados.
+Se generan con `tools/sintetizar_musica.py` (numpy y scipy: pads, bajo, pulso, campanas FM, arpegio pulsado, melodía y reverberación; menú en do# menor a 92 BPM, partida en re lidio a 104 BPM). No usan muestras, grabaciones ni fragmentos de terceros. El vídeo de referencia solo sirvió para fijar la atmósfera (oscura, crecimiento lento); no se copió su música. `scenes/menu/musica.gd` las reproduce con fundido cruzado y respeta el volumen y el silencio guardados.
 
 ## Efectos de sonido de las acciones (23 oct 2026)
 
 `motor.wav` (rover rodando), `drill.wav` (taladro), `laser.wav` (espectrómetro), `radar.wav` (radar de subsuelo), `panorama.wav` (cámara), `drone_start.wav` y `drone.wav` (dron), `companion.wav`, `meteo.wav`, `radio.wav` (chorro de datos al transmitir) y `uplink.wav` (subida del enlace) son originales, sintetizados con `tools/sintetizar_sonidos.py` (numpy y scipy). No usan muestras ni grabaciones de terceros. `wind.wav`, `confirm.wav` y `landing.wav` siguen siendo los de la entrega inicial.
 
-La pista `assets/audio/gaia_juego.ogg` se regeneró con más pulso (bajo de corcheas, latido suave, arpegios de campanas y brillo rítmico) usando `tools/sintetizar_musica.py juego`.
+La pista `assets/audio/gaia_juego.ogg` se rehízo (24 oct 2026) para que suene distinta a la del menú: otra tonalidad (re lidio, luminosa), otro tempo (104 BPM) y otro instrumental (arpegio pulsado, bajo cálido, percusión suave y melodía principal que entra en la segunda mitad). Se genera con `python tools/sintetizar_musica.py juego salida.wav` y se convierte a ogg con `ffmpeg -c:a libvorbis -q:a 4`. La del menú no cambia.
 
 ## Modelos 3D del equipo de diseño (24 oct 2026)
 
