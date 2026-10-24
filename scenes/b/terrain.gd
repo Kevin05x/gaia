@@ -5,6 +5,7 @@ extends Node3D
 ## También presenta objetivos, obstáculos, selección, ruta, cursor de destino y la retícula a demanda.
 const Art := preload("res://scenes/b/art.gd")
 const W := preload("res://scenes/b/world_art.gd")
+const Equipo := preload("res://scenes/b/modelos_equipo.gd")
 
 const TILE := 2.0
 const LIMIT := 11
@@ -865,6 +866,10 @@ func _strata(n: Node3D, rng: RandomNumberGenerator) -> void:
 
 ## Mineral expuesto: fragmentos pálidos dentro de una fractura oscura.
 func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
+	# Modelo del equipo de diseño (roca con cristales); si falta el archivo se usa la pieza por código.
+	var modelo := Equipo.poner(n, "hielo_2" if rng.randi() % 2 == 0 else "hielo_3", 1.7, Vector3(0, -0.03, 0), rng.randf() * TAU)
+	if not modelo.is_empty():
+		return
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))
 	base.rotation.y = rng.randf() * TAU
 	for k in range(4):

@@ -47,6 +47,7 @@ func _ready() -> void:
 		logo.texture = load(LOGOTIPO)
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		logo.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		UI.place(logo, "tl", 44, 30, 300, 85)
 		add_child(logo)
 	etiqueta = UI.label(self, tr("M_LOADING"), 14, Color(UI.AMBER, 0.95))
@@ -104,17 +105,35 @@ func _process(delta: float) -> void:
 	if estado == ResourceLoader.THREAD_LOAD_LOADED and _t >= TIEMPO_MINIMO and not _listo:
 		progreso = 1.0
 		_listo = true
-		var tw := create_tween()
-		tw.tween_property(velo, "color:a", 1.0, 0.35)
-		tw.tween_callback(_cambiar)
+		_cambiar()
 	elif estado == ResourceLoader.THREAD_LOAD_FAILED and not _listo:
 		_listo = true
 		get_tree().change_scene_to_file(Sesion.ESCENA_JUEGO)
 
 
 func _cambiar() -> void:
+	# La imagen de carga se queda a la vista («Preparando… 100 %») mientras el juego se construye; así el paso no deja
+	# una pantalla vacía. Se dibujan un par de fotogramas antes del trabajo pesado y el juego se monta sin cortar a negro.
+	etiqueta.text = "%s  100%%" % tr("M_LOADING")
+	barra.offset_right = _ancho_barra
+	set_process(false)
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var escena = ResourceLoader.load_threaded_get(Sesion.ESCENA_JUEGO)
-	if escena is PackedScene:
-		get_tree().change_scene_to_packed(escena)
-	else:
+	if not (escena is PackedScene):
 		get_tree().change_scene_to_file(Sesion.ESCENA_JUEGO)
+		return
+	var juego: Node = (escena as PackedScene).instantiate()
+	var arbol := get_tree()
+	arbol.root.add_child(juego)
+	await arbol.process_frame
+	await arbol.process_frame
+	# Con el juego ya dibujándose, la carga se desvanece y desaparece.
+	var capa := CanvasLayer.new()
+	capa.layer = 100
+	arbol.root.add_child(capa)
+	reparent(capa)
+	arbol.current_scene = juego
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(capa.queue_free)
