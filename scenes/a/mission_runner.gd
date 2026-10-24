@@ -10,6 +10,8 @@ const RUTA_REGLAS := "res://content/rules.json"
 const RUTA_MAPA := "res://content/mapa.json"
 const RUTA_PIEZAS := "res://content/parts.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
+const Sesion := preload("res://scenes/menu/game_session.gd")
+const Musica := preload("res://scenes/menu/musica.gd")
 
 ## Segundos entre snapshots cuando no pasa nada que los obligue a salir antes (batería, hora...).
 const PERIODO_SNAPSHOT_S := 0.15
@@ -21,7 +23,7 @@ const DISENO_INICIAL: Array[String] = ["cohete_ligero", "chasis_base", "panel_so
 	"camara", "espectrometro", "taladro", "radar", "dron", "meteo", "companero"]
 
 @export var crear_vista: bool = true  ## false en las pruebas: se usa el "port" que se le asigne
-@export var saltar_taller: bool = true  ## empieza directo con DISENO_INICIAL (aún no hay pantalla de taller)
+@export var saltar_taller: bool = false  ## true: empieza directo con DISENO_INICIAL, sin pasar por el taller (pruebas y atajos)
 
 var sim: Simulation
 var port: Node
@@ -41,6 +43,8 @@ func _ready() -> void:
 	if crear_vista and view == null:
 		view = load(ESCENA_VISTA).instantiate()
 		add_child(view)
+		view.menu_requested.connect(func() -> void: Sesion.volver_al_menu(get_tree()))
+		Musica.reproducir(get_tree(), "juego", 4.0)
 	if port == null and view != null:
 		port = view.get_node("Port")
 	if port == null:
@@ -51,6 +55,10 @@ func _ready() -> void:
 	port.command_requested.connect(_al_recibir_orden)
 	if saltar_taller:
 		_empezar_con_diseno_inicial()
+	if Sesion.cargar_al_iniciar:
+		Sesion.cargar_al_iniciar = false
+		if not sim.cargar(Sesion.leer()):
+			push_warning("GAIA: la partida guardada no se pudo cargar; se empieza una nueva")
 	_publicar()
 
 
@@ -63,6 +71,8 @@ func _process(delta: float) -> void:
 			port.cancel_presentation()
 		elif evento.begins_with(ScienceSystem.EVENTO_ACCION_TERMINADA):
 			_aviso("ACTION_DONE")
+		elif evento == ClockSystem.EVENTO_SOL_NUEVO and crear_vista:
+			Sesion.guardar(sim)  # autoguardado al inicio de cada sol
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
 		_publicar()
 		port.present_report(sim.informe.duplicate(true))
@@ -111,6 +121,8 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				view.audio.ping()
 		"landing_finished":
 			_aviso("READY")
+			if crear_vista:
+				Sesion.guardar(sim)  # primer punto de guardado: recién aterrizado
 		"redesign":
 			port.cancel_presentation()
 			_reiniciar_vista()

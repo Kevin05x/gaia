@@ -33,6 +33,7 @@ var datos: float = 0.0  ## guardados en memoria, sin enviar
 var memoria_capacidad: float = 0.0
 var enviados: float = 0.0
 var meta: int = 0
+var sol_limite: int = 0  ## último sol en el que aún se puede cumplir la meta
 var minerales: int = 0
 var nivel_antena: int = 1
 var polvo: float = 0.0
@@ -67,6 +68,7 @@ func _init(balance: Balance, reglas: Rules) -> void:
 	memoria_capacidad = balance.numero("ciencia.memoria_capacidad")
 	polvo = balance.numero("energia.polvo_inicial")
 	meta = reglas.datos_requeridos
+	sol_limite = reglas.sol_limite
 	configurar_diseno(energia, enlace, instrumentos, companero)
 
 
@@ -100,6 +102,7 @@ func a_snapshot() -> Dictionary:
 		"memory_capacity": memoria_capacidad,
 		"sent": enviados,
 		"goal": meta,
+		"sol_limit": sol_limite,
 		"mineral": minerales,
 		"antenna_level": nivel_antena,
 		"dust": maxf(polvo, 1.0 if tormenta else 0.0),  ## nivel visual 0..1: la tormenta cuenta como polvo máximo
