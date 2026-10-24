@@ -51,3 +51,18 @@ Se generan con `tools/sintetizar_musica.py` (numpy y scipy: pads, bajo, pulso, c
 `motor.wav` (rover rodando), `drill.wav` (taladro), `laser.wav` (espectrómetro), `radar.wav` (radar de subsuelo), `panorama.wav` (cámara), `drone_start.wav` y `drone.wav` (dron), `companion.wav`, `meteo.wav`, `radio.wav` (chorro de datos al transmitir) y `uplink.wav` (subida del enlace) son originales, sintetizados con `tools/sintetizar_sonidos.py` (numpy y scipy). No usan muestras ni grabaciones de terceros. `wind.wav`, `confirm.wav` y `landing.wav` siguen siendo los de la entrega inicial.
 
 La pista `assets/audio/gaia_juego.ogg` se regeneró con más pulso (bajo de corcheas, latido suave, arpegios de campanas y brillo rítmico) usando `tools/sintetizar_musica.py juego`.
+
+## Modelos 3D del equipo de diseño (24 oct 2026)
+
+Entregados por el equipo de diseño del proyecto (renders de Arturo Valdivieso y archivos `.glb`), guardados en `assets/modelos/`. Se cargan con `scenes/b/modelos_equipo.gd`, que los ajusta a la escala del juego y los apoya en el suelo.
+
+| Archivo | Uso en el juego |
+| --- | --- |
+| `hielo_2.glb`, `hielo_3.glb` | Objetivos de tipo mineral (roca con cristales) |
+| `hangar_cuadrado.glb`, `hangar_roundA.glb` | Escenografía de la base, detrás de la estación |
+| `foco.glb` | Escenografía: torre de luz de la base |
+| `anthena_juego.glb` | Escenografía: antena parabólica auxiliar de la base |
+| `taladro.glb` | Escenografía: torre de perforación junto a la base |
+| `torreta_simple.glb`, `torreta_doble.glb` | Importadas pero sin usar: las reglas actuales no tienen torretas ni enemigos |
+
+No integrados todavía: `25042_Perseverance.glb` (11 MB y unos 200 000 triángulos: hay que reducirlo a 15 000–25 000 para la web), `base.glb` (módulo lunar de unos 98 000 triángulos y 135 animaciones) y `panel_solar.glb` (1 MB, 26 materiales). Las texturas `foco_spacebits_texture.png` y `taladro_spacebits_texture.png` salen incrustadas en esos `.glb`; falta que el equipo confirme su origen y licencia.
