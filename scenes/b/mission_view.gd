@@ -100,6 +100,9 @@ func _ready() -> void:
 		terrain.show_route(tiles)
 		terrain.flash_grid())
 	port.action_received.connect(func(action: Dictionary):
+		for t in port.snapshot.get("targets", []):
+			if str(t.get("id", "")) == str(action.get("target_id", "")) and t.has("tile"):
+				action["tile"] = t["tile"]
 		actors.start_action(action)
 		hud.start_action(action)
 		audio.start_action(action))
