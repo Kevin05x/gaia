@@ -342,26 +342,30 @@ func _blocked_tiles() -> Array[Vector2i]:
 ## Casilla libre más cercana a «tile» (y al rover si hay empate). Si «tile» ya está libre, la devuelve igual.
 func nearest_free_tile(tile: Vector2i) -> Vector2i:
 	var bloqueadas := _blocked_tiles()
-	if not terrain.in_bounds(tile) or not tile in bloqueadas:
+	var origen: Vector2i = state.get("rover_tile", Vector2i.ZERO)
+	# Casillas a las que el rover sí puede llegar (relleno en 4 direcciones, como la ruta del simulador).
+	var alcanzables := {origen: true}
+	var cola: Array[Vector2i] = [origen]
+	var i := 0
+	while i < cola.size():
+		var actual := cola[i]
+		i += 1
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var sig: Vector2i = actual + d
+			if alcanzables.has(sig) or not terrain.in_bounds(sig) or sig in bloqueadas:
+				continue
+			alcanzables[sig] = true
+			cola.append(sig)
+	if alcanzables.has(tile):
 		return tile
-	var origen := Vector2(actors.rover.position.x / 2.0, actors.rover.position.z / 2.0)
 	var mejor := tile
 	var mejor_d := INF
-	for radio in range(1, 5):
-		for dx in range(-radio, radio + 1):
-			for dy in range(-radio, radio + 1):
-				if maxi(absi(dx), absi(dy)) != radio:
-					continue
-				var c := tile + Vector2i(dx, dy)
-				if not terrain.in_bounds(c) or c in bloqueadas:
-					continue
-				var d := Vector2(c).distance_to(origen)
-				if d < mejor_d:
-					mejor_d = d
-					mejor = c
-		if mejor_d < INF:
-			return mejor
-	return tile
+	for c in alcanzables:
+		var dist := Vector2(c).distance_to(Vector2(tile)) + Vector2(c).distance_to(Vector2(origen)) * 0.001
+		if dist < mejor_d:
+			mejor_d = dist
+			mejor = c
+	return mejor
 
 
 ## Posición en pantalla del objetivo (para el HUD): {"pos": Vector2, "behind": bool}; {} si no existe.
