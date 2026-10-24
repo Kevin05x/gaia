@@ -1,11 +1,14 @@
 extends Node3D
 ## Cámara en perspectiva elevada que sigue al rover (vista del mockup: rover protagonista, estación al fondo).
-## Orientación fija por defecto; Q/E giran por pasos de 45°; la rueda acerca o aleja dentro de límites.
+## Orientación fija por defecto; Q/E giran por pasos de 45°; llevar el mouse al borde izquierdo o derecho gira la
+## cámara de forma continua; la rueda acerca o aleja dentro de límites.
 const PITCH_DEG := 17.0
 const ZOOM_MIN := 9.0
 const ZOOM_MAX := 38.0
 const ZOOM_DEFAULT := 20.0
 const STEP := PI / 4.0
+const EDGE_PX := 22.0  ## franja del borde de la ventana que gira la cámara
+const EDGE_SPEED := deg_to_rad(95.0)  ## giro máximo en el borde, rad/s
 
 var camera: Camera3D
 var enabled := true
@@ -28,7 +31,31 @@ func _ready() -> void:
 	_apply()
 
 
+func _edge_turn() -> float:
+	## -1 (borde izquierdo) … +1 (borde derecho); 0 si el mouse no está en un borde, está sobre un control o la ventana no tiene foco.
+	if not enabled or not DisplayServer.window_is_focused():
+		return 0.0
+	var vp := get_viewport()
+	if vp == null or vp.gui_get_hovered_control() != null:
+		return 0.0
+	return edge_turn_at(vp.get_mouse_position(), vp.get_visible_rect().size)
+
+
+## Parte pura del giro por borde (se prueba sin ventana).
+static func edge_turn_at(m: Vector2, size: Vector2) -> float:
+	if m.y < 0.0 or m.y > size.y or m.x < -2.0 or m.x > size.x + 2.0:
+		return 0.0
+	if m.x < EDGE_PX:
+		return -clampf((EDGE_PX - m.x) / EDGE_PX, 0.25, 1.0)
+	if m.x > size.x - EDGE_PX:
+		return clampf((m.x - (size.x - EDGE_PX)) / EDGE_PX, 0.25, 1.0)
+	return 0.0
+
+
 func _process(delta: float) -> void:
+	var giro := _edge_turn()
+	if giro != 0.0:
+		yaw += giro * EDGE_SPEED * delta
 	if follow != null and is_instance_valid(follow):
 		var objetivo := follow.global_position
 		_focus = _focus.lerp(objetivo, 1.0 - exp(-delta * 6.0))
