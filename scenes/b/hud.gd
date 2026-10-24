@@ -8,6 +8,7 @@ const UI := preload("res://scenes/b/ui_style.gd")
 const Icon := preload("res://scenes/b/hud_icon.gd")
 const MiniMap := preload("res://scenes/b/minimap.gd")
 const GaiaLogo := preload("res://scenes/menu/gaia_logo.gd")
+const Texto := preload("res://scenes/menu/menu_text.gd")
 const Markers := preload("res://scenes/b/target_markers.gd")
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"  ## logotipo del menú (si falta, se usa el 3D por código)
 
@@ -573,6 +574,13 @@ func _build_pause() -> void:
 	sonido.toggled.connect(func(on: bool): muted = not on; preferences_changed.emit(volume, muted, quality))
 	calidad.toggled.connect(func(on: bool): quality = on; preferences_changed.emit(volume, muted, quality))
 	completa.toggled.connect(func(on: bool): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
+	if not Texto.tamanos_disponibles().is_empty():
+		UI.label(cuerpo, tr("WINDOW_SIZE"), UI.FONT_SECONDARY)
+		var ventana := HFlowContainer.new()
+		ventana.add_theme_constant_override("h_separation", 8)
+		ventana.add_theme_constant_override("v_separation", 6)
+		cuerpo.add_child(ventana)
+		Texto.botones_tamano(ventana, func(): completa.set_pressed_no_signal(false))
 	UI.label(cuerpo, tr("SAVED_SETTINGS"), 12, Color(UI.CREAM, 0.7))
 	# Subvista de ayuda.
 	help_view = _subview(tr("HELP_TITLE"))

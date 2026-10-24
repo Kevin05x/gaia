@@ -39,6 +39,8 @@ const TABLES := {
 		"M_SET_GRAPHICS_LOW": "Ligeros",
 		"M_SET_GRAPHICS_NOTE": "Los gráficos ligeros quitan sombras y reducen las partículas: úsalos en equipos modestos.",
 		"M_SET_FULLSCREEN": "Pantalla completa",
+		"M_SET_WINDOW": "Tamaño de ventana",
+		"M_SET_WINDOW_NOTE": "Solo aparecen los tamaños que caben en tu pantalla. Para ocuparla entera usa «Pantalla completa».",
 		"M_SET_TUTORIAL": "Mostrar el tutorial al empezar una partida",
 		"M_CONTROLS_TITLE": "Controles",
 		"M_CTRL_MOUSE": "Ratón",
@@ -123,6 +125,8 @@ const TABLES := {
 		"M_SET_GRAPHICS_LOW": "Light",
 		"M_SET_GRAPHICS_NOTE": "Light graphics remove shadows and cut particles: use them on modest hardware.",
 		"M_SET_FULLSCREEN": "Fullscreen",
+		"M_SET_WINDOW": "Window size",
+		"M_SET_WINDOW_NOTE": "Only sizes that fit your screen are listed. To fill it completely use \"Fullscreen\".",
 		"M_SET_TUTORIAL": "Show the tutorial when starting a game",
 		"M_CONTROLS_TITLE": "Controls",
 		"M_CTRL_MOUSE": "Ratón",
@@ -195,11 +199,12 @@ static func install() -> void:
 		_instaladas = true
 	TranslationServer.set_locale(String(preferencias().get("language", "es")))
 	aplicar_audio()
+	aplicar_ventana()
 
 
 ## Lee las preferencias guardadas con sus valores por defecto.
 static func preferencias() -> Dictionary:
-	var datos := {"language": "es", "volume": 0.65, "muted": false, "quality": true, "tutorial": true}
+	var datos := {"language": "es", "volume": 0.65, "muted": false, "quality": true, "tutorial": true, "window_size": Vector2i.ZERO}
 	var config := ConfigFile.new()
 	if config.load(PREFERENCIAS) == OK:
 		datos["language"] = config.get_value("ui", "language", "es")
@@ -207,6 +212,7 @@ static func preferencias() -> Dictionary:
 		datos["muted"] = config.get_value("audio", "muted", false)
 		datos["quality"] = config.get_value("visual", "quality", true)
 		datos["tutorial"] = config.get_value("ui", "tutorial", true)
+		datos["window_size"] = config.get_value("visual", "window_size", Vector2i.ZERO)
 	return datos
 
 
@@ -223,3 +229,64 @@ static func aplicar_audio() -> void:
 	var datos := preferencias()
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(float(datos["volume"]), 0.0001)))
 	AudioServer.set_bus_mute(0, bool(datos["muted"]))
+
+
+## Tamaños de ventana ofrecidos (la imagen del juego se escala sola a cualquiera de ellos).
+const TAMANOS_VENTANA: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440),
+	Vector2i(3200, 1800), Vector2i(3840, 2160)]
+## Margen que se reserva para la barra de título y los bordes del sistema.
+const MARGEN_VENTANA := Vector2i(16, 80)
+
+
+## Tamaños que caben en la pantalla donde está la ventana. En la web decide el navegador, así que no se ofrece ninguno.
+static func tamanos_disponibles() -> Array[Vector2i]:
+	var libres: Array[Vector2i] = []
+	if OS.has_feature("web") or DisplayServer.get_name() == "headless":
+		return libres
+	var util := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen()).size
+	for t in TAMANOS_VENTANA:
+		if t.x <= util.x - MARGEN_VENTANA.x and t.y <= util.y - MARGEN_VENTANA.y:
+			libres.append(t)
+	if libres.is_empty():
+		libres.append(TAMANOS_VENTANA[0])
+	return libres
+
+
+## Pone la ventana en modo ventana con ese tamaño y la centra en su pantalla.
+static func poner_tamano_ventana(t: Vector2i) -> void:
+	if OS.has_feature("web") or DisplayServer.get_name() == "headless":
+		return
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_size(t)
+	var pantalla := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+	@warning_ignore("integer_division")
+	var pos := pantalla.position + (pantalla.size - t) / 2
+	DisplayServer.window_set_position(Vector2i(pos.x, maxi(pantalla.position.y, pos.y - 12)))
+
+
+## Aplica al arrancar el tamaño de ventana guardado, si todavía cabe en la pantalla.
+static func aplicar_ventana() -> void:
+	var t: Vector2i = preferencias()["window_size"]
+	if t != Vector2i.ZERO and t in tamanos_disponibles():
+		poner_tamano_ventana(t)
+
+
+## Fila de botones con los tamaños disponibles; al elegir uno lo aplica y lo guarda. `alterno` se avisa tras el cambio.
+static func botones_tamano(fila: Control, al_cambiar: Callable = Callable()) -> void:
+	var grupo := ButtonGroup.new()
+	var actual := DisplayServer.window_get_size()
+	var completa := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	for t in tamanos_disponibles():
+		var b := Button.new()
+		b.text = "%d×%d" % [t.x, t.y]
+		b.toggle_mode = true
+		b.button_group = grupo
+		b.custom_minimum_size = Vector2(98, 40)
+		b.button_pressed = not completa and t == actual
+		b.pressed.connect(func() -> void:
+			guardar("visual", "window_size", t)
+			poner_tamano_ventana(t)
+			if al_cambiar.is_valid():
+				al_cambiar.call())
+		fila.add_child(b)

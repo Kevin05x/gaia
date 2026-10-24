@@ -64,6 +64,7 @@ var _companion: Node3D
 var _hotspot_layer: Control
 var _hotspots: Dictionary = {}
 var _clock := 0.0
+var _camera_home := Vector3(6.8, 2.9, -7.8)
 var _names: Dictionary = {}
 
 
@@ -416,7 +417,7 @@ func _build_preview() -> void:
 	entorno.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	entorno.fog_enabled = true
 	entorno.fog_light_color = Color("2B160B")
-	entorno.fog_density = 0.018
+	entorno.fog_density = 0.01
 	var mundo := WorldEnvironment.new()
 	mundo.environment = entorno
 	vista.add_child(mundo)
@@ -463,65 +464,120 @@ func _build_preview() -> void:
 ## Interior del hangar: muro curvo con costillas, ventana a Marte y plataforma con anillos luminosos.
 func _build_hangar(vista: Node) -> void:
 	var pared_mat := _material(Color("2A1A12"))
-	pared_mat.cull_mode = BaseMaterial3D.CULL_FRONT  # se ve por dentro
-	var muro := CylinderMesh.new()
-	muro.top_radius = 10.5
-	muro.bottom_radius = 10.5
-	muro.height = 7.0
-	muro.radial_segments = 40
-	muro.rings = 1
-	_add_mesh(vista, muro, pared_mat, Vector3(0, 3.4, 0))
+	pared_mat.cull_mode = BaseMaterial3D.CULL_DISABLED  # visible por dentro
+	# Dirección del portón (hacia el fondo, a la derecha del rover) y hueco que deja en el muro.
+	var adelante := Vector3(6.8, 0, -7.8).normalized() * -1.0
+	var derecha := Vector3(-adelante.z, 0, adelante.x)
+	var dir := (adelante * cos(deg_to_rad(16.0)) + derecha * sin(deg_to_rad(16.0))).normalized()
+	var ang_hueco := atan2(dir.z, dir.x)
+	var medio_hueco := 0.37
+	_arco(vista, 15.0, -0.4, 10.0, pared_mat, ang_hueco, medio_hueco)
 	var techo := CylinderMesh.new()
-	techo.top_radius = 10.5
-	techo.bottom_radius = 10.5
+	techo.top_radius = 15.0
+	techo.bottom_radius = 15.0
 	techo.height = 0.2
 	techo.radial_segments = 40
-	_add_mesh(vista, techo, _material(Color("120A06")), Vector3(0, 7.0, 0))
+	_add_mesh(vista, techo, _material(Color("120A06")), Vector3(0, 10.0, 0))
 	var suelo := CylinderMesh.new()
-	suelo.top_radius = 10.5
-	suelo.bottom_radius = 10.5
+	suelo.top_radius = 15.0
+	suelo.bottom_radius = 15.0
 	suelo.height = 0.2
 	suelo.radial_segments = 40
 	_add_mesh(vista, suelo, _material(Color("1A100B")), Vector3(0, -0.45, 0))
 	# Costillas del muro.
 	var costilla := BoxMesh.new()
-	costilla.size = Vector3(0.55, 7.0, 0.7)
+	costilla.size = Vector3(0.5, 10.0, 0.8)
 	var costilla_mat := _material(Color("4A3023"))
-	for i in range(20):
-		var a := i * TAU / 20.0
-		_add_mesh(vista, costilla, costilla_mat, Vector3(cos(a), 0, sin(a)) * 10.1 + Vector3(0, 3.4, 0), Vector3(0, -a + PI / 2.0, 0))
-	# Bandas de luz cálida a lo largo del muro.
-	for y in [1.2, 5.6]:
-		var banda := TorusMesh.new()
-		banda.inner_radius = 10.0
-		banda.outer_radius = 10.06
-		banda.rings = 48
-		banda.ring_segments = 4
-		_add_mesh(vista, banda, _material(Color("F7A021"), 0.6), Vector3(0, y, 0)).scale = Vector3(1, 0.5, 1)
-	# Ventana a Marte (hacia el fondo, a la derecha del rover).
-	var adelante := Vector3(4.7, 0, -5.4).normalized() * -1.0
-	var derecha := Vector3(-adelante.z, 0, adelante.x)
-	var dir := (adelante * cos(deg_to_rad(28.0)) + derecha * sin(deg_to_rad(28.0))).normalized()
-	var centro := dir * 9.7 + Vector3(0, 2.6, 0)
-	var ventana := Node3D.new()
-	ventana.position = centro
-	vista.add_child(ventana)
-	ventana.look_at_from_position(centro, Vector3(0, 2.6, 0), Vector3.UP)
+	for i in range(18):
+		var a := i * TAU / 18.0
+		if absf(angle_difference(a, ang_hueco)) < medio_hueco + 0.12:
+			continue
+		_add_mesh(vista, costilla, costilla_mat, Vector3(cos(a), 0, sin(a)) * 14.5 + Vector3(0, 4.9, 0), Vector3(0, -a + PI / 2.0, 0))
+	# Bandas de luz cálida a lo largo del muro (interrumpidas en el portón).
+	var luz_mat := _material(Color("F7A021"), 0.7)
+	luz_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for y in [1.7, 8.0]:
+		_arco(vista, 14.85, y, y + 0.1, luz_mat, ang_hueco, medio_hueco)
+	# Portón del hangar abierto al paisaje de Marte (hacia el fondo, a la derecha del rover). Es una abertura con
+	# profundidad: túnel de salida, suelo que continúa afuera, el paisaje lejos y hojas del portón recogidas.
+	var centro := dir * 15.0
+	var porton := Node3D.new()
+	vista.add_child(porton)
+	porton.look_at_from_position(centro, Vector3(0, 0, 0), Vector3.UP)  # -Z mira al centro del hangar; +Z es «afuera»
+	var metal := _material(Color("5B4535"))
+	var oscuro := _material(Color("1A100B"))
+	var interior := _material(Color("2A1B13"))
+	var ancho := 8.4
+	var alto := 5.4
+	var fondo_z := 3.6  # profundidad del túnel de salida
+	# Paisaje lejano (más grande y alejado: la cámara se mueve un poco y se nota la profundidad).
 	var cuadro := QuadMesh.new()
-	cuadro.size = Vector2(7.2, 3.8)
+	cuadro.size = Vector2(46, 25.9)
 	var foto_mat := StandardMaterial3D.new()
 	foto_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	foto_mat.albedo_texture = load("res://assets/menu/menu_fondo.jpg")
-	foto_mat.albedo_color = Color(1.0, 0.92, 0.86)
-	foto_mat.uv1_scale = Vector3(0.42, 0.5, 1)
-	foto_mat.uv1_offset = Vector3(0.52, 0.34, 0)
-	_add_mesh(ventana, cuadro, foto_mat, Vector3(0, 0, -0.12), Vector3(0, PI, 0))
-	var marco_mat := _material(Color("6B4126"), 0.25)
-	for lado in [[Vector3(0, 2.05, -0.1), Vector3(7.8, 0.3, 0.4)], [Vector3(0, -2.05, -0.1), Vector3(7.8, 0.3, 0.4)],
-			[Vector3(-3.75, 0, -0.1), Vector3(0.3, 4.4, 0.4)], [Vector3(3.75, 0, -0.1), Vector3(0.3, 4.4, 0.4)]]:
-		var caja := BoxMesh.new()
-		caja.size = lado[1]
-		_add_mesh(ventana, caja, marco_mat, lado[0])
+	foto_mat.albedo_texture = load("res://assets/menu/pantalla_carga.jpg")
+	foto_mat.albedo_color = Color(1.0, 0.88, 0.8)
+	foto_mat.uv1_scale = Vector3(0.9, 0.86, 1)
+	foto_mat.uv1_offset = Vector3(0.05, 0.02, 0)
+	_add_mesh(porton, cuadro, foto_mat, Vector3(0, 8.0, 26.0), Vector3(0, PI, 0))
+	# Suelo exterior que enlaza con el del hangar.
+	var terreno := BoxMesh.new()
+	terreno.size = Vector3(60, 0.2, 40)
+	var terreno_mat := _material(Color("6B3A25"))
+	_add_mesh(porton, terreno, terreno_mat, Vector3(0, -0.1, 20.0))
+	# Túnel de salida: paredes, techo y suelo con vetas de luz.
+	var pared := BoxMesh.new()
+	pared.size = Vector3(0.5, alto, fondo_z)
+	for lado in [-1.0, 1.0]:
+		_add_mesh(porton, pared, interior, Vector3(lado * (ancho / 2.0 + 0.1), alto / 2.0, fondo_z / 2.0 - 0.2))
+	var techo_t := BoxMesh.new()
+	techo_t.size = Vector3(ancho + 1.2, 0.5, fondo_z)
+	_add_mesh(porton, techo_t, interior, Vector3(0, alto + 0.1, fondo_z / 2.0 - 0.2))
+	var suelo_t := BoxMesh.new()
+	suelo_t.size = Vector3(ancho, 0.12, fondo_z + 1.0)
+	_add_mesh(porton, suelo_t, _material(Color("3B2A20")), Vector3(0, -0.04, fondo_z / 2.0))
+	# Marco del portón (cara interior del hangar).
+	var dintel := BoxMesh.new()
+	dintel.size = Vector3(ancho + 2.2, 1.0, 1.1)
+	_add_mesh(porton, dintel, metal, Vector3(0, alto + 0.45, -0.15))
+	for lado in [-1.0, 1.0]:
+		var poste := BoxMesh.new()
+		poste.size = Vector3(1.0, alto + 1.0, 1.1)
+		_add_mesh(porton, poste, metal, Vector3(lado * (ancho / 2.0 + 0.6), (alto + 1.0) / 2.0 - 0.05, -0.15))
+	# Franjas de aviso (naranja y negro) en el dintel.
+	var franja := BoxMesh.new()
+	franja.size = Vector3(0.9, 0.3, 0.12)
+	for i in range(11):
+		_add_mesh(porton, franja, _material(Color("F7A021"), 0.6) if i % 2 == 0 else oscuro, Vector3(-4.8 + i * 0.96, alto + 0.55, -0.74))
+	# Hojas del portón recogidas contra los postes, con nervaduras.
+	for lado in [-1.0, 1.0]:
+		var hoja := BoxMesh.new()
+		hoja.size = Vector3(1.6, alto, 0.4)
+		_add_mesh(porton, hoja, metal, Vector3(lado * (ancho / 2.0 - 0.7), alto / 2.0, -0.45))
+		for k in range(5):
+			var nervio := BoxMesh.new()
+			nervio.size = Vector3(1.6, 0.1, 0.1)
+			_add_mesh(porton, nervio, oscuro, Vector3(lado * (ancho / 2.0 - 0.7), 0.8 + k * 1.0, -0.72))
+	# Luces de aviso y reflejo cálido que sale por la abertura hacia el suelo del hangar.
+	var luz_aviso := SphereMesh.new()
+	luz_aviso.radius = 0.22
+	luz_aviso.height = 0.44
+	for lado in [-1.0, 1.0]:
+		_add_mesh(porton, luz_aviso, _material(Color("FF8A1F"), 2.4), Vector3(lado * (ancho / 2.0 + 0.6), alto + 1.2, -0.75))
+	var sol := OmniLight3D.new()
+	sol.light_color = Color("FFB070")
+	sol.light_energy = 1.8
+	sol.omni_range = 9.0
+	sol.position = Vector3(0, 2.4, -1.5)
+	porton.add_child(sol)
+	var derrame := QuadMesh.new()
+	derrame.size = Vector2(ancho * 0.9, 6.0)
+	var derrame_mat := StandardMaterial3D.new()
+	derrame_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	derrame_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	derrame_mat.albedo_color = Color(1.0, 0.6, 0.25, 0.22)
+	derrame_mat.no_depth_test = false
+	_add_mesh(porton, derrame, derrame_mat, Vector3(0, 0.03, -3.4), Vector3(-PI / 2.0, 0, 0))
 	# Plataforma circular con anillos luminosos.
 	var plataforma := CylinderMesh.new()
 	plataforma.top_radius = 3.9
@@ -1196,6 +1252,33 @@ func _process(delta: float) -> void:
 	_clock += delta
 	if is_instance_valid(_turntable):
 		_turntable.rotation.y = sin(_clock * 0.45) * 0.55  # vaivén suave: se ven ambos lados sin perder el mejor ángulo
+	if is_instance_valid(_camera):
+		_camera.position = _camera_home + _camera_home.cross(Vector3.UP).normalized() * sin(_clock * 0.3) * 0.55  # paralaje suave
+		_camera.look_at(Vector3(0, 0.72, 0))
 	_update_hotspots()
 	if is_instance_valid(_toast) and _toast.visible and Time.get_ticks_msec() / 1000.0 > _toast_until:
 		_toast.visible = false
+
+
+## Muro cilíndrico por tramos que deja un hueco (el portón). Se ve por ambas caras.
+func _arco(padre: Node, radio: float, y0: float, y1: float, mat: Material, ang_hueco: float, medio_hueco: float) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n := 72
+	for i in range(n):
+		var a0 := i * TAU / n
+		var a1 := (i + 1) * TAU / n
+		if absf(angle_difference((a0 + a1) / 2.0, ang_hueco)) < medio_hueco:
+			continue
+		var p00 := Vector3(cos(a0) * radio, y0, sin(a0) * radio)
+		var p10 := Vector3(cos(a1) * radio, y0, sin(a1) * radio)
+		var p01 := Vector3(cos(a0) * radio, y1, sin(a0) * radio)
+		var p11 := Vector3(cos(a1) * radio, y1, sin(a1) * radio)
+		for v in [p00, p10, p11, p00, p11, p01]:
+			st.add_vertex(v)
+	st.generate_normals()
+	var malla := st.commit()
+	var nodo := MeshInstance3D.new()
+	nodo.mesh = malla
+	nodo.material_override = mat
+	padre.add_child(nodo)

@@ -168,6 +168,7 @@ func set_preferences(value: float, is_muted: bool, high_quality: bool, save: boo
 
 func save_preferences() -> void:
 	var config := ConfigFile.new()
+	config.load("user://b_preferences.cfg")  # conserva el resto de preferencias (tutorial, tamaño de ventana)
 	config.set_value("ui", "language", language)
 	config.set_value("audio", "volume", volume)
 	config.set_value("audio", "muted", muted)

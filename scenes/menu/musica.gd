@@ -6,7 +6,7 @@ const PISTAS := {
 	"menu": "res://assets/audio/gaia_menu.ogg",
 	"juego": "res://assets/audio/gaia_juego.ogg",
 }
-const NIVEL_DB := {"menu": -7.0, "juego": -15.0}
+const NIVEL_DB := {"menu": -7.0, "juego": -12.0}
 
 static var actual := ""
 static var _jugador: AudioStreamPlayer

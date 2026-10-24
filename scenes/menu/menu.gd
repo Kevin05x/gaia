@@ -134,9 +134,9 @@ func _crear_logotipo() -> Control:
 		# La flotación se hace en el sombreador: mover un Control por tween lo ajusta a píxeles enteros y se ve a saltitos.
 		var sombreador := Shader.new()
 		sombreador.code = "shader_type canvas_item;\nuniform float amplitud = 5.0;\nuniform float periodo = 6.4;\nvoid vertex() {\n\tVERTEX.y += (0.5 - 0.5 * cos(TIME * 6.2831853 / periodo)) * amplitud;\n}\n"
-		var material := ShaderMaterial.new()
-		material.shader = sombreador
-		imagen.material = material
+		var material_flota := ShaderMaterial.new()
+		material_flota.shader = sombreador
+		imagen.material = material_flota
 		return imagen
 	var logo := Logo.new()
 	logo.disposicion = "horizontal"
@@ -194,7 +194,7 @@ func _continuar() -> void:
 
 func _nueva_partida() -> void:
 	if Sesion.hay_guardado():
-		var cuerpo := _abrir_panel(tr("M_NEW_CONFIRM_TITLE"), 560, 300, false)
+		var cuerpo := _abrir_panel(tr("M_NEW_CONFIRM_TITLE"), 560, 300)
 		var texto := UI.label(cuerpo, tr("M_NEW_CONFIRM"), 17, Color(UI.CREAM, 0.88))
 		texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var pie := cuerpo.get_parent().get_child(cuerpo.get_parent().get_child_count() - 1) as HBoxContainer
@@ -243,7 +243,7 @@ func _ir_al_juego(cargar: bool) -> void:
 # --- paneles ------------------------------------------------------------------------------------------------
 
 ## Abre un panel centrado con título, cuerpo y un pie con «Volver». Devuelve el cuerpo.
-func _abrir_panel(titulo: String, ancho: float, alto: float, con_volver: bool = true) -> VBoxContainer:
+func _abrir_panel(titulo: String, ancho: float, alto: float) -> VBoxContainer:
 	_cerrar_panel()
 	_panel = Control.new()
 	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -378,6 +378,17 @@ func _abrir_ajustes() -> void:
 		fila.add_child(b)
 	var nota := UI.label(cuerpo, tr("M_SET_GRAPHICS_NOTE"), 13, Color(UI.CREAM, 0.6))
 	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Tamaño de ventana (solo en escritorio)
+	if not Texto.tamanos_disponibles().is_empty():
+		var ventana := HFlowContainer.new()
+		ventana.add_theme_constant_override("h_separation", 8)
+		ventana.add_theme_constant_override("v_separation", 6)
+		cuerpo.add_child(ventana)
+		var etiqueta := UI.label(ventana, tr("M_SET_WINDOW"), 17, UI.CREAM)
+		etiqueta.custom_minimum_size.x = 640
+		Texto.botones_tamano(ventana, func() -> void: _abrir_ajustes())
+		var aviso := UI.label(cuerpo, tr("M_SET_WINDOW_NOTE"), 13, Color(UI.CREAM, 0.6))
+		aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Pantalla completa y tutorial
 	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(v: bool) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if v else DisplayServer.WINDOW_MODE_WINDOWED))

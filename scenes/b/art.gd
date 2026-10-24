@@ -162,7 +162,6 @@ static func rover(parent: Node3D) -> Dictionary:
  ring(v,.2,Vector3(-.65,1.8,.1),DARK)
  return {"visual":v,"wheels":wheels,"arm":arm,"solar":solar,"rtg":rtg,"drill":drill,"radar":radar,"spectrometer":spectrometer,"meteo":meteo,"head":head}
 static func station(parent: Node3D) -> Array:
- var gris=Color("5b6166")
  cylinder(parent,2.5,.14,Vector3(0,.07,0),Color("85766c"))
  cylinder(parent,2.2,.2,Vector3(0,.1,0),Color("94847a"))
  for x in [-.8,.8]:
@@ -320,7 +319,7 @@ static func drone(parent: Node3D) -> Dictionary:
   rotors.append(r)
  return {"rotors":rotors}
 static func companion(parent: Node3D) -> Dictionary:
- var gris=Color("5b6166");var verde=Color("5f8a8c")
+ var verde=Color("5f8a8c")
  var body=rbox(parent,Vector3(.62,.36,.86),Vector3(0,.5,0),WHITE,.08)
  rbox(parent,Vector3(.64,.1,.6),Vector3(0,.4,.05),verde,.03)
  for side in [-1,1]:
