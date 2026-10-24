@@ -234,10 +234,17 @@ func _build_summary() -> void:
 	var medio := UI.display_font(600)
 	if medio != null:
 		titulo.add_theme_font_override("font", medio)
+	# El resumen se desplaza por dentro: con muchas piezas el botón de aterrizar queda siempre visible.
+	var desplazable := ScrollContainer.new()
+	desplazable.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	desplazable.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	desplazable.custom_minimum_size = Vector2(0, 120)
+	col.add_child(desplazable)
 	_summary_box = VBoxContainer.new()
 	_summary_box.add_theme_constant_override("separation", 10)
+	_summary_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(_summary_box)
+	desplazable.add_child(_summary_box)
 	var fila := HBoxContainer.new()
 	fila.alignment = BoxContainer.ALIGNMENT_END
 	col.add_child(fila)
