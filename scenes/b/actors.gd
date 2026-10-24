@@ -1,5 +1,6 @@
 extends Node3D
 const Art=preload("res://scenes/b/art.gd")
+const Equipo=preload("res://scenes/b/modelos_equipo.gd")
 var rover: Node3D
 var drone: Node3D
 var companion: Node3D
@@ -23,6 +24,8 @@ var work_beam: MeshInstance3D
 var work_ring: MeshInstance3D
 var work_column: MeshInstance3D
 var arm_home=Vector3.ZERO
+var base_props: Node3D  ## escenografía de la base (modelos del equipo de diseño) detrás de la estación
+var base_tile=Vector2i(999,999)
 const TIP_OFFSET := .355  ## rad: la punta del brazo queda a la derecha del frente del rover
 var animation_clock=0.0
 var flight=0.0
@@ -77,6 +80,7 @@ func apply_state(s: Dictionary) -> void:
  paused=s.get("paused",false);safe=s.get("safe_mode",false)
  if s.get("teleport",false):cancel_actions()
  station.position=at_tile(s.get("station_tile",Vector2i(3,3)))
+ _place_base_props(s.get("station_tile",Vector2i(3,3)))
  var design: Dictionary=s.get("design",{})
  var instruments: Array=design.get("instruments",[])
  parts.solar.visible=design.get("power","solar")=="solar";parts.rtg.visible=not parts.solar.visible
@@ -191,3 +195,25 @@ func _glow(color: Color) -> StandardMaterial3D:
  var m=StandardMaterial3D.new();m.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;m.albedo_color=color
  m.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;m.no_depth_test=true;m.render_priority=10
  return m
+
+## Hangares, foco, antena y torre de perforación del equipo de diseño: se reparten detrás de la estación (hacia fuera del
+## mapa) para que no tapen el camino del rover. Solo decoración; la simulación no los conoce.
+func _place_base_props(tile: Vector2i) -> void:
+ if tile==base_tile:return
+ base_tile=tile
+ if is_instance_valid(base_props):
+  remove_child(base_props);base_props.queue_free()
+ if not Equipo.existe("hangar_cuadrado"):return
+ base_props=Node3D.new();base_props.name="BaseProps";add_child(base_props)
+ var out=Vector2(tile.x,tile.y)
+ out=out.normalized() if out.length()>.01 else Vector2(-1,-1).normalized()
+ var side=Vector2(-out.y,out.x)
+ var origin=at_tile(tile)
+ # [modelo, ancho en metros, distancia hacia fuera, desplazamiento lateral]
+ for item in [["hangar_cuadrado",4.2,11.0,-7.5],["hangar_roundA",3.4,10.0,6.5],["foco",1.6,5.0,5.0],["anthena_juego",2.6,13.0,-0.5],["taladro",2.4,6.5,-9.0]]:
+  var p2=Vector2(origin.x,origin.z)+out*float(item[2])+side*float(item[3])
+  var node=Node3D.new();base_props.add_child(node)
+  var y=dust_ground.call(p2.x,p2.y) if dust_ground.is_valid() else 0.0
+  node.position=Vector3(p2.x,y,p2.y)
+  node.rotation.y=atan2(-out.x,-out.y)+PI  # de cara al centro del mapa
+  Equipo.poner(node,str(item[0]),float(item[1]))
