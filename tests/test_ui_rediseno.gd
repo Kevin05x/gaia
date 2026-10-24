@@ -313,7 +313,7 @@ func test_rover_optimizado_conserva_las_piezas_que_se_animan() -> void:
 	ArtScript.optimize_rover(rover)
 	await get_tree().process_frame
 	var despues := rover.find_children("*", "MeshInstance3D", true, false).size()
-	assert_lt(despues, antes / 3, "muchas menos mallas (llamadas de dibujo)")
+	assert_lt(despues, antes / 3.0, "muchas menos mallas (llamadas de dibujo)")
 	for nombre in ["Wheel0", "Wheel5", "arm", "head", "solar", "rtg", "drill", "radar", "spectrometer", "meteo"]:
 		assert_not_null(rover.find_child(nombre, true, false), nombre)
 

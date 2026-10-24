@@ -9,7 +9,7 @@ static var _cache: Dictionary = {}
 
 static func _noise(tipo: int, frecuencia: float, semilla: int, octavas: int = 1) -> FastNoiseLite:
 	var n := FastNoiseLite.new()
-	n.noise_type = tipo
+	n.noise_type = tipo as FastNoiseLite.NoiseType
 	n.frequency = frecuencia
 	n.seed = semilla
 	n.fractal_octaves = octavas

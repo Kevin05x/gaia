@@ -1,8 +1,10 @@
 """Música original de GAIA, sintetizada por código (sin muestras ni material de terceros).
-Ambiente oscuro en do# menor, ~92 BPM, crecimiento lento. Dos piezas en bucle:
-  menu : tema del menú y la pantalla de carga (32 compases, con pulso e impacto central)
-  juego: ambiente dentro de la misión (más quieto, sin ritmo)
+Dos piezas en bucle, con carácter distinto a propósito:
+  menu : tema del menú y la pantalla de carga (do# menor, 92 BPM, oscuro, 32 compases, pulso e impacto central)
+  juego: música dentro de la misión (re lidio, 104 BPM, luminosa: arpegio pulsado, bajo cálido, percusión suave y melodía)
+Uso: python sintetizar_musica.py menu|juego salida.wav   (después convertir a .ogg con ffmpeg -c:a libvorbis -q:a 4)
 """
+
 import sys
 import numpy as np
 from scipy import signal
@@ -284,86 +286,163 @@ def render_menu(bars=32):
     return mix
 
 
-def bass_pulse(root_midi, bars_len, gate_pattern, gain=0.2):
-    """Bajo de corcheas con compuerta suave: da movimiento sin romper el ambiente."""
-    n = int(bars_len * BAR * SR)
+
+# ---------------------------------------------------------------------------
+# Música de misión: otra tonalidad (re lidio, luminoso), otro tempo (104 BPM) y otro instrumental
+# (arpegio pulsado, bajo cálido, percusión suave y melodía principal). Es la pieza «de aventura».
+# ---------------------------------------------------------------------------
+BPM_J = 104.0
+BEAT_J = 60.0 / BPM_J
+BAR_J = BEAT_J * 4
+
+
+def pluck(f, dur=1.4, bright=1.0):
+    """Nota pulsada de sintetizador: dientes de sierra detonados cuyo brillo cae rápido."""
+    n = int(dur * SR)
     t = np.arange(n) / SR
-    f = midi(root_midi)
-    tone = np.sin(2 * np.pi * f * t) + 0.35 * np.sin(2 * np.pi * 2 * f * t) + 0.12 * np.sin(2 * np.pi * 3 * f * t)
-    eighth = BEAT / 2
-    env = np.zeros(n)
-    for k in range(int(bars_len * 8)):
-        if not gate_pattern[k % len(gate_pattern)]:
-            continue
-        s = int(k * eighth * SR)
-        ln = int(eighth * 0.92 * SR)
-        e = np.exp(-np.arange(ln) / SR * 5.5) * np.minimum(1.0, np.arange(ln) / (0.01 * SR))
-        env[s:s + ln] = np.maximum(env[s:s + ln], e[:max(0, min(ln, n - s))])
-    return lowpass(tone * env, 420) * gain
+    x = saw(f * 2 ** (-6 / 1200), n, 0.1) * 0.5 + saw(f * 2 ** (6 / 1200), n, 0.6) * 0.5
+    x += np.sin(2 * np.pi * f * t) * 0.35
+    oscura = lowpass(x, min(900, f * 3.2))
+    clara = lowpass(x, min(6500, f * 9 * bright))
+    mezcla = np.exp(-t / 0.13)
+    out = clara * mezcla + oscura * (1 - mezcla)
+    ataque = np.minimum(1.0, t / 0.004)
+    return out * np.exp(-t / 0.55) * ataque
 
 
-def render_game(bars=36):
-    """Ambiente de la misión: la misma familia que el menú (do# menor, 92 BPM) pero con pulso suave, bajo de corcheas,
-    arpegios de campanas y un ligero brillo rítmico durante todo el recorrido."""
-    rng = np.random.default_rng(7)
-    total = bars * BAR
+def cuerdas(f, dur, rng):
+    """Colchón cálido, de ataque corto, para sostener cada acorde."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    x = np.zeros(n)
+    for cents, ph in ((-7, 0.0), (0, 0.4), (7, 0.7)):
+        x += saw(f * 2 ** (cents / 1200), n, ph) * 0.3
+    lfo = 0.5 + 0.5 * np.sin(2 * np.pi * 0.11 * t + rng.random() * 6.28)
+    x = lowpass(x, 1100) * (1 - lfo) + lowpass(x, 2200) * lfo
+    return x * env_adsr(n, 0.7, 1.4)
+
+
+def bajo_calido(f, dur):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    x = np.sin(2 * np.pi * f * t) + 0.3 * np.sin(2 * np.pi * 2 * f * t) + 0.1 * np.sin(2 * np.pi * 3 * f * t)
+    e = np.minimum(1.0, t / 0.008) * np.exp(-t / (dur * 0.8))
+    return lowpass(x * e, 700)
+
+
+def bombo(gain=1.0):
+    n = int(0.45 * SR)
+    t = np.arange(n) / SR
+    freq = 46 + 90 * np.exp(-t * 28)
+    ph = 2 * np.pi * np.cumsum(freq) / SR
+    click = highpass(np.random.default_rng(3).standard_normal(n), 2500) * np.exp(-t * 180) * 0.12
+    return (np.sin(ph) * np.exp(-t * 9) + click) * gain
+
+
+def palmada(gain=1.0):
+    n = int(0.28 * SR)
+    t = np.arange(n) / SR
+    x = bandpass(np.random.default_rng(4).standard_normal(n), 900, 4200)
+    return x * (np.exp(-t * 26) + 0.5 * np.exp(-((t - 0.012) * 400) ** 2)) * gain
+
+
+def maraca(gain=1.0):
+    n = int(0.09 * SR)
+    t = np.arange(n) / SR
+    x = highpass(np.random.default_rng(12).standard_normal(n), 7000)
+    return x * np.exp(-t * 70) * gain
+
+
+def lead(f, dur, rng):
+    """Melodía principal: triángulo + senoidal con vibrato tardío."""
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    vib = 1 + 0.004 * np.sin(2 * np.pi * 5.2 * t) * np.minimum(1.0, t / 0.35)
+    ph = 2 * np.pi * np.cumsum(f * vib) / SR
+    x = np.sin(ph) * 0.7 + (2 / np.pi) * np.arcsin(np.sin(ph)) * 0.35 + np.sin(2 * ph) * 0.08
+    return x * env_adsr(n, 0.02, min(0.5, dur * 0.4))
+
+
+# acorde: (nombre, fundamental del bajo, notas del colchón, notas del arpegio)
+ACORDES_J = {
+    "Dmaj7": (38, [57, 61, 64, 66], [62, 66, 69, 73]),
+    "Bm7": (35, [54, 57, 61, 66], [59, 62, 66, 69]),
+    "Gmaj7": (43, [55, 59, 62, 66], [55, 59, 62, 66]),
+    "A6": (45, [57, 61, 64, 66], [57, 61, 64, 66]),
+}
+PROG_J = ["Dmaj7", "Bm7", "Gmaj7", "A6"]
+# frases de la melodía por compás: (tiempo, nota midi, duración en pulsos)
+FRASES_J = [
+    [(0.0, 81, 1.5), (1.5, 78, 0.5), (2.0, 81, 1.0), (3.0, 83, 1.0)],      # Dmaj7
+    [(0.0, 85, 2.0), (2.0, 83, 1.0), (3.0, 81, 1.0)],                       # Bm7
+    [(0.0, 83, 1.5), (1.5, 81, 0.5), (2.0, 78, 1.0), (3.0, 79, 1.0)],      # Gmaj7
+    [(0.0, 78, 1.0), (1.0, 81, 1.0), (2.0, 81, 2.0)],                       # A6
+]
+FRASES_J2 = [
+    [(0.0, 86, 1.5), (1.5, 85, 0.5), (2.0, 83, 1.0), (3.0, 81, 1.0)],
+    [(0.0, 83, 1.0), (1.0, 85, 1.0), (2.0, 90, 2.0)],
+    [(0.0, 86, 1.0), (1.0, 83, 1.0), (2.0, 79, 1.0), (3.0, 83, 1.0)],
+    [(0.0, 85, 2.0), (2.0, 81, 1.0), (3.0, 78, 1.0)],
+]
+ARP_J = [0, 2, 1, 3, 2, 3, 1, 2]
+
+
+def render_game(bars=32):
+    rng = np.random.default_rng(11)
+    total = bars * BAR_J
     n = int(total * SR)
-    pad = np.zeros((n, 2))
-    drone = np.zeros((n, 2))
-    bells = np.zeros((n, 2))
-    rhythm = np.zeros((n, 2))
-    fx = np.zeros((n, 2))
-    t = np.arange(n) / SR
-    f1 = round(midi(25) * total) / total
-    sub = np.sin(2 * np.pi * f1 * t) * 0.45
-    sub *= 0.55 + 0.45 * np.sin(2 * np.pi * (1.0 / (BAR * 12)) * t)
-    drone[:, 0] += sub * 0.4
-    drone[:, 1] += sub * 0.4
-    prog = ["C#m9", "Amaj7", "Emaj7", "Bsus"] * 4 + ["C#m9", "Amaj7"]
-    roots = {"C#m9": 37, "Amaj7": 33, "Emaj7": 40, "Bsus": 35}
-    patterns = [
-        [1, 0, 1, 1, 0, 1, 0, 1],
-        [1, 0, 0, 1, 1, 0, 1, 0],
-    ]
-    for i in range(bars // 2):
-        name = prog[i % len(prog)]
-        notes = list(CHORDS[name]) + [CHORDS[name][0] - 12]
-        for k, nn in enumerate(notes):
-            add(pad, pad_stereo(midi(nn), 2 * BAR + 3.6, rng) * 0.19, i * 2 * BAR - 0.3)
-        # bajo de corcheas (desde el segundo acorde; más lleno en la segunda mitad)
-        if i >= 1:
-            gain = 0.34 if i < 9 else 0.46
-            b = bass_pulse(roots[name], 2, patterns[i % 2], gain)
-            add(rhythm, np.stack([b, b], axis=1), i * 2 * BAR)
-        # arpegio de campanas, 8vos
-        arp = tones_for(name, 60, 79)
-        for step in range(16):
-            if step % 4 == 3 and rng.random() < 0.5:
-                continue
-            nn = arp[(step * 2 + i) % len(arp)] + 12
-            vel = 0.6 + 0.4 * rng.random()
-            bl = bell(midi(nn), 3.0, 0.7) * 0.055 * vel
-            add(bells, pingpong(bl, BEAT * 0.75, 0.38, 3), i * 2 * BAR + step * BEAT * 0.5)
-        # melodía de campanas más lenta por encima
-        highs = tones_for(name, 74, 91)
-        for pos in (0.0, 2.5, 4.0, 6.5):
-            if rng.random() < 0.8:
-                nn = int(rng.choice(highs))
-                bl = bell(midi(nn), 6.0, 0.9) * 0.14 * (0.55 + 0.45 * rng.random())
-                add(bells, pingpong(bl, BEAT * 0.75, 0.5, 5), i * 2 * BAR + pos * BEAT)
-    # latido suave y brillo rítmico durante toda la pieza
+    cuer = np.zeros((n, 2))
+    arp = np.zeros((n, 2))
+    bajo = np.zeros((n, 2))
+    perc = np.zeros((n, 2))
+    mel = np.zeros((n, 2))
     for bar in range(bars):
-        for beat in (0, 2):
-            add(rhythm, thump(0.8, 0.34), bar * BAR + beat * BEAT)
+        nombre = PROG_J[bar % 4]
+        raiz, cama, notas = ACORDES_J[nombre]
+        t0 = bar * BAR_J
+        seccion = bar // 8  # 0: apertura, 1: entra bajo+ritmo, 2: melodía, 3: variación y cierre
+        # colchón: un acorde por compás
+        for k, nn in enumerate(cama):
+            v = cuerdas(midi(nn), BAR_J + 1.6, rng) * (0.10 if seccion != 3 else 0.09)
+            add(cuer, np.stack([v, np.roll(v, int(0.009 * SR))], axis=1), t0 - 0.05)
+        # arpegio pulsado en corcheas
         for step in range(8):
-            add(rhythm, hat() * (0.07 if step % 2 == 0 else 0.04), bar * BAR + step * BEAT * 0.5 + BEAT * 0.25)
-    fx += wind(total, 21) * 0.06
-    for k in range(3):
-        sw = noise_swell(5 * BAR, 300, 2400, 1.6, 30 + k)
-        sw = sw * np.linspace(1, 0, len(sw)) ** 0.3
-        add(fx, np.stack([sw, sw[::-1]], axis=1) * 0.06, (k * 12 + 3) * BAR)
-    mix = reverb(pad + bells + fx * 0.8, 0.8, 4.0) + drone + rhythm * 2.8
-    return mix
+            if seccion == 0 and step % 2 == 1 and bar < 4:
+                continue
+            nn = notas[ARP_J[step]] + (12 if step == 5 else 0)
+            acento = 1.0 if step % 4 == 0 else 0.7
+            p = pluck(midi(nn + 12), 1.3, 1.0) * 0.11 * acento
+            add(arp, pingpong(p, BEAT_J * 0.75, 0.33, 3), t0 + step * BEAT_J / 2)
+        # bajo: desde la sección 1
+        if seccion >= 1:
+            for pos, dur_b, oct_b in ((0.0, 1.4, 0), (2.5, 0.8, 0), (3.0, 0.9, 12)):
+                if pos == 3.0 and bar % 2 == 0:
+                    continue
+                b = bajo_calido(midi(raiz + oct_b), dur_b * BEAT_J * 1.2) * 0.42
+                add(bajo, np.stack([b, b], axis=1), t0 + pos * BEAT_J)
+        # percusión suave
+        if seccion >= 1:
+            for beat in (0, 2):
+                add(perc, bombo(0.85), t0 + beat * BEAT_J)
+            for beat in (1, 3):
+                add(perc, palmada(0.2 if seccion == 1 else 0.26), t0 + beat * BEAT_J)
+            for step in range(8):
+                g = 0.05 if step % 2 == 0 else 0.03
+                add(perc, np.stack([maraca(g), maraca(g * 0.7)], axis=1), t0 + step * BEAT_J / 2 + BEAT_J * 0.25)
+        # melodía principal
+        if seccion >= 2:
+            frases = FRASES_J if seccion == 2 else FRASES_J2
+            for pos, nn, dur_b in frases[bar % 4]:
+                v = lead(midi(nn), dur_b * BEAT_J * 1.05, rng) * (0.13 if seccion == 2 else 0.15)
+                add(mel, pingpong(v, BEAT_J * 0.75, 0.3, 3), t0 + pos * BEAT_J)
+    # paso largo y suave de aire al inicio de cada sección
+    aire = np.zeros((n, 2))
+    for s in range(4):
+        sw = noise_swell(2 * BAR_J, 600, 5200, 2.0, 40 + s)
+        add(aire, np.stack([sw, sw[::-1]], axis=1) * 0.05, (s * 8 - 2) * BAR_J % total)
+    humedo = reverb(cuer + arp * 0.8 + mel + aire, 0.55, 2.6)
+    return humedo + bajo + perc * 1.6
+
 
 
 def finish(mix, peak_db=-2.0):
