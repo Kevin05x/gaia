@@ -31,11 +31,21 @@ static func reproducir(arbol: SceneTree, pista: String, fundido: float = 2.5) ->
 	nuevo.name = "MusicaGaia"
 	nuevo.stream = flujo
 	nuevo.volume_db = -60.0
-	arbol.root.add_child(nuevo)
-	nuevo.play()
-	nuevo.create_tween().tween_property(nuevo, "volume_db", float(NIVEL_DB[pista]), fundido)
 	_jugador = nuevo
 	actual = pista
+	# Diferido: se puede pedir desde _ready(), cuando la raíz aún está montando a sus hijos.
+	_montar.call_deferred(arbol, nuevo, float(NIVEL_DB[pista]), fundido)
+
+
+static func _montar(arbol: SceneTree, nuevo: AudioStreamPlayer, nivel: float, fundido: float) -> void:
+	if not is_instance_valid(nuevo):
+		return
+	if nuevo != _jugador or arbol == null:
+		nuevo.queue_free()
+		return
+	arbol.root.add_child(nuevo)
+	nuevo.play()
+	nuevo.create_tween().tween_property(nuevo, "volume_db", nivel, fundido)
 
 
 static func detener(fundido: float = 1.5) -> void:
