@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="GAIA"
-run/main_scene="uid://dgvuhwql6xsq7"
+run/main_scene="res://scenes/menu/intro.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -21,6 +21,8 @@ EventBus="*res://autoload/event_bus.gd"
 
 [display]
 
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -37,6 +39,9 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 3d/physics_engine="Jolt Physics"
 
 [rendering]
+
+lights_and_shadows/directional_shadow/size=1024
+lights_and_shadows/directional_shadow/size.mobile=1024
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
