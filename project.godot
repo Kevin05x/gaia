@@ -21,10 +21,8 @@ EventBus="*res://autoload/event_bus.gd"
 
 [display]
 
-window/size/viewport_width=1440
-window/size/viewport_height=900
-window/size/window_width_override=1280
-window/size/window_height_override=800
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -41,6 +39,9 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 3d/physics_engine="Jolt Physics"
 
 [rendering]
+
+lights_and_shadows/directional_shadow/size=1024
+lights_and_shadows/directional_shadow/size.mobile=1024
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"

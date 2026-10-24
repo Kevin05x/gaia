@@ -49,9 +49,10 @@ func test_snapshot_tiene_las_claves_del_contrato() -> void:
 	var claves := ["phase", "paused", "safe_mode", "safe_entries", "sol", "hour", "is_night", "rover_tile",
 		"station_tile", "bounds", "battery", "design", "data", "memory_capacity", "sent", "goal", "mineral",
 		"antenna_level", "dust", "storm", "storm_in", "transmitting", "link_open", "link_next", "comms_windows",
-		"moving", "busy", "map_revision", "targets", "obstacles"]
+		"moving", "busy", "map_revision", "targets", "obstacles", "sol_limit"]
 	for clave in claves:
 		assert_true(snapshot.has(clave), "falta la clave %s" % clave)
+	assert_eq(snapshot["sol_limit"], reglas.sol_limite)
 	for clave in ["wh", "capacity", "generation_w", "load_w"]:
 		assert_true(snapshot["battery"].has(clave), "falta battery.%s" % clave)
 	for clave in ["power", "comms", "instruments", "companion"]:

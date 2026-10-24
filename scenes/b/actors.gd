@@ -11,7 +11,7 @@ var companion_parts: Dictionary
 var antenna_levels: Array
 var dust: CPUParticles3D
 var drilling: CPUParticles3D
-var link: MeshInstance3D
+var link: Node3D
 var scanner: MeshInstance3D
 var route: Array=[]
 var segment_start=Vector3.ZERO
@@ -23,6 +23,7 @@ var flight=0.0
 var paused=false
 var safe=false
 var landed=false
+var antenna_top=Vector3(0,1.9,0)  ## punta de la antena respecto a la estación (de aquí sale la animación de transmisión)
 var landing_clock=0.0
 var landing_active=false
 var companion_enabled=true
@@ -30,19 +31,20 @@ var drone_enabled=true
 var dust_ground: Callable
 signal landing_finished
 func _ready() -> void:
- rover=preload("res://scenes/b/assets/models/rover.tscn").instantiate();add_child(rover)
+ rover=preload("res://scenes/b/assets/models/rover.tscn").instantiate();Art.optimize_rover(rover);add_child(rover)
  parts={"visual":rover.get_node("RoverVisual"),"wheels":[]}
  for key in ["arm","solar","rtg","drill","radar","spectrometer","meteo","head"]:parts[key]=rover.find_child(key,true,false)
  for i in range(6):parts.wheels.append(rover.find_child("Wheel%d"%i,true,false))
- station=preload("res://scenes/b/assets/models/station.tscn").instantiate();add_child(station);station.position=Vector3(7,0,6)
+ preload("res://scenes/b/world_art.gd").contact_shadow(rover,1.45)
+ station=preload("res://scenes/b/assets/models/station.tscn").instantiate();Art.optimize_station(station);add_child(station);station.position=Vector3(7,0,6)
  antenna_levels=[]
  for i in range(1,4):antenna_levels.append(station.get_node("AntennaLevel%d"%i))
  set_antenna(1)
- link=Art.ring(station,1.25,Vector3(0,1.7,0),Color("83bba9"));link.visible=false
+ link=preload("res://scenes/b/transmission_fx.gd").new();link.rover=rover;add_child(link)
  scanner=Art.ring(rover,1.8,Vector3(0,.12,0),Color("97cbc2"));scanner.visible=false
- drone=preload("res://scenes/b/assets/models/drone.tscn").instantiate();add_child(drone)
+ drone=preload("res://scenes/b/assets/models/drone.tscn").instantiate();Art.optimize_drone(drone);add_child(drone)
  rotor_parts={"rotors":[drone.get_node("Rotor0"),drone.get_node("Rotor1")]}
- companion=preload("res://scenes/b/assets/models/companion.tscn").instantiate();add_child(companion)
+ companion=preload("res://scenes/b/assets/models/companion.tscn").instantiate();Art.optimize_companion(companion);add_child(companion)
  companion_parts={"body":companion.get_node("Body")}
  dust=Art.dust(self,130,Vector3(20,3,20));dust.position.y=2
  drilling=Art.dust(rover,30,Vector3(.12,.1,.12));drilling.position=Vector3(.6,.3,-1.5)
@@ -52,6 +54,7 @@ func _ready() -> void:
  for x in [-1.3,1.3]:
   for z in [-.8,.8]:Art.cylinder(crane,.18,.4,Vector3(x,-.3,z),Art.ORANGE,.27)
  for x in [-.6,.6]:Art.rod(crane,Vector3(x,0,0),Vector3(x,-2.5,0),.015,Art.IVORY)
+ Art.merged(crane)
  crane.visible=false
 func at_tile(tile: Vector2i) -> Vector3:
  var p=Vector3(tile.x*2.0,0,tile.y*2.0)
@@ -69,12 +72,13 @@ func apply_state(s: Dictionary) -> void:
  drone.visible=drone_enabled;companion.visible=companion_enabled
  set_antenna(int(s.get("antenna_level",1)))
  dust.emitting=s.get("storm",false)
- link.visible=s.get("transmitting",false)
+ link.active=s.get("transmitting",false);link.set_process(not paused)
  if (route.is_empty() or safe) and not landing_active:
   rover.position=at_tile(s.get("rover_tile",Vector2i.ZERO))
  if safe:route.clear();active_action.clear()
 func set_antenna(level: int) -> void:
  for i in range(antenna_levels.size()):antenna_levels[i].visible=i==clampi(level-1,0,2)
+ antenna_top=Vector3(0,[1.9,2.5,2.9][clampi(level-1,0,2)],0)
 func follow_path(tiles: Array, seconds: float) -> void:
  route=tiles.duplicate();seconds_per_tile=maxf(.01,seconds);segment_time=0;segment_start=rover.position
 func start_action(a: Dictionary) -> void:
@@ -99,9 +103,10 @@ func _process(delta: float) -> void:
   segment_time+=delta
   var target=at_tile(route[0]);var old=rover.position
   rover.position=segment_start.lerp(target,clampf(segment_time/seconds_per_tile,0,1))
+  if dust_ground.is_valid():rover.position.y=dust_ground.call(rover.position.x,rover.position.z)
   var dir=target-segment_start
   if dir.length_squared()>.01:rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-dir.x,-dir.z),minf(1,delta*8))
-  for wheel in parts.wheels:wheel.rotate_x(old.distance_to(rover.position)/.36)
+  for wheel in parts.wheels:wheel.rotate_x(old.distance_to(rover.position)/.43)
   if segment_time>=seconds_per_tile:
    route.pop_front();segment_start=target;segment_time=0
  if not active_action.is_empty():
@@ -125,5 +130,5 @@ func _process(delta: float) -> void:
  if not active_action.is_empty() and active_action.get("action")=="companion":companion_target+=Vector3(sin(animation_clock)*2,0,cos(animation_clock)*2)
  companion.position=companion.position.move_toward(companion_target,delta*2)
  companion.position.y=(dust_ground.call(companion.position.x,companion.position.z) if dust_ground.is_valid() else 0)+absf(sin(animation_clock*3))*.05
- if link.visible:
-  link.scale=Vector3.ONE*(1+fmod(animation_clock*.6,1));link.rotation.y+=delta
+ dust.position=Vector3(rover.position.x,2,rover.position.z)
+ link.base=station.global_position+antenna_top
