@@ -129,6 +129,7 @@ func _exit_tree() -> void:
 
 
 func start_action(action: Dictionary) -> void:
+	unlock()  # la acción nace de un clic del jugador: sirve de gesto para el audio web
 	ping()
 	remaining = float(action.get("seconds", 0))
 	var id := str(action.get("action", ""))

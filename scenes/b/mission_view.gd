@@ -306,7 +306,32 @@ func _unhandled_input(e: InputEvent) -> void:
 		if point == null:
 			return
 		var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
-		port.submit("move", {"tile": tile})
+		hud.close_actions()
+		port.submit("move", {"tile": nearest_free_tile(tile)})
+
+
+## Casilla libre más cercana a «tile» (y al rover si hay empate). Si «tile» ya está libre, la devuelve igual.
+func nearest_free_tile(tile: Vector2i) -> Vector2i:
+	if not terrain.in_bounds(tile) or not tile in terrain.obstacles:
+		return tile
+	var origen := Vector2(actors.rover.position.x / 2.0, actors.rover.position.z / 2.0)
+	var mejor := tile
+	var mejor_d := INF
+	for radio in range(1, 5):
+		for dx in range(-radio, radio + 1):
+			for dy in range(-radio, radio + 1):
+				if maxi(absi(dx), absi(dy)) != radio:
+					continue
+				var c := tile + Vector2i(dx, dy)
+				if not terrain.in_bounds(c) or c in terrain.obstacles:
+					continue
+				var d := Vector2(c).distance_to(origen)
+				if d < mejor_d:
+					mejor_d = d
+					mejor = c
+		if mejor_d < INF:
+			return mejor
+	return tile
 
 
 ## Posición en pantalla del objetivo (para el HUD): {"pos": Vector2, "behind": bool}; {} si no existe.

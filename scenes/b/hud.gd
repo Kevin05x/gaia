@@ -85,6 +85,7 @@ var _markers: Control
 var _label_box: HBoxContainer
 var _primary: Button
 var _arrow: Button
+var _open_actions := false
 var _primary_action := ""
 var _target_shown := false
 var _list: PanelContainer
@@ -755,6 +756,11 @@ func _toggle_panel(p: Control) -> void:
 	p.visible = abrir
 
 
+func close_actions() -> void:
+	_open_actions = false
+	_list.visible = false
+
+
 func _close_popups() -> bool:
 	var algo := false
 	for p in [_info, _summary, _warn_list, _list]:
@@ -793,6 +799,8 @@ func _close_sub() -> void:
 
 func set_target(id: String) -> void:
 	target_id = id
+	# Al elegir un objetivo se despliegan todas sus acciones (taladro incluido), sin esconderlas tras la flecha.
+	_open_actions = not id.is_empty()
 	_list.visible = false
 	if not snapshot.is_empty():
 		update_snapshot(snapshot)
@@ -1058,6 +1066,11 @@ func _refresh_target(s: Dictionary, bloqueado: bool) -> void:
 	if lejos or principal.is_empty():
 		principal = "approach"
 	_primary_action = principal
+	if _open_actions:
+		_open_actions = false
+		for otro in [_info, _summary, _warn_list]:
+			otro.visible = false
+		_list.visible = true
 	var fila_principal: Button = _rows.get(principal, _rows["approach"])
 	_primary.text = tr("ACT_APPROACH") if principal == "approach" else tr(principal.to_upper())
 	_primary.disabled = fila_principal.disabled
