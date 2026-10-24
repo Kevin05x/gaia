@@ -64,7 +64,6 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var eventos := sim.avanzar(minf(delta, DELTA_MAXIMO_S))
-	var ya_publicado := false
 	for evento in eventos:
 		if evento == MovementSystem.EVENTO_MOVIMIENTO_CANCELADO or evento == Simulation.EVENTO_ACCION_CANCELADA \
 				or evento == Simulation.EVENTO_MISION_TERMINADA:

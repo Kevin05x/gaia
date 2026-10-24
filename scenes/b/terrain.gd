@@ -873,7 +873,7 @@ func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))
 	base.rotation.y = rng.randf() * TAU
 	for k in range(4):
-		var cristal := Art.cylinder(n, 0.11, 0.42 + k * 0.1, Vector3((k % 2) * 0.3 - 0.15, 0.3 + k * 0.03, (k / 2) * 0.25 - 0.12), Color("DCE8E0") if k % 2 == 0 else Color("B5D3CB"), 0.02)
+		var cristal := Art.cylinder(n, 0.11, 0.42 + k * 0.1, Vector3((k % 2) * 0.3 - 0.15, 0.3 + k * 0.03, floori(k / 2.0) * 0.25 - 0.12), Color("DCE8E0") if k % 2 == 0 else Color("B5D3CB"), 0.02)
 		cristal.rotation_degrees = Vector3(rng.randf_range(-20, 20), 0, k * 14 - 20)
 		cristal.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 

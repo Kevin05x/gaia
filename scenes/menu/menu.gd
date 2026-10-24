@@ -134,9 +134,9 @@ func _crear_logotipo() -> Control:
 		# La flotación se hace en el sombreador: mover un Control por tween lo ajusta a píxeles enteros y se ve a saltitos.
 		var sombreador := Shader.new()
 		sombreador.code = "shader_type canvas_item;\nuniform float amplitud = 5.0;\nuniform float periodo = 6.4;\nvoid vertex() {\n\tVERTEX.y += (0.5 - 0.5 * cos(TIME * 6.2831853 / periodo)) * amplitud;\n}\n"
-		var material := ShaderMaterial.new()
-		material.shader = sombreador
-		imagen.material = material
+		var material_flota := ShaderMaterial.new()
+		material_flota.shader = sombreador
+		imagen.material = material_flota
 		return imagen
 	var logo := Logo.new()
 	logo.disposicion = "horizontal"
@@ -194,7 +194,7 @@ func _continuar() -> void:
 
 func _nueva_partida() -> void:
 	if Sesion.hay_guardado():
-		var cuerpo := _abrir_panel(tr("M_NEW_CONFIRM_TITLE"), 560, 300, false)
+		var cuerpo := _abrir_panel(tr("M_NEW_CONFIRM_TITLE"), 560, 300)
 		var texto := UI.label(cuerpo, tr("M_NEW_CONFIRM"), 17, Color(UI.CREAM, 0.88))
 		texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var pie := cuerpo.get_parent().get_child(cuerpo.get_parent().get_child_count() - 1) as HBoxContainer
@@ -243,7 +243,7 @@ func _ir_al_juego(cargar: bool) -> void:
 # --- paneles ------------------------------------------------------------------------------------------------
 
 ## Abre un panel centrado con título, cuerpo y un pie con «Volver». Devuelve el cuerpo.
-func _abrir_panel(titulo: String, ancho: float, alto: float, con_volver: bool = true) -> VBoxContainer:
+func _abrir_panel(titulo: String, ancho: float, alto: float) -> VBoxContainer:
 	_cerrar_panel()
 	_panel = Control.new()
 	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)

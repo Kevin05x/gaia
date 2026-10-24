@@ -260,6 +260,7 @@ static func poner_tamano_ventana(t: Vector2i) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	DisplayServer.window_set_size(t)
 	var pantalla := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+	@warning_ignore("integer_division")
 	var pos := pantalla.position + (pantalla.size - t) / 2
 	DisplayServer.window_set_position(Vector2i(pos.x, maxi(pantalla.position.y, pos.y - 12)))
 

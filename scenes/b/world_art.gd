@@ -391,7 +391,6 @@ static func mesa_mesh(variante: int = 0) -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var y := -0.1
 	var radio := 1.0
-	var anillo_base: Array = []
 	var angulo0 := rng.randf() * TAU
 	var jitter: Array = []
 	for i in range(lados):
