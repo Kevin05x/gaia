@@ -29,6 +29,7 @@ func before_each() -> void:
 	port.cancel_received.connect(func() -> void: cancelaciones.append(1))
 	runner = MissionRunner.new()
 	runner.crear_vista = false
+	runner.saltar_taller = true  # estas pruebas operan directo; el taller se prueba en test_taller y test_ui_rediseno
 	runner.port = port
 	add_child_autofree(runner)
 

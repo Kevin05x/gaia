@@ -229,3 +229,99 @@ La luz depende de `hour` (amanecer 06:00, atardecer 18:00) y de `dust` (0..1). L
 - La estación está lejos, en un extremo (casilla (-9, -9)), es solo referencia visual y bloquea el paso. El enlace y la antena funcionan desde cualquier lugar.
 - Los objetivos también bloquean el paso: el rover se acerca a una casilla contigua.
 - Movimiento: ruta más corta en 4 direcciones; toda la energía de la ruta se descuenta al aceptar la orden y, si no alcanza, se rechaza con `LOW_ENERGY`.
+
+## Rediseño visual implementado (rama `a/rediseno-visual`)
+
+Estado de la vista frente al contrato v2. Todo lo de arriba se cumple; esto es lo que cambió o se decidió al implementarlo.
+
+- **Snapshot**: se añadió `sol_limit` (soles de la misión, hoy 6; sale de `MissionState.sol_limite`). El HUD lo usa en «Sol 3 / 6» y la barra del sol.
+- **Arranque**: `MissionRunner` ahora empieza en el **taller** (`phase == "workshop"`). `saltar_taller = true` mantiene el atajo anterior (diseño inicial completo, directo al aterrizaje) y es lo que usan las pruebas de `test_mission_runner.gd`.
+- **Acciones globales** (panorama, radar, dron, compañero, transmitir, mejorar antena): barra inferior central con un botón por instrumento instalado (`available_actions` + `design`). Las acciones de un objetivo (`targets[].actions`) salen en su panel, con `primary` resaltada. Un botón deshabilitado muestra el `reason` traducido (la clave del motivo, p. ej. `TOO_FAR`); la vista no decide nada.
+- **Taller** (`scenes/b/workshop.gd`): solo presenta `snapshot["workshop"]` y emite `design_add/remove/validate/start`. Cambiar la pieza de una categoría de una sola pieza emite `design_remove` y luego `design_add` (dos órdenes seguidas del mismo gesto). Antes de iniciar exige una validación correcta.
+- **Cámara**: perspectiva elevada que sigue al rover (`camera.gd`); ya no hay `camera.size`. La selección por clic usa rayos y los marcadores 2D proyectan con `unproject_position` (`target_markers.gd`).
+- **Luz** (`sky_light.gd`): tabla por hora con mezcla por `dust`; la energía de juego no depende de ella.
+- **Mundo** (`terrain.gd`, `world_art.gd`, `tracks.gd`): suelo continuo facetado, cuenca y montañas lejanas, huellas del rover. Todo procedural, sin texturas externas.
+- **Textos nuevos**: están en `strings_ui.csv`; después de editarlos se ejecuta `python3 scenes/b/tools/sync_i18n.py` para regenerar `catalog.gd`.
+- **Fuentes**: `UI.font()` usa Inter y Space Grotesk si están en `res://assets/fonts/`; si no, usa la fuente por defecto de Godot. Descargarlas requiere decidirlo (licencia SIL OFL).
+- **Pruebas**: `tests/test_ui_rediseno.gd` cubre cielo, relieve, minimapa, taller y HUD; `scenes/b/tests/integration.gd` sigue pasando.
+
+### Segundo pase: realismo del mundo (23 oct 2026)
+
+Tras comparar con el mockup (render casi fotorrealista), se acercó el aspecto sin salir de la geometría simple:
+
+- **Terreno**: suelo continuo con normales suaves, dunas de gran escala y color por vértice; el facetado se reserva para rocas. Lomas lejanas con normales suaves, más bajas y con bruma. Un lago pálido en la cuenca, delante de la vista inicial, y un pasillo despejado de mesetas hacia él.
+- **Rocas** (`world_art.gd`): nuevas familias `pebble` (piedritas), `boulder` (peñasco con capas sedimentarias por franjas de tono) y `mesa_mesh()` (mesetas estratificadas). Los objetivos «roca» son ahora peñascos, no pilas de láminas. Decorado en MultiMesh: ~800 piedritas, ~200 fragmentos, bloques, peñascos y ~50 mesetas.
+- **Color y luz**: paleta más apagada y terrosa; tonemap Reinhard con exposición 0.85 y energía solar 0.7; cielo y bruma grisáceos. Parámetros en `sky_light.gd` (`tonemap`, `exposure`, `energy_scale`).
+- **Selección**: contorno brillante con pulso de 1600 ms (casco invertido) en lugar de solo el anillo.
+- **Huellas** iniciales que llegan al punto de aterrizaje (`tracks.seed_curve`).
+- **Cámara**: zoom por defecto 18 m (antes 25) y mínimo 9 m; el rover ocupa un tamaño parecido al del mockup.
+- **HUD**: píldoras con nombre («Energía 82 %», «Ciencia 34/100»); «Sol 2 · 10:32» sin píldora, con sombra; la fila de acciones es más compacta y ya no choca con la píldora de comunicación.
+- **Modelos**: rover más claro, ruedas más grandes y techo oscuro; estación con módulos en caja. Se volvieron a generar `rover.tscn` y `station.tscn` con `tools/bake_assets.gd` (los `.glb` no se tocaron porque el repositorio los guarda con Git LFS).
+- **Rendimiento** (medido en el motor con la partida completa, 1280×720, render por software): el rover tenía ~85 mallas sueltas; `Art.merged()` y `Art.optimize_*()` las fusionan al cargar (las piezas que se animan o se ocultan quedan aparte). Llamadas de dibujo 393 → 207 (de ellas ~109 son del HUD en 2D) y ~54 000 primitivas incluyendo sombras. Falta medir en la laptop más débil y en la exportación web.
+
+### Pendiente de la vista
+
+- Foto de la NASA en el informe: el informe ya acepta `photo`, `photo_credit` y `photo_url`; falta que A los entregue desde una lista corta verificada (título, crédito, enlace).
+- Medir rendimiento en la exportación web (objetivo: ≤ 60 000 triángulos y ≤ 120 llamadas de dibujo) y, si hace falta, ajustar `ENERGY_SCALE` del sol.
+- Declarar el uso de arte generado por IA en `ARTE_Y_LICENCIAS.md` si se incorpora (las fuentes ya están declaradas).
+
+### Tercer pase: piedras facetadas, sombras y calidad (23 oct 2026)
+
+- `world_art.gd`: las rocas (`pebble`, `fragment`, `block`, `boulder`, `outcrop`) se generan por intersección de planos (`STONE_PRESETS`, `stone_mesh`): caras planas de arista viva, 3 variantes por familia.
+- `terrain.gd`: cada familia de decoración se reparte en 3 variantes (un MultiMesh por variante); las rocas grandes cercanas proyectan sombra solo en calidad alta (`apply_quality()`); obstáculos con colores más cercanos al suelo.
+- `sky_light.gd`: sombra `SHADOW_ORTHOGONAL` (1 pasada) y corrección de color (contraste 1.1, saturación 0.96) solo en calidad alta.
+- `mission_view.gd`: `set_preferences` aplica `W.quality`, `W.apply_quality()` y `terrain.apply_quality()`: la opción «calidad alta» controla texturas, sombras de rocas y corrección de color.
+- Presupuesto medido en calidad alta: ≈69k primitivas y 245 llamadas de dibujo (HUD ≈109). Sin sombras de rocas ≈61k.
+
+### Cuarto pase: modelos, lago y botones (23 oct 2026)
+
+- `art.gd`: `bevel_mesh`/`rbox` (cajas con chaflán por intersección de planos), `dish_mesh` (parábola de revolución) y `panel` (panel solar con marco y celdas). Rover: casco biselado, 4 paneles solares en el techo, mástil con cabeza de cámaras, antena de alta ganancia, RTG horizontal con aletas, ruedas de 12 grampas con llanta. Estación: módulos biselados, torre de celosía con baliza, tanques y antenas parabólicas. `merged()` acepta mallas propias. Los nombres de nodo animados (`Wheel0..5`, `arm`, `head`, `solar`, `rtg`, `drill`, `radar`, `spectrometer`, `meteo`, `AntennaLevel1..3`) se conservan. `rover.tscn`/`station.tscn` re-horneados con `tools/bake_assets.gd` (los `.glb` no se tocan).
+- `terrain.gd`: lago más grande, en malla polar con color por vértice (bancos de arena, orilla húmeda, vetas) y material brillante (`W.water_material()`); con calidad alta el cielo se refleja (`reflected_light_source = SKY` en `sky_light.gd`).
+- `ui_style.gd`: botones con relleno cálido, sombra suave, borde ámbar al pasar el cursor y anillo de foco ámbar; variantes `PrimaryButton` / `PrimaryPill` (relleno ámbar) para Validar/Iniciar, Reanudar, Transmitir y Rediseñar; interruptores sin marco resaltado.
+- `hud.gd`: `_layout_actions()` coloca la fila de acciones sin pisar el panel de comunicación (más ancho: 336 px) ni el reloj; paneles de menú/opciones al 95 % de opacidad.
+- `workshop.gd`: las piezas se reparten en una cuadrícula que baja de línea (antes una tira horizontal cortaba tarjetas), vista previa más baja, tarjetas con borde ámbar al elegirse.
+
+### Compañero y dron (23 oct 2026)
+
+- `art.gd`: el compañero es ahora un robot explorador con orugas, cabeza con cámaras, panel solar, pinza y antena (`Body` sigue siendo el casco); el dron es un helicóptero tipo Ingenuity con panel solar, patas con pies, cámara ventral y dos rotores coaxiales (`Rotor0`/`Rotor1` son nodos que giran con sus aspas y cubo).
+- `merged()` ahora funde también los grupos marcados con el metadato `fusionable` (paneles solares), y `cylinder()` admite número de segmentos (barras finas con 6, ruedas con 8–16) para bajar triángulos. Rover ≈ 6 700 triángulos, estación ≈ 4 000, compañero ≈ 1 500, dron ≈ 800. Vista por defecto medida: ≈ 77 000 primitivas y 249 llamadas de dibujo (calidad alta, con sombras).
+- Re-horneados `rover/station/drone/companion.tscn` con `tools/bake_assets.gd` (los `.glb` no se tocan).
+
+### Paisaje: colinas y farallones (23 oct 2026)
+
+- `terrain.gd`: malla exterior de colinas (`_build_outer`, celdas de 4 m hasta ±80) con crestas y ondulaciones (`_outer_height`), laderas con franjas de capa y color por altura. Deja bajo el pasillo hacia el lago (`_corridor_mask`) y el propio lago. `height_at` devuelve la altura de las colinas fuera de la malla detallada (empalma con ella en ±40) y el plano de la cuenca más allá de ±80; las rocas decorativas y los objetos se apoyan con esa altura.
+- `_build_cliffs`: 16 grupos de farallones (lajas altas estratificadas, algo inclinadas) con bloques y peñascos caídos alrededor, en MultiMesh por variante; proyectan sombra en calidad alta (`apply_quality()`).
+- `world_art.gd`: nuevo tipo de piedra `cliff` en `STONE_PRESETS`.
+- Vista inicial medida: ≈ 85 000 primitivas y 262 llamadas de dibujo (calidad alta).
+
+### Paisaje: contacto con el suelo (23 oct 2026)
+
+- `terrain.gd`: `_build_decor` reúne las sombras de contacto de rocas, obstáculos y objetivos (`W.ao_blobs`, una sola llamada de dibujo con un MultiMesh de cuadrados con degradado) y reparte 2–4 guijarros caídos alrededor de las rocas grandes (`_build_halos`, 3 variantes). Los guijarros sueltos bajan de 800 a 360 para mantener el presupuesto de triángulos.
+- `tracks.gd`: las huellas son marcas discontinuas (60 % de cada tramo) que se leen como la pisada de las grampas.
+- Vista inicial medida: ≈ 87 000 primitivas y 266 llamadas de dibujo (calidad alta).
+
+### Antena por niveles, mapa, título y tipografía (23 oct 2026)
+
+- `art.gd` `antenna(n, level)`: cada nivel suma módulos y no solo tamaño. Nivel 1: plato pequeño, receptor y látigo. Nivel 2: plato mediano con horquilla y alimentador de trípode, plato de relé, armario amplificador con rejillas y luz verde, panel solar propio inclinado y baliza. Nivel 3: plato de espacio profundo sobre pedestal giratorio con aro naranja y alimentador de cuatro patas, dos relés, búnker de comunicaciones con puerta y franja naranja, radomo sobre torre, matriz de fase de 15 celdas, conductos y baliza roja. Los nodos `AntennaLevel1..3` siguen igual (se muestra uno a la vez). `station.tscn` re-horneado.
+- Fuentes (`assets/fonts/`, licencia OFL, con sus `OFL-*.txt`): **Inter** para el texto y **Space Grotesk** para títulos y cifras, ambas variables. `ui_style.gd`: `text_font(peso)` y `display_font(peso, separación)` (FontVariation con el eje `wght`, constante `WGHT`); el tema usa Inter 450 y los botones Inter 560. Si faltan los archivos se usa la fuente de Godot.
+- `gaia_mark.gd`: emblema de GAIA dibujado por código (planeta con órbita y luna). El título «GAIA» usa Space Grotesk 700 con separación de 5 px y sombra; el emblema se oculta junto al título en el taller.
+- `hud.gd` `_fit_top_right()`: las píldoras de Energía y Ciencia miden su texto y se apilan desde el botón de pausa, así que no se desbordan ni se pisan en ningún idioma.
+- `minimap.gd`: mapa de 168 px con terreno marrón, cuadrícula cada 5 casillas, rocas en relieve, objetivos revelados con aro, estación como casita, rover como flecha que apunta hacia donde se mueve, esquinas de marco y, al pasar el cursor, casilla resaltada con sus coordenadas. Mismo contrato (`state`, `point`, `tile_at`, `tile_chosen`).
+- Pruebas nuevas en `tests/test_ui_rediseno.gd` (234 en total) y vista inicial medida: ≈ 89 000 primitivas y 315 llamadas de dibujo.
+
+## Menú, presentación y partida guardada (rama `a/menu-presentacion`)
+
+Flujo: `intro.tscn` (escena principal) → `menu.tscn` → (tutorial la primera vez) → `loading.tscn` → `scenes/a/game.tscn`. `game.tscn` sigue pudiendo abrirse sola para pruebas.
+
+- **Intro** (`scenes/menu/intro.gd`): logotipo de Canva con destello, subtítulo y crédito; cualquier tecla o clic la salta. En la web empieza con «Pulsa para comenzar» (el navegador exige un gesto para el audio).
+- **Menú** (`menu.gd`): Continuar (activo solo con partida guardada; muestra sol y ciencia enviada), Nueva partida (pide confirmación si hay partida guardada), Cómo jugar, Controles, Configuración (idioma, volumen, silencio, gráficos altos/ligeros, pantalla completa, mostrar tutorial), Créditos y Salir (no en la web). Las preferencias se guardan en `user://b_preferences.cfg`, el mismo archivo que usa la misión.
+- **Tutorial** (`tutorial.gd`): cinco páginas; se muestra antes de la primera partida y se puede volver a ver desde «Cómo jugar».
+- **Carga** (`loading.gd`): imagen fija, consejos y barra de progreso mientras `ResourceLoader.load_threaded_request` carga el juego.
+- **Pausa**: nuevo botón «Salir al menú». `hud.gd` emite `menu_requested`, `mission_view.gd` lo reenvía y `MissionRunner` abre el menú.
+- **Textos**: `menu_text.gd` (tablas ES/EN del menú) y la clave `MENU_QUIT` en `strings_ui.csv`.
+- **Guardado** (`game_session.gd` + `Simulation.guardar/cargar`): `user://gaia_partida.dat` (en la web vive en el almacenamiento del navegador). Se guarda al aterrizar y al comenzar cada sol; solo en la fase de operaciones. «Continuar» restaura la simulación y no los movimientos ni acciones en curso.
+- **HUD**: el logotipo de `assets/menu/gaia_logo.png` sustituye al emblema 3D por código si el archivo existe.
+- **Música** (`musica.gd`): el reproductor cuelga de la raíz y no se corta al cambiar de escena; `gaia_menu.ogg` suena en intro, menú y carga y `gaia_juego.ogg` en la misión, con fundido cruzado. Sigue el volumen y el silencio del bus principal.
+- **Sonidos por acción** (`audio.gd`): el rover rodando, el taladro, el láser del espectrómetro, el radar, la panorámica, el dron (arranque de rotores y vuelo), el compañero y la estación meteorológica tienen sonido propio y suenan en bucle mientras dura la acción (la tabla `ACCIONES` los asocia con el id de la acción). Al abrirse la transmisión suena un barrido de subida y luego el chorro de datos. Los `.wav` importados no vienen en bucle, así que `audio.gd` los repite por código.
+- **Animación de transmisión** (`transmission_fx.gd`, accesible como `actors.link`): mientras `transmitting` es verdadero, paquetes de datos viajan en arco del rover a la antena, de su punta sale un haz con paquetes que suben al cielo y ondas circulares se expanden hacia arriba; aparece y se apaga con fundido. Sigue la altura de la antena según su nivel (`actors.antenna_top`).
+- Pruebas: `tests/test_guardado.gd` (5), `tests/test_menu.gd` (9) y `tests/test_sonido.gd` (6). Total: 254.

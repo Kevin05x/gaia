@@ -25,6 +25,7 @@ var _comunicaciones: CommsSystem
 var _movimiento: MovementSystem
 var _resultado: OutcomeSystem
 var _seleccion: String = ""
+var _potencia_nominal_w: float = 0.0  ## del panel o RTG elegido; hace falta para reconstruir los sistemas al cargar
 var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
 
 
@@ -47,6 +48,7 @@ func reiniciar() -> void:
 	estado.fase = "workshop"
 	informe = {}
 	_seleccion = ""
+	_potencia_nominal_w = 0.0
 	_construir_sistemas(0.0)
 	_reloj.actualizar(estado)
 
@@ -58,6 +60,7 @@ func configurar_diseno(energia: String, enlace: String, instrumentos: Array[Stri
 		return false
 	if not estado.configurar_diseno(energia, enlace, instrumentos, companero):
 		return false
+	_potencia_nominal_w = potencia_nominal_w
 	_construir_sistemas(potencia_nominal_w)
 	_reloj.actualizar(estado)
 	return true
@@ -134,6 +137,54 @@ func snapshot() -> Dictionary:
 	if estado.fase == "workshop":
 		datos["workshop"] = _taller()
 	return datos
+
+
+## Partida guardada: todo el estado vivo más las piezas elegidas y la potencia nominal. Solo datos simples, para
+## escribirlos con var_to_str. La vista se reconstruye sola desde el snapshot al cargar.
+func guardar() -> Dictionary:
+	var campos := {}
+	for propiedad in estado.get_property_list():
+		if (int(propiedad["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE) == 0:
+			continue
+		var nombre: String = propiedad["name"]
+		if nombre.begins_with("_"):
+			continue
+		var valor = estado.get(nombre)
+		campos[nombre] = valor.duplicate(true) if (valor is Array or valor is Dictionary) else valor
+	return {"version": 1, "estado": campos, "diseno": _diseno.seleccion.duplicate(true),
+		"potencia_nominal_w": _potencia_nominal_w}
+
+
+## Restaura una partida de guardar(). Solo se aceptan partidas en operaciones. Devuelve false, sin tocar
+## nada, si los datos no sirven. Lo que pasaba en el instante (movimiento, acción, transmisión) no se restaura.
+func cargar(datos: Dictionary) -> bool:
+	if int(datos.get("version", 0)) != 1 or not datos.has("estado") or not datos.has("diseno"):
+		return false
+	var campos: Dictionary = datos["estado"]
+	if str(campos.get("fase", "")) != "operations":
+		return false
+	reiniciar()
+	var diseno: Dictionary = datos["diseno"]
+	for categoria in Catalog.CATEGORIAS:
+		_diseno.seleccion[categoria] = Array(diseno.get(categoria, []))
+	for nombre in campos:
+		var actual = estado.get(nombre)
+		var valor = campos[nombre]
+		if actual is Array:
+			actual.assign(valor)
+		elif actual != null:
+			estado.set(nombre, valor)
+	estado.revision_mapa = _revision_mapa
+	estado.pausado = false
+	estado.en_movimiento = false
+	estado.movimiento_en_curso = {}
+	estado.ocupado = false
+	estado.accion_en_curso = {}
+	estado.transmitiendo = false
+	_potencia_nominal_w = float(datos.get("potencia_nominal_w", 0.0))
+	_construir_sistemas(_potencia_nominal_w)
+	_reloj.actualizar(estado)
+	return true
 
 
 func objetivo_seleccionado() -> String:
