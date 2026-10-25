@@ -16,6 +16,9 @@ var _hover := false
 var _hover_tile := NONE
 var _heading := Vector2(0, -1)
 var _last_rover := NONE
+var _estatica: ImageTexture
+var _estatica_firma := ""
+const ZONE_TONES := {"orilla": Color("E2C9A3"), "falla": Color("9FC0D2"), "nucleo": Color("3E2C28")}
 
 
 func _ready() -> void:
@@ -38,7 +41,7 @@ func _draw() -> void:
 	var mx: Vector2i = lim[1]
 	var celda := _cell()
 	var area := Rect2(point(mn) - celda / 2.0, point(mx) - point(mn) + celda)
-	# Terreno y cuadrícula (una línea cada 5 casillas).
+	# Terreno, zonas, cuadrícula (una línea cada 5 casillas) y rocas: una textura que solo se rehace al cambiar el mapa.
 	var terreno := StyleBoxFlat.new()
 	terreno.bg_color = Color("9a5f43", 0.86)
 	terreno.set_corner_radius_all(6)
@@ -46,25 +49,13 @@ func _draw() -> void:
 	terreno.border_color = Color(UI.CREAM, 0.22)
 	terreno.anti_aliasing = true
 	draw_style_box(terreno, area)
-	for x in range(mn.x + 1, mx.x + 1):
-		if (x - mn.x) % 5 == 0:
-			var px := area.position.x + (x - mn.x) * celda.x
-			draw_line(Vector2(px, area.position.y + 3), Vector2(px, area.end.y - 3), Color(UI.CREAM, 0.16), 1.0)
-	for y in range(mn.y + 1, mx.y + 1):
-		if (y - mn.y) % 5 == 0:
-			var py := area.position.y + (y - mn.y) * celda.y
-			draw_line(Vector2(area.position.x + 3, py), Vector2(area.end.x - 3, py), Color(UI.CREAM, 0.16), 1.0)
+	_capa_estatica(mn, mx)
+	draw_texture_rect(_estatica, area, false)
 	# Casilla bajo el cursor.
 	if _hover and _hover_tile != NONE and _inside(_hover_tile):
 		var caja := Rect2(point(_hover_tile) - celda / 2.0, celda)
 		draw_rect(caja, Color(UI.AMBER, 0.32))
 		draw_rect(caja, Color(UI.AMBER, 0.9), false, 1.2)
-	# Rocas: dos tonos para que parezcan relieve y no cuadros.
-	var radio := minf(celda.x, celda.y) * 0.46
-	for t in state.get("obstacles", []):
-		var p := point(t)
-		draw_circle(p, radio, Color("2f1d13", 0.85))
-		draw_circle(p + Vector2(-radio * 0.2, -radio * 0.2), radio * 0.62, Color("5d3f2b", 0.95))
 	# Objetivos revelados: rombo con aro.
 	for t in state.get("targets", []):
 		if not t.get("revealed", false):
@@ -101,6 +92,14 @@ func _draw() -> void:
 		var d: Vector2 = esquina[1]
 		draw_line(o, o + Vector2(largo * d.x, 0), Color(UI.CREAM, 0.6), 1.5)
 		draw_line(o, o + Vector2(0, largo * d.y), Color(UI.CREAM, 0.6), 1.5)
+	var zona := str(state.get("rover_zone", ""))
+	if zona != "":
+		var fz := UI.display_font(600)
+		var nombre := tr("ZONE_" + zona.to_upper())
+		var ancho_z := fz.get_string_size(nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var origen_z := Vector2(area.position.x + 5, area.position.y + 15)
+		draw_rect(Rect2(origen_z + Vector2(-3, -12), Vector2(ancho_z + 6, 15)), Color(UI.SURFACE, 0.72))
+		draw_string(fz, origen_z, nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
 	if _hover and _hover_tile != NONE and _inside(_hover_tile):
 		var f := UI.display_font(600)
 		var texto := "%d, %d" % [_hover_tile.x, _hover_tile.y]
@@ -108,6 +107,56 @@ func _draw() -> void:
 		var origen := Vector2(area.position.x + 5, area.end.y - 5)
 		draw_rect(Rect2(origen + Vector2(-3, -13), Vector2(ancho + 6, 16)), Color(UI.SURFACE, 0.78))
 		draw_string(f, origen, texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UI.CREAM)
+
+
+## Capa fija del mapa (zonas, cuadrícula y rocas) como imagen: con 200 rocas, dibujarlas una a una costaba cientos de llamadas por cuadro.
+func _capa_estatica(mn: Vector2i, mx: Vector2i) -> void:
+	var obstaculos: Array = state.get("obstacles", [])
+	var zonas: Array = state.get("zones", [])
+	var firma := "%s|%s|%d|%s" % [mn, mx, obstaculos.size(), var_to_str(zonas)]
+	if _estatica != null and firma == _estatica_firma:
+		return
+	_estatica_firma = firma
+	var cuenta: Vector2i = mx - mn + Vector2i.ONE
+	var esc := clampi(ceili(220.0 / maxi(cuenta.x, cuenta.y)), 2, 10)
+	var img := Image.create(cuenta.x * esc, cuenta.y * esc, false, Image.FORMAT_RGBA8)
+	if not zonas.is_empty():
+		for ty in range(cuenta.y):
+			for tx in range(cuenta.x):
+				var tile := Vector2(tx + mn.x, ty + mn.y)
+				var mejor := INF
+				var tono := Color(0, 0, 0, 0)
+				for z in zonas:
+					var d := tile.distance_squared_to(Vector2(z["center"]))
+					if d < mejor:
+						mejor = d
+						tono = ZONE_TONES.get(str(z["id"]), Color(0, 0, 0, 0))
+				if tono.a > 0.0:
+					tono.a = 0.3
+					img.fill_rect(Rect2i(tx * esc, ty * esc, esc, esc), tono)
+	var raya := Color(UI.CREAM, 0.16)
+	for x in range(1, cuenta.x):
+		if x % 5 == 0:
+			for py in range(img.get_height()):
+				img.set_pixel(x * esc, py, img.get_pixel(x * esc, py).blend(raya))
+	for y in range(1, cuenta.y):
+		if y % 5 == 0:
+			for px in range(img.get_width()):
+				img.set_pixel(px, y * esc, img.get_pixel(px, y * esc).blend(raya))
+	var radio := esc * 0.46
+	for t in obstaculos:
+		var origen := Vector2((t.x - mn.x) * esc, (t.y - mn.y) * esc)
+		var centro := origen + Vector2(esc, esc) / 2.0
+		for py in range(esc):
+			for px in range(esc):
+				var p := origen + Vector2(px + 0.5, py + 0.5)
+				var x := int(origen.x) + px
+				var y := int(origen.y) + py
+				if p.distance_to(centro) <= radio:
+					img.set_pixel(x, y, img.get_pixel(x, y).blend(Color("2f1d13", 0.85)))
+				if p.distance_to(centro + Vector2(-radio * 0.2, -radio * 0.2)) <= radio * 0.62:
+					img.set_pixel(x, y, img.get_pixel(x, y).blend(Color("5d3f2b", 0.95)))
+	_estatica = ImageTexture.create_from_image(img)
 
 
 func _inside(t: Vector2i) -> bool:
