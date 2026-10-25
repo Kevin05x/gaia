@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 3,
   "estado": "provisional (24 oct 2026): mapa de 71x71 casillas con las 3 zonas de la historia (orilla del lago, falla del glaciar y núcleo del cráter). Los 9 objetivos y 10 obstáculos del mapa original se conservan; el resto lo genera tools/generar_mapa.py con semilla fija. Los tipos son ids del contrato con la vista: rock, mineral, buried.",
   "limites": {
     "min": [-35, -35],
@@ -11,6 +11,13 @@
     { "id": "orilla", "centro": [-12, -12] },
     { "id": "falla", "centro": [18, 2] },
     { "id": "nucleo", "centro": [10, 26] }
+  ],
+  "nidos": [
+    { "id": "nido_falla_1", "casilla": [25, -10], "zona": "falla" },
+    { "id": "nido_falla_2", "casilla": [28, 9], "zona": "falla" },
+    { "id": "nido_nucleo_1", "casilla": [4, 31], "zona": "nucleo" },
+    { "id": "nido_nucleo_2", "casilla": [18, 31], "zona": "nucleo" },
+    { "id": "nido_nucleo_3", "casilla": [-3, 22], "zona": "nucleo" }
   ],
   "obstaculos": [
     [-1, -2],

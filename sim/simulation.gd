@@ -26,23 +26,27 @@ var _movimiento: MovementSystem
 var _resultado: OutcomeSystem
 var _economia: Economy  ## null: misión sin base ni recursos (pruebas antiguas)
 var _datos_historia: StoryData  ## null: misión sin historia
+var _datos_combate: CombatData  ## null: misión sin monstruos (necesita también economía)
 var _recursos: ResourceSystem
 var _edificios: BuildSystem
 var _historia: StorySystem
+var _combate: CombatSystem
 var _seleccion: String = ""
 var _potencia_nominal_w: float = 0.0  ## del panel o RTG elegido; hace falta para reconstruir los sistemas al cargar
 var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
 
 
-## «economia» e «historia» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
+## «economia», «historia» y «combate» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
+## El combate (monstruos y torretas) necesita la economía, porque las torretas son edificios.
 func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, economia: Economy = null,
-		historia: StoryData = null) -> void:
+		historia: StoryData = null, combate: CombatData = null) -> void:
 	_balance = balance
 	_reglas = reglas
 	_mapa = mapa
 	_catalogo = catalogo
 	_economia = economia
 	_datos_historia = historia
+	_datos_combate = combate
 	_diseno = MissionDesign.new(catalogo, reglas)
 	reiniciar()
 
@@ -154,12 +158,16 @@ func avanzar(delta_s: float) -> Array[String]:
 	var habia_accion := not estado.accion_en_curso.is_empty()
 	var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
 	eventos.append_array(eventos_ciencia)
+	if _combate != null:
+		_combate.reaccionar(estado, eventos_ciencia)
 	if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
 		eventos.append(EVENTO_ACCION_CANCELADA)
 	eventos.append_array(_movimiento.avanzar(estado, delta_s))
 	eventos.append_array(_comunicaciones.avanzar(estado, delta_s))
 	if _edificios != null:
 		eventos.append_array(_edificios.avanzar(estado, delta_s, horas))
+	if _combate != null:
+		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
 	informe = _resultado.evaluar(estado, eventos)
 	if not informe.is_empty():
 		_completar_informe()
@@ -190,6 +198,9 @@ func snapshot() -> Dictionary:
 			"antenna_next_cost": _edificios.costo_siguiente_antena(estado)}
 	if _historia != null:
 		datos["story"] = _historia.para_la_vista(estado)
+	if _combate != null:
+		datos["combat"] = _combate.para_la_vista(estado)
+		datos["nests"] = _mapa.nidos_para_la_vista()
 	return datos
 
 
@@ -248,6 +259,12 @@ func cargar(datos: Dictionary) -> bool:
 	return true
 
 
+## true mientras hay monstruos, rayos o meteoritos en pantalla: la vista necesita datos nuevos cada cuadro.
+func hay_combate_activo() -> bool:
+	return _combate != null and estado.fase == "operations" and (not estado.enemigos.is_empty() or not estado.disparos.is_empty()
+		or not estado.impactos.is_empty())
+
+
 func objetivo_seleccionado() -> String:
 	return _seleccion
 
@@ -262,11 +279,14 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 	_recursos = null
 	_edificios = null
 	_historia = null
+	_combate = null
 	if _economia != null:
 		_recursos = ResourceSystem.new(_economia)
 		_edificios = BuildSystem.new(_economia, _recursos, _mapa)
 		_energia.edificios = _edificios
 		_ciencia.recursos = _recursos
+		if _datos_combate != null:
+			_combate = CombatSystem.new(_datos_combate, _economia, _edificios, _mapa)
 	if _datos_historia != null:
 		_historia = StorySystem.new(_datos_historia, _recursos)
 		_resultado.requiere_final = true
@@ -469,6 +489,9 @@ func _avisos() -> Array[Dictionary]:
 		avisos.append(_aviso("STORM_ACTIVE", "warning", []))
 	elif estado.tormenta_en > 0.0 and estado.tormenta_en <= _balance.numero("avisos.tormenta_pronto_soles"):
 		avisos.append(_aviso("STORM_SOON", "warning", [estado.tormenta_en]))
+	if _combate != null:
+		for entrada in _combate.avisos(estado):
+			avisos.append(_aviso(entrada[0], entrada[1], entrada[2]))
 	var porcentaje_memoria := _porcentaje(estado.datos, estado.memoria_capacidad)
 	if porcentaje_memoria >= _balance.numero("avisos.memoria_casi_llena_pct"):
 		avisos.append(_aviso("MEMORY_ALMOST_FULL", "warning", [porcentaje_memoria]))

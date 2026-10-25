@@ -12,6 +12,7 @@
   "zona_base_radio": 5,
   "antena": {
     "nivel_inicial": 0,
+    "hp": 150,
     "casilla_relativa": [2, 0],
     "niveles": [
       { "costo": { "rocas": 30, "olivino": 20 }, "tiempo_s": 10, "consume_w": 4 },
@@ -24,6 +25,10 @@
     "luz": { "nombre_clave": "BLD_LIGHT", "costo": { "rocas": 15, "olivino": 10 }, "hp": 80, "tiempo_s": 4, "genera_w": 4, "consume_w": 0, "maximo": 4 },
     "domo": { "nombre_clave": "BLD_DOME", "costo": { "rocas": 30 }, "hp": 200, "tiempo_s": 6, "consume_w": 2, "capacidad": 50, "maximo": 4 },
     "extractor_hielo": { "nombre_clave": "BLD_EXTRACTOR", "costo": { "rocas": 40, "olivino": 20 }, "hp": 250, "tiempo_s": 10, "consume_w": 20, "produce_por_hora": { "hielo": 2.0 }, "maximo": 2 },
-    "hangar": { "nombre_clave": "BLD_HANGAR", "costo": { "rocas": 50, "olivino": 30 }, "hp": 300, "tiempo_s": 12, "consume_w": 5, "maximo": 1 }
+    "hangar": { "nombre_clave": "BLD_HANGAR", "costo": { "rocas": 50, "olivino": 30 }, "hp": 300, "tiempo_s": 12, "consume_w": 5, "maximo": 1 },
+    "torreta": { "nombre_clave": "BLD_TURRET", "costo": { "rocas": 40, "olivino": 15 }, "hp": 120, "tiempo_s": 6, "consume_w": 3, "maximo": 6,
+      "combate": { "alcance": 6.0, "dano": 12, "cadencia_s": 0.8, "disparo_wh": 0.5 } },
+    "torreta_2": { "nombre_clave": "BLD_TURRET2", "costo": { "rocas": 60, "olivino": 30, "hielo": 10 }, "hp": 200, "tiempo_s": 9, "consume_w": 6, "maximo": 4,
+      "requiere": "hangar", "combate": { "alcance": 8.0, "dano": 28, "cadencia_s": 0.7, "disparo_wh": 1.0 } }
   }
 }

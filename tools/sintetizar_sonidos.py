@@ -216,6 +216,64 @@ def uplink(dur=1.3):
     return sweep + shimmer
 
 
+# ---------------------------------------------------------------- combate (bloque C): disparos de una sola vez
+def turret(dur=0.24):
+    t = t_of(dur)
+    p = t / dur
+    f = 2100 * np.exp(-p * 2.6) + 260
+    tono = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-p * 5.0)
+    click = hp(np.random.default_rng(11).standard_normal(len(t)), 3000) * np.exp(-t * 90) * 0.5
+    return tono + click
+
+
+def bite(dur=0.32):
+    t = t_of(dur)
+    thump = np.sin(2 * np.pi * np.cumsum(140 * np.exp(-t * 14) + 45) / SR) * np.exp(-t * 11)
+    crunch = bp(np.random.default_rng(12).standard_normal(len(t)), 700, 3200, 1) * np.exp(-t * 26) * 0.7
+    return thump + crunch
+
+
+def growl(dur=0.95):
+    t = t_of(dur)
+    p = t / dur
+    env = np.sin(np.pi * np.clip(p, 0, 1)) ** 0.7
+    f0 = 78 + 14 * np.sin(2 * np.pi * 5.5 * t) + 10 * p
+    saw = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR)
+    cuerpo = lp(saw, 520, 2) * env
+    ruido = bp(np.random.default_rng(13).standard_normal(len(t)), 200, 900, 1) * env * 0.35
+    return cuerpo + ruido
+
+
+def alarm(dur=1.3):
+    t = t_of(dur)
+    conmuta = (np.floor(t / 0.325) % 2).astype(float)
+    f = 620 + 260 * conmuta
+    onda = signal.square(2 * np.pi * np.cumsum(f) / SR) * 0.5 + np.sin(2 * np.pi * np.cumsum(f) / SR)
+    env = (np.minimum(t, 0.02) / 0.02) * np.exp(-(t % 0.325) * 3.0)
+    return lp(onda, 2600, 2) * env
+
+
+def meteor_fall(dur=1.1):
+    t = t_of(dur)
+    p = t / dur
+    ruido = np.random.default_rng(14).standard_normal(len(t))
+    centro = 5200 * np.exp(-p * 2.2) + 500
+    out = np.zeros(len(t))
+    paso = 512
+    for i in range(0, len(t), paso):
+        c = float(centro[i])
+        out[i:i + paso] = bp(ruido[max(0, i - 256):i + paso], max(c * 0.6, 120), min(c * 1.5, 9000), 1)[-len(out[i:i + paso]):]
+    return out * (p ** 1.4) * 0.9
+
+
+def meteor_hit(dur=1.4):
+    t = t_of(dur)
+    boom = np.sin(2 * np.pi * np.cumsum(95 * np.exp(-t * 3.2) + 38) / SR) * np.exp(-t * 3.0)
+    ruido = lp(np.random.default_rng(15).standard_normal(len(t)), 900, 2) * np.exp(-t * 4.0) * 0.9
+    grava = gravel(dur, 60, 16, 800, 4000) * np.exp(-t * 2.2) * 0.25
+    return boom + ruido + grava
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     Path(out).mkdir(parents=True, exist_ok=True)
@@ -230,3 +288,9 @@ if __name__ == "__main__":
     save(out, "meteo.wav", meteo())
     save(out, "radio.wav", radio())
     save(out, "uplink.wav", uplink(), 60)
+    save(out, "turret.wav", turret(), 30)
+    save(out, "bite.wav", bite(), 30)
+    save(out, "growl.wav", growl(), 80)
+    save(out, "alarm.wav", alarm(), 40)
+    save(out, "meteor_fall.wav", meteor_fall(), 60)
+    save(out, "meteor_hit.wav", meteor_hit(), 120)

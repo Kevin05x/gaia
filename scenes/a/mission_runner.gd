@@ -11,6 +11,7 @@ const RUTA_MAPA := "res://content/mapa.json"
 const RUTA_PIEZAS := "res://content/parts.json"
 const RUTA_ECONOMIA := "res://content/economia.json"
 const RUTA_HISTORIA := "res://content/historia.json"
+const RUTA_COMBATE := "res://content/combate.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -80,13 +81,23 @@ func _process(delta: float) -> void:
 			_aviso("ANTENNA_UP")
 		elif evento.begins_with(BuildSystem.EVENTO_OBRA_TERMINADA):
 			_aviso("BUILD_DONE")
+		elif evento.begins_with(CombatSystem.EVENTO_OLEADA + ":"):
+			_aviso("NOTICE_WAVE")
+		elif evento.begins_with(CombatSystem.EVENTO_OLEADA_DERROTADA):
+			_aviso("NOTICE_WAVE_CLEARED")
+		elif evento.begins_with(BuildSystem.EVENTO_EDIFICIO_DESTRUIDO):
+			_aviso("NOTICE_BUILDING_LOST")
+		elif evento.begins_with(BuildSystem.EVENTO_ANTENA_DANADA):
+			_aviso("NOTICE_ANTENNA_HIT")
+		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
+			_aviso("NOTICE_METEORS")
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
 		_publicar()
 		port.present_report(sim.informe.duplicate(true))
 		return
 	_desde_ultimo_snapshot += delta
-	if not eventos.is_empty() or _desde_ultimo_snapshot >= PERIODO_SNAPSHOT_S:
-		_publicar()
+	if not eventos.is_empty() or _desde_ultimo_snapshot >= PERIODO_SNAPSHOT_S or sim.hay_combate_activo():
+		_publicar()  # con monstruos o meteoritos se publica cada cuadro: se ven moverse
 
 
 func _crear_simulacion() -> void:
@@ -96,10 +107,11 @@ func _crear_simulacion() -> void:
 	var catalogo := Catalog.desde_archivo(RUTA_PIEZAS)
 	var economia := Economy.desde_archivo(RUTA_ECONOMIA)
 	var historia := StoryData.desde_archivo(RUTA_HISTORIA)
-	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores]:
+	var combate := CombatData.desde_archivo(RUTA_COMBATE)
+	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores]:
 		errores.append_array(lista)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia)
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate)
 
 
 ## "agregar_piezas" es false al rediseñar: el taller conserva las piezas ya elegidas.

@@ -5,14 +5,18 @@ extends Node3D
 ## jugador elige casilla. Solo presenta: las reglas están en la simulación.
 const Art := preload("res://scenes/b/art.gd")
 const Equipo := preload("res://scenes/b/modelos_equipo.gd")
+const HpBar := preload("res://scenes/b/hp_bar.gd")
+signal building_lost(pos: Vector3)  ## un edificio desapareció del snapshot (destruido): la vista de combate hace el humo
 const TILE := 2.0
 ## tipo -> [modelo del equipo, ancho en metros]
 const MODELOS := {"luz": ["foco", 1.3], "domo": ["hangar_roundA", 1.9], "extractor_hielo": ["taladro", 1.7],
-	"hangar": ["hangar_cuadrado", 1.95], "antena": ["anthena_juego", 1.5]}
+	"hangar": ["hangar_cuadrado", 1.95], "antena": ["anthena_juego", 1.5], "torreta": ["torreta_simple", 1.5],
+	"torreta_2": ["torreta_doble", 1.9]}
 
 var ground: Callable  ## altura del terreno (x, z)
 var _nodos: Dictionary = {}  ## id -> {"node", "model", "ring", "label", "off", "firma"}
 var _zona: MeshInstance3D
+var _por_casilla: Dictionary = {}  ## casilla -> id (para girar las torretas hacia su blanco)
 
 
 func at_tile(tile: Vector2i) -> Vector3:
@@ -25,16 +29,21 @@ func at_tile(tile: Vector2i) -> Vector3:
 func update_state(s: Dictionary) -> void:
 	var lista: Array = s.get("buildings", [])
 	var vistos := {}
+	_por_casilla.clear()
 	for e in lista:
 		var id := str(e.get("id", ""))
 		vistos[id] = true
+		_por_casilla[e.get("tile", Vector2i.ZERO)] = id
 		if not _nodos.has(id):
 			_nodos[id] = _crear(e)
 		_actualizar(_nodos[id], e)
 	for id in _nodos.keys():
 		if not vistos.has(id):
 			var datos: Dictionary = _nodos[id]
-			(datos["node"] as Node3D).queue_free()
+			var nodo_perdido: Node3D = datos["node"]
+			if visible and nodo_perdido.is_inside_tree():
+				building_lost.emit(nodo_perdido.global_position)
+			nodo_perdido.queue_free()
 			_nodos.erase(id)
 
 
@@ -61,7 +70,8 @@ func _crear(e: Dictionary) -> Dictionary:
 	etiqueta.outline_modulate = Color(0.12, 0.08, 0.06, 0.9)
 	etiqueta.position = Vector3(0, 2.6, 0)
 	nodo.add_child(etiqueta)
-	return {"node": nodo, "model": null, "ring": anillo, "label": etiqueta, "firma": ""}
+	var barra := HpBar.crear(nodo, 3.1, 1.5)
+	return {"node": nodo, "model": null, "ring": anillo, "label": etiqueta, "firma": "", "bar": barra, "yaw": 0.0}
 
 
 func _actualizar(datos: Dictionary, e: Dictionary) -> void:
@@ -86,6 +96,8 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 	anillo.visible = en_obra
 	if en_obra:
 		anillo.rotation.y += 0.04
+	var vive := not en_obra and (tipo != "antena" or nivel >= 1)
+	HpBar.fijar(datos["bar"], float(e.get("hp", 1.0)) / maxf(float(e.get("hp_max", 1.0)), 0.001) if vive else 1.0)
 	var etiqueta: Label3D = datos["label"]
 	if en_obra:
 		etiqueta.text = "%d%%" % roundi(progreso * 100.0)
@@ -120,6 +132,21 @@ func _modelo(padre: Node3D, tipo: String, nivel: int) -> void:
 			return
 	# Pieza por código si falta el modelo del equipo.
 	Art.rbox(padre, Vector3(1.6, 1.0, 1.6), Vector3(0, 0.5, 0), Color("B7A796"))
+
+
+## Gira la torreta de la casilla «tile» hacia el punto «hacia» (mundo). Las demás casillas no hacen nada.
+func aim_at(tile: Vector2i, hacia: Vector3) -> void:
+	var id: String = _por_casilla.get(tile, "")
+	if id.is_empty() or not _nodos.has(id):
+		return
+	var datos: Dictionary = _nodos[id]
+	var nodo: Node3D = datos["node"]
+	var modelo: Node3D = datos["model"]
+	if modelo == null or not str(datos["firma"]).begins_with("torreta"):
+		return
+	var d := hacia - nodo.global_position
+	datos["yaw"] = lerp_angle(float(datos["yaw"]), atan2(-d.x, -d.z), 0.35)
+	modelo.rotation.y = float(datos["yaw"])
 
 
 ## Zona de construcción: casillas válidas en verde azulado y ocupadas en coral, siguiendo el relieve.

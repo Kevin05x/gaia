@@ -34,6 +34,9 @@ OBJETIVOS_ORIGINALES = [
     ("JZ-07", (-6, -5), "buried", False), ("JZ-08", (1, 6), "rock", True), ("JZ-09", (7, -1), "mineral", False),
 ]
 VECINOS = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+# Nidos de los monstruos (bloque C): casilla deseada; si está ocupada se usa la libre más cercana. Lejos de la base.
+NIDOS = [("nido_falla_1", (25, -10)), ("nido_falla_2", (28, 9)), ("nido_nucleo_1", (4, 31)), ("nido_nucleo_2", (18, 31)),
+         ("nido_nucleo_3", (-3, 22))]
 
 
 def zona_de(c):
@@ -125,10 +128,24 @@ def main():
     for i, c, _, _ in objetivos:
         if not any((c[0] + dx, c[1] + dy) in vistas for dx, dy in VECINOS):
             sys.exit("objetivo inalcanzable: " + i)
+    nidos = []
+    prohibidas = set(ocupadas) | {c for _, c, _, _ in objetivos}
+    for id_nido, deseada in NIDOS:
+        for radio in range(0, 6):
+            libres = [(deseada[0] + dx, deseada[1] + dy) for dx in range(-radio, radio + 1) for dy in range(-radio, radio + 1)
+                      if max(abs(dx), abs(dy)) == radio and dentro((deseada[0] + dx, deseada[1] + dy), 2)
+                      and (deseada[0] + dx, deseada[1] + dy) not in prohibidas
+                      and (deseada[0] + dx, deseada[1] + dy) in vistas]
+            if libres:
+                nidos.append((id_nido, libres[0]))
+                prohibidas.add(libres[0])
+                break
+        else:
+            sys.exit("no cabe el nido " + id_nido)
     originales = [tuple(o) for o in OBSTACULOS_ORIGINALES]
     nuevos = sorted(o for o in obstaculos if o not in originales)
     salida = {
-        "version": 2,
+        "version": 3,
         "estado": "provisional (24 oct 2026): mapa de 71x71 casillas con las 3 zonas de la historia (orilla del lago, falla del "
                   "glaciar y núcleo del cráter). Los 9 objetivos y 10 obstáculos del mapa original se conservan; el resto lo "
                   "genera tools/generar_mapa.py con semilla fija. Los tipos son ids del contrato con la vista: rock, mineral, buried.",
@@ -136,6 +153,7 @@ def main():
         "inicio_rover": list(INICIO),
         "estacion": list(ESTACION),
         "zonas": [{"id": z, "centro": list(c)} for z, c in ZONAS],
+        "nidos": [{"id": i, "casilla": list(c), "zona": zona_de(c)} for i, c in nidos],
         "obstaculos": [list(o) for o in originales] + [list(o) for o in nuevos],
         "objetivos": [{"id": i, "casilla": list(c), "tipo": t, "revelado": r} for i, c, t, r in objetivos],
     }
@@ -145,6 +163,7 @@ def main():
     texto = re.sub(r"\[\s+(-?\d+),\s+(-?\d+)\s+\]", r"[\1, \2]", texto)
     texto = re.sub(r'\{\s+"id": ("[^"]+"),\s+"casilla": (\[[^\]]+\]),\s+"tipo": ("[^"]+"),\s+"revelado": (true|false)\s+\}',
                    r'{ "id": \1, "casilla": \2, "tipo": \3, "revelado": \4 }', texto)
+    texto = re.sub(r'\{\s+"id": ("[^"]+"),\s+"casilla": (\[[^\]]+\]),\s+"zona": ("[^"]+")\s+\}', r'{ "id": \1, "casilla": \2, "zona": \3 }', texto)
     texto = re.sub(r'\{\s+"id": ("[^"]+"),\s+"centro": (\[[^\]]+\])\s+\}', r'{ "id": \1, "centro": \2 }', texto)
     print(texto)
     sys.stderr.write("objetivos: %d, obstáculos: %d, zonas: %s\n" % (len(objetivos), len(obstaculos), {

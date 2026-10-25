@@ -4,10 +4,13 @@ extends RefCounted
 ## tiempo (una obra a la vez), encendido y apagado, energía que generan o consumen y producción del extractor.
 ## Los números salen de economia.json; sin nodos ni reloj propio.
 ## Cada edificio en MissionState.edificios: {"id", "type", "tile", "level", "target_level", "elapsed", "seconds",
-## "active", "hp", "produced"}. "level" es el nivel ya construido (0 mientras se levanta el primero).
+## "active", "hp", "produced", "cd"}. "level" es el nivel ya construido (0 mientras se levanta el primero).
+## "hp" es la vida actual; "cd" los segundos que faltan para el próximo disparo (solo torretas).
 
 const EVENTO_OBRA_TERMINADA := "BUILD_DONE"  ## BUILD_DONE:<tipo>:<id>
 const EVENTO_NIVEL_ANTENA := "ANTENNA_LEVEL"  ## ANTENNA_LEVEL:<nivel>
+const EVENTO_EDIFICIO_DESTRUIDO := "BUILDING_DESTROYED"  ## BUILDING_DESTROYED:<tipo>:<id>
+const EVENTO_ANTENA_DANADA := "ANTENNA_DAMAGED"  ## ANTENNA_DAMAGED:<nivel que queda>
 const ANTENA := "antena"
 
 var _economia: Economy
@@ -27,7 +30,8 @@ func iniciar(estado: MissionState) -> void:
 	estado.siguiente_edificio = 1
 	estado.nivel_antena = _economia.antena_nivel_inicial
 	estado.edificios.append({"id": ANTENA, "type": ANTENA, "tile": casilla_antena(estado), "level": estado.nivel_antena,
-		"target_level": estado.nivel_antena, "elapsed": 0.0, "seconds": 0.0, "active": true, "hp": 0.0, "produced": 0.0})
+		"target_level": estado.nivel_antena, "elapsed": 0.0, "seconds": 0.0, "active": true,
+		"hp": _economia.antena_hp if estado.nivel_antena >= 1 else 0.0, "produced": 0.0, "cd": 0.0})
 	sincronizar_mapa(estado)
 
 
@@ -85,7 +89,7 @@ func construir(estado: MissionState, tipo: String, casilla: Vector2i) -> Diction
 	var id := "%s-%d" % [tipo, estado.siguiente_edificio]
 	estado.siguiente_edificio += 1
 	estado.edificios.append({"id": id, "type": tipo, "tile": casilla, "level": 0, "target_level": 1, "elapsed": 0.0,
-		"seconds": float(def["tiempo_s"]), "active": true, "hp": float(def.get("hp", 100)), "produced": 0.0})
+		"seconds": float(def["tiempo_s"]), "active": true, "hp": float(def.get("hp", 100)), "produced": 0.0, "cd": 0.0})
 	sincronizar_mapa(estado)
 	return {"ok": true, "reason": "", "id": id}
 
@@ -139,6 +143,7 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 				edificio["elapsed"] = float(edificio["seconds"])
 				if edificio["type"] == ANTENA:
 					estado.nivel_antena = int(edificio["level"])
+					edificio["hp"] = _economia.antena_hp
 					eventos.append("%s:%d" % [EVENTO_NIVEL_ANTENA, estado.nivel_antena])
 				eventos.append("%s:%s:%s" % [EVENTO_OBRA_TERMINADA, edificio["type"], edificio["id"]])
 		elif int(edificio["level"]) >= 1 and edificio["active"] and horas > 0.0:
@@ -188,7 +193,8 @@ func para_la_vista(estado: MissionState) -> Array[Dictionary]:
 		if en_obra:
 			progreso = clampf(float(edificio["elapsed"]) / maxf(float(edificio["seconds"]), 0.001), 0.0, 1.0)
 		lista.append({"id": edificio["id"], "type": edificio["type"], "tile": edificio["tile"], "level": edificio["level"],
-			"building": en_obra, "progress": progreso, "active": edificio["active"]})
+			"building": en_obra, "progress": progreso, "active": edificio["active"],
+			"hp": float(edificio["hp"]), "hp_max": vida_maxima(edificio)})
 	return lista
 
 
@@ -201,8 +207,63 @@ func opciones(estado: MissionState) -> Array[Dictionary]:
 		lista.append({"id": tipo, "name_key": def.get("nombre_clave", tipo), "cost": def["costo"].duplicate(),
 			"power_w": float(def.get("genera_w_solar", def.get("genera_w", 0.0))) - float(def.get("consume_w", 0.0)),
 			"seconds": float(def["tiempo_s"]), "count": cantidad(estado, tipo), "max": int(def.get("maximo", -1)),
-			"enabled": disp["enabled"], "reason": disp["reason"]})
+			"enabled": disp["enabled"], "reason": disp["reason"], "range": float(def.get("combate", {}).get("alcance", 0.0))})
 	return lista
+
+
+## Vida máxima de un edificio (la antena tiene la suya).
+func vida_maxima(edificio: Dictionary) -> float:
+	if edificio["type"] == ANTENA:
+		return _economia.antena_hp
+	return float(_economia.edificio(edificio["type"]).get("hp", 100))
+
+
+## Edificio por id ({} si no existe).
+func edificio_por_id(estado: MissionState, id: String) -> Dictionary:
+	for edificio in estado.edificios:
+		if edificio["id"] == id:
+			return edificio
+	return {}
+
+
+## Edificio con vida (la antena sin ningún nivel todavía no cuenta: es solo el sitio).
+func es_objetivo(edificio: Dictionary) -> bool:
+	return edificio["type"] != ANTENA or int(edificio["level"]) >= 1
+
+
+## Quita «dano» de vida a un edificio. Al llegar a 0 un edificio se destruye (se quita del mapa) y la antena baja
+## un nivel. Devuelve los eventos.
+func danar(estado: MissionState, id: String, dano: float) -> Array[String]:
+	var eventos: Array[String] = []
+	var edificio := edificio_por_id(estado, id)
+	if edificio.is_empty() or dano <= 0.0 or not es_objetivo(edificio):
+		return eventos
+	edificio["hp"] = maxf(float(edificio["hp"]) - dano, 0.0)
+	if float(edificio["hp"]) > 0.0:
+		return eventos
+	if edificio["type"] == ANTENA:
+		var nivel := maxi(int(edificio["level"]) - 1, 0)
+		edificio["level"] = nivel
+		edificio["target_level"] = nivel
+		edificio["elapsed"] = 0.0
+		edificio["hp"] = _economia.antena_hp if nivel >= 1 else 0.0
+		estado.nivel_antena = nivel
+		eventos.append("%s:%d" % [EVENTO_ANTENA_DANADA, nivel])
+	else:
+		estado.edificios.erase(edificio)
+		sincronizar_mapa(estado)
+		eventos.append("%s:%s:%s" % [EVENTO_EDIFICIO_DESTRUIDO, edificio["type"], id])
+	return eventos
+
+
+## Suma vida a un edificio sin pasar de su máximo. Devuelve cuánta vida puso.
+func reparar(estado: MissionState, id: String, vida: float) -> float:
+	var edificio := edificio_por_id(estado, id)
+	if edificio.is_empty() or vida <= 0.0 or not es_objetivo(edificio):
+		return 0.0
+	var antes := float(edificio["hp"])
+	edificio["hp"] = minf(antes + vida, vida_maxima(edificio))
+	return float(edificio["hp"]) - antes
 
 
 func _antena(estado: MissionState) -> Dictionary:
@@ -234,6 +295,9 @@ func _motivo(estado: MissionState, tipo: String, casilla: Variant) -> String:
 	var maximo := int(def.get("maximo", -1))
 	if maximo >= 0 and cantidad(estado, tipo) >= maximo:
 		return "MAX_BUILT"
+	var requiere := str(def.get("requiere", ""))
+	if not requiere.is_empty() and not listo(estado, requiere):
+		return "NEEDS_" + requiere.to_upper()
 	if not _recursos.alcanza(estado, def["costo"]):
 		return "NO_RESOURCES"
 	if casilla == null:

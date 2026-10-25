@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "estado": "provisional (24 oct 2026): números de prueba para jugar y equilibrar después del enunciado del 28 oct. Velocidades en casillas por segundo real; el sol dura 300 s. Los monstruos no tienen nombre oficial todavía.",
+  "max_activos": 20,
+  "enemigos": {
+    "arana": { "nombre_clave": "ENEMY_SPIDER", "hp": 24, "velocidad": 1.3, "dano": 5, "dano_rover": 4, "alcance": 1.3, "cadencia_s": 1.2,
+      "dano_estacion_wh": 4, "dano_rocky": 2, "tamano": 0.8 },
+    "void_biter": { "nombre_clave": "ENEMY_BITER", "hp": 40, "velocidad": 1.0, "dano": 4, "dano_rover": 3, "alcance": 1.5, "cadencia_s": 1.5,
+      "drena_wh": 8, "dano_estacion_wh": 12, "dano_rocky": 3, "tamano": 1.0 },
+    "coloso": { "nombre_clave": "ENEMY_COLOSSUS", "hp": 360, "velocidad": 0.5, "dano": 30, "dano_rover": 18, "alcance": 2.2, "cadencia_s": 2.5,
+      "multiplicador_edificio": 1.5, "dano_estacion_wh": 40, "dano_rocky": 10, "tamano": 2.2 }
+  },
+  "oleadas": [
+    { "id": "ola_1", "sol": 2, "hora": 20.0, "grupos": [ { "tipo": "arana", "cantidad": 3, "zona": "falla" } ] },
+    { "id": "ola_2", "sol": 3, "hora": 21.0, "grupos": [ { "tipo": "arana", "cantidad": 4, "zona": "falla" }, { "tipo": "void_biter", "cantidad": 1, "zona": "nucleo" } ] },
+    { "id": "ola_3", "sol": 4, "hora": 19.0, "grupos": [ { "tipo": "arana", "cantidad": 5, "zona": "nucleo" }, { "tipo": "void_biter", "cantidad": 2, "zona": "falla" } ] },
+    { "id": "ola_coloso", "sol": 5, "hora": 11.0, "grupos": [ { "tipo": "coloso", "cantidad": 1, "zona": "nucleo" }, { "tipo": "arana", "cantidad": 4, "zona": "falla" } ] },
+    { "id": "ola_final", "sol": 6, "hora": 9.0, "grupos": [ { "tipo": "arana", "cantidad": 6, "zona": "falla" }, { "tipo": "void_biter", "cantidad": 3, "zona": "nucleo" } ] }
+  ],
+  "amenaza": {
+    "taladro": 4.0,
+    "transmision_por_h_y_nivel": 0.4,
+    "decaimiento_por_h": 0.5,
+    "por_extra": 10.0,
+    "extra_max": 4,
+    "extra_tipo": "arana"
+  },
+  "reparacion": {
+    "hp_por_s": 3.0,
+    "rover_hp_por_s": 1.5,
+    "wh_por_hp": 0.2,
+    "rango_seguro": 4.0
+  },
+  "meteoritos": [
+    { "id": "meteoritos_1", "sol": 4, "hora": 14.0, "impactos": 5, "dano": 60, "radio": 1.5, "aviso_s": 6, "separacion_s": 1.5 }
+  ]
+}

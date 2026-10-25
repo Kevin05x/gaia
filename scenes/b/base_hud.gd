@@ -21,6 +21,8 @@ var _chips: Dictionary = {}
 var _ethics: Label
 var _rocky: Label
 var _rocky_chip: PanelContainer
+var _rover: Label
+var _rover_chip: PanelContainer
 var _menu_box: VBoxContainer
 var _menu_signature := ""
 
@@ -65,6 +67,9 @@ func build() -> void:
 	_rocky_chip = _chip(_bar, Icon.make("heart", 13, UI.TEAL))
 	_rocky = _rocky_chip.get_meta("text")
 	_rocky_chip.tooltip_text = tr("ROCKY_TIP")
+	_rover_chip = _chip(_bar, Icon.make("chassis", 13, UI.AMBER))
+	_rover = _rover_chip.get_meta("text")
+	_rover_chip.tooltip_text = tr("ROVER_HP_TIP")
 	build_button = Button.new()
 	build_button.theme_type_variation = "PillButton"
 	build_button.focus_mode = Control.FOCUS_NONE
@@ -150,6 +155,12 @@ func update_snapshot(s: Dictionary) -> void:
 	var vida := roundi(float(historia.get("rocky_hp", 100.0)))
 	_rocky.text = "%d%%" % vida
 	_rocky.add_theme_color_override("font_color", UI.CORAL if vida <= 30 else UI.CREAM)
+	var con_combate := s.has("combat")
+	_rover_chip.visible = con_combate
+	if con_combate:
+		var vida_rover := roundi(float(s.get("rover_hp", 100.0)))
+		_rover.text = "%d%%" % vida_rover
+		_rover.add_theme_color_override("font_color", UI.CORAL if vida_rover <= 40 else UI.CREAM)
 	var bloqueado := bool(s.get("paused", false)) or bool(s.get("safe_mode", false))
 	build_button.disabled = bloqueado
 	if menu.visible:
@@ -212,7 +223,7 @@ func _fill_menu() -> void:
 ## Tipo de edificio -> sufijo de su clave de texto (BLD_SOLAR...).
 static func _clave(tipo: String) -> String:
 	return {"panel_solar": "SOLAR", "luz": "LIGHT", "domo": "DOME", "extractor_hielo": "EXTRACTOR", "hangar": "HANGAR",
-		"antena": "ANTENNA"}.get(tipo, tipo.to_upper())
+		"antena": "ANTENNA", "torreta": "TURRET", "torreta_2": "TURRET2"}.get(tipo, tipo.to_upper())
 
 
 func _unhandled_input(e: InputEvent) -> void:
