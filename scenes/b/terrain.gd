@@ -1127,15 +1127,18 @@ func select(id: String) -> void:
 		_clear_outline()
 
 
+## Muestra del contorno de selección (fuera del árbol) para que ShaderWarmup compile su material de antemano.
+func muestra_contorno() -> Node3D:
+	_material_contorno()
+	var muestra := MeshInstance3D.new()
+	muestra.mesh = BoxMesh.new()
+	muestra.material_override = _outline_material
+	return muestra
+
+
 ## Contorno brillante del objetivo (casco invertido: la malla ampliada, solo caras traseras, sin luz).
 func _make_outline(nodo: Node3D) -> void:
-	if _outline_material == null:
-		_outline_material = StandardMaterial3D.new()
-		_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_outline_material.cull_mode = BaseMaterial3D.CULL_FRONT
-		_outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		_outline_material.albedo_color = Color(TARGET_LIGHT, 0.95)
-		_outline_material.render_priority = 2
+	_material_contorno()
 	for hijo in nodo.get_children():
 		if hijo is MeshInstance3D and hijo.mesh != null and not hijo.has_meta("outline"):
 			var borde := MeshInstance3D.new()
@@ -1148,6 +1151,16 @@ func _make_outline(nodo: Node3D) -> void:
 			borde.rotation = hijo.rotation
 			borde.scale = hijo.scale * 1.035
 			_outline.append(borde)
+
+
+func _material_contorno() -> void:
+	if _outline_material == null:
+		_outline_material = StandardMaterial3D.new()
+		_outline_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_outline_material.cull_mode = BaseMaterial3D.CULL_FRONT
+		_outline_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_outline_material.albedo_color = Color(TARGET_LIGHT, 0.95)
+		_outline_material.render_priority = 2
 
 
 func _clear_outline() -> void:

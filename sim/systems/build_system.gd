@@ -270,8 +270,25 @@ func opciones(estado: MissionState) -> Array[Dictionary]:
 		lista.append({"id": tipo, "name_key": def.get("nombre_clave", tipo), "cost": def["costo"].duplicate(),
 			"power_w": float(def.get("genera_w_solar", def.get("genera_w", 0.0))) - float(def.get("consume_w", 0.0)),
 			"seconds": float(def["tiempo_s"]), "count": cantidad(estado, tipo), "max": int(def.get("maximo", -1)),
-			"enabled": disp["enabled"], "reason": disp["reason"], "range": float(def.get("combate", {}).get("alcance", 0.0))})
+			"enabled": disp["enabled"], "reason": disp["reason"], "range": float(def.get("combate", {}).get("alcance", 0.0)),
+			"info": ficha(tipo)})
 	return lista
+
+
+## Datos de la ficha informativa del edificio (vida, daño, capacidad, producción y requisitos), para el menú.
+func ficha(tipo: String) -> Dictionary:
+	var def := _economia.edificio(tipo)
+	var combate: Dictionary = def.get("combate", {})
+	var datos := {"hp": float(def.get("hp", 100)), "requires": str(def.get("requiere", "")),
+		"capacity": int(def.get("capacidad", 0)), "produces_per_hour": Dictionary(def.get("produce_por_hora", {})).duplicate()}
+	if not combate.is_empty():
+		datos["damage"] = float(combate.get("dano", 0.0))
+		datos["fire_rate_s"] = float(combate.get("cadencia_s", 0.0))
+		datos["range"] = float(combate.get("alcance", 0.0))
+	if def.has("modulos"):
+		datos["modules"] = (def["modulos"] as Array).size()
+		datos["hp_module"] = float(def.get("hp_modulo", 0))
+	return datos
 
 
 ## Vida máxima de un edificio (la antena tiene la suya).

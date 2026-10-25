@@ -78,6 +78,30 @@ func cancelar(estado: MissionState) -> void:
 	estado.en_movimiento = false
 
 
+## Orden del jugador de parar (Esc) o de ir a otro sitio: el rover termina el tramo que está recorriendo y se
+## queda en esa casilla; se devuelve la energía de las casillas que ya no recorrerá. Devuelve el tramo que falta
+## presentar ([casilla] si iba a mitad de camino, vacío si estaba justo en una casilla). Sin marcha, no hace nada.
+func detener(estado: MissionState) -> Array[Vector2i]:
+	var tramo: Array[Vector2i] = []
+	if estado.movimiento_en_curso.is_empty():
+		return tramo
+	var ruta: Array = estado.movimiento_en_curso["path"]
+	var segundos: float = maxf(float(estado.movimiento_en_curso["seconds_per_tile"]), 0.001)
+	var transcurrido := float(estado.movimiento_en_curso["elapsed"])
+	var hechas := mini(int(floorf(transcurrido / segundos)), ruta.size())
+	var recorridas := hechas
+	if hechas < ruta.size() and transcurrido > hechas * segundos:
+		recorridas = hechas + 1  # va a mitad de tramo: lo termina
+		tramo.append(ruta[hechas])
+	if recorridas > 0:
+		estado.casilla_rover = ruta[recorridas - 1]
+	var devolver := (ruta.size() - recorridas) * float(_balance.numero("movimiento.costo_wh_por_casilla"))
+	estado.bateria_wh = minf(estado.bateria_capacidad_wh, estado.bateria_wh + maxf(devolver, 0.0))
+	estado.movimiento_en_curso = {}
+	estado.en_movimiento = false
+	return tramo
+
+
 func _iniciar(estado: MissionState, plan: Dictionary) -> Dictionary:
 	var ruta: Array[Vector2i] = plan["path"]
 	if not plan["enabled"]:

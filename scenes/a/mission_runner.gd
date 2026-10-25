@@ -19,6 +19,9 @@ const Musica := preload("res://scenes/menu/musica.gd")
 
 ## Segundos entre snapshots cuando no pasa nada que los obligue a salir antes (batería, hora...).
 const PERIODO_SNAPSHOT_S := 0.15
+## Con monstruos o meteoritos se publica a 30 por segundo (la vista suaviza el movimiento entre uno y otro):
+## antes era cada cuadro, y en la web armar y copiar el snapshot 60 veces por segundo se notaba.
+const PERIODO_COMBATE_S := 1.0 / 30.0
 ## Un cuadro muy largo (pestaña oculta, tirón) no adelanta la misión más que esto.
 const DELTA_MAXIMO_S := 0.25
 
@@ -35,6 +38,8 @@ var view: Node
 var errores: PackedStringArray = PackedStringArray()
 
 var _desde_ultimo_snapshot: float = 0.0
+var _desde_ultimo_guardado: float = 0.0
+const PERIODO_AUTOGUARDADO_S := 30.0  ## autoguardado ligero durante las operaciones (además del de cada sol)
 
 
 func _ready() -> void:
@@ -47,7 +52,9 @@ func _ready() -> void:
 	if crear_vista and view == null:
 		view = load(ESCENA_VISTA).instantiate()
 		add_child(view)
-		view.menu_requested.connect(func() -> void: Sesion.volver_al_menu(get_tree()))
+		view.menu_requested.connect(func() -> void:
+			guardar_partida()  # «Salir al menú» guarda: «Continuar» vuelve con todo lo juntado
+			Sesion.volver_al_menu(get_tree()))
 		Musica.reproducir(get_tree(), "juego", 4.0)
 		if not Sesion.cargar_al_iniciar and not saltar_taller and view.get("story") != null:
 			view.story.show_intro(sim.intro_historia())
@@ -77,7 +84,7 @@ func _process(delta: float) -> void:
 		elif evento.begins_with(ScienceSystem.EVENTO_ACCION_TERMINADA):
 			_aviso("ACTION_DONE")
 		elif evento == ClockSystem.EVENTO_SOL_NUEVO and crear_vista:
-			Sesion.guardar(sim)  # autoguardado al inicio de cada sol
+			guardar_partida()  # autoguardado al inicio de cada sol
 		elif evento.begins_with(BuildSystem.EVENTO_NIVEL_ANTENA):
 			_aviso("ANTENNA_UP")
 		elif evento.begins_with(BuildSystem.EVENTO_OBRA_TERMINADA):
@@ -95,12 +102,34 @@ func _process(delta: float) -> void:
 		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
 			_aviso("NOTICE_METEORS")
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
+		if crear_vista:
+			Sesion.borrar()  # misión terminada: ya no hay partida que continuar
 		_publicar()
 		port.present_report(sim.informe.duplicate(true))
 		return
 	_desde_ultimo_snapshot += delta
-	if not eventos.is_empty() or _desde_ultimo_snapshot >= PERIODO_SNAPSHOT_S or sim.hay_combate_activo():
-		_publicar()  # con monstruos o meteoritos se publica cada cuadro: se ven moverse
+	if crear_vista:
+		_desde_ultimo_guardado += delta
+		if _desde_ultimo_guardado >= PERIODO_AUTOGUARDADO_S:
+			guardar_partida()
+	if not eventos.is_empty() or _desde_ultimo_snapshot >= PERIODO_SNAPSHOT_S \
+			or (_desde_ultimo_snapshot >= PERIODO_COMBATE_S and sim.hay_combate_activo()):
+		_publicar()
+
+
+## Guarda la partida si está en operaciones (en el taller, el aterrizaje o el informe no hay nada que continuar).
+func guardar_partida() -> bool:
+	_desde_ultimo_guardado = 0.0
+	if sim == null or sim.estado.fase != "operations":
+		return false
+	return Sesion.guardar(sim)
+
+
+func _notification(que: int) -> void:
+	# Cerrar la ventana o la pestaña, o dejarla en segundo plano, guarda antes: no se pierde lo juntado.
+	if crear_vista and (que == NOTIFICATION_WM_CLOSE_REQUEST or que == NOTIFICATION_APPLICATION_FOCUS_OUT \
+			or que == NOTIFICATION_APPLICATION_PAUSED):
+		guardar_partida()
 
 
 func _crear_simulacion() -> void:
@@ -136,9 +165,14 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 		port.reject(resultado["reason"])
 		return
 	match orden:
-		"move", "approach":
+		"move", "approach", "stop":
+			# Con «stop» o una orden nueva en plena marcha, el camino empieza por el tramo que el rover está terminando.
 			if not resultado["path"].is_empty():
 				port.present_path(resultado["path"], resultado["seconds_per_tile"])
+			elif orden == "stop":
+				port.cancel_presentation()
+			if orden == "stop":
+				_aviso("MOVE_STOPPED")
 		"act":
 			port.present_action(resultado["action"])
 		"upgrade", "build", "build_module", "decide":
@@ -147,7 +181,7 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 		"landing_finished":
 			_aviso("READY")
 			if crear_vista:
-				Sesion.guardar(sim)  # primer punto de guardado: recién aterrizado
+				guardar_partida()  # primer punto de guardado: recién aterrizado
 		"redesign":
 			port.cancel_presentation()
 			_reiniciar_vista()

@@ -25,7 +25,7 @@ func _ready() -> void:
 	camera.name = "Camera"
 	camera.fov = 40.0
 	camera.near = 0.15
-	camera.far = 420.0
+	camera.far = 600.0
 	add_child(camera)
 	camera.current = true
 	_apply()

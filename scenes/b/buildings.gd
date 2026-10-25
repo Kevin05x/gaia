@@ -217,6 +217,45 @@ func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, niv
 	Art.rbox(padre, Vector3(1.6, 1.0, 1.6), Vector3(0, 0.5, 0), Color("B7A796"))
 
 
+## Muestras (fuera del árbol) de todo lo que una obra puede dibujar: cada edificio terminado y en obra (con su material
+## de revelado, andamio, cartel, anillo y barra de vida). ShaderWarmup las dibuja un instante al empezar la misión para
+## que el navegador compile sus sombreadores antes de jugar: así la primera obra no congela la imagen.
+func muestras_para_precalentar() -> Array[Node3D]:
+	var lista: Array[Node3D] = []
+	var tipos: Array = ["panel_solar", "antena"]
+	tipos.append_array(MODELOS.keys())
+	Equipo.precargar(MODELOS.values().map(func(v: Array) -> String: return str(v[0])))
+	for tipo in tipos:
+		for en_obra in [false, true]:
+			var raiz := Node3D.new()
+			var modelo := Node3D.new()
+			raiz.add_child(modelo)
+			_modelo(modelo, str(tipo), 1, en_obra, 1)
+			if en_obra:
+				var info := BuildFx.preparar(modelo, true)
+				BuildFx.andamio(modelo, info)
+				BuildFx.revelar(info, 0.0, float(info["alto"]) * 0.5)
+				var cartel := BuildFx.cartel(raiz, float(info["alto"]) + 0.45)
+				BuildFx.fijar_cartel(cartel, 0.5, 12.0)
+				Art.ring(raiz, 1.05, Vector3(0, 0.06, 0), Color("F0C079"))
+				HpBar.fijar(HpBar.crear(raiz, 3.1, 1.5), 0.5)
+			lista.append(raiz)
+	for en_obra in [false, true]:
+		var nave := Node3D.new()
+		_modelo(nave, "nave_fuga", 2, en_obra, 2)
+		lista.append(nave)
+	var etiqueta := Label3D.new()
+	etiqueta.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	etiqueta.no_depth_test = true
+	etiqueta.font_size = 40
+	etiqueta.outline_size = 10
+	etiqueta.text = "OFF"
+	var soporte := Node3D.new()
+	soporte.add_child(etiqueta)
+	lista.append(soporte)
+	return lista
+
+
 ## Gira la torreta de la casilla «tile» hacia el punto «hacia» (mundo). Las demás casillas no hacen nada.
 func aim_at(tile: Vector2i, hacia: Vector3) -> void:
 	var id: String = _por_casilla.get(tile, "")
