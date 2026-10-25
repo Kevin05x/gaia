@@ -51,6 +51,45 @@ var ocupado: bool = false
 var accion_en_curso: Dictionary = {}  ## {"action", "target_id", "seconds", "elapsed"}; vacío si no hay ninguna
 var dron_sol: int = 0  ## sol del último vuelo de dron
 var dron_usos: int = 0  ## vuelos de dron hechos en ese sol
+var companero_sol: int = 0  ## sol de la última ayuda de Rocky
+var companero_usos: int = 0  ## ayudas de Rocky hechas en ese sol
+
+## Base y economía (content/economia.json); vacíos cuando la misión no usa economía.
+var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
+var recursos_vistos: Array = []  ## recursos ya conseguidos alguna vez
+var edificios: Array[Dictionary] = []  ## ver BuildSystem
+var siguiente_edificio: int = 1
+
+## Historia (content/historia.json)
+var etica: float = 50.0  ## 0..100: alta = simbiosis, baja = explotación
+var rocky_hp: float = 100.0  ## vida de Rocky (el compañero) en %
+var historia_nodo: String = ""  ## nodo que espera decisión ("" si ninguno): la misión se detiene
+var historia_espera: String = ""  ## próximo nodo, que se mostrará cuando se cumpla un disparador
+var historia_ultimo: String = ""  ## último nodo mostrado (da el objetivo actual)
+var historia_registro: Array = []  ## [{"node", "choice"}] decisiones tomadas
+var historia_final: String = ""  ## final elegido en el clímax
+var historia_rama: String = ""
+var historia_radio: String = ""  ## último nodo de radio (no detiene la misión)
+var historia_radio_n: int = 0  ## contador de nodos de radio: la vista muestra la tarjeta cuando cambia
+var historia_t_ultimo: float = -1000.0  ## hora de juego absoluta en que se resolvió el último nodo
+var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el clímax); -1 = sin tope
+
+## Tutorial del Sol 1 (content/tutorial.json)
+var tutorial_activo: bool = false
+var tutorial_paso: int = 0  ## índice del paso que se muestra
+var tutorial_t: float = 0.0  ## segundos reales que lleva el paso actual en pantalla
+var tutorial_contadores: Dictionary = {}  ## evento -> veces que ha ocurrido desde que empezó el tutorial
+
+## Combate (content/combate.json). Todo son datos simples para poder guardarlos.
+var rover_hp: float = 100.0  ## vida del rover en %; a 0 la misión fracasa
+var enemigos: Array[Dictionary] = []  ## {"id", "type", "wave", "pos": Vector2, "dest": Vector2i, "hp", "cd", "atk"}
+var siguiente_enemigo: int = 1
+var siguiente_disparo: int = 1  ## número de serie de cada efecto de «disparos» (la vista lo usa para sonar una sola vez)
+var oleadas_hechas: Array = []  ## ids de oleadas y de lluvias de meteoritos que ya empezaron
+var amenaza: float = 0.0  ## la actividad de la base (taladro, antena) despierta a la fauna: añade arañas a la siguiente oleada
+var impactos: Array[Dictionary] = []  ## meteoritos en camino: {"tile", "t": segundos para caer, "dano", "radio"}
+var meteoritos_en_curso: Array[Dictionary] = []  ## lluvias que aún sueltan meteoritos: {"id", "restan", "t", "separacion_s", "dano", "radio", "aviso_s", "sol"}
+var disparos: Array[Dictionary] = []  ## efectos recientes para la vista: {"from": Vector2i, "to": Vector2, "ttl", "kind", "n"}
 
 var revision_mapa: int = 1
 var objetivos: Array[Dictionary] = []
@@ -115,6 +154,7 @@ func a_snapshot() -> Dictionary:
 		"moving": en_movimiento,
 		"busy": ocupado,
 		"map_revision": revision_mapa,
+		"rover_hp": rover_hp,
 		"targets": objetivos.duplicate(true),
 		"obstacles": obstaculos.duplicate(),
 	}

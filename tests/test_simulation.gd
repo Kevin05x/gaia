@@ -37,8 +37,8 @@ func _objetivo(id: String) -> Dictionary:
 func test_empieza_en_el_taller_con_el_mapa_cargado() -> void:
 	var datos := sim.snapshot()
 	assert_eq(datos["phase"], "workshop")
-	assert_eq(datos["targets"].size(), 9)
-	assert_eq(datos["bounds"], {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)})
+	assert_eq(datos["targets"].size(), 39)
+	assert_eq(datos["bounds"], {"min": Vector2i(-35, -35), "max": Vector2i(35, 35)})
 	assert_eq(datos["warnings"].size(), 0)
 
 
@@ -324,3 +324,17 @@ func test_reiniciar_vuelve_al_taller_con_la_mision_limpia() -> void:
 	assert_eq(datos["battery"]["wh"], 1000.0)
 	assert_eq(sim.objetivo_seleccionado(), "")
 	assert_true(sim.configurar_diseno("rtg", "direct", todos, false, 110.0))
+
+
+func test_el_snapshot_publica_las_zonas_y_donde_esta_el_rover() -> void:
+	var datos := sim.snapshot()
+	assert_eq(datos["zones"].size(), 3)
+	assert_eq(datos["zones"][0]["id"], "orilla")
+	assert_eq(datos["rover_zone"], "orilla")
+
+
+func test_una_ruta_larga_cruza_el_mapa_grande_sin_pagar_de_mas() -> void:
+	var inicio := Time.get_ticks_msec()
+	var ruta := mapa.ruta(Vector2i(0, 0), Vector2i(30, 30))
+	assert_gt(ruta.size(), 55, "la ruta recorre las dos zonas")
+	assert_lt(Time.get_ticks_msec() - inicio, 250, "la búsqueda en 71x71 casillas es casi instantánea")

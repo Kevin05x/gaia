@@ -68,7 +68,7 @@ Incluye en `available_actions` todas las acciones y `approach`, `transmit`, `upg
 
 Tipos de objetivo: `rock`, `mineral`, `buried`. IDs únicos y estables. Cambia `map_revision` cuando cambien posiciones, tipos o conjunto de objetivos/obstáculos. Revelado y agotamiento se actualizan en snapshots sin reconstruir el mapa. `rover_tile` siempre es la última posición confirmada. Al cargar o teletransportar usa `teleport=true` en un solo snapshot para cancelar una ruta anterior.
 
-Coordenadas: X horizontal de cuadrícula, Y de Vector2i corresponde a Z del mundo; 1 casilla = 2 metros; límites visuales -11..11. El relieve de +/-18 cm es cosmético. A usa la misma cuadrícula y casillas bloqueadas. Si cambia el mapa/límite del producto, actualiza también minimapa y conversión visual.
+Coordenadas: X horizontal de cuadrícula, Y de Vector2i corresponde a Z del mundo; 1 casilla = 2 metros; límites del mapa actual -35..35 (71×71 casillas; ver `MAPA_GRANDE.md`). El relieve de +/-18 cm es cosmético. A usa la misma cuadrícula y casillas bloqueadas. Si cambia el mapa/límite del producto, actualiza también minimapa y conversión visual.
 
 `chapter_title_key` y `brief_key` opcionales seleccionan textos de capítulos; A registra sus traducciones. No hay historia obligatoria incrustada en las reglas de la vista.
 
@@ -146,7 +146,9 @@ Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (
  "is_night": false,                 # hora fuera de [amanecer, atardecer) de balance.json
  "dust": 0.12,                      # 0..1; incluye la tormenta. A lo sube y baja de forma continua
  "link_next": {"opens": true, "hour": 17.0, "sol": 1},   # próximo cambio del enlace; opens=false: próximo cierre
- "bounds": {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)},   # últimas casillas válidas
+ "bounds": {"min": Vector2i(-35, -35), "max": Vector2i(35, 35)},   # últimas casillas válidas (mapa grande)
+ "zones": [{"id": "orilla", "center": Vector2i(-12, -12)}],   # zonas del mapa (el centro más cercano manda)
+ "rover_zone": "orilla",   # zona donde está el rover
  "warnings": [
    {"id": "LOW_BATTERY", "severity": "warning", "key": "WARN_LOW_BATTERY", "values": [18]}
  ],
@@ -325,3 +327,57 @@ Flujo: `intro.tscn` (escena principal) → `menu.tscn` → (tutorial la primera 
 - **Sonidos por acción** (`audio.gd`): el rover rodando, el taladro, el láser del espectrómetro, el radar, la panorámica, el dron (arranque de rotores y vuelo), el compañero y la estación meteorológica tienen sonido propio y suenan en bucle mientras dura la acción (la tabla `ACCIONES` los asocia con el id de la acción). Al abrirse la transmisión suena un barrido de subida y luego el chorro de datos. Los `.wav` importados no vienen en bucle, así que `audio.gd` los repite por código.
 - **Animación de transmisión** (`transmission_fx.gd`, accesible como `actors.link`): mientras `transmitting` es verdadero, paquetes de datos viajan en arco del rover a la antena, de su punta sale un haz con paquetes que suben al cielo y ondas circulares se expanden hacia arriba; aparece y se apaga con fundido. Sigue la altura de la antena según su nivel (`actors.antenna_top`).
 - Pruebas: `tests/test_guardado.gd` (5), `tests/test_menu.gd` (9) y `tests/test_sonido.gd` (6). Total: 254.
+
+## Historia, recursos y base (bloque A, 24 oct 2026)
+
+Con `content/economia.json` y `content/historia.json` (los carga `MissionRunner`), el snapshot trae además:
+
+- `resources`: `{"rocas", "olivino", "hielo", "xenolito"}` y `resource_capacity` (sube con cada domo).
+- `buildings`: `[{"id", "type", "tile", "level", "building", "progress", "active"}]`. La Antena Científica es `type: "antena"` en `base.antenna_tile` y empieza en nivel 0: sin ella no se transmite (`NO_ANTENNA`).
+- `build_options`: `[{"id", "name_key", "cost", "power_w", "seconds", "count", "max", "enabled", "reason"}]`.
+- `base`: `{"center", "radius", "antenna_tile", "antenna_max", "antenna_next_cost"}`.
+- `story`: `{"pending", "objective", "ethics", "rocky_hp", "branch", "log"}`. `pending` es el nodo que espera decisión (la misión se detiene): `{"id", "act", "title", "text", "rocky", "choices": [{"text", "detail", "enabled", "reason"}]}`. Los textos son `{"es", "en"}`.
+
+Órdenes nuevas: `build {"building", "tile"}`, `toggle_building {"id", "on"}`, `decide {"choice"}`; `upgrade` sube la antena un nivel (obra con tiempo y costo en recursos; el nivel 2 pide el hangar).
+
+El informe trae `ending {"id", "title", "text"}`, `ethics`, `rocky_hp` y `story_log`. Con historia, llegar a la meta solo gana después de decidir el clímax; la derrota siempre es el final «silencio».
+
+### Radio, metas y escenas (bloque A, ajuste del 24 oct 2026: «menos película, más juego»)
+
+La historia ya no pausa el juego en cada evento. Cada nodo de `content/historia.json` tiene un `modo`:
+
+- **`radio`** (aterrizaje, alerta sísmica y glaciares): no detiene la misión. Se aplica solo (su única opción) y el snapshot trae `story.radio = {"id", "n", "act", "title", "image", "dialogue"}`. La vista muestra una tarjeta no bloqueante abajo a la izquierda con la escena en miniatura y las voces; pasa sola o con clic, y espera si hay una escena o la pausa. `n` sube con cada radio nueva: la vista solo muestra la que tiene `n` mayor que la última vista (una partida cargada no repite la anterior). Evento `STORY_RADIO:<nodo>`.
+- **`decision`** (noche de arañas, nidos y clímax): detiene la misión (`story.pending`). Con `escena: "corta"` (noche de arañas) la vista muestra una sola pantalla con imagen, relato, voces y opciones; con `completa`, imagen y relato, diálogos uno a uno y decisión.
+- **`espera_h`**: horas de juego de respiro desde el nodo anterior antes de que este pueda salir (así se juega entre evento y evento).
+- **`metas`**: `[{"tipo": "antena|edificio|recurso|enviados_pct|sol|bateria_pct|rocky_hp", "id"?, "min"}]`. El snapshot trae `story.goals = [{"kind", "id", "cur", "goal", "done"}]` (avance del objetivo actual) y el HUD lo muestra como lista bajo el minimapa. Son guía: lo que abre cada evento sigue siendo `disparadores`.
+
+`StoryData` valida `modo`, `escena`, `espera_h`, `metas` y que una radio tenga una sola opción sin final ni requisito de Rocky (`BAD_RADIO`). Estado nuevo en `MissionState`: `historia_radio`, `historia_radio_n`, `historia_t_ultimo`.
+
+Imágenes: las 16 escenas ilustradas (`assets/historia/<id>.jpg`, 1280×720) salen del storyboard de Canva aprobado.
+
+## Combate (bloque C, 24 oct 2026)
+
+Ver `COMBATE.md`. Cambios de contrato para A:
+
+- `Simulation` recibe un séptimo argumento opcional: `Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate)`, con `combate = CombatData.new(...)` cargado de `content/combate.json`. `MissionRunner` ya lo carga (`RUTA_COMBATE`). Sin él no hay combate y el snapshot no trae `combat`.
+- `Simulation.hay_combate_activo()`: el runner publica el snapshot cada cuadro mientras sea `true` (monstruos, rayos o meteoritos en movimiento).
+- Snapshot nuevo:
+  - `combat`: `{"enemies": [{"id","type","pos","hp","hp_max","size","attacking"}], "shots": [{"from","to","ttl","kind","n"}], "impacts": [{"tile","t","total","radius"}], "threat", "threat_extra", "wave": {…próxima oleada…}, "rover_hp"}`.
+  - `nests`: `[{"id","casilla","zona"}]`.
+  - `rover_hp` (0–100) en el nivel superior.
+  - `buildings[*].hp` y `hp_max`.
+- Avisos nuevos: `ENEMIES_ACTIVE`, `METEORS_INCOMING`, `ROVER_DAMAGED`, `WAVE_SOON` (textos `WARN_*` en `i18n/catalog.gd`).
+- Eventos nuevos: `WAVE_STARTED:<id>`, `WAVE_CLEARED:<id>`, `ENEMY_KILLED:<tipo>`, `ROVER_HIT`, `METEOR_SHOWER:<id>`, `METEOR_IMPACT`, `BUILDING_DESTROYED`, `ANTENNA_DAMAGED`.
+- Informe: nueva causa de derrota `CAUSE_ROVER_DESTROYED`.
+- Nuevos edificios en `build_options`: `torreta` y `torreta_2` (la segunda pide hangar). Cada opción trae `range` (alcance en casillas; 0 si no dispara).
+
+## Tutorial y nave de fuga (bloque D, 24 oct 2026)
+
+Ver `TUTORIAL_Y_NAVE.md`. Cambios de contrato para A:
+
+- `Simulation.new(..., combate, tutorial)`: octavo argumento opcional, `TutorialData` cargado de `content/tutorial.json` (`MissionRunner` ya lo carga, `RUTA_TUTORIAL`).
+- Snapshot nuevo: `tutorial`: `{"active": false}` o `{"active": true, "step", "total", "id", "text": {"es","en"}, "highlight": ""|"mapa"|"acciones"|"construir"|"enlace"}`.
+- Orden nueva: `tutorial_skip` (cierra el tutorial). Eventos: `TUTORIAL_STEP:<id>` y `TUTORIAL_DONE`.
+- `build_options` ya no trae `nave_fuga` hasta decidir el clímax. Motivos nuevos: `NEEDS_FINAL`, `NEEDS_ANTENNA_3`.
+- Con historia y `nave` en `historia.json`, la victoria exige además tener la nave de fuga completa (todos sus módulos); el informe añade la causa `CAUSE_SHIP`.
+- Edificios por módulos (`modulos` en `economia.json`): `buildings[*]` trae `modules` (total, 0 si no es por módulos) y `next_module` (`{name_key, cost, seconds, enabled, reason}`, vacío si ya está completo); el nivel del edificio es el número de módulos terminados. Orden nueva: `build_module {id}`. Evento nuevo: `MODULE_DONE:<tipo>:<n>`. `meta.modulos` da el total para la meta «módulos». `construir` crea el módulo 1 con el costo y tiempo del primero.

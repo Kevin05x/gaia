@@ -77,3 +77,72 @@ func test_la_animacion_de_transmision_aparece_y_se_apaga() -> void:
 	for i in range(10):
 		fx._process(0.1)
 	assert_false(fx.visible, "se apaga con un fundido al terminar")
+
+
+# --- Combate (bloque C) ---------------------------------------------------------------------------------------------
+
+func _voces_sonando(a: Node) -> int:
+	var n := 0
+	for v in a._voces:
+		if v.playing:
+			n += 1
+	return n
+
+
+func test_cada_efecto_de_combate_suena_una_sola_vez() -> void:
+	var a := _audio()
+	a._sonidos_de_combate({"shots": [], "enemies": [], "impacts": []}, false)  # primer cuadro: no suena lo anterior
+	var snap := {"shots": [{"n": 1, "kind": "shot"}], "enemies": [], "impacts": []}
+	a._sonidos_de_combate(snap, false)
+	assert_eq(_voces_sonando(a), 1, "el disparo nuevo suena")
+	a._sonidos_de_combate(snap, false)
+	a._sonidos_de_combate(snap, false)
+	assert_eq(_voces_sonando(a), 1, "el mismo disparo en cuadros siguientes no vuelve a sonar")
+	a._sonidos_de_combate({"shots": [{"n": 1, "kind": "shot"}, {"n": 2, "kind": "impact"}], "enemies": [], "impacts": []}, false)
+	assert_eq(_voces_sonando(a), 2, "el impacto nuevo suena aparte")
+
+
+func test_alarma_rugido_y_mordida() -> void:
+	var a := _audio()
+	a._sonidos_de_combate({"shots": [], "enemies": [], "impacts": []}, false)
+	var e := {"id": "e1", "type": "coloso", "attacking": false}
+	a._sonidos_de_combate({"shots": [], "enemies": [e], "impacts": []}, false)
+	assert_eq(_voces_sonando(a), 2, "alarma y rugido al aparecer el primer monstruo")
+	for v in a._voces:
+		v.stop()
+	a._sonidos_de_combate({"shots": [], "enemies": [{"id": "e1", "type": "coloso", "attacking": true}], "impacts": []}, false)
+	assert_eq(_voces_sonando(a), 1, "al empezar a atacar suena la mordida")
+	a._sonidos_de_combate({"shots": [], "enemies": [{"id": "e1", "type": "coloso", "attacking": true}], "impacts": []}, false)
+	assert_eq(_voces_sonando(a), 1, "no repite mientras sigue atacando")
+
+
+func test_el_meteorito_silba_al_caer_y_no_suena_en_pausa() -> void:
+	var a := _audio()
+	a._sonidos_de_combate({"shots": [], "enemies": [], "impacts": []}, false)
+	var lejos := {"shots": [], "enemies": [], "impacts": [{"tile": Vector2i(1, 1), "t": 5.5, "total": 6.0}]}
+	a._sonidos_de_combate(lejos, false)
+	assert_eq(_voces_sonando(a), 0, "recién anunciado no suena")
+	var cerca := {"shots": [], "enemies": [], "impacts": [{"tile": Vector2i(1, 1), "t": 1.5, "total": 6.0}]}
+	a._sonidos_de_combate(cerca, false)
+	assert_eq(_voces_sonando(a), 1, "silba al entrar en el tramo de caída")
+	a._sonidos_de_combate(cerca, false)
+	assert_eq(_voces_sonando(a), 1, "una sola vez")
+	var b := _audio()
+	b._sonidos_de_combate({"shots": [], "enemies": [], "impacts": []}, true)
+	b._sonidos_de_combate({"shots": [{"n": 1, "kind": "shot"}], "enemies": [], "impacts": []}, true)
+	assert_eq(_voces_sonando(b), 0, "en pausa no suena")
+
+
+func test_los_sonidos_de_combate_son_distintos() -> void:
+	var vistos: Dictionary = {}
+	for id in AudioScript.SFX:
+		var huella: int = hash((AudioScript.SFX[id][0] as AudioStreamWAV).data)
+		assert_false(vistos.has(huella), "%s tiene su propio sonido" % id)
+		vistos[huella] = id
+
+
+func test_existen_los_sonidos_de_escenas_y_finales() -> void:
+	var audio = load("res://scenes/b/audio.gd").new()
+	add_child_autofree(audio)
+	for id in ["escena", "final_ok", "final_mal", "explosion", "obra_inicio", "obra_fin"]:
+		assert_true(audio.SFX.has(id), "falta el sonido %s" % id)

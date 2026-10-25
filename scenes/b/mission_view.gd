@@ -13,6 +13,7 @@ var actors: Node3D
 var rig: Node3D
 var hud: CanvasLayer
 var report_view: CanvasLayer
+var explosions: Node3D
 var audio: Node
 var sun: DirectionalLight3D
 var environment: Environment
@@ -20,6 +21,12 @@ var lighting: Node
 var tracks: MeshInstance3D
 var _tracks_seeded := false
 var workshop: CanvasLayer
+var story: CanvasLayer  ## introducción y ventana de decisión de la historia
+var tutorial: CanvasLayer  ## cartel del tutorial del Sol 1
+var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
+var buildings: Node3D  ## edificios de la base
+var combat: Node3D  ## nidos, monstruos, rayos y meteoritos
+var placing := ""  ## edificio que se está colocando ("" si ninguno)
 var state: Dictionary = {}
 var inspection := false
 var language := "es"
@@ -29,6 +36,8 @@ var quality := true
 var landing_in_progress := false
 var selected_target := ""
 var map_signature := ""
+var _blocked_cache: Dictionary = {}
+var _blocked_cache_revision := ""
 var _hover_tile := Vector2i(999, 999)
 static var translations_registered := false
 
@@ -42,6 +51,7 @@ func _ready() -> void:
 	port = get_node("Port")
 	terrain = preload("res://scenes/b/terrain.gd").new()
 	terrain.name = "Terrain"
+	terrain.lazy = true  # el mundo se construye con el tamaño del mapa, una sola vez
 	add_child(terrain)
 	actors = preload("res://scenes/b/actors.gd").new()
 	actors.name = "Actors"
@@ -93,6 +103,52 @@ func _ready() -> void:
 	report_view.name = "Report"
 	add_child(report_view)
 	report_view.redesign_requested.connect(func(): port.submit("redesign"))
+	buildings = preload("res://scenes/b/buildings.gd").new()
+	buildings.name = "Buildings"
+	buildings.ground = terrain.height_at
+	add_child(buildings)
+	combat = preload("res://scenes/b/combat_view.gd").new()
+	combat.ground = terrain.height_at
+	combat.buildings = buildings
+	add_child(combat)
+	explosions = preload("res://scenes/b/explosion_fx.gd").new()
+	explosions.name = "Explosions"
+	explosions.ground = terrain.height_at
+	add_child(explosions)
+	buildings.building_lost.connect(func(pos: Vector3, tipo: String) -> void:
+		var grande := tipo in ["hangar", "extractor_hielo", "domo", "torreta_2"]
+		explosions.explotar(pos, 1.6 if grande else 1.1, 14 if grande else 10)
+		if is_instance_valid(audio):
+			audio.sfx("explosion", 0.08))
+	buildings.module_lost.connect(func(pos: Vector3) -> void:
+		explosions.explotar(pos, 2.4, 18)
+		if is_instance_valid(audio):
+			audio.sfx("explosion", 0.0))
+	buildings.building_started.connect(func(pos: Vector3) -> void:
+		explosions.polvo(pos, 0.7)
+		if is_instance_valid(audio):
+			audio.sfx("obra_inicio", 0.05))
+	buildings.building_done.connect(func(pos: Vector3, tipo: String) -> void:
+		explosions.polvo(pos, 1.3 if tipo == "hangar" or tipo == "domo" else 1.0)
+		if is_instance_valid(audio):
+			audio.sfx("obra_fin", 0.0))
+	base_hud = preload("res://scenes/b/base_hud.gd").new()
+	base_hud.name = "BaseHud"
+	add_child(base_hud)
+	base_hud.command.connect(_command)
+	base_hud.placement_requested.connect(start_placement)
+	story = preload("res://scenes/b/story_panel.gd").new()
+	story.name = "Story"
+	add_child(story)
+	story.command.connect(_command)
+	tutorial = preload("res://scenes/b/tutorial_panel.gd").new()
+	tutorial.name = "Tutorial"
+	add_child(tutorial)
+	tutorial.command.connect(_command)
+	tutorial.step_changed.connect(func() -> void: audio.ping())
+	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
+	tutorial.target_for = func(clave: String) -> Control:  # se consulta cada cuadro: el HUD puede reconstruirse
+		return base_hud.build_button if clave == "construir" else hud.highlight_nodes().get(clave, null)
 	port.snapshot_received.connect(apply_snapshot)
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
@@ -146,6 +202,8 @@ func change_locale(locale: String) -> void:
 	TranslationServer.set_locale(locale)
 	hud.build()
 	workshop.build()
+	base_hud.build()
+	story.rebuild()
 	if not report_view.report.is_empty():
 		report_view.rebuild()
 	save_preferences()
@@ -180,13 +238,22 @@ func apply_snapshot(s: Dictionary) -> void:
 	state = s.duplicate(true)
 	var signature := str(s.get("map_revision", 0))
 	if map_signature != signature:
-		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}))
+		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}), s.get("zones", []))
 		map_signature = signature
 		tracks.clear()
 	var en_taller: bool = s.get("phase", "") == "workshop"
 	terrain.visible = not en_taller
 	actors.visible = not en_taller
 	tracks.visible = not en_taller
+	buildings.visible = not en_taller
+	buildings.update_state(s)
+	combat.update_state(s)
+	base_hud.update_snapshot(s)
+	story.update_snapshot(s)
+	tutorial.update_snapshot(s)
+	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible)
+	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
+		cancel_placement()
 	workshop.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
@@ -210,7 +277,57 @@ func apply_snapshot(s: Dictionary) -> void:
 
 
 func blocked() -> bool:
-	return state.is_empty() or state.get("paused", false) or state.get("safe_mode", false) or state.get("phase", "") != "operations"
+	return state.is_empty() or state.get("paused", false) or state.get("safe_mode", false) or state.get("phase", "") != "operations" \
+		or (story != null and story.is_open())
+
+
+## Modo de colocación: se marca la zona de la base y el siguiente clic en una casilla libre pide la obra.
+func start_placement(tipo: String) -> void:
+	if blocked() or not state.has("base"):
+		return
+	placing = tipo
+	hud.close_actions()
+	var base: Dictionary = state["base"]
+	var centro: Vector2i = base.get("center", Vector2i.ZERO)
+	var radio := int(base.get("radius", 0))
+	var validas: Array = []
+	var ocupadas: Array = []
+	for x in range(centro.x - radio, centro.x + radio + 1):
+		for y in range(centro.y - radio, centro.y + radio + 1):
+			var t := Vector2i(x, y)
+			if not terrain.in_bounds(t):
+				continue
+			if _placement_valid(t):
+				validas.append(t)
+			else:
+				ocupadas.append(t)
+	buildings.show_zone(validas, ocupadas)
+	hud.show_notice("PLACE_NOTICE")
+
+
+func cancel_placement() -> void:
+	placing = ""
+	buildings.hide_zone()
+	terrain.hide_cursor()
+	hud.set_hover_hint("")
+
+
+## Alcance en casillas de un edificio de defensa (0 si no dispara).
+func _alcance_de(tipo: String) -> float:
+	for o in state.get("build_options", []):
+		if o.get("id", "") == tipo:
+			return float(o.get("range", 0.0))
+	return 0.0
+
+
+func _placement_valid(tile: Vector2i) -> bool:
+	if not state.has("base") or not terrain.in_bounds(tile):
+		return false
+	var base: Dictionary = state["base"]
+	var d: Vector2i = tile - base.get("center", Vector2i.ZERO)
+	if maxi(absi(d.x), absi(d.y)) > int(base.get("radius", 0)):
+		return false
+	return not tile in _blocked_tiles() and tile != state.get("rover_tile", Vector2i(9999, 9999))
 
 
 func _command(command: String, payload: Dictionary) -> void:
@@ -223,12 +340,26 @@ func _command(command: String, payload: Dictionary) -> void:
 	port.submit(command, payload)
 
 
+func _input(e: InputEvent) -> void:
+	if not placing.is_empty() and e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_ESCAPE:
+		cancel_placement()
+		get_viewport().set_input_as_handled()
+
+
 func _report(value: Dictionary) -> void:
+	cancel_placement()
+	base_hud.close_menu()
 	actors.cancel_actions()
 	rig.enabled = false
 	hud.visible = false
 	terrain.hide_cursor()
-	report_view.show_report(value)
+	var final: Dictionary = value.get("ending", {})
+	if final.is_empty():
+		report_view.show_report(value)
+	else:
+		story.show_ending(final, func() -> void: report_view.show_report(value))
+		if is_instance_valid(audio):
+			audio.sfx("final_ok" if bool(value.get("success", false)) else "final_mal", 0.0)
 
 
 func _process(_delta: float) -> void:
@@ -248,6 +379,17 @@ func _update_hover() -> void:
 		hud.set_hover_hint("")
 		return
 	var mouse := get_viewport().get_mouse_position()
+	if not placing.is_empty():
+		var punto = ground_point(mouse)
+		if punto == null or hud.root.get_viewport().gui_get_hovered_control() != null:
+			terrain.hide_cursor()
+			return
+		var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+		var valida := _placement_valid(casilla)
+		terrain.show_cursor(casilla, valida)
+		terrain.show_range(casilla, _alcance_de(placing) if valida else 0.0)
+		hud.set_hover_hint(tr("PLACE_HINT") % tr("BLD_" + base_hud._clave(placing)) if valida else tr("TILE_BLOCKED"), mouse)
+		return
 	if hud.root.get_viewport().gui_get_hovered_control() != null or not pick_target(mouse).is_empty():
 		terrain.hide_cursor()
 		hud.set_hover_hint("")
@@ -259,8 +401,8 @@ func _update_hover() -> void:
 		return
 	var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
 	var dentro: bool = terrain.in_bounds(tile)
-	var libre: bool = dentro and not tile in _blocked_tiles() or dentro and target_at_tile(tile) != ""
-	if dentro or Vector2(point.x, point.z).length() < 34.0:
+	var libre: bool = dentro and not _blocked_set().has(tile) or dentro and target_at_tile(tile) != ""
+	if dentro or Vector2(point.x, point.z).length() < 34.0 + terrain.extra_size():
 		terrain.show_cursor(tile, libre)
 	else:
 		terrain.hide_cursor()
@@ -297,6 +439,21 @@ func _unhandled_input(e: InputEvent) -> void:
 		if e.physical_keycode == KEY_F:
 			rig.center_on(actors.rover.position)
 	if blocked() or hud.settings.visible or hud.review_panel.visible:
+		return
+	if not placing.is_empty():
+		if e is InputEventMouseButton and e.pressed:
+			if e.button_index == MOUSE_BUTTON_LEFT:
+				var punto = ground_point(e.position)
+				if punto != null:
+					var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+					if _placement_valid(casilla):
+						port.submit("build", {"building": placing, "tile": casilla})
+						cancel_placement()
+					else:
+						hud.show_notice("TILE_BLOCKED")
+			elif e.button_index == MOUSE_BUTTON_RIGHT:
+				cancel_placement()
+			get_viewport().set_input_as_handled()
 		return
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		var target := pick_target(e.position)
@@ -340,12 +497,26 @@ func _blocked_tiles() -> Array[Vector2i]:
 		lista.append(state["station_tile"])
 	for t in state.get("targets", []):
 		lista.append(t["tile"])
+	for b in state.get("buildings", []):
+		lista.append(b["tile"])
+	for n in state.get("nests", []):
+		lista.append(n["tile"])
 	return lista
+
+
+## Lo mismo que _blocked_tiles() como diccionario (búsqueda directa), recalculado solo cuando cambia el mapa.
+func _blocked_set() -> Dictionary:
+	if _blocked_cache_revision != map_signature or _blocked_cache.is_empty():
+		_blocked_cache.clear()
+		for t in _blocked_tiles():
+			_blocked_cache[t] = true
+		_blocked_cache_revision = map_signature
+	return _blocked_cache
 
 
 ## Casilla libre más cercana a «tile» (y al rover si hay empate). Si «tile» ya está libre, la devuelve igual.
 func nearest_free_tile(tile: Vector2i) -> Vector2i:
-	var bloqueadas := _blocked_tiles()
+	var bloqueadas := _blocked_set()
 	var origen: Vector2i = state.get("rover_tile", Vector2i.ZERO)
 	# Casillas a las que el rover sí puede llegar (relleno en 4 direcciones, como la ruta del simulador).
 	var alcanzables := {origen: true}
@@ -356,7 +527,7 @@ func nearest_free_tile(tile: Vector2i) -> Vector2i:
 		i += 1
 		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var sig: Vector2i = actual + d
-			if alcanzables.has(sig) or not terrain.in_bounds(sig) or sig in bloqueadas:
+			if alcanzables.has(sig) or not terrain.in_bounds(sig) or bloqueadas.has(sig):
 				continue
 			alcanzables[sig] = true
 			cola.append(sig)

@@ -216,6 +216,134 @@ def uplink(dur=1.3):
     return sweep + shimmer
 
 
+# ---------------------------------------------------------------- combate (bloque C): disparos de una sola vez
+def turret(dur=0.24):
+    t = t_of(dur)
+    p = t / dur
+    f = 2100 * np.exp(-p * 2.6) + 260
+    tono = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-p * 5.0)
+    click = hp(np.random.default_rng(11).standard_normal(len(t)), 3000) * np.exp(-t * 90) * 0.5
+    return tono + click
+
+
+def bite(dur=0.32):
+    t = t_of(dur)
+    thump = np.sin(2 * np.pi * np.cumsum(140 * np.exp(-t * 14) + 45) / SR) * np.exp(-t * 11)
+    crunch = bp(np.random.default_rng(12).standard_normal(len(t)), 700, 3200, 1) * np.exp(-t * 26) * 0.7
+    return thump + crunch
+
+
+def growl(dur=0.95):
+    t = t_of(dur)
+    p = t / dur
+    env = np.sin(np.pi * np.clip(p, 0, 1)) ** 0.7
+    f0 = 78 + 14 * np.sin(2 * np.pi * 5.5 * t) + 10 * p
+    saw = signal.sawtooth(2 * np.pi * np.cumsum(f0) / SR)
+    cuerpo = lp(saw, 520, 2) * env
+    ruido = bp(np.random.default_rng(13).standard_normal(len(t)), 200, 900, 1) * env * 0.35
+    return cuerpo + ruido
+
+
+def alarm(dur=1.3):
+    t = t_of(dur)
+    conmuta = (np.floor(t / 0.325) % 2).astype(float)
+    f = 620 + 260 * conmuta
+    onda = signal.square(2 * np.pi * np.cumsum(f) / SR) * 0.5 + np.sin(2 * np.pi * np.cumsum(f) / SR)
+    env = (np.minimum(t, 0.02) / 0.02) * np.exp(-(t % 0.325) * 3.0)
+    return lp(onda, 2600, 2) * env
+
+
+def meteor_fall(dur=1.1):
+    t = t_of(dur)
+    p = t / dur
+    ruido = np.random.default_rng(14).standard_normal(len(t))
+    centro = 5200 * np.exp(-p * 2.2) + 500
+    out = np.zeros(len(t))
+    paso = 512
+    for i in range(0, len(t), paso):
+        c = float(centro[i])
+        out[i:i + paso] = bp(ruido[max(0, i - 256):i + paso], max(c * 0.6, 120), min(c * 1.5, 9000), 1)[-len(out[i:i + paso]):]
+    return out * (p ** 1.4) * 0.9
+
+
+def meteor_hit(dur=1.4):
+    t = t_of(dur)
+    boom = np.sin(2 * np.pi * np.cumsum(95 * np.exp(-t * 3.2) + 38) / SR) * np.exp(-t * 3.0)
+    ruido = lp(np.random.default_rng(15).standard_normal(len(t)), 900, 2) * np.exp(-t * 4.0) * 0.9
+    grava = gravel(dur, 60, 16, 800, 4000) * np.exp(-t * 2.2) * 0.25
+    return boom + ruido + grava
+
+
+def escena(dur=1.4):
+    """Entrada de una escena a pantalla completa: un soplo grave que sube y se apaga."""
+    t = t_of(dur)
+    rng = np.random.default_rng(31)
+    ruido = bp(rng.standard_normal(len(t)), 120, 900)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 2
+    tono = np.sin(2 * np.pi * (110 + 40 * t / dur) * t) * 0.5
+    return (ruido * 0.6 + tono) * env
+
+
+def _campana(freq, dur, amp=1.0):
+    t = t_of(dur)
+    return amp * np.sin(2 * np.pi * freq * t) * np.exp(-t * 3.2)
+
+
+def final_ok(dur=2.4):
+    """Final con éxito: acorde mayor que sube, como una campana."""
+    x = np.zeros(int(dur * SR))
+    for i, f in enumerate([261.6, 329.6, 392.0, 523.3]):
+        c = _campana(f, dur - i * 0.2, 0.5)
+        x[int(i * 0.2 * SR):int(i * 0.2 * SR) + len(c)] += c[:len(x) - int(i * 0.2 * SR)]
+    return x
+
+
+def final_mal(dur=2.6):
+    """Final con derrota: dos notas graves que bajan."""
+    x = np.zeros(int(dur * SR))
+    for i, f in enumerate([196.0, 146.8, 110.0]):
+        c = _campana(f, dur - i * 0.5, 0.6)
+        x[int(i * 0.5 * SR):int(i * 0.5 * SR) + len(c)] += c[:len(x) - int(i * 0.5 * SR)]
+    return lp(x, 1800)
+
+
+def explosion(dur=1.8):
+    """Explosión de un edificio: golpe grave, estallido de ruido y restos que caen."""
+    t = t_of(dur)
+    rng = np.random.default_rng(77)
+    boom = np.sin(2 * np.pi * (70 - 35 * np.minimum(t, 0.6) / 0.6) * t) * np.exp(-t * 3.0)
+    estallido = lp(rng.standard_normal(len(t)), 2200) * np.exp(-t * 4.5)
+    crepitar = np.zeros(len(t))
+    for k in range(14):
+        ini = int((0.25 + rng.random() * 1.2) * SR)
+        n = int(0.03 * SR)
+        if ini + n < len(t):
+            crepitar[ini:ini + n] += hp(rng.standard_normal(n), 900) * np.exp(-np.arange(n) / (0.006 * SR)) * 0.3
+    return boom * 1.1 + estallido * 0.9 + crepitar
+
+
+def obra_inicio(dur=0.55):
+    """Dos golpes metálicos al empezar una obra."""
+    x = np.zeros(int(dur * SR))
+    for ini, f in [(0.0, 520.0), (0.2, 430.0)]:
+        n = int(0.3 * SR)
+        t = np.arange(n) / SR
+        golpe = (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 2.76 * t)) * np.exp(-t * 18)
+        i = int(ini * SR)
+        x[i:i + n] += golpe[:len(x) - i]
+    return x
+
+
+def obra_fin(dur=1.0):
+    """Campanilla de obra terminada: dos notas que suben."""
+    x = np.zeros(int(dur * SR))
+    for ini, f in [(0.0, 659.3), (0.14, 880.0)]:
+        c = _campana(f, dur - ini, 0.6)
+        i = int(ini * SR)
+        x[i:i + len(c)] += c[:len(x) - i]
+    return x
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     Path(out).mkdir(parents=True, exist_ok=True)
@@ -230,3 +358,15 @@ if __name__ == "__main__":
     save(out, "meteo.wav", meteo())
     save(out, "radio.wav", radio())
     save(out, "uplink.wav", uplink(), 60)
+    save(out, "turret.wav", turret(), 30)
+    save(out, "bite.wav", bite(), 30)
+    save(out, "growl.wav", growl(), 80)
+    save(out, "alarm.wav", alarm(), 40)
+    save(out, "meteor_fall.wav", meteor_fall(), 60)
+    save(out, "meteor_hit.wav", meteor_hit(), 120)
+    save(out, "escena.wav", escena(), 60)
+    save(out, "final_ok.wav", final_ok(), 80)
+    save(out, "final_mal.wav", final_mal(), 80)
+    save(out, "explosion.wav", explosion(), 80)
+    save(out, "obra_inicio.wav", obra_inicio(), 20)
+    save(out, "obra_fin.wav", obra_fin(), 60)

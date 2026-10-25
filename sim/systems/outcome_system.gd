@@ -9,12 +9,18 @@ const CAUSA_EXITO := "CAUSE_SUCCESS"
 const CAUSA_PLAZO := "CAUSE_FAIL"
 const CAUSA_FALLO_MODO_SEGURO := "CAUSE_SAFE_FAIL"
 const CAUSA_MODO_SEGURO := "CAUSE_SAFE"
+const CAUSA_HISTORIA := "CAUSE_STORY_FAIL"
+const CAUSA_NAVE := "CAUSE_SHIP"
+const CAUSA_ROVER_DESTRUIDO := "CAUSE_ROVER_DESTROYED"
 const CAUSA_SOLAR := "CAUSE_SOLAR"
 const CAUSA_RTG := "CAUSE_RTG"
 const CAUSA_RELE := "CAUSE_RELAY"
 const CAUSA_DIRECTA := "CAUSE_DIRECT"
 
 var _sol_limite: int
+var requiere_final: bool = false  ## con historia: llegar a la meta solo gana tras decidir el clímax
+var requiere_nave_nivel: int = 1  ## módulos que tiene que tener terminados (todos)
+var requiere_nave: String = ""  ## edificio de la nave de fuga: además hay que tenerlo construido ("" = no hace falta)
 
 
 func _init(reglas: Rules) -> void:
@@ -27,13 +33,26 @@ func _init(reglas: Rules) -> void:
 func evaluar(estado: MissionState, eventos: Array[String] = []) -> Dictionary:
 	if estado.fase != "operations":
 		return {}
-	if estado.enviados >= estado.meta:
+	if estado.historia_final == StorySystem.FINAL_DERROTA:
+		return _terminar(estado, false, CAUSA_HISTORIA)
+	if estado.enviados >= estado.meta and (not requiere_final or not estado.historia_final.is_empty()) and _nave_lista(estado):
 		return _terminar(estado, true, CAUSA_EXITO)
+	if estado.rover_hp <= 0.0:
+		return _terminar(estado, false, CAUSA_ROVER_DESTRUIDO)
 	if eventos.has(EnergySystem.EVENTO_MISION_FALLA):
 		return _terminar(estado, false, CAUSA_FALLO_MODO_SEGURO)
 	if estado.sol > _sol_limite:
 		return _terminar(estado, false, CAUSA_PLAZO)
 	return {}
+
+
+func _nave_lista(estado: MissionState) -> bool:
+	if requiere_nave.is_empty():
+		return true
+	for edificio in estado.edificios:
+		if str(edificio["type"]) == requiere_nave and int(edificio["level"]) >= requiere_nave_nivel:
+			return true
+	return false
 
 
 func estrellas(estado: MissionState, exito: bool) -> int:
@@ -56,6 +75,8 @@ func _terminar(estado: MissionState, exito: bool, causa_principal: String) -> Di
 	estado.en_movimiento = false
 	estado.movimiento_en_curso = {}
 	var causas: Array[String] = [causa_principal]
+	if exito and not requiere_nave.is_empty():
+		causas.append(CAUSA_NAVE)
 	causas.append(CAUSA_SOLAR if estado.energia == "solar" else CAUSA_RTG)
 	causas.append(CAUSA_RELE if estado.enlace == "relay" else CAUSA_DIRECTA)
 	if estado.entradas_modo_seguro > 0 and causa_principal != CAUSA_FALLO_MODO_SEGURO:

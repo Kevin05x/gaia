@@ -41,6 +41,15 @@ func _ultimo() -> Dictionary:
 func _operar() -> void:
 	port.submit("landing_finished")
 	assert_eq(_ultimo()["phase"], "operations")
+	_resolver_historia()
+
+
+## La historia detiene la misión en cada nodo hasta que se decide: estas pruebas eligen siempre la primera opción.
+func _resolver_historia() -> void:
+	for i in range(10):
+		if _ultimo().get("story", {}).get("pending", {}).is_empty():
+			return
+		port.submit("decide", {"choice": 0})
 
 
 func test_los_datos_cargan_sin_errores() -> void:
@@ -52,7 +61,7 @@ func test_empieza_en_el_aterrizaje_con_el_diseno_inicial() -> void:
 	assert_gt(snapshots.size(), 0, "publica un snapshot al empezar")
 	var datos := _ultimo()
 	assert_eq(datos["phase"], "landing")
-	assert_eq(datos["targets"].size(), 9)
+	assert_eq(datos["targets"].size(), 39)
 	assert_eq(datos["design"]["power"], "solar")
 	assert_has(datos["design"]["instruments"], "panorama")
 	assert_true(datos["design"]["companion"])
@@ -154,6 +163,8 @@ func test_el_modo_seguro_cancela_lo_que_se_presentaba() -> void:
 func test_al_ganar_publica_la_fase_informe_y_despues_el_informe() -> void:
 	_operar()
 	runner.sim.estado.enviados = runner.sim.estado.meta
+	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
+	runner.sim.estado.edificios.append({"id": "nave_fuga-9", "type": "nave_fuga", "tile": Vector2i(-5, -5), "level": 4, "target_level": 4, "elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 400.0, "produced": 0.0, "cd": 0.0})  # y tras construir la nave de fuga
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	assert_eq(informes.size(), 1)
@@ -170,6 +181,8 @@ func test_redisenar_vuelve_a_empezar_con_el_mapa_limpio() -> void:
 	port.submit("move", {"tile": Vector2i(3, 0)})
 	var revision: int = _ultimo()["map_revision"]
 	runner.sim.estado.enviados = runner.sim.estado.meta
+	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
+	runner.sim.estado.edificios.append({"id": "nave_fuga-9", "type": "nave_fuga", "tile": Vector2i(-5, -5), "level": 4, "target_level": 4, "elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 400.0, "produced": 0.0, "cd": 0.0})  # y tras construir la nave de fuga
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	port.submit("redesign")

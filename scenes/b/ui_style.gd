@@ -329,8 +329,8 @@ static func place(c: Control, esquina: String, mx: float, my: float, w: float, h
 			c.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		"tc":
 			_anchors(c, 0.5, 0.5, 0, 0)
-			c.offset_left = -w / 2.0
-			c.offset_right = w / 2.0
+			c.offset_left = mx - w / 2.0
+			c.offset_right = mx + w / 2.0
 			c.offset_top = my
 			c.offset_bottom = my + h
 			c.grow_horizontal = Control.GROW_DIRECTION_BOTH

@@ -9,6 +9,23 @@ const CONFIRM := preload("res://scenes/b/assets/audio/confirm.wav")
 const LANDING := preload("res://scenes/b/assets/audio/landing.wav")
 const UPLINK := preload("res://scenes/b/assets/audio/uplink.wav")
 const DRONE_START := preload("res://scenes/b/assets/audio/drone_start.wav")
+## Combate (bloque C): sonidos de una sola vez -> [sonido, volumen en dB].
+const SFX := {
+	"turret": [preload("res://scenes/b/assets/audio/turret.wav"), -17.0],
+	"bite": [preload("res://scenes/b/assets/audio/bite.wav"), -13.0],
+	"growl": [preload("res://scenes/b/assets/audio/growl.wav"), -15.0],
+	"alarm": [preload("res://scenes/b/assets/audio/alarm.wav"), -15.0],
+	"meteor_fall": [preload("res://scenes/b/assets/audio/meteor_fall.wav"), -16.0],
+	"meteor_hit": [preload("res://scenes/b/assets/audio/meteor_hit.wav"), -9.0],
+	"explosion": [preload("res://scenes/b/assets/audio/explosion.wav"), -7.0],
+	"obra_inicio": [preload("res://scenes/b/assets/audio/obra_inicio.wav"), -15.0],
+	"obra_fin": [preload("res://scenes/b/assets/audio/obra_fin.wav"), -13.0],
+	"escena": [preload("res://scenes/b/assets/audio/escena.wav"), -14.0],
+	"final_ok": [preload("res://scenes/b/assets/audio/final_ok.wav"), -9.0],
+	"final_mal": [preload("res://scenes/b/assets/audio/final_mal.wav"), -9.0],
+}
+const SFX_VOCES := 6  ## sonidos de combate que pueden oírse a la vez
+const TRAMO_CAIDA_SONIDO := 0.6  ## fracción del aviso a partir de la cual suena la caída del meteorito
 ## Acción -> [sonido en bucle mientras dura, volumen en dB].
 const ACCIONES := {
 	"drill": [preload("res://scenes/b/assets/audio/drill.wav"), -13.0],
@@ -35,6 +52,12 @@ var unlocked := false
 var action_id := ""  ## acción que está sonando ("" si ninguna)
 var _transmitting := false
 var _loops: Dictionary = {}
+var _voces: Array[AudioStreamPlayer] = []
+var _ultimo_disparo := 0
+var _enemigos_vistos: Dictionary = {}  ## id -> estaba atacando
+var _meteoros_sonados: Dictionary = {}
+var _hubo_enemigos := false
+var _combate_iniciado := false
 
 
 func _ready() -> void:
@@ -46,6 +69,8 @@ func _ready() -> void:
 	landing_sound = player(LANDING, -22)
 	uplink_sound = player(UPLINK, -12)
 	start_sound = player(DRONE_START, -14)
+	for i in SFX_VOCES:
+		_voces.append(player(null, -14))
 
 
 ## Copia del sonido con repetición continua: los .wav importados no vienen en bucle.
@@ -114,6 +139,73 @@ func update_state(s: Dictionary, moving: bool) -> void:
 	else:
 		radio.stop()
 	_transmitting = enviando
+	_sonidos_de_combate(s.get("combat", {}), silent)
+
+
+## Suena un efecto de combate en una voz libre (si todas están ocupadas, se omite: es mejor que cortar otro).
+func sfx(id: String, variacion: float = 0.06) -> bool:
+	if not unlocked or not SFX.has(id):
+		return false
+	for voz in _voces:
+		if not voz.playing:
+			voz.stream = SFX[id][0]
+			voz.volume_db = float(SFX[id][1])
+			voz.pitch_scale = 1.0 + randf_range(-variacion, variacion)
+			voz.play()
+			return true
+	return false
+
+
+## Mira lo que trae el snapshot de combate y hace sonar cada novedad una sola vez: disparos, mordidas, rugidos al aparecer,
+## alarma al empezar un ataque y el silbido y el estruendo de los meteoritos.
+func _sonidos_de_combate(combate: Dictionary, silencio: bool) -> void:
+	if combate.is_empty():
+		_ultimo_disparo = 0
+		_enemigos_vistos.clear()
+		_meteoros_sonados.clear()
+		_hubo_enemigos = false
+		_combate_iniciado = false
+		return
+	var primera := not _combate_iniciado  # una partida cargada no suena por lo que ya estaba en pantalla
+	_combate_iniciado = true
+	var maximo := _ultimo_disparo
+	for d in combate.get("shots", []):
+		var n := int(d.get("n", 0))
+		if n <= _ultimo_disparo:
+			continue
+		maximo = maxi(maximo, n)
+		if not silencio and not primera:
+			sfx("meteor_hit" if str(d.get("kind", "")) == "impact" else "turret")
+	_ultimo_disparo = maximo
+	var ahora: Dictionary = {}
+	for e in combate.get("enemies", []):
+		var id := str(e.get("id", ""))
+		var ataca: bool = e.get("attacking", false)
+		ahora[id] = ataca
+		if silencio or primera:
+			continue
+		if not _enemigos_vistos.has(id):
+			if str(e.get("type", "")) != "arana" or _enemigos_vistos.size() % 3 == 0:
+				sfx("growl", 0.12 if str(e.get("type", "")) != "coloso" else 0.0)
+		elif ataca and not bool(_enemigos_vistos[id]):
+			sfx("bite")
+	_enemigos_vistos = ahora
+	var hay := not ahora.is_empty()
+	if hay and not _hubo_enemigos and not silencio and not primera:
+		sfx("alarm", 0.0)
+	_hubo_enemigos = hay
+	var activos: Dictionary = {}
+	for m in combate.get("impacts", []):
+		var clave := str(m.get("tile", ""))
+		activos[clave] = true
+		var u := 1.0 - float(m.get("t", 0.0)) / maxf(float(m.get("total", 1.0)), 0.001)  # avance del aviso: 1 = impacta
+		if u >= TRAMO_CAIDA_SONIDO and not _meteoros_sonados.has(clave):
+			_meteoros_sonados[clave] = true
+			if not silencio and not primera:
+				sfx("meteor_fall", 0.1)
+	for clave in _meteoros_sonados.keys():
+		if not activos.has(clave):
+			_meteoros_sonados.erase(clave)
 
 
 func ping() -> void:
@@ -122,7 +214,7 @@ func ping() -> void:
 
 
 func _exit_tree() -> void:
-	for p in [wind, motor, radio, effect, tool_sound, landing_sound, uplink_sound, start_sound]:
+	for p in [wind, motor, radio, effect, tool_sound, landing_sound, uplink_sound, start_sound] + _voces:
 		if is_instance_valid(p):
 			p.stop()
 			p.stream = null

@@ -58,7 +58,9 @@ Entregados por el equipo de diseño del proyecto (renders de Arturo Valdivieso y
 
 | Archivo | Uso en el juego |
 | --- | --- |
-| `hielo_2.glb`, `hielo_3.glb` | Objetivos de tipo mineral (roca con cristales) |
+| `hielo_2.glb`, `hielo_3.glb` | Hielo enterrado (capa que se descubre con el radar y el taladro) |
+| `cristal5_brillo.glb` | Olivino (mineral expuesto) |
+| `cristal.glb`, `cristal2.glb`, `cristal3_rojo.glb`, `mineral_2.glb` | Importados, aún sin usar (hielo en superficie, percloratos y roca con vetas) |
 | `hangar_cuadrado.glb`, `hangar_roundA.glb` | Escenografía de la base, detrás de la estación |
 | `foco.glb` | Escenografía: torre de luz de la base |
 | `anthena_juego.glb` | Escenografía: antena parabólica auxiliar de la base |
@@ -66,3 +68,8 @@ Entregados por el equipo de diseño del proyecto (renders de Arturo Valdivieso y
 | `torreta_simple.glb`, `torreta_doble.glb` | Importadas pero sin usar: las reglas actuales no tienen torretas ni enemigos |
 
 No integrados todavía: `25042_Perseverance.glb` (11 MB y unos 200 000 triángulos: hay que reducirlo a 15 000–25 000 para la web), `base.glb` (módulo lunar de unos 98 000 triángulos y 135 animaciones) y `panel_solar.glb` (1 MB, 26 materiales). Las texturas `foco_spacebits_texture.png` y `taladro_spacebits_texture.png` salen incrustadas en esos `.glb`; falta que el equipo confirme su origen y licencia.
+
+## Escenas ilustradas de la historia (24 oct 2026)
+
+Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro finales) están generadas con IA (generador de imágenes de Canva) a partir de capturas del propio juego como referencia, para que el rover, Rocky, los edificios, el terreno y las criaturas se vean como en el juego. El guion y las decisiones son del equipo (`Historia_Juego_GAIA.docx`). Son material provisional del equipo: la declaración de uso de IA debe constar en la entrega. El storyboard completo (con las criaturas y los minerales en 3D) está en Canva.
+

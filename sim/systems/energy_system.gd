@@ -10,6 +10,7 @@ const EVENTO_MISION_FALLA := "MISSION_FAILED_SAFE_MODE"
 
 var _balance: Balance
 var _potencia_nominal_w: float
+var edificios: BuildSystem = null  ## si hay base: suma lo que generan y consumen sus edificios
 
 
 func _init(balance: Balance, potencia_nominal_w: float) -> void:
@@ -22,16 +23,24 @@ func es_noche(hora: float) -> bool:
 
 
 ## Solar: potencia nominal por la curva del sol, el polvo y la tormenta. RTG: constante.
+## Los edificios de la base suman lo suyo (los paneles de la base dependen del sol aunque el rover lleve RTG).
 func generacion_w(estado: MissionState) -> float:
-	if estado.energia == "rtg":
-		return _potencia_nominal_w
+	var sol := factor_solar(estado)
+	var total := _potencia_nominal_w if estado.energia == "rtg" else _potencia_nominal_w * sol
+	if edificios != null:
+		total += edificios.generacion_w(estado, sol)
+	return total
+
+
+## 0..1: curva del sol según la hora, con el polvo y la tormenta. 0 de noche.
+func factor_solar(estado: MissionState) -> float:
 	var amanecer := _balance.numero("tiempo.amanecer")
 	var atardecer := _balance.numero("tiempo.atardecer")
 	if estado.hora < amanecer or estado.hora >= atardecer:
 		return 0.0
 	var curva := sin(PI * (estado.hora - amanecer) / (atardecer - amanecer))
 	var factor_tormenta := _balance.numero("energia.factor_solar_tormenta") if estado.tormenta else 1.0
-	return _potencia_nominal_w * curva * (1.0 - estado.polvo) * factor_tormenta
+	return curva * (1.0 - estado.polvo) * factor_tormenta
 
 
 ## Consumo continuo: base más calefacción de noche (según el tipo de energía).
@@ -39,6 +48,8 @@ func carga_w(estado: MissionState) -> float:
 	var carga := _balance.numero("energia.consumo_base_w")
 	if es_noche(estado.hora):
 		carga += _balance.numero("energia.calefaccion_nocturna_w." + estado.energia)
+	if edificios != null:
+		carga += edificios.carga_w(estado)
 	return carga
 
 

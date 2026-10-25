@@ -86,14 +86,16 @@ func test_cielo_el_polvo_atenua_el_sol_y_acerca_la_niebla() -> void:
 	assert_false(luz.shadow_enabled, "con mucho polvo no hay sombras duras")
 
 
-func test_cielo_de_noche_apaga_el_sol_y_las_sombras() -> void:
+func test_cielo_de_noche_pone_luz_de_luna_sin_sombras() -> void:
 	var cielo: Node = autofree(SkyScript.new())
 	var env := Environment.new()
 	var luz: DirectionalLight3D = autofree(DirectionalLight3D.new())
 	cielo.setup(env, luz)
 	cielo.set_state(2.0, 0.0)
 	cielo.apply(true)
-	assert_false(luz.visible)
+	assert_true(luz.visible, "de noche queda una luz de luna tenue")
+	assert_lt(luz.light_energy, 0.3)
+	assert_gt(luz.light_color.b, luz.light_color.r, "azulada")
 	assert_false(luz.shadow_enabled)
 
 
@@ -155,13 +157,14 @@ func test_farallones_se_construyen_con_sombra_en_calidad_alta() -> void:
 func test_decoracion_tiene_sombras_de_contacto_y_guijarros_alrededor_de_las_rocas() -> void:
 	var mundo: Node3D = add_child_autofree(TerrainScript.new())
 	mundo.configure([{"id": "A", "tile": Vector2i(1, 1), "type": "rock", "revealed": true}], [Vector2i(3, 3)], {})
-	var contacto: MultiMeshInstance3D = mundo._decor.get_node_or_null("ContactShadows")
-	assert_not_null(contacto, "una sola llamada de dibujo para todas las sombras de contacto")
-	assert_gt(contacto.multimesh.instance_count, 10)
+	var sombras := 0
 	var halos := 0
 	for hijo in mundo._decor.get_children():
-		if str(hijo.name).begins_with("Halo_"):
+		if str(hijo.name).begins_with("ContactShadows"):
+			sombras += (hijo as MultiMeshInstance3D).multimesh.instance_count
+		elif str(hijo.name).begins_with("Decor_halo_"):
 			halos += (hijo as MultiMeshInstance3D).multimesh.instance_count
+	assert_gt(sombras, 10, "sombras de contacto (una llamada de dibujo por trozo)")
 	assert_gt(halos, 20, "guijarros caídos alrededor de las rocas grandes")
 
 
@@ -498,3 +501,42 @@ func test_minimapa_el_rover_apunta_hacia_donde_se_mueve() -> void:
 	assert_eq(mapa._heading, Vector2(0, -1))
 	assert_true(mapa._inside(Vector2i(0, 0)))
 	assert_false(mapa._inside(Vector2i(12, 0)))
+
+
+func test_mapa_grande_ensancha_el_mundo_y_reparte_las_rocas_en_trozos() -> void:
+	var mundo: Node3D = add_child_autofree(TerrainScript.new())
+	mundo.lazy = false
+	mundo.configure([{"id": "A", "tile": Vector2i(1, 1), "type": "rock", "revealed": true}], [Vector2i(3, 3), Vector2i(-20, 15)],
+		{"min": Vector2i(-35, -35), "max": Vector2i(35, 35)}, [{"id": "orilla", "center": Vector2i(-12, -12)}, {"id": "nucleo", "center": Vector2i(10, 26)}])
+	assert_eq(mundo.extra_size(), 48.0)
+	assert_true(mundo.in_bounds(Vector2i(35, -35)))
+	assert_lt(absf(float(mundo.height_at(60.0, 60.0))), 3.5, "el área jugable sigue llana")
+	assert_almost_eq(float(mundo.height_at(60.0, 130.0)), float(mundo.height_at(60.0, 129.0)), 1.0)
+	var trozos := 0
+	var pequenas := 0
+	for hijo in mundo._decor.get_children():
+		if hijo is MultiMeshInstance3D and str(hijo.name).begins_with("Decor_pebble"):
+			pequenas += (hijo as MultiMeshInstance3D).multimesh.instance_count
+			trozos += 1
+			assert_gt((hijo as MultiMeshInstance3D).visibility_range_end, 0.0, "los guijarros lejanos se ocultan")
+	assert_gt(trozos, 8, "los guijarros se reparten en varios trozos")
+	assert_gt(pequenas, 1000)
+	var mundo_chico: Node3D = add_child_autofree(TerrainScript.new())
+	mundo_chico.configure([], [], {})
+	assert_eq(mundo_chico.extra_size(), 0.0)
+
+
+func test_minimapa_dibuja_la_capa_fija_una_sola_vez_por_mapa() -> void:
+	var mapa: Control = autofree(MinimapScript.new())
+	mapa.size = Vector2(168, 168)
+	mapa.state = {"bounds": {"min": Vector2i(-35, -35), "max": Vector2i(35, 35)}, "obstacles": [Vector2i(3, 3), Vector2i(-20, 15)],
+		"zones": [{"id": "orilla", "center": Vector2i(-12, -12)}, {"id": "nucleo", "center": Vector2i(10, 26)}]}
+	mapa._capa_estatica(Vector2i(-35, -35), Vector2i(35, 35))
+	var primera: ImageTexture = mapa._estatica
+	assert_not_null(primera)
+	assert_gte(primera.get_width(), 71 * 2)
+	mapa._capa_estatica(Vector2i(-35, -35), Vector2i(35, 35))
+	assert_same(mapa._estatica, primera, "no se rehace si el mapa no cambió")
+	mapa.state = {"bounds": {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)}, "obstacles": []}
+	mapa._capa_estatica(Vector2i(-11, -11), Vector2i(11, 11))
+	assert_ne(mapa._estatica, primera, "se rehace al cambiar el mapa")

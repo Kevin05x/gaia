@@ -342,12 +342,15 @@ static func ao_blobs(parent: Node3D, items: Array) -> MultiMeshInstance3D:
 		var r: float = it[1] * 2.0
 		mm.set_instance_transform(k, Transform3D(Basis.IDENTITY.scaled(Vector3(r, 1.0, r)), it[0]))
 		mm.set_instance_color(k, Color(1, 1, 1, it[2]))
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.vertex_color_use_as_albedo = true
-	m.albedo_texture = contact_texture()
-	m.render_priority = -1
+	var m: StandardMaterial3D = _materials.get("ao")
+	if m == null:
+		m = StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.vertex_color_use_as_albedo = true
+		m.albedo_texture = contact_texture()
+		m.render_priority = -1
+		_materials["ao"] = m
 	var n := MultiMeshInstance3D.new()
 	n.name = "ContactShadows"
 	n.multimesh = mm

@@ -75,7 +75,7 @@ func test_motivos_por_estado_de_la_mision() -> void:
 
 
 func test_destino_fuera_del_mapa() -> void:
-	var resultado := movimiento.iniciar_mover(estado, Vector2i(12, 0))
+	var resultado := movimiento.iniciar_mover(estado, Vector2i(36, 0))
 	assert_false(resultado["ok"])
 	assert_eq(resultado["reason"], "OUT_OF_BOUNDS")
 	assert_false(estado.en_movimiento)

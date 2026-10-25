@@ -33,9 +33,10 @@ func test_el_mapa_real_no_tiene_errores() -> void:
 
 func test_contenido_del_mapa_real() -> void:
 	var mapa := MapData.desde_archivo(RUTA)
-	assert_eq(mapa.limite_min, Vector2i(-11, -11))
-	assert_eq(mapa.limite_max, Vector2i(11, 11))
-	assert_eq(mapa.objetivos.size(), 9)
+	assert_eq(mapa.limite_min, Vector2i(-35, -35))
+	assert_eq(mapa.limite_max, Vector2i(35, 35))
+	assert_eq(mapa.objetivos.size(), 39)
+	assert_eq(mapa.zonas.size(), 3)
 	assert_ne(mapa.estacion, mapa.inicio_rover)
 	var tipos := {}
 	for objetivo in mapa.objetivos:
@@ -48,7 +49,7 @@ func test_casillas_bloqueadas() -> void:
 	assert_true(mapa.bloqueada(Vector2i(4, 0)), "obstáculo")
 	assert_true(mapa.bloqueada(mapa.estacion), "estación")
 	assert_true(mapa.bloqueada(Vector2i(2, -2)), "objetivo")
-	assert_true(mapa.bloqueada(Vector2i(12, 0)), "fuera del mapa")
+	assert_true(mapa.bloqueada(Vector2i(36, 0)), "fuera del mapa")
 	assert_false(mapa.bloqueada(Vector2i(1, 0)))
 	assert_false(mapa.bloqueada(mapa.inicio_rover))
 
@@ -89,7 +90,7 @@ func test_aplicar_a_vuelca_el_mapa_en_el_estado() -> void:
 	assert_eq(estado.casilla_rover, mapa.inicio_rover)
 	assert_eq(estado.casilla_estacion, mapa.estacion)
 	assert_eq(estado.obstaculos.size(), mapa.obstaculos.size())
-	assert_eq(estado.objetivos.size(), 9)
+	assert_eq(estado.objetivos.size(), 39)
 	assert_eq(estado.limite_min, mapa.limite_min)
 	assert_eq(estado.revision_mapa, revision + 1)
 	var primero: Dictionary = estado.objetivos[0]
@@ -121,7 +122,7 @@ func test_casilla_invalida() -> void:
 
 func test_casilla_fuera_de_los_limites() -> void:
 	var datos := _base()
-	datos["objetivos"][0]["casilla"] = [30, 0]
+	datos["objetivos"][0]["casilla"] = [99, 0]
 	assert_has(Array(_cargar(datos).errores), "OUT_OF_BOUNDS:objetivos.JZ-01")
 
 
@@ -149,3 +150,19 @@ func test_objetivo_inalcanzable() -> void:
 	datos["obstaculos"] = [[-1, -2], [-2, -1]]
 	datos["objetivos"] = [{"id": "T1", "casilla": [-2, -2], "tipo": "rock", "revelado": true}]
 	assert_has(Array(_cargar(datos).errores), "UNREACHABLE_TARGET:T1")
+
+
+func test_las_zonas_del_mapa_real() -> void:
+	var mapa := MapData.desde_archivo(RUTA)
+	assert_eq(mapa.zona_de(mapa.estacion), "orilla", "la base está en la orilla")
+	assert_eq(mapa.zona_de(mapa.inicio_rover), "orilla")
+	assert_eq(mapa.zona_de(Vector2i(18, 2)), "falla")
+	assert_eq(mapa.zona_de(Vector2i(10, 26)), "nucleo")
+	var vista := mapa.zonas_para_la_vista()
+	assert_eq(vista.size(), 3)
+	assert_eq(vista[0]["id"], "orilla")
+
+
+func test_todos_los_objetivos_del_mapa_real_son_alcanzables() -> void:
+	var mapa := MapData.desde_archivo(RUTA)
+	assert_eq(mapa.errores.size(), 0, "sin errores de ocupación ni de alcance")

@@ -6,6 +6,9 @@ extends RefCounted
 
 const TIPOS: Array[String] = ["rock", "mineral", "buried"]
 const VECINOS := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
+## Los monstruos también andan en diagonal (sin cortar esquinas): primero las rectas, para desempatar.
+const VECINOS_ENEMIGOS := [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
+	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]
 
 var limite_min: Vector2i = Vector2i(-11, -11)
 var limite_max: Vector2i = Vector2i(11, 11)
@@ -13,7 +16,13 @@ var inicio_rover: Vector2i = Vector2i.ZERO
 var estacion: Vector2i = Vector2i.ZERO
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
+var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
+var zonas: Array[Dictionary] = []  ## {"id", "centro"}: cada casilla pertenece a la zona de centro más cercano
+var nidos: Array[Dictionary] = []  ## {"id", "tile", "zone"}: de aquí salen los monstruos; el rover no los pisa
 var errores: PackedStringArray = PackedStringArray()
+var _fijas: Dictionary = {}  ## casilla -> true: estación, obstáculos, objetivos y nidos (búsqueda rápida para las rutas)
+var _casillas_nido: Dictionary = {}  ## casilla -> true: solo los nidos (los monstruos sí los cruzan)
+var _campo: Dictionary = {}  ## casilla -> pasos hasta la estación para los monstruos (se calcula la primera vez que se pide)
 
 
 static func desde_archivo(archivo: String) -> MapData:
@@ -37,12 +46,91 @@ func dentro_de_limites(casilla: Vector2i) -> bool:
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
 func bloqueada(casilla: Vector2i) -> bool:
-	if not dentro_de_limites(casilla) or casilla == estacion or obstaculos.has(casilla):
+	return not dentro_de_limites(casilla) or _fijas.has(casilla) or bloqueos_extra.has(casilla)
+
+
+## Id de la zona de la casilla (la de centro más cercano); "" si el mapa no tiene zonas.
+func zona_de(casilla: Vector2i) -> String:
+	var mejor := ""
+	var mejor_d := INF
+	for zona in zonas:
+		var d := Vector2(casilla - Vector2i(zona["centro"])).length_squared()
+		if d < mejor_d:
+			mejor_d = d
+			mejor = str(zona["id"])
+	return mejor
+
+
+## Zonas para la vista: [{"id", "center"}].
+func zonas_para_la_vista() -> Array[Dictionary]:
+	var lista: Array[Dictionary] = []
+	for zona in zonas:
+		lista.append({"id": zona["id"], "center": zona["centro"]})
+	return lista
+
+
+## Nidos para la vista: [{"id", "tile", "zone"}].
+func nidos_para_la_vista() -> Array[Dictionary]:
+	var lista: Array[Dictionary] = []
+	for nido in nidos:
+		lista.append(nido.duplicate())
+	return lista
+
+
+func es_nido(casilla: Vector2i) -> bool:
+	return _casillas_nido.has(casilla)
+
+
+## Los monstruos solo se paran en el borde del mapa, las rocas y los objetivos (no en nidos ni edificios).
+func bloqueada_para_enemigos(casilla: Vector2i) -> bool:
+	if not dentro_de_limites(casilla):
 		return true
-	for objetivo in objetivos:
-		if objetivo["tile"] == casilla:
-			return true
-	return false
+	return _fijas.has(casilla) and not _casillas_nido.has(casilla) and casilla != estacion
+
+
+## Pasos que le faltan a un monstruo en «casilla» para llegar a la estación (-1 si no puede).
+func pasos_a_la_estacion(casilla: Vector2i) -> int:
+	if _campo.is_empty():
+		_calcular_campo()
+	return int(_campo.get(casilla, -1))
+
+
+## Siguiente casilla de un monstruo en «casilla» camino de la estación; la misma si ya llegó o no hay camino.
+func paso_hacia_la_estacion(casilla: Vector2i) -> Vector2i:
+	var mejor := pasos_a_la_estacion(casilla)
+	if mejor <= 0:
+		return casilla
+	var elegido := casilla
+	for desplazamiento in VECINOS_ENEMIGOS:
+		var siguiente: Vector2i = casilla + desplazamiento
+		var pasos := pasos_a_la_estacion(siguiente)
+		if pasos < 0 or pasos >= mejor:
+			continue
+		if desplazamiento.x != 0 and desplazamiento.y != 0 and (bloqueada_para_enemigos(casilla + Vector2i(desplazamiento.x, 0)) \
+				or bloqueada_para_enemigos(casilla + Vector2i(0, desplazamiento.y))):
+			continue  # sin cortar esquinas
+		mejor = pasos
+		elegido = siguiente
+	return elegido
+
+
+## Relleno desde la estación (un solo cálculo: el mapa es fijo; los edificios no estorban a los monstruos).
+func _calcular_campo() -> void:
+	_campo = {estacion: 0}
+	var cola: Array[Vector2i] = [estacion]
+	var indice := 0
+	while indice < cola.size():
+		var actual := cola[indice]
+		indice += 1
+		for desplazamiento in VECINOS_ENEMIGOS:
+			var siguiente: Vector2i = actual + desplazamiento
+			if _campo.has(siguiente) or bloqueada_para_enemigos(siguiente):
+				continue
+			if desplazamiento.x != 0 and desplazamiento.y != 0 and (bloqueada_para_enemigos(actual + Vector2i(desplazamiento.x, 0)) \
+					or bloqueada_para_enemigos(actual + Vector2i(0, desplazamiento.y))):
+				continue
+			_campo[siguiente] = int(_campo[actual]) + 1
+			cola.append(siguiente)
 
 
 ## Ruta más corta (4 direcciones) sin incluir la casilla de salida. Vacía si no hay ruta,
@@ -122,10 +210,80 @@ func _cargar(texto: String) -> void:
 		_leer_objetivos(datos["objetivos"])
 	else:
 		errores.append("INVALID_FIELD:objetivos")
+	if datos.has("zonas"):
+		_leer_zonas(datos["zonas"])
+	if datos.has("nidos"):
+		_leer_nidos(datos["nidos"])
 	if errores.is_empty():
 		_comprobar_ocupacion()
 	if errores.is_empty():
+		_reconstruir_fijas()
 		_comprobar_alcanzables()
+		_comprobar_nidos()
+
+
+func _reconstruir_fijas() -> void:
+	_fijas.clear()
+	_fijas[estacion] = true
+	for casilla in obstaculos:
+		_fijas[casilla] = true
+	for objetivo in objetivos:
+		_fijas[objetivo["tile"]] = true
+	_casillas_nido.clear()
+	for nido in nidos:
+		_fijas[nido["tile"]] = true
+		_casillas_nido[nido["tile"]] = true
+	_campo.clear()
+
+
+func _leer_nidos(valor: Variant) -> void:
+	if not (valor is Array):
+		errores.append("INVALID_FIELD:nidos")
+		return
+	var vistos := {}
+	for entrada in valor:
+		if not (entrada is Dictionary) or str(entrada.get("id", "")).is_empty():
+			errores.append("INVALID_FIELD:nidos")
+			continue
+		var id := str(entrada["id"])
+		if vistos.has(id):
+			errores.append("DUPLICATE_NEST:%s" % id)
+			continue
+		vistos[id] = true
+		var casilla: Variant = _leer_casilla(entrada.get("casilla"), "nidos.%s" % id)
+		if casilla == null:
+			continue
+		nidos.append({"id": id, "tile": casilla, "zone": str(entrada.get("zona", ""))})
+
+
+## Cada nido debe tener camino de monstruos hasta la estación (que esté dentro y libre lo mira _comprobar_ocupacion).
+func _comprobar_nidos() -> void:
+	for nido in nidos:
+		if pasos_a_la_estacion(nido["tile"]) < 0:
+			errores.append("UNREACHABLE_NEST:%s" % nido["id"])
+
+
+func _leer_zonas(valor: Variant) -> void:
+	if not (valor is Array):
+		errores.append("INVALID_FIELD:zonas")
+		return
+	var vistas := {}
+	for entrada in valor:
+		if not (entrada is Dictionary) or str(entrada.get("id", "")).is_empty():
+			errores.append("INVALID_FIELD:zonas")
+			continue
+		var id := str(entrada["id"])
+		if vistas.has(id):
+			errores.append("DUPLICATE_ZONE:%s" % id)
+			continue
+		vistas[id] = true
+		var centro: Variant = _leer_casilla(entrada.get("centro"), "zonas.%s" % id)
+		if centro == null:
+			continue
+		if not dentro_de_limites(centro):
+			errores.append("OUT_OF_BOUNDS:zonas.%s" % id)
+			continue
+		zonas.append({"id": id, "centro": centro})
 
 
 func _leer_limites(valor: Variant) -> bool:
@@ -191,6 +349,8 @@ func _comprobar_ocupacion() -> void:
 		elementos.append(["obstaculos[%d]" % i, obstaculos[i]])
 	for objetivo in objetivos:
 		elementos.append(["objetivos.%s" % objetivo["id"], objetivo["tile"]])
+	for nido in nidos:
+		elementos.append(["nidos.%s" % nido["id"], nido["tile"]])
 	var ocupadas := {}
 	for elemento in elementos:
 		var casilla: Vector2i = elemento[1]
@@ -202,16 +362,26 @@ func _comprobar_ocupacion() -> void:
 			ocupadas[casilla] = elemento[0]
 
 
-## Cada objetivo debe tener alguna casilla contigua a la que el rover pueda llegar desde el inicio.
+## Cada objetivo debe tener alguna casilla contigua a la que el rover pueda llegar desde el inicio (un solo relleno
+## desde la salida, no una ruta por objetivo: el mapa es grande).
 func _comprobar_alcanzables() -> void:
+	var llegadas := {inicio_rover: true}
+	var cola: Array[Vector2i] = [inicio_rover]
+	var indice := 0
+	while indice < cola.size():
+		var actual := cola[indice]
+		indice += 1
+		for desplazamiento in VECINOS:
+			var siguiente: Vector2i = actual + desplazamiento
+			if llegadas.has(siguiente) or bloqueada(siguiente):
+				continue
+			llegadas[siguiente] = true
+			cola.append(siguiente)
 	for objetivo in objetivos:
 		var alcanzable := false
 		var casilla_objetivo: Vector2i = objetivo["tile"]
 		for desplazamiento in VECINOS:
-			var vecino: Vector2i = casilla_objetivo + desplazamiento
-			if bloqueada(vecino):
-				continue
-			if vecino == inicio_rover or not ruta(inicio_rover, vecino).is_empty():
+			if llegadas.has(casilla_objetivo + desplazamiento):
 				alcanzable = true
 				break
 		if not alcanzable:

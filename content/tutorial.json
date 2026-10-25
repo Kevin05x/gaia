@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "estado": "provisional (24 oct 2026): tutorial del Sol 1. Cada paso se da por hecho cuando se cumple su condición (aunque el jugador se adelante). Condiciones: {\"evento\": \"MOVE_DONE|ACTION_DONE[:accion]|...\", \"min\": n} cuenta eventos de la simulación; {\"tipo\": \"edificio|antena|enviados\", \"id\"?, \"min\": n} mira el estado; {\"leer_s\": s} avanza solo tras s segundos de lectura. «resalta» indica qué parte de la pantalla señala el cartel. El tutorial termina al acabar los pasos, al saltarlo o al pasar de «hasta_sol».",
+  "hasta_sol": 2,
+  "pasos": [
+    {
+      "id": "mover",
+      "resalta": "mapa",
+      "texto": {
+        "es": "Haz clic en el suelo para que el rover se mueva hasta allí.",
+        "en": "Click on the ground to drive the rover there."
+      },
+      "condicion": { "evento": "MOVE_DONE", "min": 1 }
+    },
+    {
+      "id": "analizar",
+      "resalta": "acciones",
+      "texto": {
+        "es": "Haz clic en un objetivo (círculo) y elige una acción de la barra de abajo. Cada análisis suma ciencia y puede dar recursos.",
+        "en": "Click a target (circle) and pick an action from the bottom bar. Each analysis adds science and can yield resources."
+      },
+      "condicion": { "evento": "ACTION_DONE", "min": 1 }
+    },
+    {
+      "id": "panel",
+      "resalta": "construir",
+      "texto": {
+        "es": "Pulsa «Construir» (tecla B) y levanta un panel solar. De noche no hay sol: la batería es tu reserva.",
+        "en": "Press \"Build\" (B key) and put up a solar panel. At night there is no sun: the battery is your reserve."
+      },
+      "condicion": { "tipo": "edificio", "id": "panel_solar", "min": 1 }
+    },
+    {
+      "id": "antena",
+      "resalta": "acciones",
+      "texto": {
+        "es": "Construye la Antena Científica (botón «Construir antena»). Sin ella no puedes transmitir.",
+        "en": "Build the Science Antenna (\"Build antenna\" button). Without it you cannot transmit."
+      },
+      "condicion": { "tipo": "antena", "min": 1 }
+    },
+    {
+      "id": "transmitir",
+      "resalta": "enlace",
+      "texto": {
+        "es": "Cuando el enlace esté abierto, pulsa «Transmitir» (abajo a la derecha) para enviar la ciencia a la Tierra.",
+        "en": "When the link is open, press \"Transmit\" (bottom right) to send the science to Earth."
+      },
+      "condicion": { "tipo": "enviados", "min": 1 }
+    },
+    {
+      "id": "noche",
+      "resalta": "",
+      "texto": {
+        "es": "Ojo: la antena y el taladro despiertan a la fauna. Cuando caiga la noche, construye torretas: cada disparo gasta batería.",
+        "en": "Careful: the antenna and the drill wake the fauna. When night falls, build turrets: every shot drains battery."
+      },
+      "condicion": { "leer_s": 16 }
+    }
+  ]
+}
