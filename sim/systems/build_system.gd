@@ -8,8 +8,10 @@ extends RefCounted
 ## "hp" es la vida actual; "cd" los segundos que faltan para el próximo disparo (solo torretas).
 
 const EVENTO_OBRA_TERMINADA := "BUILD_DONE"  ## BUILD_DONE:<tipo>:<id>
+const EVENTO_MODULO := "MODULE_DONE"  ## MODULE_DONE:<tipo>:<n>, cuando termina un módulo de un edificio por partes
 const EVENTO_NIVEL_ANTENA := "ANTENNA_LEVEL"  ## ANTENNA_LEVEL:<nivel>
 const EVENTO_EDIFICIO_DESTRUIDO := "BUILDING_DESTROYED"  ## BUILDING_DESTROYED:<tipo>:<id>
+const EVENTO_MODULO_PERDIDO := "MODULE_LOST"  ## MODULE_LOST:<tipo>:<módulos que quedan>, un ataque destruyó un módulo
 const EVENTO_ANTENA_DANADA := "ANTENNA_DAMAGED"  ## ANTENNA_DAMAGED:<nivel que queda>
 const ANTENA := "antena"
 
@@ -89,9 +91,63 @@ func construir(estado: MissionState, tipo: String, casilla: Vector2i) -> Diction
 	var id := "%s-%d" % [tipo, estado.siguiente_edificio]
 	estado.siguiente_edificio += 1
 	estado.edificios.append({"id": id, "type": tipo, "tile": casilla, "level": 0, "target_level": 1, "elapsed": 0.0,
-		"seconds": float(def["tiempo_s"]), "active": true, "hp": float(def.get("hp", 100)), "produced": 0.0, "cd": 0.0})
+		"seconds": float(def["tiempo_s"]), "active": true, "hp": _vida_inicial(def), "produced": 0.0, "cd": 0.0})
 	sincronizar_mapa(estado)
 	return {"ok": true, "reason": "", "id": id}
+
+
+## En un edificio por módulos la vida es la del módulo que recibe los golpes («hp_modulo»): al llegar a 0 se pierde ese módulo.
+func _vida_inicial(def: Dictionary) -> float:
+	return float(def.get("hp_modulo", def.get("hp", 100)))
+
+
+## Módulos de un edificio construido por partes (la nave de fuga). El nivel del edificio es el número de módulos listos.
+func modulos_totales(tipo: String) -> int:
+	return _economia.modulos_de(tipo).size()
+
+
+## Siguiente módulo de un edificio ({} si no tiene módulos, aún está en obra o ya está completo), con su disponibilidad.
+func siguiente_modulo(estado: MissionState, edificio: Dictionary) -> Dictionary:
+	var modulos := _economia.modulos_de(str(edificio["type"]))
+	var nivel := int(edificio["level"])
+	if modulos.is_empty() or nivel < 1 or nivel >= modulos.size() or int(edificio["target_level"]) > nivel:
+		return {}
+	var modulo: Dictionary = modulos[nivel]
+	var motivo := _motivo_modulo(estado, edificio)
+	return {"n": nivel + 1, "name_key": str(modulo["nombre_clave"]), "cost": modulo["costo"].duplicate(),
+		"seconds": float(modulo["tiempo_s"]), "enabled": motivo.is_empty(), "reason": motivo}
+
+
+## Empieza el siguiente módulo del edificio «id». {"ok", "reason"}.
+func construir_modulo(estado: MissionState, id: String) -> Dictionary:
+	var edificio := edificio_por_id(estado, id)
+	if edificio.is_empty():
+		return {"ok": false, "reason": "UNKNOWN_BUILDING"}
+	var motivo := _motivo_modulo(estado, edificio)
+	if not motivo.is_empty():
+		return {"ok": false, "reason": motivo}
+	var modulo: Dictionary = _economia.modulos_de(str(edificio["type"]))[int(edificio["level"])]
+	_recursos.pagar(estado, modulo["costo"])
+	edificio["target_level"] = int(edificio["level"]) + 1
+	edificio["elapsed"] = 0.0
+	edificio["seconds"] = float(modulo["tiempo_s"])
+	return {"ok": true, "reason": ""}
+
+
+func _motivo_modulo(estado: MissionState, edificio: Dictionary) -> String:
+	var modulos := _economia.modulos_de(str(edificio["type"]))
+	if modulos.is_empty():
+		return "NO_MODULES"
+	var comun := _motivo_comun(estado)
+	if not comun.is_empty():
+		return comun
+	if int(edificio["level"]) < 1:
+		return "BUILD_BUSY"
+	if int(edificio["level"]) >= modulos.size():
+		return "MAX_LEVEL"
+	if not _recursos.alcanza(estado, modulos[int(edificio["level"])]["costo"]):
+		return "NO_RESOURCES"
+	return ""
 
 
 ## {"enabled", "reason"} para subir la antena al nivel siguiente.
@@ -146,6 +202,8 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 					edificio["hp"] = _economia.antena_hp
 					eventos.append("%s:%d" % [EVENTO_NIVEL_ANTENA, estado.nivel_antena])
 				eventos.append("%s:%s:%s" % [EVENTO_OBRA_TERMINADA, edificio["type"], edificio["id"]])
+				if modulos_totales(str(edificio["type"])) > 0:
+					eventos.append("%s:%s:%d" % [EVENTO_MODULO, edificio["type"], int(edificio["level"])])
 		elif int(edificio["level"]) >= 1 and edificio["active"] and horas > 0.0:
 			var produce: Variant = _economia.edificio(edificio["type"]).get("produce_por_hora", {})
 			if produce is Dictionary and not produce.is_empty():
@@ -190,11 +248,14 @@ func para_la_vista(estado: MissionState) -> Array[Dictionary]:
 	for edificio in estado.edificios:
 		var en_obra := int(edificio["target_level"]) > int(edificio["level"])
 		var progreso := 1.0
+		var restante := 0.0
 		if en_obra:
 			progreso = clampf(float(edificio["elapsed"]) / maxf(float(edificio["seconds"]), 0.001), 0.0, 1.0)
+			restante = maxf(float(edificio["seconds"]) - float(edificio["elapsed"]), 0.0)
 		lista.append({"id": edificio["id"], "type": edificio["type"], "tile": edificio["tile"], "level": edificio["level"],
-			"building": en_obra, "progress": progreso, "active": edificio["active"],
-			"hp": float(edificio["hp"]), "hp_max": vida_maxima(edificio)})
+			"building": en_obra, "progress": progreso, "remaining_s": restante, "active": edificio["active"],
+			"hp": float(edificio["hp"]), "hp_max": vida_maxima(edificio), "modules": modulos_totales(str(edificio["type"])),
+			"next_module": siguiente_modulo(estado, edificio)})
 	return lista
 
 
@@ -203,6 +264,8 @@ func opciones(estado: MissionState) -> Array[Dictionary]:
 	var lista: Array[Dictionary] = []
 	for tipo in _economia.ids_edificios():
 		var def := _economia.edificio(tipo)
+		if bool(def.get("requiere_final", false)) and estado.historia_final.is_empty():
+			continue  # la nave de fuga no aparece en el menú hasta decidir el clímax
 		var disp := disponibilidad(estado, tipo)
 		lista.append({"id": tipo, "name_key": def.get("nombre_clave", tipo), "cost": def["costo"].duplicate(),
 			"power_w": float(def.get("genera_w_solar", def.get("genera_w", 0.0))) - float(def.get("consume_w", 0.0)),
@@ -215,7 +278,8 @@ func opciones(estado: MissionState) -> Array[Dictionary]:
 func vida_maxima(edificio: Dictionary) -> float:
 	if edificio["type"] == ANTENA:
 		return _economia.antena_hp
-	return float(_economia.edificio(edificio["type"]).get("hp", 100))
+	var def := _economia.edificio(edificio["type"])
+	return float(def.get("hp_modulo", def.get("hp", 100)))
 
 
 ## Edificio por id ({} si no existe).
@@ -249,6 +313,21 @@ func danar(estado: MissionState, id: String, dano: float) -> Array[String]:
 		edificio["hp"] = _economia.antena_hp if nivel >= 1 else 0.0
 		estado.nivel_antena = nivel
 		eventos.append("%s:%d" % [EVENTO_ANTENA_DANADA, nivel])
+	elif modulos_totales(str(edificio["type"])) > 0:
+		# Edificio por módulos (la nave): el golpe destruye el módulo más alto, o el que estaba en obra.
+		if int(edificio["target_level"]) > int(edificio["level"]):
+			edificio["target_level"] = int(edificio["level"])
+		else:
+			edificio["level"] = int(edificio["level"]) - 1
+			edificio["target_level"] = int(edificio["level"])
+		edificio["elapsed"] = 0.0
+		if int(edificio["level"]) < 1:
+			estado.edificios.erase(edificio)
+			sincronizar_mapa(estado)
+			eventos.append("%s:%s:%s" % [EVENTO_EDIFICIO_DESTRUIDO, edificio["type"], id])
+		else:
+			edificio["hp"] = vida_maxima(edificio)
+			eventos.append("%s:%s:%d" % [EVENTO_MODULO_PERDIDO, edificio["type"], int(edificio["level"])])
 	else:
 		estado.edificios.erase(edificio)
 		sincronizar_mapa(estado)
@@ -295,9 +374,13 @@ func _motivo(estado: MissionState, tipo: String, casilla: Variant) -> String:
 	var maximo := int(def.get("maximo", -1))
 	if maximo >= 0 and cantidad(estado, tipo) >= maximo:
 		return "MAX_BUILT"
+	if bool(def.get("requiere_final", false)) and estado.historia_final.is_empty():
+		return "NEEDS_FINAL"
 	var requiere := str(def.get("requiere", ""))
 	if not requiere.is_empty() and not listo(estado, requiere):
 		return "NEEDS_" + requiere.to_upper()
+	if estado.nivel_antena < int(def.get("requiere_antena", 0)):
+		return "NEEDS_ANTENNA_%d" % int(def["requiere_antena"])
 	if not _recursos.alcanza(estado, def["costo"]):
 		return "NO_RESOURCES"
 	if casilla == null:

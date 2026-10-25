@@ -12,6 +12,7 @@ const RUTA_PIEZAS := "res://content/parts.json"
 const RUTA_ECONOMIA := "res://content/economia.json"
 const RUTA_HISTORIA := "res://content/historia.json"
 const RUTA_COMBATE := "res://content/combate.json"
+const RUTA_TUTORIAL := "res://content/tutorial.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -87,6 +88,8 @@ func _process(delta: float) -> void:
 			_aviso("NOTICE_WAVE_CLEARED")
 		elif evento.begins_with(BuildSystem.EVENTO_EDIFICIO_DESTRUIDO):
 			_aviso("NOTICE_BUILDING_LOST")
+		elif evento.begins_with(BuildSystem.EVENTO_MODULO_PERDIDO):
+			_aviso("NOTICE_MODULE_LOST")
 		elif evento.begins_with(BuildSystem.EVENTO_ANTENA_DANADA):
 			_aviso("NOTICE_ANTENNA_HIT")
 		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
@@ -108,10 +111,11 @@ func _crear_simulacion() -> void:
 	var economia := Economy.desde_archivo(RUTA_ECONOMIA)
 	var historia := StoryData.desde_archivo(RUTA_HISTORIA)
 	var combate := CombatData.desde_archivo(RUTA_COMBATE)
-	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores]:
+	var tutorial := TutorialData.desde_archivo(RUTA_TUTORIAL)
+	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores, tutorial.errores]:
 		errores.append_array(lista)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate)
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial)
 
 
 ## "agregar_piezas" es false al rediseñar: el taller conserva las piezas ya elegidas.
@@ -137,7 +141,7 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				port.present_path(resultado["path"], resultado["seconds_per_tile"])
 		"act":
 			port.present_action(resultado["action"])
-		"upgrade", "build", "decide":
+		"upgrade", "build", "build_module", "decide":
 			if view != null:
 				view.audio.ping()
 		"landing_finished":

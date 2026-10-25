@@ -27,10 +27,12 @@ var _resultado: OutcomeSystem
 var _economia: Economy  ## null: misión sin base ni recursos (pruebas antiguas)
 var _datos_historia: StoryData  ## null: misión sin historia
 var _datos_combate: CombatData  ## null: misión sin monstruos (necesita también economía)
+var _datos_tutorial: TutorialData  ## null: sin tutorial
 var _recursos: ResourceSystem
 var _edificios: BuildSystem
 var _historia: StorySystem
 var _combate: CombatSystem
+var _tutorial: TutorialSystem
 var _seleccion: String = ""
 var _potencia_nominal_w: float = 0.0  ## del panel o RTG elegido; hace falta para reconstruir los sistemas al cargar
 var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
@@ -39,7 +41,7 @@ var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye e
 ## «economia», «historia» y «combate» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
 ## El combate (monstruos y torretas) necesita la economía, porque las torretas son edificios.
 func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, economia: Economy = null,
-		historia: StoryData = null, combate: CombatData = null) -> void:
+		historia: StoryData = null, combate: CombatData = null, tutorial: TutorialData = null) -> void:
 	_balance = balance
 	_reglas = reglas
 	_mapa = mapa
@@ -47,6 +49,7 @@ func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, ec
 	_economia = economia
 	_datos_historia = historia
 	_datos_combate = combate
+	_datos_tutorial = tutorial
 	_diseno = MissionDesign.new(catalogo, reglas)
 	reiniciar()
 
@@ -70,6 +73,8 @@ func reiniciar() -> void:
 		_edificios.iniciar(estado)
 	if _historia != null:
 		_historia.iniciar(estado)
+	if _tutorial != null:
+		_tutorial.iniciar(estado)
 	_reloj.actualizar(estado)
 
 
@@ -116,6 +121,10 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 			return _resultado_simple(_edificios.construir(estado, str(carga.get("building", "")), carga.get("tile", Vector2i(9999, 9999))))
+		"build_module":
+			if _edificios == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			return _resultado_simple(_edificios.construir_modulo(estado, str(carga.get("id", ""))))
 		"toggle_building":
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
@@ -126,7 +135,14 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			var decision := _historia.decidir(estado, int(carga.get("choice", -1)))
 			if decision["ok"] and decision["ends"]:
 				estado.historia_final = StorySystem.FINAL_DERROTA
+			if decision["ok"]:
+				_fijar_tope_envio()  # un clímax decidido sube el tope de envío al instante
 			return _resultado_simple(decision)
+		"tutorial_skip":
+			if _tutorial == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			_tutorial.omitir(estado)
+			return {"ok": true, "reason": ""}
 		"pause":
 			return _pausar(bool(carga.get("paused", false)))
 		"landing_finished":
@@ -168,6 +184,8 @@ func avanzar(delta_s: float) -> Array[String]:
 		eventos.append_array(_edificios.avanzar(estado, delta_s, horas))
 	if _combate != null:
 		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
+	if _tutorial != null:
+		eventos.append_array(_tutorial.avanzar(estado, delta_s, eventos))
 	informe = _resultado.evaluar(estado, eventos)
 	if not informe.is_empty():
 		_completar_informe()
@@ -198,6 +216,8 @@ func snapshot() -> Dictionary:
 			"antenna_next_cost": _edificios.costo_siguiente_antena(estado)}
 	if _historia != null:
 		datos["story"] = _historia.para_la_vista(estado)
+	if _tutorial != null:
+		datos["tutorial"] = _tutorial.para_la_vista(estado)
 	if _combate != null:
 		datos["combat"] = _combate.para_la_vista(estado)
 		datos["nests"] = _mapa.nidos_para_la_vista()
@@ -280,6 +300,7 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 	_edificios = null
 	_historia = null
 	_combate = null
+	_tutorial = null
 	if _economia != null:
 		_recursos = ResourceSystem.new(_economia)
 		_edificios = BuildSystem.new(_economia, _recursos, _mapa)
@@ -290,6 +311,11 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 	if _datos_historia != null:
 		_historia = StorySystem.new(_datos_historia, _recursos)
 		_resultado.requiere_final = true
+		if _economia != null and _economia.tiene_edificio(_datos_historia.nave):
+			_resultado.requiere_nave = _datos_historia.nave
+			_resultado.requiere_nave_nivel = maxi(_economia.modulos_de(_datos_historia.nave).size(), 1)
+	if _datos_tutorial != null:
+		_tutorial = TutorialSystem.new(_datos_tutorial, _edificios)
 
 
 func _seleccionar(objetivo_id: String) -> Dictionary:
@@ -427,8 +453,9 @@ func _objetivos_para_la_vista() -> Array[Dictionary]:
 		var entrada := {"id": objetivo["id"], "tile": objetivo["tile"], "type": objetivo["type"],
 			"revealed": objetivo["revealed"], "depleted": objetivo["depleted"]}
 		if objetivo["revealed"]:
-			entrada["actions"] = _ciencia.acciones_de_objetivo(estado, objetivo["id"])
-			entrada["primary"] = _ciencia.accion_principal(estado, objetivo["id"])
+			var acciones := _ciencia.acciones_de_objetivo(estado, objetivo["id"])
+			entrada["actions"] = acciones
+			entrada["primary"] = _ciencia.principal_de(acciones, objetivo)
 		lista.append(entrada)
 	return lista
 
@@ -453,10 +480,12 @@ const TOPE_ANTES_DEL_CLIMAX := 0.85
 
 
 func _fijar_tope_envio() -> void:
-	if _historia != null and estado.historia_final.is_empty():
+	if _historia == null:
+		estado.envio_max = -1.0
+	elif estado.historia_final.is_empty():
 		estado.envio_max = float(estado.meta) * TOPE_ANTES_DEL_CLIMAX
 	else:
-		estado.envio_max = -1.0
+		estado.envio_max = float(estado.meta)  # decidido el clímax, la ciencia llega al 100 % y no pasa de ahí
 
 
 ## Con historia, el informe dice el final, la ética, la vida de Rocky y las decisiones tomadas.
@@ -483,7 +512,7 @@ func _avisos() -> Array[Dictionary]:
 	var porcentaje_bateria := _porcentaje(estado.bateria_wh, estado.bateria_capacidad_wh)
 	if not estado.modo_seguro and porcentaje_bateria <= _balance.numero("avisos.bateria_baja_pct"):
 		avisos.append(_aviso("LOW_BATTERY", "warning", [porcentaje_bateria]))
-	if estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max:
+	if estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max and estado.historia_final.is_empty():
 		avisos.append(_aviso("SIGNAL_CAPPED", "warning", []))
 	if estado.tormenta:
 		avisos.append(_aviso("STORM_ACTIVE", "warning", []))

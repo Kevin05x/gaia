@@ -29,6 +29,14 @@
     "torreta": { "nombre_clave": "BLD_TURRET", "costo": { "rocas": 40, "olivino": 15 }, "hp": 120, "tiempo_s": 6, "consume_w": 3, "maximo": 6,
       "combate": { "alcance": 6.0, "dano": 12, "cadencia_s": 0.8, "disparo_wh": 0.5 } },
     "torreta_2": { "nombre_clave": "BLD_TURRET2", "costo": { "rocas": 60, "olivino": 30, "hielo": 10 }, "hp": 200, "tiempo_s": 9, "consume_w": 6, "maximo": 4,
-      "requiere": "hangar", "combate": { "alcance": 8.0, "dano": 28, "cadencia_s": 0.7, "disparo_wh": 1.0 } }
+      "requiere": "hangar", "combate": { "alcance": 8.0, "dano": 28, "cadencia_s": 0.7, "disparo_wh": 1.0 } },
+    "nave_fuga": { "nombre_clave": "BLD_SHIP", "hp": 400, "hp_modulo": 100, "consume_w": 0, "maximo": 1,
+      "requiere": "hangar", "requiere_antena": 3, "requiere_final": true,
+      "modulos": [
+        { "nombre_clave": "MOD_ENGINES", "costo": { "rocas": 50, "olivino": 30 }, "tiempo_s": 14 },
+        { "nombre_clave": "MOD_TANK", "costo": { "rocas": 60, "olivino": 30, "hielo": 30 }, "tiempo_s": 18 },
+        { "nombre_clave": "MOD_CAPSULE", "costo": { "rocas": 30, "olivino": 20, "hielo": 15, "xenolito": 20 }, "tiempo_s": 16 },
+        { "nombre_clave": "MOD_ESCAPE", "costo": { "rocas": 10, "olivino": 10, "hielo": 15, "xenolito": 20 }, "tiempo_s": 12 }
+      ] }
   }
 }

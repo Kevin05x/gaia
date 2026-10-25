@@ -4,13 +4,14 @@ extends RefCounted
 ## textos, objetivo, disparadores y opciones con efectos) y los finales. Los textos vienen en español e
 ## inglés ({"es", "en"}). Simulación pura: sin nodos. Errores como códigos "CODIGO:detalle".
 
-const CONDICIONES: Array[String] = ["inicio", "antena_min", "noche", "tormenta", "sol_min", "enviados_pct_min"]
-const METAS: Array[String] = ["antena", "edificio", "recurso", "enviados_pct", "sol", "bateria_pct", "rocky_hp"]
+const CONDICIONES: Array[String] = ["inicio", "antena_min", "noche", "tormenta", "sol_min", "enviados_pct_min", "final_decidido"]
+const METAS: Array[String] = ["antena", "edificio", "recurso", "enviados_pct", "sol", "bateria_pct", "rocky_hp", "modulos"]
 const MODOS: Array[String] = ["decision", "radio"]
 const ESCENAS: Array[String] = ["completa", "corta"]
 const EFECTOS: Array[String] = ["bateria_pct", "datos", "etica", "rocky_hp", "recursos", "completa_transmision"]
 
 var inicio: String = ""
+var nave: String = ""  ## edificio que hay que construir para ganar tras el clímax ("" = ninguno)
 var etica_inicial: float = 50.0
 var intro: Array = []
 var nodos: Dictionary = {}
@@ -49,6 +50,7 @@ func _cargar(texto: String) -> void:
 		return
 	var datos: Dictionary = json.data
 	inicio = str(datos.get("inicio", ""))
+	nave = str(datos.get("nave", ""))
 	etica_inicial = float(datos.get("etica_inicial", 50.0))
 	var lista_intro: Variant = datos.get("intro", [])
 	intro = lista_intro if lista_intro is Array else []
@@ -111,7 +113,7 @@ func _validar_nodo(id: String, def: Variant) -> void:
 		var final_id := str(opcion.get("final", ""))
 		if not final_id.is_empty() and not finales.has(final_id):
 			errores.append("MISSING_ENDING:%s" % final_id)
-		if siguiente.is_empty() and final_id.is_empty():
+		if siguiente.is_empty() and final_id.is_empty() and not bool(opcion.get("cierra", false)):
 			errores.append("DEAD_END:%s" % id)
 		var efectos: Variant = opcion.get("efectos", {})
 		if efectos is Dictionary:

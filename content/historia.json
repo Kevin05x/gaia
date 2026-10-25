@@ -631,8 +631,8 @@
             "en": "Sync harmonic pulse and shields (Perseverance and Rocky together)"
           },
           "detalle": {
-            "es": "Calmas al Coloso sin sacrificar a nadie. −25 % batería, +datos. Final al completar la transmisión: «El renacer de Gaia».",
-            "en": "You calm the Colossus without sacrificing anyone. −25% battery, +data. Ending when the transmission completes: \"Gaia reborn\"."
+            "es": "Calmas al Coloso sin sacrificar a nadie. −25 % batería, +datos. Final al completar la transmisión: «El renacer de Gaia». Después, construye la nave de fuga.",
+            "en": "You calm the Colossus without sacrificing anyone. −25% battery, +data. Ending when the transmission completes: \"Gaia reborn\". Then build the escape ship."
           },
           "efectos": {
             "bateria_pct": -25,
@@ -643,7 +643,8 @@
           "registro": {
             "es": "Contuviste al Coloso junto a Rocky con el pulso armónico.",
             "en": "You held off the Colossus together with Rocky using the harmonic pulse."
-          }
+          },
+          "siguiente": "nave_fuga"
         },
         {
           "texto": {
@@ -651,8 +652,8 @@
             "en": "Rocky's sacrifice"
           },
           "detalle": {
-            "es": "Rocky conecta su núcleo al relé de la antena y atrae al Coloso: la transmisión llega al 100 % al instante. Final: «El último sol de Rocky».",
-            "en": "Rocky plugs its core into the antenna relay and lures the Colossus away: the transmission hits 100% at once. Ending: \"Rocky's last sol\"."
+            "es": "Rocky conecta su núcleo al relé de la antena y atrae al Coloso: la transmisión llega al 100 % al instante. Final: «El último sol de Rocky». Después, construye la nave de fuga.",
+            "en": "Rocky plugs its core into the antenna relay and lures the Colossus away: the transmission hits 100% at once. Ending: \"Rocky's last sol\". Then build the escape ship."
           },
           "efectos": {
             "rocky_hp": -100,
@@ -664,7 +665,8 @@
           "registro": {
             "es": "Rocky se sacrificó conectando su núcleo a la antena para salvar la misión.",
             "en": "Rocky sacrificed itself, wiring its core into the antenna to save the mission."
-          }
+          },
+          "siguiente": "nave_fuga"
         }
       ],
       "espera_h": 4.0,
@@ -731,8 +733,8 @@
             "en": "Detonate the perchlorate reserves at the Colossus"
           },
           "detalle": {
-            "es": "Abates al Coloso y envías los datos alterados. −20 % batería, Rocky herido, +datos. Final: «Cenizas rojas».",
-            "en": "You bring down the Colossus and send the altered data. −20% battery, Rocky hurt, +data. Ending: \"Red ashes\"."
+            "es": "Abates al Coloso y envías los datos alterados. −20 % batería, Rocky herido, +datos. Final: «Cenizas rojas». Después, construye la nave de fuga.",
+            "en": "You bring down the Colossus and send the altered data. −20% battery, Rocky hurt, +data. Ending: \"Red ashes\". Then build the escape ship."
           },
           "efectos": {
             "bateria_pct": -20,
@@ -744,7 +746,8 @@
           "registro": {
             "es": "Abatiste al Coloso con artillería pesada y enviaste datos parciales.",
             "en": "You brought down the Colossus with heavy artillery and sent partial data."
-          }
+          },
+          "siguiente": "nave_fuga"
         },
         {
           "texto": {
@@ -752,8 +755,8 @@
             "en": "Final redemption: Rocky's sacrifice"
           },
           "detalle": {
-            "es": "Rocky entrega su núcleo a la antena y atrae al Coloso para salvarte: la transmisión llega al 100 %. Final: «El último sol de Rocky».",
-            "en": "Rocky gives its core to the antenna and lures the Colossus to save you: the transmission hits 100%. Ending: \"Rocky's last sol\"."
+            "es": "Rocky entrega su núcleo a la antena y atrae al Coloso para salvarte: la transmisión llega al 100 %. Final: «El último sol de Rocky». Después, construye la nave de fuga.",
+            "en": "Rocky gives its core to the antenna and lures the Colossus to save you: the transmission hits 100%. Ending: \"Rocky's last sol\". Then build the escape ship."
           },
           "efectos": {
             "rocky_hp": -100,
@@ -765,7 +768,8 @@
           "registro": {
             "es": "En medio del desastre, Rocky dio su vida para completar la transmisión.",
             "en": "In the middle of the disaster, Rocky gave its life to complete the transmission."
-          }
+          },
+          "siguiente": "nave_fuga"
         },
         {
           "texto": {
@@ -792,6 +796,78 @@
         {
           "tipo": "enviados_pct",
           "min": 100
+        }
+      ]
+    },
+    "nave_fuga": {
+      "acto": {
+        "es": "Acto 3 · Nave de fuga",
+        "en": "Act 3 · Escape ship"
+      },
+      "titulo": {
+        "es": "La ventana de lanzamiento",
+        "en": "The launch window"
+      },
+      "imagen": "nave_fuga",
+      "texto": {
+        "es": "El Coloso se aleja, pero el cráter sigue temblando. Houston calcula una ventana de lanzamiento muy corta: hay que construir la nave de fuga en la base antes de que termine el último sol.",
+        "en": "The Colossus withdraws, but the crater keeps trembling. Houston calculates a very short launch window: the escape ship must be built at the base before the last sol ends."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Perseverance, la ventana se cierra. Necesitamos la nave de fuga lista: hangar, antena al máximo y todos los materiales que tengas. Defiende la obra.",
+            "en": "Perseverance, the window is closing. We need the escape ship ready: hangar, antenna at maximum and every material you have. Defend the build."
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "Recibido, Houston. Empiezo la construcción.",
+            "en": "Copy, Houston. Starting construction."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Construye los 4 módulos de la nave de fuga y completa la transmisión",
+        "en": "Build the escape ship's 4 modules and complete the transmission"
+      },
+      "disparadores": [
+        {
+          "final_decidido": true
+        }
+      ],
+      "modo": "radio",
+      "espera_h": 0.5,
+      "metas": [
+        {
+          "tipo": "modulos",
+          "id": "nave_fuga",
+          "min": 4
+        },
+        {
+          "tipo": "enviados_pct",
+          "min": 100
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Entendido",
+            "en": "Understood"
+          },
+          "detalle": {
+            "es": "Última misión: construir la nave de fuga.",
+            "en": "Final mission: build the escape ship."
+          },
+          "efectos": {},
+          "siguiente": "",
+          "cierra": true,
+          "registro": {
+            "es": "Houston confirmó la ventana de lanzamiento: la nave de fuga es la última misión.",
+            "en": "Houston confirmed the launch window: the escape ship is the final mission."
+          }
         }
       ]
     }
@@ -864,5 +940,6 @@
       },
       "color": "FFF5E4"
     }
-  }
+  },
+  "nave": "nave_fuga"
 }

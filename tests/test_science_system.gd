@@ -264,3 +264,42 @@ func _ids(objetivo: String) -> Array:
 	for entrada in ciencia.acciones_de_objetivo(estado, objetivo):
 		ids.append(entrada["id"])
 	return ids
+
+
+func test_el_indice_de_objetivos_sigue_bien_si_cambia_la_lista() -> void:
+	_agregar("A", Vector2i(1, 1), "rock")
+	_agregar("B", Vector2i(2, 2), "mineral")
+	assert_eq(ciencia.acciones_de_objetivo(estado, "B").size() > 0, true)
+	assert_eq(ciencia.accion_principal(estado, "A"), ciencia.principal_de(ciencia.acciones_de_objetivo(estado, "A"), estado.objetivos[0]))
+	# la lista cambia de orden y de contenido (por ejemplo, al cargar una partida): el índice no puede devolver otro objetivo
+	estado.objetivos.reverse()
+	assert_eq(ciencia.acciones_de_objetivo(estado, "A").size() > 0, true, "A sigue encontrándose")
+	estado.objetivos.clear()
+	assert_eq(ciencia.acciones_de_objetivo(estado, "A").size(), 0, "sin objetivos no hay acciones")
+	_agregar("C", Vector2i(3, 3), "rock")
+	assert_eq(ciencia.acciones_de_objetivo(estado, "A").size(), 0)
+	assert_gt(ciencia.acciones_de_objetivo(estado, "C").size(), 0)
+
+
+func test_companero_tiene_tope_por_sol() -> void:
+	var maximo := int(balance.numero("acciones.companion.usos_por_sol"))
+	assert_gt(maximo, 0)
+	estado.bateria_wh = estado.bateria_capacidad_wh
+	for i in maximo:
+		_completar("companion")
+	assert_eq(_motivo("companion"), "HELP_USED")
+	assert_false(ciencia.iniciar(estado, "companion")["ok"])
+	# Al día siguiente vuelve a estar disponible.
+	estado.sol += 1
+	assert_eq(_motivo("companion"), "")
+
+
+func test_memoria_llena_no_frena_recursos_si_ya_no_se_puede_enviar() -> void:
+	_agregar("R9", Vector2i(0, 0), "rock")
+	estado.casilla_rover = Vector2i(0, 0)
+	estado.bateria_wh = estado.bateria_capacidad_wh
+	estado.datos = float(estado.memoria_capacidad)
+	assert_eq(_motivo("spectrometer", "R9"), "MEMORY_FULL")
+	estado.envio_max = 10.0
+	estado.enviados = 10.0
+	assert_eq(_motivo("spectrometer", "R9"), "")

@@ -13,6 +13,7 @@ var actors: Node3D
 var rig: Node3D
 var hud: CanvasLayer
 var report_view: CanvasLayer
+var explosions: Node3D
 var audio: Node
 var sun: DirectionalLight3D
 var environment: Environment
@@ -21,6 +22,7 @@ var tracks: MeshInstance3D
 var _tracks_seeded := false
 var workshop: CanvasLayer
 var story: CanvasLayer  ## introducción y ventana de decisión de la historia
+var tutorial: CanvasLayer  ## cartel del tutorial del Sol 1
 var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
 var buildings: Node3D  ## edificios de la base
 var combat: Node3D  ## nidos, monstruos, rayos y meteoritos
@@ -109,9 +111,27 @@ func _ready() -> void:
 	combat.ground = terrain.height_at
 	combat.buildings = buildings
 	add_child(combat)
-	buildings.building_lost.connect(func(pos: Vector3) -> void:
-		combat.fogonazo(pos + Vector3(0, 0.8, 0), Color("FF9A4D"), 3.0, 0.7)
-		combat.fogonazo(pos + Vector3(0, 0.4, 0), Color("4a3a36"), 2.4, 1.0))
+	explosions = preload("res://scenes/b/explosion_fx.gd").new()
+	explosions.name = "Explosions"
+	explosions.ground = terrain.height_at
+	add_child(explosions)
+	buildings.building_lost.connect(func(pos: Vector3, tipo: String) -> void:
+		var grande := tipo in ["hangar", "extractor_hielo", "domo", "torreta_2"]
+		explosions.explotar(pos, 1.6 if grande else 1.1, 14 if grande else 10)
+		if is_instance_valid(audio):
+			audio.sfx("explosion", 0.08))
+	buildings.module_lost.connect(func(pos: Vector3) -> void:
+		explosions.explotar(pos, 2.4, 18)
+		if is_instance_valid(audio):
+			audio.sfx("explosion", 0.0))
+	buildings.building_started.connect(func(pos: Vector3) -> void:
+		explosions.polvo(pos, 0.7)
+		if is_instance_valid(audio):
+			audio.sfx("obra_inicio", 0.05))
+	buildings.building_done.connect(func(pos: Vector3, tipo: String) -> void:
+		explosions.polvo(pos, 1.3 if tipo == "hangar" or tipo == "domo" else 1.0)
+		if is_instance_valid(audio):
+			audio.sfx("obra_fin", 0.0))
 	base_hud = preload("res://scenes/b/base_hud.gd").new()
 	base_hud.name = "BaseHud"
 	add_child(base_hud)
@@ -121,6 +141,14 @@ func _ready() -> void:
 	story.name = "Story"
 	add_child(story)
 	story.command.connect(_command)
+	tutorial = preload("res://scenes/b/tutorial_panel.gd").new()
+	tutorial.name = "Tutorial"
+	add_child(tutorial)
+	tutorial.command.connect(_command)
+	tutorial.step_changed.connect(func() -> void: audio.ping())
+	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
+	tutorial.target_for = func(clave: String) -> Control:  # se consulta cada cuadro: el HUD puede reconstruirse
+		return base_hud.build_button if clave == "construir" else hud.highlight_nodes().get(clave, null)
 	port.snapshot_received.connect(apply_snapshot)
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
@@ -222,6 +250,8 @@ func apply_snapshot(s: Dictionary) -> void:
 	combat.update_state(s)
 	base_hud.update_snapshot(s)
 	story.update_snapshot(s)
+	tutorial.update_snapshot(s)
+	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible)
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
@@ -323,7 +353,13 @@ func _report(value: Dictionary) -> void:
 	rig.enabled = false
 	hud.visible = false
 	terrain.hide_cursor()
-	report_view.show_report(value)
+	var final: Dictionary = value.get("ending", {})
+	if final.is_empty():
+		report_view.show_report(value)
+	else:
+		story.show_ending(final, func() -> void: report_view.show_report(value))
+		if is_instance_valid(audio):
+			audio.sfx("final_ok" if bool(value.get("success", false)) else "final_mal", 0.0)
 
 
 func _process(_delta: float) -> void:

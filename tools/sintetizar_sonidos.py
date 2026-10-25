@@ -274,6 +274,76 @@ def meteor_hit(dur=1.4):
     return boom + ruido + grava
 
 
+def escena(dur=1.4):
+    """Entrada de una escena a pantalla completa: un soplo grave que sube y se apaga."""
+    t = t_of(dur)
+    rng = np.random.default_rng(31)
+    ruido = bp(rng.standard_normal(len(t)), 120, 900)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 2
+    tono = np.sin(2 * np.pi * (110 + 40 * t / dur) * t) * 0.5
+    return (ruido * 0.6 + tono) * env
+
+
+def _campana(freq, dur, amp=1.0):
+    t = t_of(dur)
+    return amp * np.sin(2 * np.pi * freq * t) * np.exp(-t * 3.2)
+
+
+def final_ok(dur=2.4):
+    """Final con éxito: acorde mayor que sube, como una campana."""
+    x = np.zeros(int(dur * SR))
+    for i, f in enumerate([261.6, 329.6, 392.0, 523.3]):
+        c = _campana(f, dur - i * 0.2, 0.5)
+        x[int(i * 0.2 * SR):int(i * 0.2 * SR) + len(c)] += c[:len(x) - int(i * 0.2 * SR)]
+    return x
+
+
+def final_mal(dur=2.6):
+    """Final con derrota: dos notas graves que bajan."""
+    x = np.zeros(int(dur * SR))
+    for i, f in enumerate([196.0, 146.8, 110.0]):
+        c = _campana(f, dur - i * 0.5, 0.6)
+        x[int(i * 0.5 * SR):int(i * 0.5 * SR) + len(c)] += c[:len(x) - int(i * 0.5 * SR)]
+    return lp(x, 1800)
+
+
+def explosion(dur=1.8):
+    """Explosión de un edificio: golpe grave, estallido de ruido y restos que caen."""
+    t = t_of(dur)
+    rng = np.random.default_rng(77)
+    boom = np.sin(2 * np.pi * (70 - 35 * np.minimum(t, 0.6) / 0.6) * t) * np.exp(-t * 3.0)
+    estallido = lp(rng.standard_normal(len(t)), 2200) * np.exp(-t * 4.5)
+    crepitar = np.zeros(len(t))
+    for k in range(14):
+        ini = int((0.25 + rng.random() * 1.2) * SR)
+        n = int(0.03 * SR)
+        if ini + n < len(t):
+            crepitar[ini:ini + n] += hp(rng.standard_normal(n), 900) * np.exp(-np.arange(n) / (0.006 * SR)) * 0.3
+    return boom * 1.1 + estallido * 0.9 + crepitar
+
+
+def obra_inicio(dur=0.55):
+    """Dos golpes metálicos al empezar una obra."""
+    x = np.zeros(int(dur * SR))
+    for ini, f in [(0.0, 520.0), (0.2, 430.0)]:
+        n = int(0.3 * SR)
+        t = np.arange(n) / SR
+        golpe = (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 2.76 * t)) * np.exp(-t * 18)
+        i = int(ini * SR)
+        x[i:i + n] += golpe[:len(x) - i]
+    return x
+
+
+def obra_fin(dur=1.0):
+    """Campanilla de obra terminada: dos notas que suben."""
+    x = np.zeros(int(dur * SR))
+    for ini, f in [(0.0, 659.3), (0.14, 880.0)]:
+        c = _campana(f, dur - ini, 0.6)
+        i = int(ini * SR)
+        x[i:i + len(c)] += c[:len(x) - i]
+    return x
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     Path(out).mkdir(parents=True, exist_ok=True)
@@ -294,3 +364,9 @@ if __name__ == "__main__":
     save(out, "alarm.wav", alarm(), 40)
     save(out, "meteor_fall.wav", meteor_fall(), 60)
     save(out, "meteor_hit.wav", meteor_hit(), 120)
+    save(out, "escena.wav", escena(), 60)
+    save(out, "final_ok.wav", final_ok(), 80)
+    save(out, "final_mal.wav", final_mal(), 80)
+    save(out, "explosion.wav", explosion(), 80)
+    save(out, "obra_inicio.wav", obra_inicio(), 20)
+    save(out, "obra_fin.wav", obra_fin(), 60)

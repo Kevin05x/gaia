@@ -164,6 +164,7 @@ func test_al_ganar_publica_la_fase_informe_y_despues_el_informe() -> void:
 	_operar()
 	runner.sim.estado.enviados = runner.sim.estado.meta
 	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
+	runner.sim.estado.edificios.append({"id": "nave_fuga-9", "type": "nave_fuga", "tile": Vector2i(-5, -5), "level": 4, "target_level": 4, "elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 400.0, "produced": 0.0, "cd": 0.0})  # y tras construir la nave de fuga
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	assert_eq(informes.size(), 1)
@@ -181,6 +182,7 @@ func test_redisenar_vuelve_a_empezar_con_el_mapa_limpio() -> void:
 	var revision: int = _ultimo()["map_revision"]
 	runner.sim.estado.enviados = runner.sim.estado.meta
 	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
+	runner.sim.estado.edificios.append({"id": "nave_fuga-9", "type": "nave_fuga", "tile": Vector2i(-5, -5), "level": 4, "target_level": 4, "elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 400.0, "produced": 0.0, "cd": 0.0})  # y tras construir la nave de fuga
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	port.submit("redesign")
