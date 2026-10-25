@@ -115,7 +115,7 @@ func test_accion_no_aplicable_al_tipo_de_objetivo() -> void:
 
 func test_memoria_llena() -> void:
 	_agregar("R1", Vector2i(1, 0), "rock")
-	estado.datos = estado.memoria_capacidad - 5.0
+	estado.datos = estado.memoria_capacidad - balance.numero("ciencia.rendimiento.spectrometer") + 1.0
 	assert_eq(_motivo("spectrometer", "R1"), "MEMORY_FULL")
 	estado.datos = estado.memoria_capacidad - balance.numero("ciencia.rendimiento.spectrometer")
 	assert_eq(_motivo("spectrometer", "R1"), "")

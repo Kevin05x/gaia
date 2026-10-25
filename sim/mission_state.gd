@@ -52,6 +52,26 @@ var accion_en_curso: Dictionary = {}  ## {"action", "target_id", "seconds", "ela
 var dron_sol: int = 0  ## sol del último vuelo de dron
 var dron_usos: int = 0  ## vuelos de dron hechos en ese sol
 
+## Base y economía (content/economia.json); vacíos cuando la misión no usa economía.
+var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
+var recursos_vistos: Array = []  ## recursos ya conseguidos alguna vez
+var edificios: Array[Dictionary] = []  ## ver BuildSystem
+var siguiente_edificio: int = 1
+
+## Historia (content/historia.json)
+var etica: float = 50.0  ## 0..100: alta = simbiosis, baja = explotación
+var rocky_hp: float = 100.0  ## vida de Rocky (el compañero) en %
+var historia_nodo: String = ""  ## nodo que espera decisión ("" si ninguno): la misión se detiene
+var historia_espera: String = ""  ## próximo nodo, que se mostrará cuando se cumpla un disparador
+var historia_ultimo: String = ""  ## último nodo mostrado (da el objetivo actual)
+var historia_registro: Array = []  ## [{"node", "choice"}] decisiones tomadas
+var historia_final: String = ""  ## final elegido en el clímax
+var historia_rama: String = ""
+var historia_radio: String = ""  ## último nodo de radio (no detiene la misión)
+var historia_radio_n: int = 0  ## contador de nodos de radio: la vista muestra la tarjeta cuando cambia
+var historia_t_ultimo: float = -1000.0  ## hora de juego absoluta en que se resolvió el último nodo
+var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el clímax); -1 = sin tope
+
 var revision_mapa: int = 1
 var objetivos: Array[Dictionary] = []
 var obstaculos: Array[Vector2i] = []

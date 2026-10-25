@@ -9,6 +9,8 @@ const RUTA_BALANCE := "res://content/balance.json"
 const RUTA_REGLAS := "res://content/rules.json"
 const RUTA_MAPA := "res://content/mapa.json"
 const RUTA_PIEZAS := "res://content/parts.json"
+const RUTA_ECONOMIA := "res://content/economia.json"
+const RUTA_HISTORIA := "res://content/historia.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -45,6 +47,8 @@ func _ready() -> void:
 		add_child(view)
 		view.menu_requested.connect(func() -> void: Sesion.volver_al_menu(get_tree()))
 		Musica.reproducir(get_tree(), "juego", 4.0)
+		if not Sesion.cargar_al_iniciar and not saltar_taller and view.get("story") != null:
+			view.story.show_intro(sim.intro_historia())
 	if port == null and view != null:
 		port = view.get_node("Port")
 	if port == null:
@@ -72,6 +76,10 @@ func _process(delta: float) -> void:
 			_aviso("ACTION_DONE")
 		elif evento == ClockSystem.EVENTO_SOL_NUEVO and crear_vista:
 			Sesion.guardar(sim)  # autoguardado al inicio de cada sol
+		elif evento.begins_with(BuildSystem.EVENTO_NIVEL_ANTENA):
+			_aviso("ANTENNA_UP")
+		elif evento.begins_with(BuildSystem.EVENTO_OBRA_TERMINADA):
+			_aviso("BUILD_DONE")
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
 		_publicar()
 		port.present_report(sim.informe.duplicate(true))
@@ -86,10 +94,12 @@ func _crear_simulacion() -> void:
 	var reglas := Rules.desde_archivo(RUTA_REGLAS)
 	var mapa := MapData.desde_archivo(RUTA_MAPA)
 	var catalogo := Catalog.desde_archivo(RUTA_PIEZAS)
-	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores]:
+	var economia := Economy.desde_archivo(RUTA_ECONOMIA)
+	var historia := StoryData.desde_archivo(RUTA_HISTORIA)
+	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores]:
 		errores.append_array(lista)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo)
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia)
 
 
 ## "agregar_piezas" es false al rediseñar: el taller conserva las piezas ya elegidas.
@@ -115,7 +125,7 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				port.present_path(resultado["path"], resultado["seconds_per_tile"])
 		"act":
 			port.present_action(resultado["action"])
-		"upgrade":
+		"upgrade", "build", "decide":
 			if view != null:
 				view.audio.ping()
 		"landing_finished":

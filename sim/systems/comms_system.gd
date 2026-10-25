@@ -43,12 +43,14 @@ func avanzar(estado: MissionState, delta_s: float) -> Array[String]:
 	var unidades_por_s := _balance.numero("comunicaciones.%s.unidades_por_s" % clave)
 	var costo_por_unidad := _balance.numero("comunicaciones.%s.costo_wh_por_unidad" % clave)
 	var cantidad := minf(estado.datos, delta_s * unidades_por_s * estado.nivel_antena)
+	if estado.envio_max >= 0.0:
+		cantidad = minf(cantidad, maxf(0.0, estado.envio_max - estado.enviados))
 	if costo_por_unidad > 0.0:
 		cantidad = minf(cantidad, estado.bateria_wh / costo_por_unidad)
 	estado.datos = maxf(0.0, estado.datos - cantidad)
 	estado.enviados += cantidad
 	estado.bateria_wh = maxf(0.0, estado.bateria_wh - cantidad * costo_por_unidad)
-	if estado.datos <= 0.0:
+	if estado.datos <= 0.0 or (estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max):
 		estado.transmitiendo = false
 		eventos.append(EVENTO_TRANSMISION_TERMINADA)
 	return eventos
@@ -62,8 +64,12 @@ func _motivo(estado: MissionState) -> String:
 	if estado.modo_seguro:
 		return "SAFE"
 	if not estado.transmitiendo:
+		if estado.nivel_antena <= 0:
+			return "NO_ANTENNA"
 		if not estado.enlace_abierto:
 			return "NO_LINK"
 		if estado.datos <= 0.0:
 			return "NO_DATA"
+		if estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max:
+			return "SIGNAL_CAPPED"
 	return ""

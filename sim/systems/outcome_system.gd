@@ -9,12 +9,14 @@ const CAUSA_EXITO := "CAUSE_SUCCESS"
 const CAUSA_PLAZO := "CAUSE_FAIL"
 const CAUSA_FALLO_MODO_SEGURO := "CAUSE_SAFE_FAIL"
 const CAUSA_MODO_SEGURO := "CAUSE_SAFE"
+const CAUSA_HISTORIA := "CAUSE_STORY_FAIL"
 const CAUSA_SOLAR := "CAUSE_SOLAR"
 const CAUSA_RTG := "CAUSE_RTG"
 const CAUSA_RELE := "CAUSE_RELAY"
 const CAUSA_DIRECTA := "CAUSE_DIRECT"
 
 var _sol_limite: int
+var requiere_final: bool = false  ## con historia: llegar a la meta solo gana tras decidir el clímax
 
 
 func _init(reglas: Rules) -> void:
@@ -27,7 +29,9 @@ func _init(reglas: Rules) -> void:
 func evaluar(estado: MissionState, eventos: Array[String] = []) -> Dictionary:
 	if estado.fase != "operations":
 		return {}
-	if estado.enviados >= estado.meta:
+	if estado.historia_final == StorySystem.FINAL_DERROTA:
+		return _terminar(estado, false, CAUSA_HISTORIA)
+	if estado.enviados >= estado.meta and (not requiere_final or not estado.historia_final.is_empty()):
 		return _terminar(estado, true, CAUSA_EXITO)
 	if eventos.has(EnergySystem.EVENTO_MISION_FALLA):
 		return _terminar(estado, false, CAUSA_FALLO_MODO_SEGURO)

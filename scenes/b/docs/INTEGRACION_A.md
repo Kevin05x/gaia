@@ -325,3 +325,30 @@ Flujo: `intro.tscn` (escena principal) → `menu.tscn` → (tutorial la primera 
 - **Sonidos por acción** (`audio.gd`): el rover rodando, el taladro, el láser del espectrómetro, el radar, la panorámica, el dron (arranque de rotores y vuelo), el compañero y la estación meteorológica tienen sonido propio y suenan en bucle mientras dura la acción (la tabla `ACCIONES` los asocia con el id de la acción). Al abrirse la transmisión suena un barrido de subida y luego el chorro de datos. Los `.wav` importados no vienen en bucle, así que `audio.gd` los repite por código.
 - **Animación de transmisión** (`transmission_fx.gd`, accesible como `actors.link`): mientras `transmitting` es verdadero, paquetes de datos viajan en arco del rover a la antena, de su punta sale un haz con paquetes que suben al cielo y ondas circulares se expanden hacia arriba; aparece y se apaga con fundido. Sigue la altura de la antena según su nivel (`actors.antenna_top`).
 - Pruebas: `tests/test_guardado.gd` (5), `tests/test_menu.gd` (9) y `tests/test_sonido.gd` (6). Total: 254.
+
+## Historia, recursos y base (bloque A, 24 oct 2026)
+
+Con `content/economia.json` y `content/historia.json` (los carga `MissionRunner`), el snapshot trae además:
+
+- `resources`: `{"rocas", "olivino", "hielo", "xenolito"}` y `resource_capacity` (sube con cada domo).
+- `buildings`: `[{"id", "type", "tile", "level", "building", "progress", "active"}]`. La Antena Científica es `type: "antena"` en `base.antenna_tile` y empieza en nivel 0: sin ella no se transmite (`NO_ANTENNA`).
+- `build_options`: `[{"id", "name_key", "cost", "power_w", "seconds", "count", "max", "enabled", "reason"}]`.
+- `base`: `{"center", "radius", "antenna_tile", "antenna_max", "antenna_next_cost"}`.
+- `story`: `{"pending", "objective", "ethics", "rocky_hp", "branch", "log"}`. `pending` es el nodo que espera decisión (la misión se detiene): `{"id", "act", "title", "text", "rocky", "choices": [{"text", "detail", "enabled", "reason"}]}`. Los textos son `{"es", "en"}`.
+
+Órdenes nuevas: `build {"building", "tile"}`, `toggle_building {"id", "on"}`, `decide {"choice"}`; `upgrade` sube la antena un nivel (obra con tiempo y costo en recursos; el nivel 2 pide el hangar).
+
+El informe trae `ending {"id", "title", "text"}`, `ethics`, `rocky_hp` y `story_log`. Con historia, llegar a la meta solo gana después de decidir el clímax; la derrota siempre es el final «silencio».
+
+### Radio, metas y escenas (bloque A, ajuste del 24 oct 2026: «menos película, más juego»)
+
+La historia ya no pausa el juego en cada evento. Cada nodo de `content/historia.json` tiene un `modo`:
+
+- **`radio`** (aterrizaje, alerta sísmica y glaciares): no detiene la misión. Se aplica solo (su única opción) y el snapshot trae `story.radio = {"id", "n", "act", "title", "image", "dialogue"}`. La vista muestra una tarjeta no bloqueante abajo a la izquierda con la escena en miniatura y las voces; pasa sola o con clic, y espera si hay una escena o la pausa. `n` sube con cada radio nueva: la vista solo muestra la que tiene `n` mayor que la última vista (una partida cargada no repite la anterior). Evento `STORY_RADIO:<nodo>`.
+- **`decision`** (noche de arañas, nidos y clímax): detiene la misión (`story.pending`). Con `escena: "corta"` (noche de arañas) la vista muestra una sola pantalla con imagen, relato, voces y opciones; con `completa`, imagen y relato, diálogos uno a uno y decisión.
+- **`espera_h`**: horas de juego de respiro desde el nodo anterior antes de que este pueda salir (así se juega entre evento y evento).
+- **`metas`**: `[{"tipo": "antena|edificio|recurso|enviados_pct|sol|bateria_pct|rocky_hp", "id"?, "min"}]`. El snapshot trae `story.goals = [{"kind", "id", "cur", "goal", "done"}]` (avance del objetivo actual) y el HUD lo muestra como lista bajo el minimapa. Son guía: lo que abre cada evento sigue siendo `disparadores`.
+
+`StoryData` valida `modo`, `escena`, `espera_h`, `metas` y que una radio tenga una sola opción sin final ni requisito de Rocky (`BAD_RADIO`). Estado nuevo en `MissionState`: `historia_radio`, `historia_radio_n`, `historia_t_ultimo`.
+
+Imágenes: las 16 escenas ilustradas (`assets/historia/<id>.jpg`, 1280×720) salen del storyboard de Canva aprobado.

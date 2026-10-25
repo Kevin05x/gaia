@@ -29,8 +29,8 @@
     "companion": { "costo_wh": 15, "duracion_s": 6.0 }
   },
   "ciencia": {
-    "memoria_capacidad": 60,
-    "rendimiento": { "spectrometer": 8, "drill": 15, "drill_enterrado": 20 },
+    "memoria_capacidad": 45,
+    "rendimiento": { "spectrometer": 5, "drill": 10, "drill_enterrado": 14 },
     "meteo_por_sol": 2,
     "minerales_por_mineral": 1,
     "minerales_companero": 3,
@@ -38,7 +38,7 @@
     "nivel_antena_max": 3
   },
   "comunicaciones": {
-    "rele": { "ventanas": [[8, 11], [17, 20]], "unidades_por_s": 6, "costo_wh_por_unidad": 1 },
+    "rele": { "ventanas": [[8, 11], [17, 20]], "unidades_por_s": 3, "costo_wh_por_unidad": 1 },
     "directa": { "ventanas": [[6, 18]], "unidades_por_s": 1, "costo_wh_por_unidad": 3 }
   },
   "avisos": {

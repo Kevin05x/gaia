@@ -97,6 +97,24 @@ func _draw() -> void:
 			for i in range(8):
 				var d := Vector2.from_angle(i * PI / 4.0)
 				draw_line(Vector2(8, 8) + d * 5.2, Vector2(8, 8) + d * 7.2, color, 2.0, true)
+		"ore":
+			draw_colored_polygon(PackedVector2Array([Vector2(8, 1.5), Vector2(14, 6), Vector2(8, 14.5), Vector2(2, 6)]), color)
+			draw_line(Vector2(2.5, 6), Vector2(13.5, 6), Color(0, 0, 0, 0.25), 1.0)
+		"scale":
+			draw_line(Vector2(8, 2), Vector2(8, 14), color, w)
+			draw_line(Vector2(3, 4.5), Vector2(13, 4.5), color, w)
+			draw_line(Vector2(5, 14), Vector2(11, 14), color, w)
+			draw_polyline(PackedVector2Array([Vector2(1, 9.5), Vector2(3, 4.5), Vector2(5, 9.5), Vector2(1, 9.5)]), color, 1.2)
+			draw_polyline(PackedVector2Array([Vector2(11, 9.5), Vector2(13, 4.5), Vector2(15, 9.5), Vector2(11, 9.5)]), color, 1.2)
+		"check":
+			draw_arc(Vector2(8, 8), 6.5, 0, TAU, 28, color, w, true)
+			draw_polyline(PackedVector2Array([Vector2(4.8, 8.4), Vector2(7.0, 10.6), Vector2(11.4, 5.6)]), color, 1.8, true)
+		"goal":
+			draw_arc(Vector2(8, 8), 6.5, 0, TAU, 28, color, w, true)
+		"heart":
+			draw_circle(Vector2(5.4, 6.2), 3.3, color)
+			draw_circle(Vector2(10.6, 6.2), 3.3, color)
+			draw_colored_polygon(PackedVector2Array([Vector2(2.3, 7.6), Vector2(13.7, 7.6), Vector2(8, 14.2)]), color)
 		"rocket":
 			draw_polyline(PackedVector2Array([Vector2(8, 1.5), Vector2(10.6, 6), Vector2(10.6, 11), Vector2(5.4, 11), Vector2(5.4, 6), Vector2(8, 1.5)]), color, w, true)
 			draw_polyline(PackedVector2Array([Vector2(5.4, 8.6), Vector2(3.4, 12.4), Vector2(5.4, 11.6)]), color, w, true)

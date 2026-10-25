@@ -10,6 +10,8 @@ const MiniMap := preload("res://scenes/b/minimap.gd")
 const GaiaLogo := preload("res://scenes/menu/gaia_logo.gd")
 const Texto := preload("res://scenes/menu/menu_text.gd")
 const Markers := preload("res://scenes/b/target_markers.gd")
+const StoryPanel := preload("res://scenes/b/story_panel.gd")
+const BaseHud := preload("res://scenes/b/base_hud.gd")
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"  ## logotipo del menú (si falta, se usa el 3D por código)
 
 signal command(command: String, payload: Dictionary)
@@ -42,6 +44,8 @@ var target_id := ""
 var _ops: Array[Control] = []
 var _title: Label
 var _objective: Label
+var _goals: VBoxContainer  ## metas del objetivo con su avance (historia)
+var _goals_sig := ""
 var _map: Control
 var _mark: Control
 var _energy_icon: Control
@@ -196,6 +200,13 @@ func _build_top_left() -> void:
 	_objective.clip_text = true
 	UI.place(_objective, "tl", 64, 54, 330, 20)
 	_ops.append(_objective)
+	_goals = VBoxContainer.new()
+	_goals.add_theme_constant_override("separation", 3)
+	_goals.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.place(_goals, "tl", 64, 258, 250, 90)
+	root.add_child(_goals)
+	_goals_sig = ""
+	_ops.append(_goals)
 	_map = MiniMap.new()
 	_map.name = "MiniMap"
 	root.add_child(_map)
@@ -837,6 +848,9 @@ func update_snapshot(s: Dictionary) -> void:
 		_title.text = "GAIA"
 		_title.add_theme_font_override("font", UI.display_font(700, 5))
 		_title.add_theme_font_size_override("font_size", UI.FONT_TITLE)
+	var objetivo: Dictionary = s.get("story", {}).get("objective", {})
+	_objective.text = StoryPanel.text_of(objetivo) if not objetivo.is_empty() else tr("OBJECTIVE_SHORT")
+	_fill_goals(s.get("story", {}).get("goals", []))
 	var en_taller := fase == "workshop"
 	_title.visible = fase == "landing"
 	_mark.visible = not en_taller and fase != "landing"
@@ -880,6 +894,16 @@ func update_snapshot(s: Dictionary) -> void:
 		b.visible = accion == "upgrade" or motivo != "NO_INSTRUMENT"
 		b.disabled = bloqueado or not bool(d.get("enabled", false))
 		b.tooltip_text = tr(motivo) if b.disabled and not motivo.is_empty() else _hotkey_hint(accion)
+		if accion == "upgrade" and s.has("base"):
+			var nivel := int(s.get("antenna_level", 0))
+			var base: Dictionary = s["base"]
+			if nivel >= int(base.get("antenna_max", 3)):
+				b.text = tr("ANTENNA_MAX")
+			else:
+				b.text = tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1)
+			var costo := BaseHud.cost_text(base.get("antenna_next_cost", {}))
+			if not costo.is_empty():
+				b.tooltip_text = (b.tooltip_text + "\n" if not b.tooltip_text.is_empty() else "") + tr("COST_LABEL") + ": " + costo
 	var dt: Dictionary = disponibles.get("transmit", {"enabled": false, "reason": "WAIT"})
 	buttons.transmit.disabled = bloqueado or not bool(dt.get("enabled", false))
 	buttons.transmit.text = tr("STOP_SHORT") if s.get("transmitting", false) else tr("TRANSMIT_SHORT")
@@ -1301,3 +1325,51 @@ func _unhandled_input(e: InputEvent) -> void:
 		if b != null and not b.disabled:
 			b.pressed.emit()
 		get_viewport().set_input_as_handled()
+
+
+## Metas del objetivo: círculo vacío o con visto, texto y avance. Solo guía: lo que abre cada evento lo decide la historia.
+func _fill_goals(metas: Array) -> void:
+	var firma := var_to_str([metas, TranslationServer.get_locale()])
+	if firma == _goals_sig:
+		return
+	_goals_sig = firma
+	for hijo in _goals.get_children():
+		_goals.remove_child(hijo)
+		hijo.queue_free()
+	if metas.is_empty():
+		return
+	var titulo := UI.label(_goals, tr("GOALS_TITLE"), 11, Color(UI.AMBER, 0.85))
+	UI.display(titulo, 700, 3)
+	for meta in metas:
+		var hecha := bool(meta.get("done", false))
+		var tono := UI.TEAL if hecha else Color(UI.CREAM, 0.9)
+		var fila := HBoxContainer.new()
+		fila.add_theme_constant_override("separation", 6)
+		fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_goals.add_child(fila)
+		fila.add_child(Icon.make("check" if hecha else "goal", 13, tono))
+		var texto := UI.label(fila, goal_text(meta), 13, tono)
+		texto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+## Texto de una meta (kind, id, cur, goal): «Antena Nv. 2», «Rocas: 12 / 30», «Batería al 70 %: 45 %»...
+static func goal_text(meta: Dictionary) -> String:
+	var meta_valor := roundi(float(meta.get("goal", 0)))
+	var actual := roundi(float(meta.get("cur", 0)))
+	var id := str(meta.get("id", ""))
+	match str(meta.get("kind", "")):
+		"antena":
+			return TranslationServer.translate("GOAL_ANTENNA") % meta_valor
+		"edificio":
+			return TranslationServer.translate("GOAL_BUILD") % TranslationServer.translate("BLD_" + BaseHud._clave(id))
+		"recurso":
+			return "%s: %d / %d" % [TranslationServer.translate("RES_" + id.to_upper()), actual, meta_valor]
+		"enviados_pct":
+			return TranslationServer.translate("GOAL_SENT") % meta_valor + ": %d %%" % actual
+		"sol":
+			return TranslationServer.translate("GOAL_SOL") % meta_valor
+		"bateria_pct":
+			return TranslationServer.translate("GOAL_BATTERY") % meta_valor + ": %d %%" % actual
+		"rocky_hp":
+			return TranslationServer.translate("GOAL_ROCKY") % meta_valor + ": %d %%" % actual
+	return ""

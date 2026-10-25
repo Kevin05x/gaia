@@ -13,6 +13,7 @@ var inicio_rover: Vector2i = Vector2i.ZERO
 var estacion: Vector2i = Vector2i.ZERO
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
+var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
 var errores: PackedStringArray = PackedStringArray()
 
 
@@ -37,7 +38,7 @@ func dentro_de_limites(casilla: Vector2i) -> bool:
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
 func bloqueada(casilla: Vector2i) -> bool:
-	if not dentro_de_limites(casilla) or casilla == estacion or obstaculos.has(casilla):
+	if not dentro_de_limites(casilla) or casilla == estacion or obstaculos.has(casilla) or bloqueos_extra.has(casilla):
 		return true
 	for objetivo in objetivos:
 		if objetivo["tile"] == casilla:

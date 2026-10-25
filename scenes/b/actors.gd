@@ -80,7 +80,8 @@ func apply_state(s: Dictionary) -> void:
  paused=s.get("paused",false);safe=s.get("safe_mode",false)
  if s.get("teleport",false):cancel_actions()
  station.position=at_tile(s.get("station_tile",Vector2i(3,3)))
- _place_base_props(s.get("station_tile",Vector2i(3,3)))
+ if s.has("buildings"):_clear_base_props()  # con base real, los edificios los dibuja buildings.gd
+ else:_place_base_props(s.get("station_tile",Vector2i(3,3)))
  var design: Dictionary=s.get("design",{})
  var instruments: Array=design.get("instruments",[])
  parts.solar.visible=design.get("power","solar")=="solar";parts.rtg.visible=not parts.solar.visible
@@ -198,6 +199,11 @@ func _glow(color: Color) -> StandardMaterial3D:
 
 ## Hangares, foco, antena y torre de perforación del equipo de diseño: se reparten detrás de la estación (hacia fuera del
 ## mapa) para que no tapen el camino del rover. Solo decoración; la simulación no los conoce.
+func _clear_base_props() -> void:
+ if is_instance_valid(base_props):
+  remove_child(base_props);base_props.queue_free()
+ base_props=null;base_tile=Vector2i(99999,99999)
+
 func _place_base_props(tile: Vector2i) -> void:
  if tile==base_tile:return
  base_tile=tile

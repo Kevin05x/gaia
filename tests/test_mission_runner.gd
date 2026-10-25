@@ -41,6 +41,15 @@ func _ultimo() -> Dictionary:
 func _operar() -> void:
 	port.submit("landing_finished")
 	assert_eq(_ultimo()["phase"], "operations")
+	_resolver_historia()
+
+
+## La historia detiene la misión en cada nodo hasta que se decide: estas pruebas eligen siempre la primera opción.
+func _resolver_historia() -> void:
+	for i in range(10):
+		if _ultimo().get("story", {}).get("pending", {}).is_empty():
+			return
+		port.submit("decide", {"choice": 0})
 
 
 func test_los_datos_cargan_sin_errores() -> void:
@@ -154,6 +163,7 @@ func test_el_modo_seguro_cancela_lo_que_se_presentaba() -> void:
 func test_al_ganar_publica_la_fase_informe_y_despues_el_informe() -> void:
 	_operar()
 	runner.sim.estado.enviados = runner.sim.estado.meta
+	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	assert_eq(informes.size(), 1)
@@ -170,6 +180,7 @@ func test_redisenar_vuelve_a_empezar_con_el_mapa_limpio() -> void:
 	port.submit("move", {"tile": Vector2i(3, 0)})
 	var revision: int = _ultimo()["map_revision"]
 	runner.sim.estado.enviados = runner.sim.estado.meta
+	runner.sim.estado.historia_final = "simbiosis"  # con historia, la victoria llega tras el clímax
 	runner._process(0.1)
 	assert_eq(_ultimo()["phase"], "report")
 	port.submit("redesign")
