@@ -2,6 +2,7 @@ extends RefCounted
 ## Partida guardada y paso entre menú y juego. La simulación entrega y recibe el diccionario (Simulation.guardar /
 ## cargar); aquí solo se escribe y se lee del disco (en la web, user:// vive en el almacenamiento del navegador).
 const RUTA := "user://gaia_partida.dat"
+static var ruta := RUTA  ## archivo de la partida (las pruebas usan otro para no tocar la del jugador)
 const ESCENA_MENU := "res://scenes/menu/menu.tscn"
 const ESCENA_CARGA := "res://scenes/menu/loading.tscn"
 const ESCENA_JUEGO := "res://scenes/a/game.tscn"
@@ -11,12 +12,12 @@ static var cargar_al_iniciar := false
 
 
 static func hay_guardado() -> bool:
-	return FileAccess.file_exists(RUTA) and not resumen().is_empty()
+	return FileAccess.file_exists(ruta) and not resumen().is_empty()
 
 
 static func guardar(sim: Simulation) -> bool:
 	var datos := sim.guardar()
-	var archivo := FileAccess.open(RUTA, FileAccess.WRITE)
+	var archivo := FileAccess.open(ruta, FileAccess.WRITE)
 	if archivo == null:
 		return false
 	archivo.store_string(var_to_str(datos))
@@ -24,9 +25,9 @@ static func guardar(sim: Simulation) -> bool:
 
 
 static func leer() -> Dictionary:
-	if not FileAccess.file_exists(RUTA):
+	if not FileAccess.file_exists(ruta):
 		return {}
-	var archivo := FileAccess.open(RUTA, FileAccess.READ)
+	var archivo := FileAccess.open(ruta, FileAccess.READ)
 	if archivo == null:
 		return {}
 	var datos = str_to_var(archivo.get_as_text())
@@ -34,8 +35,8 @@ static func leer() -> Dictionary:
 
 
 static func borrar() -> void:
-	if FileAccess.file_exists(RUTA):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUTA))
+	if FileAccess.file_exists(ruta):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(ruta))
 
 
 ## {"sol", "hora", "enviados", "meta"} de la partida guardada; vacío si no hay una válida.

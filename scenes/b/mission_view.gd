@@ -2,6 +2,7 @@ extends Node3D
 ## Punto de entrada de la vista para A: instanciar mission.tscn y usar su nodo Port.
 ## Monta el mundo (terreno, actores, cámara que sigue al rover, luz por hora), el HUD y el informe,
 ## y traduce clics y teclas en órdenes. No contiene reglas de juego.
+const Equipo := preload("res://scenes/b/modelos_equipo.gd")
 signal menu_requested  ## el jugador pidió volver al menú principal
 const Art := preload("res://scenes/b/art.gd")
 const SkyLight := preload("res://scenes/b/sky_light.gd")
@@ -39,6 +40,8 @@ var map_signature := ""
 var _blocked_cache: Dictionary = {}
 var _blocked_cache_revision := ""
 var _hover_tile := Vector2i(999, 999)
+var warmup: Node3D  ## precalentado de sombreadores al empezar
+var cortina: CanvasLayer  ## cortina oscura mientras dura el precalentado
 static var translations_registered := false
 
 
@@ -176,6 +179,39 @@ func _ready() -> void:
 		apply_snapshot(port.snapshot)
 	else:
 		hud.show_notice("WAIT")
+	_precalentar()
+
+
+## Rendimiento (web): compila de antemano los sombreadores de edificios, monstruos y efectos, detrás de una cortina
+## oscura que luego se desvanece. Sin esto, la primera obra o extracción congelaba la imagen un instante.
+func _precalentar() -> void:
+	warmup = preload("res://scenes/b/shader_warmup.gd").new()
+	warmup.name = "ShaderWarmup"
+	add_child(warmup)
+	warmup.camara = rig.camera
+	warmup.sol = sun
+	cortina = CanvasLayer.new()
+	cortina.name = "Cortina"
+	cortina.layer = 120
+	add_child(cortina)
+	var negro := ColorRect.new()
+	negro.color = Color(0.07, 0.04, 0.03, 1.0)
+	negro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	negro.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cortina.add_child(negro)
+	warmup.terminado.connect(func() -> void:
+		var t := negro.create_tween()
+		t.tween_property(negro, "modulate:a", 0.0, 0.35)
+		t.tween_callback(cortina.queue_free))
+	var extra: Array = []
+	extra.append_array(buildings.muestras_para_precalentar())
+	extra.append_array(combat.muestras_para_precalentar())
+	extra.append(terrain.muestra_contorno())
+	warmup.empezar([actors, combat, explosions, terrain, buildings, tracks], extra)
+
+
+func _exit_tree() -> void:
+	Equipo.vaciar()
 
 
 func setup_locale() -> void:
@@ -235,7 +271,7 @@ func save_preferences() -> void:
 
 
 func apply_snapshot(s: Dictionary) -> void:
-	state = s.duplicate(true)
+	state = s  # el Port ya entrega su propia copia: no hace falta otra copia profunda en cada snapshot
 	var signature := str(s.get("map_revision", 0))
 	if map_signature != signature:
 		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}), s.get("zones", []))
