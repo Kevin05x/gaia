@@ -47,6 +47,12 @@ func combate_de(id: String) -> Dictionary:
 	return combate if combate is Dictionary else {}
 
 
+## Módulos de un edificio construido por partes ([] si no los tiene): [{"nombre_clave", "costo", "tiempo_s"}].
+func modulos_de(id: String) -> Array:
+	var lista: Variant = edificio(id).get("modulos", [])
+	return lista if lista is Array else []
+
+
 func ids_edificios() -> Array[String]:
 	var ids: Array[String] = []
 	for id in edificios:
@@ -118,6 +124,17 @@ func _cargar(texto: String) -> void:
 	if lista is Dictionary:
 		for id in lista:
 			var def: Variant = lista[id]
+			if def is Dictionary and def.get("modulos") is Array and not def["modulos"].is_empty():
+				# Edificio por módulos: el primero es la obra inicial; los demás se añaden con «build_module».
+				var primero: Variant = def["modulos"][0]
+				if primero is Dictionary:
+					def["costo"] = primero.get("costo", {})
+					def["tiempo_s"] = primero.get("tiempo_s", 0)
+				for modulo in def["modulos"]:
+					if not (modulo is Dictionary) or not (modulo.get("costo") is Dictionary) or float(modulo.get("tiempo_s", 0)) <= 0.0 \
+							or str(modulo.get("nombre_clave", "")).is_empty():
+						errores.append("INVALID_FIELD:edificios.%s.modulos" % id)
+						break
 			if not (def is Dictionary) or not (def.get("costo") is Dictionary) or float(def.get("tiempo_s", 0)) <= 0.0:
 				errores.append("INVALID_FIELD:edificios.%s" % id)
 				continue
@@ -126,6 +143,11 @@ func _cargar(texto: String) -> void:
 		for recurso in edificios[id]["costo"]:
 			if not recursos.has(str(recurso)):
 				errores.append("UNKNOWN_RESOURCE:%s" % recurso)
+		for modulo in modulos_de(id):
+			if modulo is Dictionary and modulo.get("costo") is Dictionary:
+				for recurso in modulo["costo"]:
+					if not recursos.has(str(recurso)):
+						errores.append("UNKNOWN_RESOURCE:%s" % recurso)
 		var requiere := str(edificios[id].get("requiere", ""))
 		if not requiere.is_empty() and not edificios.has(requiere):
 			errores.append("UNKNOWN_BUILDING:%s.requiere" % id)

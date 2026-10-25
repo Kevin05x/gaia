@@ -26,7 +26,7 @@
     "drill": { "costo_wh": 120, "duracion_s": 4.0 },
     "radar": { "costo_wh": 35, "duracion_s": 3.0 },
     "drone": { "costo_wh": 60, "duracion_s": 8.0, "usos_por_sol": 1 },
-    "companion": { "costo_wh": 15, "duracion_s": 6.0 }
+    "companion": { "costo_wh": 15, "duracion_s": 6.0, "usos_por_sol": 4 }
   },
   "ciencia": {
     "memoria_capacidad": 45,

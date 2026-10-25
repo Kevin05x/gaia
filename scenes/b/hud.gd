@@ -110,6 +110,11 @@ var _tweens: Array[Tween] = []
 var _free_options := false  ## opciones abiertas fuera de la pausa (taller)
 
 
+## Partes del HUD a las que apunta el halo del tutorial.
+func highlight_nodes() -> Dictionary:
+	return {"acciones": _actions_row, "enlace": _comms}
+
+
 func _ready() -> void:
 	layer = 5
 	build()
@@ -135,6 +140,8 @@ func build() -> void:
 	_summary_labels.clear()
 	_comms_expanded = false
 	_night_known = false
+	_titulo_de_aterrizaje = -1
+	_tono_energia = Color(0, 0, 0, 0)
 	root = Control.new()
 	root.name = "HudRoot"
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -254,7 +261,7 @@ func _fit_top_right() -> void:
 
 func _build_slots() -> void:
 	_warn_slot = _slot("warning", UI.WARN)
-	UI.place(_warn_slot, "tc", 0, 20, 400, 48)
+	UI.place(_warn_slot, "tc", -70, 20, 340, 48)
 	_warn_text = _warn_slot.get_meta("text")
 	_warn_more = Button.new()
 	_warn_more.theme_type_variation = "PillButton"
@@ -265,11 +272,11 @@ func _build_slots() -> void:
 	_warn_slot.get_meta("row").add_child(_warn_more)
 	_warn_more.pressed.connect(func(): _toggle_panel(_warn_list))
 	_crit_slot = _slot("critical", UI.CORAL)
-	UI.place(_crit_slot, "tc", 0, 76, 400, 48)
+	UI.place(_crit_slot, "tc", -70, 76, 340, 48)
 	_crit_text = _crit_slot.get_meta("text")
 	_warn_list = PanelContainer.new()
 	_warn_list.add_theme_stylebox_override("panel", UI.box(0.8, UI.RADIUS_PANEL, 0.3, 1, 14, 10, UI.WARN))
-	UI.place(_warn_list, "tc", 0, 132, 400, 0)
+	UI.place(_warn_list, "tc", -70, 132, 340, 0)
 	_warn_list_box = VBoxContainer.new()
 	_warn_list_box.add_theme_constant_override("separation", 8)
 	_warn_list.add_child(_warn_list_box)
@@ -278,7 +285,7 @@ func _build_slots() -> void:
 	_toast = PanelContainer.new()
 	_toast.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PILL, 0.35, 1, 18, 8))
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.place(_toast, "bc", 0, 128, 360, 38)
+	UI.place(_toast, "bc", 0, 128, 360, 0)
 	_toast_text = UI.label(_toast, "", UI.FONT_SECONDARY)
 	_toast_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -826,6 +833,10 @@ func set_target(id: String) -> void:
 		update_snapshot(snapshot)
 
 
+var _titulo_de_aterrizaje := -1  ## -1 aún sin poner, 0 título del juego, 1 título del aterrizaje
+var _tono_energia := Color(0, 0, 0, 0)
+
+
 func update_snapshot(s: Dictionary) -> void:
 	snapshot = s
 	if not is_instance_valid(root):
@@ -840,14 +851,20 @@ func update_snapshot(s: Dictionary) -> void:
 	for c in _ops:
 		c.visible = en_operacion
 	_landing_text.visible = fase == "landing"
-	if fase == "landing":
+	# Los cambios de tema de un control rehacen su diseño: solo se tocan cuando cambia la fase de aterrizaje.
+	var titulo_aterrizaje := fase == "landing"
+	if titulo_aterrizaje:
 		_title.text = tr("LANDING_TITLE")
-		_title.add_theme_font_override("font", UI.display_font(600, 0))
-		_title.add_theme_font_size_override("font_size", 20)
 	else:
 		_title.text = "GAIA"
-		_title.add_theme_font_override("font", UI.display_font(700, 5))
-		_title.add_theme_font_size_override("font_size", UI.FONT_TITLE)
+	if int(titulo_aterrizaje) != _titulo_de_aterrizaje:
+		_titulo_de_aterrizaje = int(titulo_aterrizaje)
+		if titulo_aterrizaje:
+			_title.add_theme_font_override("font", UI.display_font(600, 0))
+			_title.add_theme_font_size_override("font_size", 20)
+		else:
+			_title.add_theme_font_override("font", UI.display_font(700, 5))
+			_title.add_theme_font_size_override("font_size", UI.FONT_TITLE)
 	var objetivo: Dictionary = s.get("story", {}).get("objective", {})
 	_objective.text = StoryPanel.text_of(objetivo) if not objetivo.is_empty() else tr("OBJECTIVE_SHORT")
 	_fill_goals(s.get("story", {}).get("goals", []))
@@ -867,7 +884,9 @@ func update_snapshot(s: Dictionary) -> void:
 	var baja := _has_warning(s, "LOW_BATTERY") if s.has("warnings") else porcentaje <= 20
 	var tono := UI.CORAL if seguro else (UI.AMBER if baja else UI.CREAM)
 	_energy_text.text = tr("ENERGY_PILL") % porcentaje
-	_energy_text.add_theme_color_override("font_color", tono)
+	if tono != _tono_energia:
+		_tono_energia = tono
+		_energy_text.add_theme_color_override("font_color", tono)
 	_energy_icon.level = porcentaje / 100.0
 	_energy_icon.alert = baja or seguro
 	_energy_icon.color = tono
@@ -959,11 +978,24 @@ func _warning_list(s: Dictionary) -> Array:
 
 
 func _format(aviso: Dictionary) -> String:
-	var texto := tr(str(aviso.get("key", "")))
 	var valores = aviso.get("values", [])
+	if str(aviso.get("key", "")) == "WARN_STORM_SOON" and valores is Array and not valores.is_empty():
+		var horas := float(valores[0]) * 24.0
+		if horas < 24.0:  # menos de un sol: se dice en horas, no «0.1 soles»
+			return tr("WARN_STORM_SOON_H") % maxi(1, ceili(horas))
+	var texto := tr(str(aviso.get("key", "")))
 	if valores is Array and not valores.is_empty():
 		texto = texto % valores
-	return texto
+	return _decimal(texto)
+
+
+## En español los decimales llevan coma.
+func _decimal(texto: String) -> String:
+	if not TranslationServer.get_locale().begins_with("es"):
+		return texto
+	var er := RegEx.new()
+	er.compile("(\\d)\\.(\\d)")
+	return er.sub(texto, "$1,$2", true)
 
 
 func _update_warnings(s: Dictionary, en_operacion: bool) -> void:
@@ -1137,7 +1169,7 @@ func _update_info(s: Dictionary) -> void:
 	if s.get("storm", false):
 		tormenta = tr("STORM_ACTIVE_SHORT")
 	elif float(s.get("storm_in", -1.0)) > 0.0:
-		tormenta = tr("STORM_IN") % float(s.get("storm_in", 0.0))
+		tormenta = _decimal(tr("STORM_IN") % float(s.get("storm_in", 0.0)))
 	_info_values["INFO_STORM"].text = tormenta
 
 
@@ -1372,4 +1404,6 @@ static func goal_text(meta: Dictionary) -> String:
 			return TranslationServer.translate("GOAL_BATTERY") % meta_valor + ": %d %%" % actual
 		"rocky_hp":
 			return TranslationServer.translate("GOAL_ROCKY") % meta_valor + ": %d %%" % actual
+		"modulos":
+			return TranslationServer.translate("GOAL_MODULES") % [TranslationServer.translate("BLD_" + BaseHud._clave(id)), actual, meta_valor]
 	return ""

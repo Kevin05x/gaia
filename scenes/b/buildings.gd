@@ -6,7 +6,10 @@ extends Node3D
 const Art := preload("res://scenes/b/art.gd")
 const Equipo := preload("res://scenes/b/modelos_equipo.gd")
 const HpBar := preload("res://scenes/b/hp_bar.gd")
-signal building_lost(pos: Vector3)  ## un edificio desapareció del snapshot (destruido): la vista de combate hace el humo
+signal building_lost(pos: Vector3, tipo: String)  ## un edificio desapareció del snapshot (destruido): explosión con restos
+signal module_lost(pos: Vector3)  ## la nave perdió un módulo (lo destruyó un ataque): explosión en ese módulo
+signal building_started(pos: Vector3)  ## empezó una obra (o un módulo o mejora nuevos)
+signal building_done(pos: Vector3, tipo: String)  ## terminó una obra
 const TILE := 2.0
 ## tipo -> [modelo del equipo, ancho en metros]
 const MODELOS := {"luz": ["foco", 1.3], "domo": ["hangar_roundA", 1.9], "extractor_hielo": ["taladro", 1.7],
@@ -26,6 +29,20 @@ func at_tile(tile: Vector2i) -> Vector3:
 	return p
 
 
+func _process(delta: float) -> void:
+	# Las obras se revelan de abajo hacia arriba, con suavidad entre un snapshot y el siguiente.
+	for id in _nodos:
+		var datos: Dictionary = _nodos[id]
+		var fx: Dictionary = datos["fx"]
+		if fx.is_empty():
+			continue
+		datos["mostrado"] = lerpf(float(datos["mostrado"]), float(datos["objetivo"]), 1.0 - exp(-8.0 * delta))
+		var nodo: Node3D = datos["node"]
+		BuildFx.revelar(fx, nodo.global_position.y, maxf(float(datos["mostrado"]), 0.02) * float(fx["alto"]) * 1.02)
+		if datos["anillo_obra"]:
+			(datos["ring"] as Node3D).rotation.y += delta * 2.4
+
+
 func update_state(s: Dictionary) -> void:
 	var lista: Array = s.get("buildings", [])
 	var vistos := {}
@@ -42,7 +59,8 @@ func update_state(s: Dictionary) -> void:
 			var datos: Dictionary = _nodos[id]
 			var nodo_perdido: Node3D = datos["node"]
 			if visible and nodo_perdido.is_inside_tree():
-				building_lost.emit(nodo_perdido.global_position)
+				var centro := nodo_perdido.global_position + Vector3(0, float(datos.get("alto", 1.2)) * 0.5, 0)
+				building_lost.emit(centro, str(datos.get("tipo", "")))
 			nodo_perdido.queue_free()
 			_nodos.erase(id)
 
@@ -71,7 +89,12 @@ func _crear(e: Dictionary) -> Dictionary:
 	etiqueta.position = Vector3(0, 2.6, 0)
 	nodo.add_child(etiqueta)
 	var barra := HpBar.crear(nodo, 3.1, 1.5)
-	return {"node": nodo, "model": null, "ring": anillo, "label": etiqueta, "firma": "", "bar": barra, "yaw": 0.0}
+	var cartel := BuildFx.cartel(nodo, 2.2)
+	for c in cartel.values():
+		(c as Node3D).visible = false
+	return {"node": nodo, "model": null, "ring": anillo, "label": etiqueta, "firma": "", "bar": barra, "yaw": 0.0,
+		"fx": {}, "cartel": cartel, "mostrado": 0.0, "objetivo": 0.0, "alto": 1.2, "tipo": "", "en_obra": false, "nivel": -1,
+		"anillo_obra": false}
 
 
 func _actualizar(datos: Dictionary, e: Dictionary) -> void:
@@ -80,6 +103,11 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 	var en_obra := bool(e.get("building", false))
 	var firma := "%s:%d:%s" % [tipo, nivel, en_obra]
 	var nodo: Node3D = datos["node"]
+	var progreso := float(e.get("progress", 1.0))
+	var primero: bool = int(datos["nivel"]) == -1
+	var era_obra: bool = datos["en_obra"]
+	var nivel_antes: int = datos["nivel"]
+	datos["tipo"] = tipo
 	if datos["firma"] != firma:
 		datos["firma"] = firma
 		if datos["model"] != null:
@@ -87,21 +115,44 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		var modelo := Node3D.new()
 		nodo.add_child(modelo)
 		datos["model"] = modelo
-		_modelo(modelo, tipo, maxi(nivel, 1 if en_obra else 0))
-	var progreso := float(e.get("progress", 1.0))
+		_modelo(modelo, tipo, maxi(nivel, 1 if en_obra else 0), en_obra, nivel)
+		datos["fx"] = {}
+		datos["alto"] = EscapeShip.ALTURA_TOTAL if tipo == "nave_fuga" else 1.2
+		if tipo != "nave_fuga":
+			var info := BuildFx.preparar(modelo, en_obra)
+			datos["alto"] = float(info["alto"])
+			if en_obra and not (info["mats"] as Array).is_empty():
+				datos["fx"] = info
+				datos["mostrado"] = progreso
+				BuildFx.andamio(modelo, info)
+	datos["objetivo"] = progreso
 	var modelo_actual: Node3D = datos["model"]
-	var escala := lerpf(0.2, 1.0, progreso) if en_obra else 1.0
-	modelo_actual.scale = Vector3(1.0, escala, 1.0) if en_obra else Vector3.ONE
+	if tipo == "nave_fuga":
+		modelo_actual.scale = Vector3.ONE  # la nave crece módulo a módulo: solo el que está en obra se escala
+		if en_obra:
+			EscapeShip.animar_obra(modelo_actual, nivel, progreso)
+		(datos["label"] as Node3D).position.y = EscapeShip.ALTURA_TOTAL + 0.9
+		(datos["bar"] as Node3D).position.y = EscapeShip.ALTURA_TOTAL + 0.4
+	else:
+		modelo_actual.scale = Vector3.ONE
 	var anillo: Node3D = datos["ring"]
+	anillo.scale = Vector3.ONE * (2.1 if tipo == "nave_fuga" else 1.0)
 	anillo.visible = en_obra
-	if en_obra:
-		anillo.rotation.y += 0.04
+	datos["anillo_obra"] = en_obra
 	var vive := not en_obra and (tipo != "antena" or nivel >= 1)
 	HpBar.fijar(datos["bar"], float(e.get("hp", 1.0)) / maxf(float(e.get("hp_max", 1.0)), 0.001) if vive else 1.0)
+	# Tiempo que falta y barra de avance sobre la obra.
+	var cartel: Dictionary = datos["cartel"]
+	var alto_cartel: float = (EscapeShip.ALTURA_TOTAL + 0.6) if tipo == "nave_fuga" else float(datos["alto"]) + 0.45
+	for c in cartel.values():
+		(c as Node3D).visible = en_obra
+	if en_obra:
+		(cartel["barra"] as Node3D).position.y = alto_cartel
+		(cartel["texto"] as Node3D).position.y = alto_cartel + 0.3
+		BuildFx.fijar_cartel(cartel, progreso, float(e.get("remaining_s", 0.0)))
 	var etiqueta: Label3D = datos["label"]
 	if en_obra:
-		etiqueta.text = "%d%%" % roundi(progreso * 100.0)
-		etiqueta.modulate = Color("F0C079")
+		etiqueta.text = ""
 	elif not bool(e.get("active", true)):
 		etiqueta.text = "OFF"
 		etiqueta.modulate = Color("FF8178")
@@ -110,9 +161,38 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		etiqueta.modulate = Color("9AD7C6")
 	else:
 		etiqueta.text = ""
+	datos["en_obra"] = en_obra
+	datos["nivel"] = nivel
+	_avisar_cambios(datos, nodo, tipo, nivel, nivel_antes, en_obra, era_obra, primero)
 
 
-func _modelo(padre: Node3D, tipo: String, nivel: int) -> void:
+## Emite una señal cuando empieza o termina una obra y cuando la nave pierde un módulo.
+func _avisar_cambios(datos: Dictionary, nodo: Node3D, tipo: String, nivel: int, nivel_antes: int, en_obra: bool, era_obra: bool, primero: bool) -> void:
+	if not visible or not nodo.is_inside_tree():
+		return
+	var base := nodo.global_position
+	if primero:
+		if en_obra:
+			building_started.emit(base)
+		return
+	if tipo == "nave_fuga" and (nivel < nivel_antes or (era_obra and not en_obra and nivel <= nivel_antes)):
+		var perdido := nivel_antes if nivel < nivel_antes else nivel + 1  # módulo terminado que cayó, o el que estaba en obra
+		module_lost.emit(base + Vector3(0, _centro_modulo(perdido), 0))
+	elif en_obra and not era_obra:
+		building_started.emit(base)
+	elif era_obra and not en_obra:
+		building_done.emit(base, tipo)
+
+
+## Altura (m, ya escalada) del centro del módulo «n» de la nave.
+func _centro_modulo(n: int) -> float:
+	var bases := EscapeShip.BASES
+	var n_ok := clampi(n, 1, EscapeShip.MODULOS)
+	var techo: float = bases[n_ok] if n_ok < EscapeShip.MODULOS else EscapeShip.ALTURA_TOTAL / EscapeShip.ESCALA
+	return (bases[n_ok - 1] + techo) / 2.0 * EscapeShip.ESCALA
+
+
+func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, nivel_real: int = 0) -> void:
 	if tipo == "antena" and nivel <= 0:
 		# Sitio de la antena aún sin construir: losa y anillo de marcado.
 		Art.cylinder(padre, 0.85, 0.12, Vector3(0, 0.06, 0), Color("6F625A"))
@@ -122,6 +202,9 @@ func _modelo(padre: Node3D, tipo: String, nivel: int) -> void:
 		Art.cylinder(padre, 0.08, 0.9, Vector3(0, 0.45, 0), Color("8C8F94"))
 		var panel := Art.panel(padre, Vector3(1.7, 0.06, 1.15), Vector3(0, 0.95, 0), 3, 5)
 		panel.rotation.x = -0.45
+		return
+	if tipo == "nave_fuga":
+		EscapeShip.construir(padre, nivel_real, en_obra)
 		return
 	if MODELOS.has(tipo):
 		var info: Array = MODELOS[tipo]

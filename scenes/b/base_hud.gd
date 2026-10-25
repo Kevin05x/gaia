@@ -202,9 +202,12 @@ func _fill_menu() -> void:
 			menu.visible = false
 			placement_requested.emit(tipo))
 		_menu_box.add_child(b)
+	for e in edificios:
+		if int(e.get("modules", 0)) > 0 and int(e.get("level", 0)) >= 1:
+			_fill_modules(e)
 	var hechos: Array = []
 	for e in edificios:
-		if str(e.get("type", "")) != "antena" and int(e.get("level", 0)) >= 1:
+		if str(e.get("type", "")) != "antena" and int(e.get("level", 0)) >= 1 and int(e.get("modules", 0)) == 0:
 			hechos.append(e)
 	if hechos.is_empty():
 		return
@@ -220,10 +223,40 @@ func _fill_menu() -> void:
 		_menu_box.add_child(interruptor)
 
 
+## Edificio por módulos (la nave de fuga): avance y botón del siguiente módulo con su costo.
+func _fill_modules(e: Dictionary) -> void:
+	_menu_box.add_child(HSeparator.new())
+	var total := int(e.get("modules", 0))
+	var hechos := int(e.get("level", 0))
+	UI.label(_menu_box, tr("SHIP_MODULES") % [hechos, total], 12, UI.AMBER)
+	var siguiente: Dictionary = e.get("next_module", {})
+	if siguiente.is_empty():
+		if hechos >= total:
+			UI.label(_menu_box, tr("SHIP_COMPLETE"), 14, UI.TEAL)
+		return
+	var b := Button.new()
+	b.theme_type_variation = "RowButton"
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.custom_minimum_size = Vector2(380, 0)
+	b.add_theme_font_size_override("font_size", 14)
+	var linea2 := "%s  ·  %d s" % [cost_text(siguiente.get("cost", {})), roundi(float(siguiente.get("seconds", 0)))]
+	var habilitado := bool(siguiente.get("enabled", false))
+	if not habilitado:
+		linea2 += "\n— " + tr(str(siguiente.get("reason", "")))
+	b.text = tr(str(siguiente.get("name_key", ""))) + "\n" + linea2
+	b.disabled = not habilitado
+	var id := str(e["id"])
+	b.pressed.connect(func() -> void:
+		menu.visible = false
+		command.emit("build_module", {"id": id}))
+	_menu_box.add_child(b)
+
+
 ## Tipo de edificio -> sufijo de su clave de texto (BLD_SOLAR...).
 static func _clave(tipo: String) -> String:
 	return {"panel_solar": "SOLAR", "luz": "LIGHT", "domo": "DOME", "extractor_hielo": "EXTRACTOR", "hangar": "HANGAR",
-		"antena": "ANTENNA", "torreta": "TURRET", "torreta_2": "TURRET2"}.get(tipo, tipo.to_upper())
+		"antena": "ANTENNA", "torreta": "TURRET", "torreta_2": "TURRET2", "nave_fuga": "SHIP"}.get(tipo, tipo.to_upper())
 
 
 func _unhandled_input(e: InputEvent) -> void:

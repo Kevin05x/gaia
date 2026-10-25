@@ -59,6 +59,11 @@ func _forzar(nodo: String) -> void:
 	sim.estado.historia_t_ultimo = -1000.0
 
 
+## Pone una nave de fuga ya terminada (sin pasar por las obras).
+func _poner_nave() -> void:
+	sim.estado.edificios.append({"id": "nave_fuga-9", "type": "nave_fuga", "tile": Vector2i(-5, -5), "level": 4, "target_level": 4, "elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 100.0, "produced": 0.0, "cd": 0.0})
+
+
 func _avanzar(segundos: float, paso: float = 0.2) -> Array[String]:
 	var eventos: Array[String] = []
 	var t := 0.0
@@ -287,6 +292,9 @@ func test_llegar_a_100_no_gana_hasta_resolver_el_climax() -> void:
 	sim.avanzar(0.2)
 	_decidir("climax_puro", 0)
 	sim.avanzar(0.2)
+	assert_true(sim.informe.is_empty(), "falta la nave de fuga")
+	_poner_nave()
+	sim.avanzar(0.2)
 	assert_true(sim.informe["success"])
 	assert_eq(sim.informe["ending"]["id"], "simbiosis")
 
@@ -298,6 +306,9 @@ func test_el_sacrificio_de_rocky_completa_la_transmision() -> void:
 	sim.estado.sol = 6
 	sim.avanzar(0.2)
 	_decidir("climax_puro", 1)
+	sim.avanzar(0.2)
+	assert_true(sim.informe.is_empty(), "también el sacrificio necesita la nave de fuga")
+	_poner_nave()
 	sim.avanzar(0.2)
 	assert_true(sim.informe["success"])
 	assert_eq(sim.informe["ending"]["id"], "sacrificio")
@@ -372,4 +383,230 @@ func test_la_senal_se_detiene_en_85_hasta_el_climax() -> void:
 	assert_eq(sim.estado.enviados, 85.0, "no pasa del 85 %")
 	assert_false(sim.estado.transmitiendo)
 	assert_eq(sim.ejecutar("transmit", {"on": true})["reason"], "SIGNAL_CAPPED")
+
+
+func test_decidido_el_climax_la_senal_llega_al_100_y_no_pasa() -> void:
+	_operar()
+	_radio("aterrizaje")
+	_dar({"rocas": 30, "olivino": 20})
+	_subir_antena()
+	_esperar_radio("alerta_sismica")
+	sim.estado.historia_final = StorySystem.FINAL_BUENO
+	sim._fijar_tope_envio()
+	sim.estado.datos = 40.0
+	sim.estado.enviados = 90.0
+	sim.estado.enlace_abierto = true
+	sim.estado.hora = 9.0
+	assert_true(sim.ejecutar("transmit", {"on": true})["ok"])
+	_avanzar(5.0)
+	assert_eq(sim.estado.enviados, float(sim.estado.meta), "se queda en la meta, sin pasar del 100 %")
+	for aviso in sim.snapshot()["warnings"]:
+		assert_ne(aviso["id"], "SIGNAL_CAPPED", "ya no es un tope por el clímax")
+
+
+
+# --- Nave de fuga (bloque D) ------------------------------------------------------------------------------------------
+
+func _opcion(id: String) -> Dictionary:
+	for o in sim.snapshot()["build_options"]:
+		if o["id"] == id:
+			return o
+	return {}
+
+
+func test_la_nave_de_fuga_no_aparece_en_el_menu_hasta_decidir_el_climax() -> void:
+	_operar()
+	assert_true(_opcion("nave_fuga").is_empty())
+	sim.estado.historia_final = "simbiosis"
+	var o := _opcion("nave_fuga")
+	assert_false(o.is_empty())
+	assert_false(o["enabled"])
+	assert_eq(o["reason"], "NEEDS_HANGAR")
+
+
+func test_la_nave_pide_hangar_antena_nivel_3_y_materiales() -> void:
+	_operar()
+	sim.estado.historia_final = "simbiosis"
+	sim.estado.edificios.append({"id": "hangar-9", "type": "hangar", "tile": Vector2i(-10, -10), "level": 1, "target_level": 1,
+		"elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 300.0, "produced": 0.0, "cd": 0.0})
+	assert_eq(_opcion("nave_fuga")["reason"], "NEEDS_ANTENNA_3")
+	sim.estado.nivel_antena = 3
+	assert_eq(_opcion("nave_fuga")["reason"], "NO_RESOURCES")
+	sim.estado.recursos = {"rocas": 150, "olivino": 80, "hielo": 60, "xenolito": 40}
+	assert_true(_opcion("nave_fuga")["enabled"])
+	var r := sim.ejecutar("build", {"building": "nave_fuga", "tile": Vector2i(-6, -6)})
+	assert_true(r["ok"], r["reason"])
+	assert_eq(sim.estado.recursos["rocas"], 100, "paga solo el primer módulo (rocas 50)")
+	assert_eq(sim.estado.recursos["hielo"], 60, "el hielo se gasta desde el segundo módulo")
+	assert_eq(_opcion("nave_fuga")["reason"], "BUILD_BUSY")
+
+
+func test_tras_el_climax_suena_la_radio_de_la_nave_y_el_objetivo_cambia() -> void:
+	_operar()
+	_radio("aterrizaje")
+	_forzar("climax_puro")
+	sim.estado.sol = 6
+	sim.avanzar(0.2)
+	_decidir("climax_puro", 0)
+	for i in range(400):
+		sim.avanzar(0.2)
+		if sim.estado.historia_radio == "nave_fuga":
+			break
+	assert_eq(sim.estado.historia_radio, "nave_fuga")
+	var historia_vista: Dictionary = sim.snapshot()["story"]
+	assert_eq(historia_vista["goals"][0]["id"], "nave_fuga")
+	assert_false(historia_vista["goals"][0]["done"])
+
+
+func test_la_derrota_por_silencio_no_pide_nave() -> void:
+	_operar()
+	_radio("aterrizaje")
+	_forzar("climax_destructivo")
+	sim.estado.sol = 6
+	sim.avanzar(0.2)
+	_decidir("climax_destructivo", 2)
+	sim.avanzar(0.2)
+	assert_false(sim.informe["success"])
+
+
+func test_el_informe_con_nave_incluye_su_causa() -> void:
+	_operar()
+	sim.estado.enviados = 100.0
+	sim.estado.historia_final = "simbiosis"
+	_poner_nave()
+	sim.avanzar(0.2)
+	assert_true(sim.informe["success"])
+	assert_true(sim.informe["causes"].has("CAUSE_SHIP"))
+
+
+func _nave_por_modulos() -> Dictionary:
+	_operar()
+	sim.estado.historia_final = "simbiosis"
+	sim.estado.nivel_antena = 3
+	sim.estado.edificios.append({"id": "hangar-9", "type": "hangar", "tile": Vector2i(-10, -10), "level": 1, "target_level": 1,
+		"elapsed": 12.0, "seconds": 12.0, "active": true, "hp": 300.0, "produced": 0.0, "cd": 0.0})
+	sim.estado.recursos = {"rocas": 150, "olivino": 90, "hielo": 60, "xenolito": 40}
+	var r := sim.ejecutar("build", {"building": "nave_fuga", "tile": Vector2i(-6, -6)})
+	assert_true(r["ok"], r["reason"])
+	for edificio in sim.estado.edificios:
+		if edificio["type"] == "nave_fuga":
+			return edificio
+	return {}
+
+
+func _terminar_obra() -> void:
+	for i in range(400):
+		sim.avanzar(0.2)
+		if not sim.estado.edificios.any(func(e: Dictionary) -> bool: return int(e["target_level"]) > int(e["level"])):
+			break
+
+
+func _vista_nave() -> Dictionary:
+	for e in sim.snapshot()["buildings"]:
+		if e["type"] == "nave_fuga":
+			return e
+	return {}
+
+
+func test_la_nave_se_construye_por_cuatro_modulos_uno_tras_otro() -> void:
+	var nave := _nave_por_modulos()
+	assert_eq(_vista_nave()["modules"], 4)
+	assert_true(_vista_nave()["next_module"].is_empty(), "mientras se hace el primero no hay siguiente")
+	_terminar_obra()
+	assert_eq(nave["level"], 1)
+	var siguiente: Dictionary = _vista_nave()["next_module"]
+	assert_eq(siguiente["n"], 2)
+	assert_eq(siguiente["name_key"], "MOD_TANK")
+	assert_true(siguiente["enabled"])
+	for n in [2, 3, 4]:
+		var r := sim.ejecutar("build_module", {"id": nave["id"]})
+		assert_true(r["ok"], "módulo %d: %s" % [n, r["reason"]])
+		assert_eq(sim.ejecutar("build_module", {"id": nave["id"]})["reason"], "BUILD_BUSY", "una obra a la vez")
+		_terminar_obra()
+		assert_eq(nave["level"], n)
+	assert_true(_vista_nave()["next_module"].is_empty(), "no quedan módulos")
+	assert_eq(sim.ejecutar("build_module", {"id": nave["id"]})["reason"], "MAX_LEVEL")
+	assert_eq(sim.estado.recursos, {"rocas": 0, "olivino": 0, "hielo": 0, "xenolito": 0}, "los cuatro módulos cuestan en total lo previsto")
+
+
+func test_cada_modulo_pide_sus_materiales() -> void:
+	var nave := _nave_por_modulos()
+	_terminar_obra()
+	sim.estado.recursos["hielo"] = 0
+	assert_eq(sim.ejecutar("build_module", {"id": nave["id"]})["reason"], "NO_RESOURCES")
+	assert_false(_vista_nave()["next_module"]["enabled"])
+
+
+func test_no_se_gana_con_la_nave_a_medias() -> void:
+	var nave := _nave_por_modulos()
+	_terminar_obra()
+	sim.estado.enviados = 100.0
+	sim.avanzar(0.2)
+	assert_true(sim.informe.is_empty(), "con 1 de 4 módulos no basta")
+	nave["level"] = 4
+	nave["target_level"] = 4
+	sim.avanzar(0.2)
+	assert_true(sim.informe["success"])
+
+
+func test_la_meta_de_la_historia_cuenta_los_modulos() -> void:
+	var nave := _nave_por_modulos()
+	_terminar_obra()
+	sim.estado.historia_ultimo = "nave_fuga"
+	var metas: Array = sim.snapshot()["story"]["goals"]
+	assert_eq(metas[0]["kind"], "modulos")
+	assert_eq(metas[0]["cur"], 1.0)
+	assert_eq(metas[0]["goal"], 4.0)
+	assert_false(metas[0]["done"])
+
+
+func test_el_evento_de_modulo_y_la_orden_en_otro_edificio() -> void:
+	var nave := _nave_por_modulos()
+	var eventos: Array[String] = []
+	for i in range(400):
+		eventos.append_array(sim.avanzar(0.2))
+		if nave["level"] == 1:
+			break
+	assert_true(eventos.has("MODULE_DONE:nave_fuga:1"))
+	assert_eq(sim.ejecutar("build_module", {"id": "hangar-9"})["reason"], "NO_MODULES")
+	assert_eq(sim.ejecutar("build_module", {"id": "no-existe"})["reason"], "UNKNOWN_BUILDING")
+
+
+func _nave_con_modulos(modulos: int) -> Dictionary:
+	var nave := _nave_por_modulos()
+	nave["level"] = modulos
+	nave["target_level"] = modulos
+	nave["hp"] = 100.0
+	return nave
+
+
+func test_un_golpe_fuerte_destruye_el_modulo_mas_alto_de_la_nave() -> void:
+	var nave := _nave_con_modulos(3)
+	var eventos: Array[String] = sim._edificios.danar(sim.estado, nave["id"], 30.0)
+	assert_eq(int(nave["level"]), 3, "un golpe flojo no destruye nada")
+	assert_eq(float(nave["hp"]), 70.0)
+	assert_true(eventos.is_empty())
+	eventos = sim._edificios.danar(sim.estado, nave["id"], 80.0)
+	assert_eq(int(nave["level"]), 2, "pierde el módulo más alto")
+	assert_eq(int(nave["target_level"]), 2)
+	assert_eq(float(nave["hp"]), 100.0, "el módulo que queda vuelve a tener su vida")
+	assert_true(eventos.has("MODULE_LOST:nave_fuga:2"))
+	assert_true(sim.estado.edificios.has(nave))
+
+
+func test_si_la_nave_pierde_todos_los_modulos_desaparece() -> void:
+	var nave := _nave_con_modulos(1)
+	var eventos: Array[String] = sim._edificios.danar(sim.estado, nave["id"], 500.0)
+	assert_true(eventos.any(func(e: String) -> bool: return e.begins_with("BUILDING_DESTROYED:nave_fuga")))
+	assert_false(sim.estado.edificios.has(nave))
+
+
+func test_un_ataque_cancela_el_modulo_que_estaba_en_obra() -> void:
+	var nave := _nave_con_modulos(2)
+	sim.estado.recursos = {"rocas": 100, "olivino": 100, "hielo": 100, "xenolito": 100}
+	assert_true(sim.ejecutar("build_module", {"id": nave["id"]})["ok"])
+	assert_eq(int(nave["target_level"]), 3)
+	sim._edificios.danar(sim.estado, nave["id"], 500.0)
+	assert_eq(int(nave["level"]), 2, "los módulos terminados se conservan")
+	assert_eq(int(nave["target_level"]), 2, "la obra en curso se pierde")
 

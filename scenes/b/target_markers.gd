@@ -2,12 +2,14 @@ extends Control
 ## Capa 2D sobre el mundo: símbolo discreto de cada objetivo revelado, doble trazo y línea guía del seleccionado,
 ## y flecha en el borde cuando el objetivo queda fuera del encuadre. Los enterrados sin revelar nunca se marcan.
 const UI := preload("res://scenes/b/ui_style.gd")
+const Lote := preload("res://scenes/b/canvas_batch.gd")
 
 var targets: Array = []
 var selected := ""
 var project: Callable  ## id -> {"pos": Vector2, "behind": bool} o {} si no existe
 var label_rect := Rect2()  ## etiqueta contextual (para la línea guía); vacía si no se muestra
 var pulse := 1.0
+var _lote := Lote.new()  ## todos los símbolos en una sola llamada de dibujo
 const BORDE := 34.0
 
 
@@ -42,6 +44,7 @@ func _draw() -> void:
 			_selected(p)
 		else:
 			_symbol(p, str(t.get("type", "rock")), apagado)
+	_lote.dibujar(get_canvas_item())
 
 
 func _symbol(p: Vector2, tipo: String, apagado: bool) -> void:
@@ -55,23 +58,23 @@ func _symbol(p: Vector2, tipo: String, apagado: bool) -> void:
 		"buried":
 			forma = PackedVector2Array([p + Vector2(-r, -r * 0.8), p + Vector2(r, -r * 0.8), p + Vector2(0, r * 0.9), p + Vector2(-r, -r * 0.8)])
 	if forma.is_empty():
-		draw_arc(p, r + 1.2, 0, TAU, 24, borde, 2.6, true)
-		draw_arc(p, r, 0, TAU, 24, tono, 1.6, true)
+		_lote.aro(p, r + 1.2, 2.6, borde, 18)
+		_lote.aro(p, r, 1.6, tono, 18)
 	else:
-		draw_polyline(forma, borde, 3.4, true)
-		draw_polyline(forma, tono, 1.6, true)
+		_lote.polilinea(forma, 3.4, borde)
+		_lote.polilinea(forma, 1.6, tono)
 	if apagado:
-		draw_line(p + Vector2(-2.5, 0), p + Vector2(-0.5, 2), tono, 1.4, true)
-		draw_line(p + Vector2(-0.5, 2), p + Vector2(3, -2), tono, 1.4, true)
+		_lote.linea(p + Vector2(-2.5, 0), p + Vector2(-0.5, 2), 1.4, tono)
+		_lote.linea(p + Vector2(-0.5, 2), p + Vector2(3, -2), 1.4, tono)
 	else:
-		draw_circle(p, 1.6, tono)
+		_lote.disco(p, 1.6, tono, 8)
 
 
 func _selected(p: Vector2) -> void:
 	var luz := Color(UI.TARGET_LIGHT, pulse)
-	draw_arc(p, 15.0, 0, TAU, 40, Color(UI.BORDER_DARK, 0.9 * pulse), 2.0, true)
-	draw_arc(p, 12.5, 0, TAU, 40, luz, 2.2, true)
-	draw_circle(p, 2.2, luz)
+	_lote.aro(p, 15.0, 2.0, Color(UI.BORDER_DARK, 0.9 * pulse), 32)
+	_lote.aro(p, 12.5, 2.2, luz, 32)
+	_lote.disco(p, 2.2, luz, 10)
 	if label_rect.size != Vector2.ZERO:
 		var destino := Vector2(clampf(p.x, label_rect.position.x + 8, label_rect.end.x - 8), label_rect.end.y)
 		if label_rect.position.y > p.y:
@@ -79,8 +82,8 @@ func _selected(p: Vector2) -> void:
 		var dir := (destino - p).normalized()
 		var inicio := p + dir * 16.0
 		if inicio.distance_to(destino) > 4.0:
-			draw_line(inicio, destino, Color(UI.BORDER_DARK, 0.7), 3.0, true)
-			draw_line(inicio, destino, luz, 1.4, true)
+			_lote.linea(inicio, destino, 3.0, Color(UI.BORDER_DARK, 0.7))
+			_lote.linea(inicio, destino, 1.4, luz)
 
 
 func _edge_arrow(p: Vector2, marco: Rect2, es_sel: bool, detras: bool) -> void:
@@ -100,6 +103,6 @@ func _edge_arrow(p: Vector2, marco: Rect2, es_sel: bool, detras: bool) -> void:
 	var punta := q + dir * lado
 	var normal := Vector2(-dir.y, dir.x)
 	var tri := PackedVector2Array([punta, q - dir * lado * 0.4 + normal * lado * 0.8, q - dir * lado * 0.4 - normal * lado * 0.8])
-	draw_colored_polygon(tri, Color(UI.SURFACE, 0.7))
+	_lote.poligono(tri, Color(UI.SURFACE, 0.7))
 	tri.append(tri[0])
-	draw_polyline(tri, tono, 1.6, true)
+	_lote.polilinea(tri, 1.6, tono)

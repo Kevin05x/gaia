@@ -164,6 +164,10 @@ func metas(estado: MissionState) -> Array[Dictionary]:
 				for edificio in estado.edificios:
 					if str(edificio["type"]) == id and int(edificio["level"]) >= 1:
 						actual += 1.0
+			"modulos":
+				for edificio in estado.edificios:
+					if str(edificio["type"]) == id:
+						actual = maxf(actual, float(edificio["level"]))
 			"recurso":
 				actual = float(estado.recursos.get(id, 0))
 			"enviados_pct":
@@ -222,6 +226,9 @@ func _cumple(estado: MissionState, disparador: Dictionary) -> bool:
 					return false
 			"sol_min":
 				if estado.sol < int(valor):
+					return false
+			"final_decidido":
+				if estado.historia_final.is_empty() == bool(valor):
 					return false
 			"enviados_pct_min":
 				if estado.meta <= 0 or estado.enviados * 100.0 / float(estado.meta) < float(valor):

@@ -50,10 +50,14 @@ func acciones_de_objetivo(estado: MissionState, objetivo_id: String) -> Array[Di
 
 ## Primera acción pertinente aún no hecha; si ya están todas, la primera. "" si no hay objetivo revelado.
 func accion_principal(estado: MissionState, objetivo_id: String) -> String:
-	var lista := acciones_de_objetivo(estado, objetivo_id)
+	return principal_de(acciones_de_objetivo(estado, objetivo_id), _objetivo(estado, objetivo_id))
+
+
+## Lo mismo con la lista de acciones ya calculada (el snapshot la necesita para las dos cosas y así no se calcula dos veces).
+func principal_de(lista: Array[Dictionary], objetivo: Dictionary) -> String:
 	if lista.is_empty():
 		return ""
-	var hechas: Array = _objetivo(estado, objetivo_id).get("done", [])
+	var hechas: Array = objetivo.get("done", [])
 	for entrada in lista:
 		if not hechas.has(entrada["id"]):
 			return entrada["id"]
@@ -74,6 +78,11 @@ func iniciar(estado: MissionState, accion: String, objetivo_id: String = "") -> 
 			estado.dron_sol = estado.sol
 			estado.dron_usos = 0
 		estado.dron_usos += 1
+	elif accion == "companion":
+		if estado.companero_sol != estado.sol:
+			estado.companero_sol = estado.sol
+			estado.companero_usos = 0
+		estado.companero_usos += 1
 	return {"ok": true, "reason": ""}
 
 
@@ -159,7 +168,9 @@ func _motivo(estado: MissionState, accion: String, objetivo_id: String) -> Strin
 		var hechas: Array = objetivo.get("done", [])
 		if hechas.has(accion):
 			return "DEPLETED"
-		if estado.datos + _rendimiento(accion, objetivo["type"]) > estado.memoria_capacidad:
+		# Si ya no se puede enviar más (tope de la historia), la memoria llena no debe frenar la recogida de recursos.
+		var sin_envio := estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max
+		if not sin_envio and estado.datos + _rendimiento(accion, objetivo["type"]) > estado.memoria_capacidad:
 			return "MEMORY_FULL"
 	if accion == "drone":
 		if estado.tormenta:
@@ -169,14 +180,27 @@ func _motivo(estado: MissionState, accion: String, objetivo_id: String) -> Strin
 		var usos_maximos := int(definicion.get("usos_por_sol", 0))
 		if usos_maximos > 0 and estado.dron_sol == estado.sol and estado.dron_usos >= usos_maximos:
 			return "FLIGHT_USED"
+	if accion == "companion":
+		var ayudas_maximas := int(definicion.get("usos_por_sol", 0))
+		if ayudas_maximas > 0 and estado.companero_sol == estado.sol and estado.companero_usos >= ayudas_maximas:
+			return "HELP_USED"
 	return ""
 
 
+## Busca el objetivo por su id. Con 39 objetivos y varias consultas por cuadro, la búsqueda lineal pesaba: se guarda
+## en qué posición está cada id y se comprueba que siga ahí (si no, se rehace el índice).
+var _posicion := {}
+
+
 func _objetivo(estado: MissionState, objetivo_id: String) -> Dictionary:
-	for objetivo in estado.objetivos:
-		if objetivo["id"] == objetivo_id:
-			return objetivo
-	return {}
+	var i: int = _posicion.get(objetivo_id, -1)
+	if i >= 0 and i < estado.objetivos.size() and estado.objetivos[i]["id"] == objetivo_id:
+		return estado.objetivos[i]
+	_posicion.clear()
+	for k in estado.objetivos.size():
+		_posicion[estado.objetivos[k]["id"]] = k
+	i = _posicion.get(objetivo_id, -1)
+	return estado.objetivos[i] if i >= 0 else {}
 
 
 func _rendimiento(accion: String, tipo: String) -> float:

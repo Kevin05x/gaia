@@ -209,3 +209,46 @@ func test_texto_de_las_metas() -> void:
 	assert_eq(Hud.goal_text({"kind": "antena", "goal": 2.0, "cur": 1.0}), tr("GOAL_ANTENNA") % 2)
 	assert_eq(Hud.goal_text({"kind": "edificio", "id": "panel_solar", "goal": 1.0}), tr("GOAL_BUILD") % tr("BLD_SOLAR"))
 	assert_eq(Hud.goal_text({"kind": "enviados_pct", "goal": 85.0, "cur": 40.0}), tr("GOAL_SENT") % 85 + ": 40 %")
+
+
+func test_la_intro_muestra_primero_solo_la_imagen() -> void:
+	var paginas := [{"es": "uno", "en": "one", "image": "aterrizaje"}, {"es": "dos", "en": "two", "image": "nidos"}]
+	var panel := StoryPanel.new()
+	add_child_autofree(panel)
+	panel.show_intro(paginas)
+	assert_false(panel._texto_visible, "al principio solo se ve la imagen")
+	panel._process(StoryPanel.ESPERA_IMAGEN - 0.5)
+	assert_false(panel._texto_visible)
+	panel._process(1.0)
+	assert_true(panel._texto_visible, "a los 5 s aparece el texto")
+	assert_eq(panel.intro_index, 0)
+	panel.pulsar()
+	assert_eq(panel.intro_index, 1, "un clic pasa a la siguiente escena")
+	assert_false(panel._texto_visible, "la nueva imagen vuelve a verse sola")
+	panel._process(0.5)
+	panel.pulsar()
+	assert_true(panel._texto_visible, "un clic durante la espera muestra el texto")
+	assert_eq(panel.intro_index, 1)
+
+
+func test_la_escena_tapa_toda_la_pantalla() -> void:
+	var panel := StoryPanel.new()
+	add_child_autofree(panel)
+	panel.show_intro([{"es": "uno", "en": "one", "image": "aterrizaje"}])
+	var cubre := false
+	for hijo in panel.root.get_children():
+		if hijo is ColorRect and hijo.color.a >= 0.99 and hijo.anchor_right == 1.0 and hijo.anchor_bottom == 1.0:
+			cubre = true
+	assert_true(cubre, "fondo opaco que tapa la interfaz")
+
+
+func test_el_final_va_a_pantalla_completa_y_luego_abre_el_informe() -> void:
+	var panel := StoryPanel.new()
+	add_child_autofree(panel)
+	var llamada := [false]
+	panel.show_ending({"title": {"es": "Silencio"}, "text": {"es": "fin"}, "image": "aterrizaje"}, func() -> void: llamada[0] = true)
+	assert_true(panel.is_open())
+	panel._process(StoryPanel.ESPERA_IMAGEN + 0.1)
+	panel.pulsar()
+	assert_false(panel.is_open())
+	assert_true(llamada[0], "al continuar se muestra el informe")

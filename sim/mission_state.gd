@@ -51,6 +51,8 @@ var ocupado: bool = false
 var accion_en_curso: Dictionary = {}  ## {"action", "target_id", "seconds", "elapsed"}; vacío si no hay ninguna
 var dron_sol: int = 0  ## sol del último vuelo de dron
 var dron_usos: int = 0  ## vuelos de dron hechos en ese sol
+var companero_sol: int = 0  ## sol de la última ayuda de Rocky
+var companero_usos: int = 0  ## ayudas de Rocky hechas en ese sol
 
 ## Base y economía (content/economia.json); vacíos cuando la misión no usa economía.
 var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
@@ -71,6 +73,12 @@ var historia_radio: String = ""  ## último nodo de radio (no detiene la misión
 var historia_radio_n: int = 0  ## contador de nodos de radio: la vista muestra la tarjeta cuando cambia
 var historia_t_ultimo: float = -1000.0  ## hora de juego absoluta en que se resolvió el último nodo
 var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el clímax); -1 = sin tope
+
+## Tutorial del Sol 1 (content/tutorial.json)
+var tutorial_activo: bool = false
+var tutorial_paso: int = 0  ## índice del paso que se muestra
+var tutorial_t: float = 0.0  ## segundos reales que lleva el paso actual en pantalla
+var tutorial_contadores: Dictionary = {}  ## evento -> veces que ha ocurrido desde que empezó el tutorial
 
 ## Combate (content/combate.json). Todo son datos simples para poder guardarlos.
 var rover_hp: float = 100.0  ## vida del rover en %; a 0 la misión fracasa

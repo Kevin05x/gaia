@@ -86,14 +86,16 @@ func test_cielo_el_polvo_atenua_el_sol_y_acerca_la_niebla() -> void:
 	assert_false(luz.shadow_enabled, "con mucho polvo no hay sombras duras")
 
 
-func test_cielo_de_noche_apaga_el_sol_y_las_sombras() -> void:
+func test_cielo_de_noche_pone_luz_de_luna_sin_sombras() -> void:
 	var cielo: Node = autofree(SkyScript.new())
 	var env := Environment.new()
 	var luz: DirectionalLight3D = autofree(DirectionalLight3D.new())
 	cielo.setup(env, luz)
 	cielo.set_state(2.0, 0.0)
 	cielo.apply(true)
-	assert_false(luz.visible)
+	assert_true(luz.visible, "de noche queda una luz de luna tenue")
+	assert_lt(luz.light_energy, 0.3)
+	assert_gt(luz.light_color.b, luz.light_color.r, "azulada")
 	assert_false(luz.shadow_enabled)
 
 

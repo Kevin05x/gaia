@@ -139,3 +139,10 @@ func test_los_sonidos_de_combate_son_distintos() -> void:
 		var huella: int = hash((AudioScript.SFX[id][0] as AudioStreamWAV).data)
 		assert_false(vistos.has(huella), "%s tiene su propio sonido" % id)
 		vistos[huella] = id
+
+
+func test_existen_los_sonidos_de_escenas_y_finales() -> void:
+	var audio = load("res://scenes/b/audio.gd").new()
+	add_child_autofree(audio)
+	for id in ["escena", "final_ok", "final_mal", "explosion", "obra_inicio", "obra_fin"]:
+		assert_true(audio.SFX.has(id), "falta el sonido %s" % id)

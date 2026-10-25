@@ -17,6 +17,12 @@ const SFX := {
 	"alarm": [preload("res://scenes/b/assets/audio/alarm.wav"), -15.0],
 	"meteor_fall": [preload("res://scenes/b/assets/audio/meteor_fall.wav"), -16.0],
 	"meteor_hit": [preload("res://scenes/b/assets/audio/meteor_hit.wav"), -9.0],
+	"explosion": [preload("res://scenes/b/assets/audio/explosion.wav"), -7.0],
+	"obra_inicio": [preload("res://scenes/b/assets/audio/obra_inicio.wav"), -15.0],
+	"obra_fin": [preload("res://scenes/b/assets/audio/obra_fin.wav"), -13.0],
+	"escena": [preload("res://scenes/b/assets/audio/escena.wav"), -14.0],
+	"final_ok": [preload("res://scenes/b/assets/audio/final_ok.wav"), -9.0],
+	"final_mal": [preload("res://scenes/b/assets/audio/final_mal.wav"), -9.0],
 }
 const SFX_VOCES := 6  ## sonidos de combate que pueden oírse a la vez
 const TRAMO_CAIDA_SONIDO := 0.6  ## fracción del aviso a partir de la cual suena la caída del meteorito

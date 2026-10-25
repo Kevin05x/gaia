@@ -370,3 +370,14 @@ Ver `COMBATE.md`. Cambios de contrato para A:
 - Eventos nuevos: `WAVE_STARTED:<id>`, `WAVE_CLEARED:<id>`, `ENEMY_KILLED:<tipo>`, `ROVER_HIT`, `METEOR_SHOWER:<id>`, `METEOR_IMPACT`, `BUILDING_DESTROYED`, `ANTENNA_DAMAGED`.
 - Informe: nueva causa de derrota `CAUSE_ROVER_DESTROYED`.
 - Nuevos edificios en `build_options`: `torreta` y `torreta_2` (la segunda pide hangar). Cada opción trae `range` (alcance en casillas; 0 si no dispara).
+
+## Tutorial y nave de fuga (bloque D, 24 oct 2026)
+
+Ver `TUTORIAL_Y_NAVE.md`. Cambios de contrato para A:
+
+- `Simulation.new(..., combate, tutorial)`: octavo argumento opcional, `TutorialData` cargado de `content/tutorial.json` (`MissionRunner` ya lo carga, `RUTA_TUTORIAL`).
+- Snapshot nuevo: `tutorial`: `{"active": false}` o `{"active": true, "step", "total", "id", "text": {"es","en"}, "highlight": ""|"mapa"|"acciones"|"construir"|"enlace"}`.
+- Orden nueva: `tutorial_skip` (cierra el tutorial). Eventos: `TUTORIAL_STEP:<id>` y `TUTORIAL_DONE`.
+- `build_options` ya no trae `nave_fuga` hasta decidir el clímax. Motivos nuevos: `NEEDS_FINAL`, `NEEDS_ANTENNA_3`.
+- Con historia y `nave` en `historia.json`, la victoria exige además tener la nave de fuga completa (todos sus módulos); el informe añade la causa `CAUSE_SHIP`.
+- Edificios por módulos (`modulos` en `economia.json`): `buildings[*]` trae `modules` (total, 0 si no es por módulos) y `next_module` (`{name_key, cost, seconds, enabled, reason}`, vacío si ya está completo); el nivel del edificio es el número de módulos terminados. Orden nueva: `build_module {id}`. Evento nuevo: `MODULE_DONE:<tipo>:<n>`. `meta.modulos` da el total para la meta «módulos». `construir` crea el módulo 1 con el costo y tiempo del primero.

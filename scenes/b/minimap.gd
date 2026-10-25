@@ -3,6 +3,7 @@ extends Control
 ## Al pasar el cursor resalta la casilla y muestra sus coordenadas; un clic pide mover el rover a esa casilla
 ## (la simulación decide si es válida).
 const UI := preload("res://scenes/b/ui_style.gd")
+const Lote := preload("res://scenes/b/canvas_batch.gd")
 const NONE := Vector2i(-9999, -9999)
 signal tile_chosen(tile: Vector2i)
 var state: Dictionary = {}:
@@ -18,6 +19,7 @@ var _heading := Vector2(0, -1)
 var _last_rover := NONE
 var _estatica: ImageTexture
 var _estatica_firma := ""
+var _lote := Lote.new()  ## objetivos, monstruos, estación y rover: una sola llamada de dibujo
 const ZONE_TONES := {"orilla": Color("E2C9A3"), "falla": Color("9FC0D2"), "nucleo": Color("3E2C28")}
 
 
@@ -56,6 +58,7 @@ func _draw() -> void:
 		var caja := Rect2(point(_hover_tile) - celda / 2.0, celda)
 		draw_rect(caja, Color(UI.AMBER, 0.32))
 		draw_rect(caja, Color(UI.AMBER, 0.9), false, 1.2)
+	# Todo lo que sigue va a un lote que se dibuja con una sola llamada (antes eran ~4 por objetivo y 2 por monstruo).
 	# Objetivos revelados: rombo con aro.
 	for t in state.get("targets", []):
 		if not t.get("revealed", false):
@@ -64,36 +67,36 @@ func _draw() -> void:
 		var agotado: bool = t.get("depleted", false)
 		var tono := Color(UI.CREAM, 0.4) if agotado else UI.TARGET_LIGHT
 		if not agotado:
-			draw_arc(p, 6.6, 0.0, TAU, 24, Color(UI.TARGET_LIGHT, 0.55), 1.2, true)
-		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -4.2), p + Vector2(4.2, 0), p + Vector2(0, 4.2), p + Vector2(-4.2, 0)]), Color(UI.SURFACE, 0.9))
-		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -3.2), p + Vector2(3.2, 0), p + Vector2(0, 3.2), p + Vector2(-3.2, 0)]), tono)
+			_lote.aro(p, 6.6, 1.2, Color(UI.TARGET_LIGHT, 0.55), 16)
+		_lote.poligono(PackedVector2Array([p + Vector2(0, -4.2), p + Vector2(4.2, 0), p + Vector2(0, 4.2), p + Vector2(-4.2, 0)]), Color(UI.SURFACE, 0.9))
+		_lote.poligono(PackedVector2Array([p + Vector2(0, -3.2), p + Vector2(3.2, 0), p + Vector2(0, 3.2), p + Vector2(-3.2, 0)]), tono)
 	# Monstruos (como mucho 20 puntos) y meteoritos que van a caer.
 	var combate: Dictionary = state.get("combat", {})
 	for m in combate.get("enemies", []):
 		var q := _point_f(m.get("pos", Vector2.ZERO))
 		var grande: bool = float(m.get("size", 1.0)) > 1.5
-		draw_circle(q, 5.4 if grande else 3.6, Color(0.08, 0.04, 0.1, 0.9))
-		draw_circle(q, 4.0 if grande else 2.5, Color("FF5B4A"))
+		_lote.disco(q, 5.4 if grande else 3.6, Color(0.08, 0.04, 0.1, 0.9), 10)
+		_lote.disco(q, 4.0 if grande else 2.5, Color("FF5B4A"), 10)
 	for i in combate.get("impacts", []):
-		var qi := point(i.get("tile", Vector2i.ZERO))
-		draw_arc(qi, 5.0, 0.0, TAU, 14, Color("FF9A4D"), 1.6, true)
+		_lote.aro(point(i.get("tile", Vector2i.ZERO)), 5.0, 1.6, Color("FF9A4D"), 14)
 	# Estación: casita con tejado.
 	var e := point(state.get("station_tile", Vector2i(-9, -9)))
-	draw_colored_polygon(PackedVector2Array([e + Vector2(-6.5, -0.5), e + Vector2(0, -6.5), e + Vector2(6.5, -0.5)]), Color(UI.SURFACE, 0.95))
-	draw_rect(Rect2(e + Vector2(-5.5, -1), Vector2(11, 7.5)), Color(UI.SURFACE, 0.95))
-	draw_colored_polygon(PackedVector2Array([e + Vector2(-5, -1.2), e + Vector2(0, -5.4), e + Vector2(5, -1.2)]), UI.AMBER)
-	draw_rect(Rect2(e + Vector2(-4, -0.4), Vector2(8, 6)), Color("f6dfb0"))
-	draw_rect(Rect2(e + Vector2(-1.2, 2.2), Vector2(2.4, 3.4)), Color(UI.SURFACE, 0.9))
+	_lote.poligono(PackedVector2Array([e + Vector2(-6.5, -0.5), e + Vector2(0, -6.5), e + Vector2(6.5, -0.5)]), Color(UI.SURFACE, 0.95))
+	_lote.rect(Rect2(e + Vector2(-5.5, -1), Vector2(11, 7.5)), Color(UI.SURFACE, 0.95))
+	_lote.poligono(PackedVector2Array([e + Vector2(-5, -1.2), e + Vector2(0, -5.4), e + Vector2(5, -1.2)]), UI.AMBER)
+	_lote.rect(Rect2(e + Vector2(-4, -0.4), Vector2(8, 6)), Color("f6dfb0"))
+	_lote.rect(Rect2(e + Vector2(-1.2, 2.2), Vector2(2.4, 3.4)), Color(UI.SURFACE, 0.9))
 	# Rover: flecha con su rumbo y un halo.
 	var r := point(state.get("rover_tile", Vector2i.ZERO))
 	var lado := Vector2(-_heading.y, _heading.x)
-	draw_circle(r, 8.5, Color(UI.CREAM, 0.16))
+	_lote.disco(r, 8.5, Color(UI.CREAM, 0.16), 16)
 	var punta := r + _heading * 7.2
 	var ala_a := r - _heading * 3.6 + lado * 4.6
 	var ala_b := r - _heading * 3.6 - lado * 4.6
 	var cola := r - _heading * 1.6
-	draw_colored_polygon(PackedVector2Array([r + _heading * 8.6, r - _heading * 4.9 + lado * 5.8, r - _heading * 2.4, r - _heading * 4.9 - lado * 5.8]), Color(UI.SURFACE, 0.95))
-	draw_colored_polygon(PackedVector2Array([punta, ala_a, cola, ala_b]), UI.CREAM)
+	_lote.poligono(PackedVector2Array([r + _heading * 8.6, r - _heading * 4.9 + lado * 5.8, r - _heading * 2.4, r - _heading * 4.9 - lado * 5.8]), Color(UI.SURFACE, 0.95))
+	_lote.poligono(PackedVector2Array([punta, ala_a, cola, ala_b]), UI.CREAM)
+	_lote.dibujar(get_canvas_item())
 	# Esquinas de marco y coordenadas.
 	var largo := 6.0
 	for esquina in [[area.position, Vector2(1, 1)], [Vector2(area.end.x, area.position.y), Vector2(-1, 1)],

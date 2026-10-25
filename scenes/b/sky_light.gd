@@ -14,6 +14,7 @@ const KEYS := [
 	[19.0, -12.0, "FFB17D", 0.0, "645765", 0.38, "20212F", "574453", "574453", 28.0, 110.0],
 	[24.0, -12.0, "FFBE8F", 0.0, "645765", 0.38, "20212F", "574453", "574453", 28.0, 110.0],
 ]
+const MOON_ENERGY := 0.22  ## luz de luna de la noche (energía del sol equivalente)
 const STORM_DAY := {"top": Color("806052"), "horizon": Color("B98664"), "fog": Color("BA8162"), "begin": 16.0, "end": 75.0}
 const STORM_NIGHT := {"top": Color("40332F"), "horizon": Color("72513F"), "fog": Color("72513F"), "begin": 12.0, "end": 60.0}
 var energy_scale := 0.7  ## calibración artística (revisar en la exportación web)
@@ -133,6 +134,13 @@ func apply(inmediato := false) -> void:
 	sun.rotation_degrees = Vector3(-maxf(2.0, s["elevation"]), azimut, 0.0)
 	sun.light_color = s["sun_color"]
 	sun.light_energy = energia
+	# Noche: una luz de luna tenue y azulada, sin sombras, para que torretas y edificios no sean siluetas negras.
+	var noche := clampf(1.0 - s["sun_energy"] / 0.15, 0.0, 1.0)
+	if noche > 0.0:
+		sun.rotation_degrees = Vector3(-42.0, 205.0, 0.0)
+		sun.light_color = Color("8FA8DA")
+		energia = maxf(energia, MOON_ENERGY * noche * lerpf(1.0, 0.5, p))
+		sun.light_energy = energia
 	sun.visible = energia > 0.005
 	sky_material.sun_angle_max = 8.0
 	# Sombras: fuera con sol bajo o ausente; con polvo, histéresis 0,70 / 0,55.
