@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "estado": "provisional (24 oct 2026): costos, tiempos y vida de la tabla B del documento de historia de Dider y Scarlet; la energía pasó de «E/s» a vatios para encajar con la batería del rover. Se reajusta tras el enunciado del 28 oct.",
+  "recursos": ["rocas", "olivino", "hielo", "xenolito"],
+  "recursos_iniciales": { "rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0 },
+  "capacidad_base": 150,
+  "recoleccion": {
+    "spectrometer": { "rock": { "rocas": 5 }, "mineral": { "olivino": 6 } },
+    "drill": { "rock": { "rocas": 15 }, "mineral": { "olivino": 14, "rocas": 4 }, "buried": { "hielo": 18, "xenolito": 6 } },
+    "companion": { "rocas": 10, "olivino": 4 }
+  },
+  "zona_base_radio": 5,
+  "antena": {
+    "nivel_inicial": 0,
+    "casilla_relativa": [2, 0],
+    "niveles": [
+      { "costo": { "rocas": 30, "olivino": 20 }, "tiempo_s": 10, "consume_w": 4 },
+      { "costo": { "olivino": 40, "hielo": 30 }, "tiempo_s": 15, "consume_w": 8, "requiere": "hangar" },
+      { "costo": { "hielo": 50, "xenolito": 30 }, "tiempo_s": 20, "consume_w": 14 }
+    ]
+  },
+  "edificios": {
+    "panel_solar": { "nombre_clave": "BLD_SOLAR", "costo": { "rocas": 20 }, "hp": 100, "tiempo_s": 5, "genera_w_solar": 45, "consume_w": 0, "maximo": 6 },
+    "luz": { "nombre_clave": "BLD_LIGHT", "costo": { "rocas": 15, "olivino": 10 }, "hp": 80, "tiempo_s": 4, "genera_w": 4, "consume_w": 0, "maximo": 4 },
+    "domo": { "nombre_clave": "BLD_DOME", "costo": { "rocas": 30 }, "hp": 200, "tiempo_s": 6, "consume_w": 2, "capacidad": 50, "maximo": 4 },
+    "extractor_hielo": { "nombre_clave": "BLD_EXTRACTOR", "costo": { "rocas": 40, "olivino": 20 }, "hp": 250, "tiempo_s": 10, "consume_w": 20, "produce_por_hora": { "hielo": 2.0 }, "maximo": 2 },
+    "hangar": { "nombre_clave": "BLD_HANGAR", "costo": { "rocas": 50, "olivino": 30 }, "hp": 300, "tiempo_s": 12, "consume_w": 5, "maximo": 1 }
+  }
+}

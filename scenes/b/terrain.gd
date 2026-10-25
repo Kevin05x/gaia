@@ -844,7 +844,7 @@ func configure(defs: Array, blocked: Array, limites: Dictionary = {}) -> void:
 			"mineral":
 				_mineral(n, rng)
 			"buried":
-				_buried(n)
+				_buried(n, rng)
 			_:
 				_strata(n, rng)
 		n.visible = d.get("revealed", false)
@@ -867,7 +867,7 @@ func _strata(n: Node3D, rng: RandomNumberGenerator) -> void:
 ## Mineral expuesto: fragmentos pálidos dentro de una fractura oscura.
 func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
 	# Modelo del equipo de diseño (roca con cristales); si falta el archivo se usa la pieza por código.
-	var modelo := Equipo.poner(n, "hielo_2" if rng.randi() % 2 == 0 else "hielo_3", 1.7, Vector3(0, -0.03, 0), rng.randf() * TAU)
+	var modelo := Equipo.poner(n, "cristal5_brillo", 1.5, Vector3(0, -0.03, 0), rng.randf() * TAU)  # olivino: cristal verde del equipo de diseño
 	if not modelo.is_empty():
 		return
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))
@@ -879,7 +879,11 @@ func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
 
 
 ## Capa enterrada ya revelada: montículo bajo con una franja pálida del antiguo lago.
-func _buried(n: Node3D) -> void:
+func _buried(n: Node3D, rng: RandomNumberGenerator) -> void:
+	# Hielo enterrado: roca con cristales de hielo del equipo de diseño (dos variantes); si faltan, la pieza por código.
+	var modelo := Equipo.poner(n, "hielo_2" if rng.randf() < 0.5 else "hielo_3", 1.6, Vector3(0, -0.03, 0), rng.randf() * TAU)
+	if not modelo.is_empty():
+		return
 	W.rock(n, "fragment", 1, Vector3(0, -0.05, 0), Vector3(1.4, 0.35, 1.2), Color("A86A4E"))
 	W.rock(n, "block", 1, Vector3(0.1, 0.12, 0.05), Vector3(0.9, 0.12, 0.7), Color("E2C9A0"))
 

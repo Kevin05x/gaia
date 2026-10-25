@@ -1,0 +1,868 @@
+{
+  "version": 1,
+  "estado": "provisional (24 oct 2026): adaptación al juego del documento maestro y del simulador de Dider y Scarlet. Las criaturas aún no tienen nombre definitivo. Cada nodo se muestra cuando se cumple alguno de sus disparadores (cada disparador exige todas sus condiciones). Cada nodo tiene una escena ilustrada (assets/historia/<imagen>.jpg, hecha con IA en Canva) y diálogos de Houston, Rocky y Perseverance. Nodos con modo «radio» (aterrizaje, alerta sísmica y glaciares): no detienen la misión, se aplican solos y se ven como una tarjeta de radio. «escena: corta» = decisión rápida. «espera_h» = horas de juego de respiro antes del nodo. «metas» = lista de avance del objetivo en el HUD (guía, no bloquea).",
+  "inicio": "aterrizaje",
+  "etica_inicial": 50,
+  "intro": [
+    {
+      "imagen": "intro_1",
+      "es": "Año 2038. La biosfera de la Tierra —nuestra Gaia— está muriendo. Las tormentas ácidas y el colapso biológico nos dejan menos de una década de oxígeno estable.",
+      "en": "Year 2038. Earth's biosphere —our Gaia— is dying. Acid storms and biological collapse leave us less than a decade of stable oxygen."
+    },
+    {
+      "imagen": "intro_2",
+      "es": "Hace 3.500 millones de años, el cráter Jezero, en Marte, albergó un lago lleno de vida. Los satélites de la NASA acaban de detectar una anomalía bajo su hielo: organismos extremófilos que mutaron junto a un mineral desconocido, capaces de regenerar atmósferas muertas.",
+      "en": "3.5 billion years ago, Jezero Crater on Mars held a lake full of life. NASA satellites have just detected an anomaly beneath its ice: extremophile organisms that mutated alongside an unknown mineral, able to regenerate dead atmospheres."
+    },
+    {
+      "imagen": "intro_3",
+      "es": "Tomarás el mando del rover Perseverance, apoyado por el dron Ingenuity y por Rocky, nuestra unidad robótica experimental de extracción y reparación. Cuídalo bien: allá afuera, en el desierto rojo, solo se tienen el uno al otro.",
+      "en": "You will command the Perseverance rover, supported by the Ingenuity drone and by Rocky, our experimental extraction and repair robot. Take good care of it: out there, in the red desert, you only have each other."
+    },
+    {
+      "imagen": "intro_4",
+      "es": "Tu objetivo es construir y mejorar la Antena Científica hasta transmitir el 100 % de los datos a la Tierra. Pero recuerda: cada edificio consume energía, nuestras perforaciones despertarán a lo que duerme bajo el hielo… y cómo decidas tratar a este planeta definirá el destino de la humanidad.",
+      "en": "Your goal is to build and upgrade the Science Antenna until 100% of the data reaches Earth. But remember: every building consumes energy, our drilling will wake whatever sleeps beneath the ice… and how you choose to treat this planet will decide humanity's fate."
+    }
+  ],
+  "nodos": {
+    "aterrizaje": {
+      "acto": {
+        "es": "Acto 1 · Orilla del antiguo lago",
+        "en": "Act 1 · Shore of the ancient lake"
+      },
+      "titulo": {
+        "es": "Aterrizaje en el cráter Jezero",
+        "en": "Landing in Jezero Crater"
+      },
+      "imagen": "aterrizaje",
+      "texto": {
+        "es": "Aquí Control Houston. Perseverance, estás en el delta del cráter Jezero. Perfora las rocas marcadas para extraer filosilicatos (rocas) y olivino, levanta paneles solares antes de que caiga la noche y despliega la Antena Científica para abrir el enlace con la Tierra.",
+        "en": "This is Houston Control. Perseverance, you are on the Jezero Crater delta. Drill the marked rocks to extract phyllosilicates (rocks) and olivine, raise solar panels before night falls and deploy the Science Antenna to open the link with Earth."
+      },
+      "rocky": {
+        "es": "Rocky emite un pitido alegre y señala la primera roca de arcilla.",
+        "en": "Rocky beeps happily and points at the first clay rock."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Perseverance, aquí Houston. Confirmamos tu aterrizaje en el delta de Jezero. Bienvenido a casa… por ahora.",
+            "en": "Perseverance, Houston here. We confirm your touchdown on the Jezero delta. Welcome home… for now."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "¡Bip! Rocky en línea. Sensores al 100 %. ¿Empezamos por esa roca de arcilla?",
+            "en": "Beep! Rocky online. Sensors at 100%. Shall we start with that clay rock?"
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "Primero recursos, luego la antena. Sin enlace, nada de lo que encontremos llegará a la Tierra.",
+            "en": "Resources first, then the antenna. Without a link, nothing we find will reach Earth."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Construye la Antena Nv. 1 y un panel solar",
+        "en": "Build Antenna Lv. 1 and a solar panel"
+      },
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Entendido, Houston",
+            "en": "Copy that, Houston"
+          },
+          "detalle": {
+            "es": "Empieza la misión.",
+            "en": "The mission begins."
+          },
+          "efectos": {},
+          "siguiente": "alerta_sismica",
+          "registro": {
+            "es": "Misión iniciada en el cráter Jezero (Sol 1).",
+            "en": "Mission started in Jezero Crater (Sol 1)."
+          }
+        }
+      ],
+      "modo": "radio",
+      "metas": [
+        {
+          "tipo": "antena",
+          "min": 1
+        },
+        {
+          "tipo": "edificio",
+          "id": "panel_solar",
+          "min": 1
+        }
+      ]
+    },
+    "alerta_sismica": {
+      "acto": {
+        "es": "Acto 1 · Orilla del antiguo lago",
+        "en": "Act 1 · Shore of the ancient lake"
+      },
+      "titulo": {
+        "es": "Enlace abierto… y algo se mueve",
+        "en": "Link open… and something moves"
+      },
+      "imagen": "alerta_sismica",
+      "texto": {
+        "es": "¡La Antena Nv. 1 funciona! Ya puedes transmitir datos con la tecla T cuando el enlace esté abierto. Pero el sismógrafo marca movimiento: las vibraciones de la antena han despertado nidos superficiales. Prepara la base para la noche: de noche los paneles no producen nada.",
+        "en": "Antenna Lv. 1 works! You can now transmit data with the T key while the link is open. But the seismograph shows movement: the antenna's vibrations have woken shallow nests. Get the base ready for the night: solar panels produce nothing after dark."
+      },
+      "rocky": {
+        "es": "Rocky gira su sensor hacia las grietas y se acerca a tu rueda.",
+        "en": "Rocky turns its sensor toward the cracks and moves closer to your wheel."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Recibimos tu primera señal, Perseverance. ¡Buen trabajo! … Espera. El sismógrafo marca actividad bajo la base.",
+            "en": "We got your first signal, Perseverance. Great job! … Wait. The seismograph shows activity under the base."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "Bip… bip. Algo se mueve en las grietas. Detecto calor… y muchas patas.",
+            "en": "Beep… beep. Something is moving in the cracks. I detect heat… and lots of legs."
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "Cae la noche. Sin sol los paneles no rinden: hay que cuidar la batería.",
+            "en": "Night is falling. Without sun the panels give nothing: we must save battery."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Guarda batería para la noche",
+        "en": "Save battery for the night"
+      },
+      "disparadores": [
+        {
+          "antena_min": 1
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Reforzar la base",
+            "en": "Reinforce the base"
+          },
+          "detalle": {
+            "es": "Sigue explorando y construyendo antes del anochecer.",
+            "en": "Keep exploring and building before nightfall."
+          },
+          "efectos": {
+            "datos": 10
+          },
+          "siguiente": "noche_aranas",
+          "registro": {
+            "es": "Antena Nv. 1 activada: sus vibraciones despertaron nidos superficiales.",
+            "en": "Antenna Lv. 1 online: its vibrations woke shallow nests."
+          }
+        }
+      ],
+      "modo": "radio",
+      "espera_h": 1.0,
+      "metas": [
+        {
+          "tipo": "bateria_pct",
+          "min": 70
+        }
+      ]
+    },
+    "noche_aranas": {
+      "acto": {
+        "es": "Acto 1 · Noche en el antiguo lago",
+        "en": "Act 1 · Night at the ancient lake"
+      },
+      "titulo": {
+        "es": "Noche helada y ataque de arañas",
+        "en": "Freezing night and spider attack"
+      },
+      "imagen": "noche_aranas",
+      "texto": {
+        "es": "El Sol se oculta y los paneles dejan de producir. Atraídas por el calor de los cables y el pulso de la antena, decenas de arañas de regolito salen de las grietas y muerden los paneles y el chasis de Rocky. Tienes batería limitada para pasar la noche.",
+        "en": "The Sun sets and the panels stop producing. Drawn by the heat of the cables and the antenna's pulse, dozens of regolith spiders crawl out of the cracks and bite the panels and Rocky's chassis. Your battery has to last the night."
+      },
+      "rocky": {
+        "es": "¡Chispas en los paneles! Rocky intenta reparar los cables mientras las arañas lo rodean.",
+        "en": "Sparks on the panels! Rocky tries to fix the cables while the spiders surround it."
+      },
+      "dialogos": [
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "¡Están mordiendo los cables! ¡Me rodean!",
+            "en": "They're biting the cables! They're surrounding me!"
+          }
+        },
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Perseverance, la batería no aguantará mucho. Decide: protege a Rocky o defiende la extracción.",
+            "en": "Perseverance, the battery won't last long. Decide: protect Rocky or defend the extraction."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Construye el hangar y sube la antena a Nv. 2",
+        "en": "Build the hangar and upgrade the antenna to Lv. 2"
+      },
+      "disparadores": [
+        {
+          "noche": true,
+          "antena_min": 1
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "A · Pulso acústico no letal y resguardar a Rocky",
+            "en": "A · Non-lethal acoustic pulse and shelter Rocky"
+          },
+          "detalle": {
+            "es": "Rama científica: espantas a las arañas sin dañarlas. −15 % batería, +ética, +hielo.",
+            "en": "Science branch: you scare the spiders away unharmed. −15% battery, +ethics, +ice."
+          },
+          "efectos": {
+            "bateria_pct": -15,
+            "datos": 10,
+            "etica": 15,
+            "recursos": {
+              "hielo": 15
+            }
+          },
+          "rama": "cientifica",
+          "siguiente": "glaciar_cientifico",
+          "registro": {
+            "es": "Noche del Sol 1: contuviste a las arañas con pulsos acústicos y protegiste a Rocky.",
+            "en": "Night of Sol 1: you held off the spiders with acoustic pulses and protected Rocky."
+          }
+        },
+        {
+          "texto": {
+            "es": "B · Sobrecargar las torretas y perforar toda la noche",
+            "en": "B · Overload the turrets and drill all night"
+          },
+          "detalle": {
+            "es": "Rama militar: exterminas a las arañas y sacas más rocas. −30 % batería, Rocky herido, −ética.",
+            "en": "Military branch: you wipe out the spiders and mine more rock. −30% battery, Rocky hurt, −ethics."
+          },
+          "efectos": {
+            "bateria_pct": -30,
+            "datos": 5,
+            "etica": -15,
+            "rocky_hp": -20,
+            "recursos": {
+              "rocas": 35,
+              "hielo": 10
+            }
+          },
+          "rama": "militar",
+          "siguiente": "glaciar_militar",
+          "registro": {
+            "es": "Noche del Sol 1: sobrecargaste las torretas para aniquilar a las arañas y seguir perforando.",
+            "en": "Night of Sol 1: you overloaded the turrets to wipe out the spiders and keep drilling."
+          }
+        }
+      ],
+      "escena": "corta",
+      "metas": [
+        {
+          "tipo": "edificio",
+          "id": "hangar",
+          "min": 1
+        },
+        {
+          "tipo": "antena",
+          "min": 2
+        }
+      ]
+    },
+    "glaciar_cientifico": {
+      "acto": {
+        "es": "Acto 2 · Falla del glaciar subterráneo",
+        "en": "Act 2 · Subsurface glacier fault"
+      },
+      "titulo": {
+        "es": "Hangar de mejoras: ingeniería científica",
+        "en": "Upgrade hangar: science engineering"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "Llegas a la falla del glaciar, donde afloran cristales de hielo. Con el hangar y el extractor de hielo mejoras a Rocky con un analizador biológico no letal y subes la Antena Científica. Cuidado: el radar detecta formas de vida mucho más grandes bajo el hielo.",
+        "en": "You reach the glacier fault, where ice crystals break the surface. With the hangar and the ice extractor you fit Rocky with a non-lethal bio-analyzer and upgrade the Science Antenna. Careful: the radar detects much larger life forms beneath the ice."
+      },
+      "rocky": {
+        "es": "¡Rocky sube a nivel 2! Su nuevo brazo puede analizar ADN extremófilo sin dañar a las criaturas.",
+        "en": "Rocky reaches level 2! Its new arm can analyze extremophile DNA without harming the creatures."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "El hielo de la falla puede darnos agua y oxígeno, como demostró el experimento MOXIE. Sigue así.",
+            "en": "The ice in the fault can give us water and oxygen, as the MOXIE experiment showed. Keep going."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "¡Mi brazo nuevo lee ADN sin hacer daño! Ni siquiera les hace cosquillas.",
+            "en": "My new arm reads DNA without harming them! It doesn't even tickle."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Sube la antena a Nv. 3 y espera la tormenta",
+        "en": "Upgrade the antenna to Lv. 3 and wait for the storm"
+      },
+      "disparadores": [
+        {
+          "antena_min": 2
+        },
+        {
+          "sol_min": 3
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Avanzar hacia la falla profunda",
+            "en": "Advance toward the deep fault"
+          },
+          "detalle": {
+            "es": "Se acerca una tormenta de arena. +20 % batería, +datos, +xenolito.",
+            "en": "A dust storm is approaching. +20% battery, +data, +xenolith."
+          },
+          "efectos": {
+            "bateria_pct": 20,
+            "datos": 15,
+            "etica": 10,
+            "rocky_hp": 10,
+            "recursos": {
+              "xenolito": 5
+            }
+          },
+          "siguiente": "nidos",
+          "registro": {
+            "es": "Antena mejorada y Rocky equipado con el analizador biológico.",
+            "en": "Antenna upgraded and Rocky fitted with the bio-analyzer."
+          }
+        }
+      ],
+      "modo": "radio",
+      "espera_h": 2.0,
+      "metas": [
+        {
+          "tipo": "antena",
+          "min": 3
+        }
+      ]
+    },
+    "glaciar_militar": {
+      "acto": {
+        "es": "Acto 2 · Falla del glaciar subterráneo",
+        "en": "Act 2 · Subsurface glacier fault"
+      },
+      "titulo": {
+        "es": "Hangar de mejoras: artillería y taladros",
+        "en": "Upgrade hangar: artillery and drills"
+      },
+      "imagen": "glaciar_militar",
+      "texto": {
+        "es": "En la falla del glaciar pones el extractor de hielo a máxima potencia y levantas torretas pesadas de cuatro cañones con olivino y percloratos. Subes la antena por la fuerza, pero el ruido sísmico de tus taladros hace temblar todo el cañón subterráneo.",
+        "en": "At the glacier fault you run the ice extractor at full power and build four-barrel heavy turrets from olivine and perchlorates. You force the antenna upgrade, but the seismic noise of your drills shakes the whole underground canyon."
+      },
+      "rocky": {
+        "es": "Rocky (nivel 2, artillero) repara el blindaje del rover, pero avisa que el consumo de las torretas es crítico.",
+        "en": "Rocky (level 2, gunner) repairs the rover's armor but warns that the turrets' power draw is critical."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Perseverance, el consumo de las torretas está en rojo. Y esos temblores… no nos gustan.",
+            "en": "Perseverance, the turrets' power draw is in the red. And those tremors… we don't like them."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "Blindaje reparado. Pero todo el cañón vibra. Creo que los hemos despertado.",
+            "en": "Armor repaired. But the whole canyon is shaking. I think we woke them up."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Sube la antena a Nv. 3 y espera la tormenta",
+        "en": "Upgrade the antenna to Lv. 3 and wait for the storm"
+      },
+      "disparadores": [
+        {
+          "antena_min": 2
+        },
+        {
+          "sol_min": 3
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Adentrarse en la tormenta hacia los nidos",
+            "en": "Head into the storm toward the nests"
+          },
+          "detalle": {
+            "es": "La colmena subterránea emerge furiosa. +10 % batería, +datos, +rocas, +xenolito.",
+            "en": "The underground hive emerges, furious. +10% battery, +data, +rocks, +xenolith."
+          },
+          "efectos": {
+            "bateria_pct": 10,
+            "datos": 15,
+            "etica": -10,
+            "recursos": {
+              "rocas": 20,
+              "xenolito": 10
+            }
+          },
+          "siguiente": "nidos",
+          "registro": {
+            "es": "Base militarizada con torretas pesadas: gran actividad sísmica en el cráter.",
+            "en": "Base militarized with heavy turrets: heavy seismic activity in the crater."
+          }
+        }
+      ],
+      "modo": "radio",
+      "espera_h": 2.0,
+      "metas": [
+        {
+          "tipo": "antena",
+          "min": 3
+        }
+      ]
+    },
+    "nidos": {
+      "acto": {
+        "es": "Acto 2 · Tormenta de arena y nidos",
+        "en": "Act 2 · Dust storm and nests"
+      },
+      "titulo": {
+        "es": "La tormenta y los nidos",
+        "en": "The storm and the nests"
+      },
+      "imagen": "nidos",
+      "texto": {
+        "es": "Una violenta tormenta de arena cubre el cráter y apaga el sol. De las grietas salen insectoides acorazados. Al analizar uno, Houston confirma la revelación: estas criaturas mutaron por el cristal de xenolito y en su ADN vivo está la cura para regenerar la atmósfera de la Tierra. Tienes sus nidos delante.",
+        "en": "A violent dust storm covers the crater and blots out the sun. Armored insectoids crawl out of the cracks. Analyzing one, Houston confirms the revelation: these creatures mutated through the xenolith crystal, and their living DNA holds the cure to regenerate Earth's atmosphere. Their nests are right in front of you."
+      },
+      "rocky": {
+        "es": "Rocky espera tu orden frente al nido principal: ¿extraemos muestras sin matarlos o detonamos la colmena?",
+        "en": "Rocky awaits your order at the main nest: do we take samples without killing them, or blow up the hive?"
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Confirmado: el ADN de estas criaturas contiene la enzima que puede regenerar la atmósfera de la Tierra.",
+            "en": "Confirmed: these creatures' DNA holds the enzyme that can regenerate Earth's atmosphere."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "Son… familias. Están protegiendo sus nidos de nosotros.",
+            "en": "They're… families. They're protecting their nests from us."
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "La Tierra espera. Pero ¿a qué precio?",
+            "en": "Earth is waiting. But at what cost?"
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Envía el 85 % de los datos y sube la antena a Nv. 3",
+        "en": "Send 85% of the data and upgrade the antenna to Lv. 3"
+      },
+      "disparadores": [
+        {
+          "tormenta": true
+        },
+        {
+          "sol_min": 4
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "1 · Estudiar los nidos vivos con el escáner de Rocky",
+            "en": "1 · Study the living nests with Rocky's scanner"
+          },
+          "detalle": {
+            "es": "No destruyes el ecosistema. −20 % batería por los escudos, Rocky arriesga daño, +datos puros, +xenolito, +ética.",
+            "en": "You spare the ecosystem. −20% battery for shields, Rocky risks damage, +pure data, +xenolith, +ethics."
+          },
+          "efectos": {
+            "bateria_pct": -20,
+            "datos": 30,
+            "etica": 25,
+            "rocky_hp": -10,
+            "recursos": {
+              "hielo": 10,
+              "xenolito": 20
+            }
+          },
+          "requiere_companero": true,
+          "siguiente": "climax_puro",
+          "registro": {
+            "es": "Preservaste los nidos y obtuviste ADN extremófilo intacto.",
+            "en": "You preserved the nests and obtained intact extremophile DNA."
+          }
+        },
+        {
+          "texto": {
+            "es": "2 · Detonar la colmena y extraer el xenolito",
+            "en": "2 · Blow up the hive and extract the xenolith"
+          },
+          "detalle": {
+            "es": "Mucho xenolito y rocas al instante, pero contaminas las muestras, enfureces a la colmena y dañan a Rocky. −ética.",
+            "en": "Plenty of xenolith and rock at once, but you contaminate the samples, enrage the hive and Rocky gets hurt. −ethics."
+          },
+          "efectos": {
+            "bateria_pct": -15,
+            "datos": 20,
+            "etica": -35,
+            "rocky_hp": -25,
+            "recursos": {
+              "rocas": 30,
+              "xenolito": 40
+            }
+          },
+          "siguiente": "climax_destructivo",
+          "registro": {
+            "es": "Arrasaste los nidos con explosivos para sacar xenolito rápido.",
+            "en": "You razed the nests with explosives to extract xenolith fast."
+          }
+        }
+      ],
+      "espera_h": 3.0,
+      "metas": [
+        {
+          "tipo": "antena",
+          "min": 3
+        },
+        {
+          "tipo": "enviados_pct",
+          "min": 85
+        }
+      ]
+    },
+    "climax_puro": {
+      "acto": {
+        "es": "Acto 3 · Núcleo del cráter",
+        "en": "Act 3 · Crater core"
+      },
+      "titulo": {
+        "es": "Lluvia de meteoritos y el despertar del Coloso",
+        "en": "Meteor shower and the Colossus awakens"
+      },
+      "imagen": "climax_puro",
+      "texto": {
+        "es": "La transmisión avanza con las muestras intactas cuando empieza una lluvia de meteoritos. El sismógrafo explota: del cráter central emerge el Coloso de Jezero, la bestia alfa de cuatro brazos, y va directo a destrozar la antena. La batería cae rápido.",
+        "en": "The transmission is advancing with the intact samples when a meteor shower begins. The seismograph spikes: from the central crater rises the Colossus of Jezero, the four-armed alpha beast, heading straight for the antenna. The battery drops fast."
+      },
+      "rocky": {
+        "es": "Rocky activa su escudo de campo junto al Perseverance. Solo falta un último impulso para llegar a 100/100.",
+        "en": "Rocky raises its field shield beside Perseverance. One last push to reach 100/100."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "¡Amenaza alfa! Algo enorme sale del cráter central y va directo a la antena.",
+            "en": "Alpha threat! Something huge is rising from the central crater, heading straight for the antenna."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "No tengas miedo. Si sincronizamos nuestros escudos, quizá solo necesite calma.",
+            "en": "Don't be afraid. If we sync our shields, maybe it just needs calm."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Transmite hasta llegar a 100",
+        "en": "Transmit until you reach 100"
+      },
+      "disparadores": [
+        {
+          "antena_min": 3
+        },
+        {
+          "enviados_pct_min": 85
+        },
+        {
+          "sol_min": 6
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Sincronizar pulso armónico y escudos (Perseverance y Rocky juntos)",
+            "en": "Sync harmonic pulse and shields (Perseverance and Rocky together)"
+          },
+          "detalle": {
+            "es": "Calmas al Coloso sin sacrificar a nadie. −25 % batería, +datos. Final al completar la transmisión: «El renacer de Gaia».",
+            "en": "You calm the Colossus without sacrificing anyone. −25% battery, +data. Ending when the transmission completes: \"Gaia reborn\"."
+          },
+          "efectos": {
+            "bateria_pct": -25,
+            "datos": 30,
+            "etica": 15
+          },
+          "final": "simbiosis",
+          "registro": {
+            "es": "Contuviste al Coloso junto a Rocky con el pulso armónico.",
+            "en": "You held off the Colossus together with Rocky using the harmonic pulse."
+          }
+        },
+        {
+          "texto": {
+            "es": "El sacrificio de Rocky",
+            "en": "Rocky's sacrifice"
+          },
+          "detalle": {
+            "es": "Rocky conecta su núcleo al relé de la antena y atrae al Coloso: la transmisión llega al 100 % al instante. Final: «El último sol de Rocky».",
+            "en": "Rocky plugs its core into the antenna relay and lures the Colossus away: the transmission hits 100% at once. Ending: \"Rocky's last sol\"."
+          },
+          "efectos": {
+            "rocky_hp": -100,
+            "etica": 20,
+            "completa_transmision": true
+          },
+          "requiere_companero": true,
+          "final": "sacrificio",
+          "registro": {
+            "es": "Rocky se sacrificó conectando su núcleo a la antena para salvar la misión.",
+            "en": "Rocky sacrificed itself, wiring its core into the antenna to save the mission."
+          }
+        }
+      ],
+      "espera_h": 4.0,
+      "metas": [
+        {
+          "tipo": "enviados_pct",
+          "min": 100
+        }
+      ]
+    },
+    "climax_destructivo": {
+      "acto": {
+        "es": "Acto 3 · Núcleo del cráter",
+        "en": "Act 3 · Crater core"
+      },
+      "titulo": {
+        "es": "La furia del cráter y el Coloso",
+        "en": "The crater's fury and the Colossus"
+      },
+      "imagen": "climax_destructivo",
+      "texto": {
+        "es": "Por haber exterminado los nidos, la colmena entera y el gigantesco Coloso de Jezero asedian la base bajo una lluvia de meteoritos nocturna. Las torretas pesadas drenan casi toda la batería y la antena recibe golpes directos.",
+        "en": "Because you wiped out the nests, the whole hive and the giant Colossus of Jezero besiege the base under a night meteor shower. The heavy turrets drain almost all the battery and the antenna takes direct hits."
+      },
+      "rocky": {
+        "es": "Con el chasis dañado, Rocky apenas se mueve entre los escombros, pero mira el cable de sobrecarga de la antena…",
+        "en": "Its chassis damaged, Rocky can barely move through the rubble, but it eyes the antenna's overload cable…"
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "¡La base está cayendo! Las torretas se quedan sin batería, Perseverance.",
+            "en": "The base is falling! The turrets are running out of battery, Perseverance."
+          }
+        },
+        {
+          "quien": "rocky",
+          "texto": {
+            "es": "Ese cable de sobrecarga… si lo conecto a mi núcleo, la señal llegaría completa.",
+            "en": "That overload cable… if I plug it into my core, the signal would get through."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Transmite hasta llegar a 100",
+        "en": "Transmit until you reach 100"
+      },
+      "disparadores": [
+        {
+          "antena_min": 3
+        },
+        {
+          "enviados_pct_min": 85
+        },
+        {
+          "sol_min": 6
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Detonar las reservas de perclorato contra el Coloso",
+            "en": "Detonate the perchlorate reserves at the Colossus"
+          },
+          "detalle": {
+            "es": "Abates al Coloso y envías los datos alterados. −20 % batería, Rocky herido, +datos. Final: «Cenizas rojas».",
+            "en": "You bring down the Colossus and send the altered data. −20% battery, Rocky hurt, +data. Ending: \"Red ashes\"."
+          },
+          "efectos": {
+            "bateria_pct": -20,
+            "datos": 40,
+            "etica": -20,
+            "rocky_hp": -20
+          },
+          "final": "explotacion",
+          "registro": {
+            "es": "Abatiste al Coloso con artillería pesada y enviaste datos parciales.",
+            "en": "You brought down the Colossus with heavy artillery and sent partial data."
+          }
+        },
+        {
+          "texto": {
+            "es": "Redención final: el sacrificio de Rocky",
+            "en": "Final redemption: Rocky's sacrifice"
+          },
+          "detalle": {
+            "es": "Rocky entrega su núcleo a la antena y atrae al Coloso para salvarte: la transmisión llega al 100 %. Final: «El último sol de Rocky».",
+            "en": "Rocky gives its core to the antenna and lures the Colossus to save you: the transmission hits 100%. Ending: \"Rocky's last sol\"."
+          },
+          "efectos": {
+            "rocky_hp": -100,
+            "etica": 25,
+            "completa_transmision": true
+          },
+          "requiere_companero": true,
+          "final": "sacrificio",
+          "registro": {
+            "es": "En medio del desastre, Rocky dio su vida para completar la transmisión.",
+            "en": "In the middle of the disaster, Rocky gave its life to complete the transmission."
+          }
+        },
+        {
+          "texto": {
+            "es": "Mantener taladros y torretas sin desviar energía a los escudos",
+            "en": "Keep drills and turrets running without diverting power to the shields"
+          },
+          "detalle": {
+            "es": "Error de ingeniería: la batería llega a 0 % en plena noche y el Coloso derriba la antena. Final: «Silencio orbital».",
+            "en": "Engineering error: the battery hits 0% in the dead of night and the Colossus topples the antenna. Ending: \"Orbital silence\"."
+          },
+          "efectos": {
+            "bateria_pct": -100
+          },
+          "final": "silencio",
+          "termina": true,
+          "registro": {
+            "es": "Apagón total de batería: el Coloso destruyó la antena.",
+            "en": "Total battery blackout: the Colossus destroyed the antenna."
+          }
+        }
+      ],
+      "espera_h": 4.0,
+      "metas": [
+        {
+          "tipo": "enviados_pct",
+          "min": 100
+        }
+      ]
+    }
+  },
+  "finales": {
+    "simbiosis": {
+      "titulo": {
+        "es": "Final 1 · El renacer de Gaia",
+        "en": "Ending 1 · Gaia reborn"
+      },
+      "imagen": "final_simbiosis",
+      "texto": {
+        "es": "Te negaste a destruir un mundo para salvar otro. Con las muestras genéticas intactas que recolectaste junto a Rocky, los laboratorios de la Tierra sintetizaron la cepa regeneradora. Seis meses después, las primeras lluvias limpias caen sobre la Tierra. En Marte, Perseverance y Rocky permanecen juntos en lo alto del cráter, viendo brillar el pequeño punto azul en el cielo.",
+        "en": "You refused to destroy one world to save another. With the intact genetic samples you gathered alongside Rocky, Earth's labs synthesized the regenerating strain. Six months later, the first clean rains fall on Earth. On Mars, Perseverance and Rocky stay together atop the crater, watching the little blue dot shine in the sky."
+      }
+    },
+    "explotacion": {
+      "titulo": {
+        "es": "Final 2 · Cenizas rojas",
+        "en": "Ending 2 · Red ashes"
+      },
+      "imagen": "final_explotacion",
+      "texto": {
+        "es": "La misión tuvo éxito, pero a un costo terrible. Arrasaste los nidos con fuego y taladros pesados para asegurar la transmisión. Las muestras llegaron fragmentadas: la humanidad sobrevivirá unas décadas con compuestos sintéticos, pero en Marte ya no queda nada vivo. Salvaste a la Tierra por hoy… repitiendo el mismo error que la condenó.",
+        "en": "The mission succeeded, but at a terrible cost. You razed the nests with fire and heavy drills to secure the transmission. The samples arrived fragmented: humanity will survive a few decades on synthetic compounds, but nothing is left alive on Mars. You saved Earth for today… by repeating the very mistake that doomed it."
+      }
+    },
+    "sacrificio": {
+      "titulo": {
+        "es": "Final 3 · El último sol de Rocky",
+        "en": "Ending 3 · Rocky's last sol"
+      },
+      "imagen": "final_sacrificio",
+      "texto": {
+        "es": "Cuando el Coloso estuvo a punto de derribar la antena, el pequeño Rocky tomó la decisión para la que nunca fue programado: proteger a su compañero y completar la misión. Con su núcleo conectado al relé, el último paquete de datos cruzó el espacio y salvó a miles de millones de vidas. La tormenta pasó. Perseverance se acerca despacio al chasis inmóvil de su amigo. En la Tierra celebran el milagro de GAIA; en Marte, tú sabes quién fue el verdadero héroe.",
+        "en": "When the Colossus was about to topple the antenna, little Rocky made the choice it was never programmed for: protect its partner and complete the mission. With its core wired into the relay, the last data packet crossed space and saved billions of lives. The storm has passed. Perseverance slowly approaches its friend's motionless chassis. On Earth they celebrate the miracle of GAIA; on Mars, you know who the real hero was."
+      }
+    },
+    "silencio": {
+      "titulo": {
+        "es": "Final 4 · Silencio orbital",
+        "en": "Ending 4 · Orbital silence"
+      },
+      "imagen": "final_silencio",
+      "texto": {
+        "es": "Sin reservas de energía y con la Antena Científica perdida, el enlace con Houston se cortó para siempre. Las tormentas cubren poco a poco los restos de la base y el chasis apagado del Perseverance. En el cielo nocturno de Marte, el pequeño punto azul de la Tierra sigue esperando una respuesta que nunca llegará.",
+        "en": "With no energy left and the Science Antenna lost, the link with Houston was cut forever. Storms slowly bury the remains of the base and Perseverance's dead chassis. In the Martian night sky, Earth's little blue dot is still waiting for an answer that will never come."
+      }
+    }
+  },
+  "personajes": {
+    "houston": {
+      "nombre": {
+        "es": "CONTROL HOUSTON",
+        "en": "HOUSTON CONTROL"
+      },
+      "color": "F0C079"
+    },
+    "rocky": {
+      "nombre": {
+        "es": "ROCKY",
+        "en": "ROCKY"
+      },
+      "color": "9AD7C6"
+    },
+    "perseverance": {
+      "nombre": {
+        "es": "PERSEVERANCE",
+        "en": "PERSEVERANCE"
+      },
+      "color": "FFF5E4"
+    }
+  }
+}

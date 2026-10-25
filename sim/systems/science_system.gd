@@ -20,6 +20,7 @@ const ACCIONES_CON_OBJETIVO: Array[String] = ["spectrometer", "drill"]
 
 var _balance: Balance
 var _energia: EnergySystem
+var recursos: ResourceSystem = null  ## si hay economía: lo recolectado suma rocas, olivino, hielo o xenolito
 
 
 func _init(balance: Balance, energia: EnergySystem) -> void:
@@ -145,6 +146,8 @@ func _motivo(estado: MissionState, accion: String, objetivo_id: String) -> Strin
 	if accion == "companion":
 		if not estado.companero:
 			return "NO_INSTRUMENT"
+		if estado.rocky_hp <= 0.0:
+			return "ROCKY_DOWN"
 	elif not estado.instrumentos.has(accion):
 		return "NO_INSTRUMENT"
 	if estado.bateria_wh < float(definicion["costo_wh"]):
@@ -198,6 +201,8 @@ func _completar(estado: MissionState, eventos: Array[String]) -> void:
 			_revelar(estado, ["rock", "mineral", "buried"], eventos)
 		"companion":
 			estado.minerales += int(_balance.numero("ciencia.minerales_companero"))
+			if recursos != null:
+				eventos.append_array(recursos.recolectar(estado, "companion", ""))
 	eventos.append("%s:%s:%s" % [EVENTO_ACCION_TERMINADA, accion, objetivo_id])
 
 
@@ -211,6 +216,8 @@ func _analizar(estado: MissionState, accion: String, objetivo_id: String, evento
 	estado.datos = minf(estado.memoria_capacidad, estado.datos + _rendimiento(accion, objetivo["type"]))
 	if objetivo["type"] == "mineral":
 		estado.minerales += int(_balance.numero("ciencia.minerales_por_mineral"))
+	if recursos != null:
+		eventos.append_array(recursos.recolectar(estado, accion, objetivo["type"]))
 	var requeridas: Array = ACCIONES_POR_TIPO.get(objetivo["type"], [])
 	var completo := true
 	for requerida in requeridas:

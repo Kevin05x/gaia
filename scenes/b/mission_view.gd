@@ -20,6 +20,10 @@ var lighting: Node
 var tracks: MeshInstance3D
 var _tracks_seeded := false
 var workshop: CanvasLayer
+var story: CanvasLayer  ## introducción y ventana de decisión de la historia
+var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
+var buildings: Node3D  ## edificios de la base
+var placing := ""  ## edificio que se está colocando ("" si ninguno)
 var state: Dictionary = {}
 var inspection := false
 var language := "es"
@@ -93,6 +97,19 @@ func _ready() -> void:
 	report_view.name = "Report"
 	add_child(report_view)
 	report_view.redesign_requested.connect(func(): port.submit("redesign"))
+	buildings = preload("res://scenes/b/buildings.gd").new()
+	buildings.name = "Buildings"
+	buildings.ground = terrain.height_at
+	add_child(buildings)
+	base_hud = preload("res://scenes/b/base_hud.gd").new()
+	base_hud.name = "BaseHud"
+	add_child(base_hud)
+	base_hud.command.connect(_command)
+	base_hud.placement_requested.connect(start_placement)
+	story = preload("res://scenes/b/story_panel.gd").new()
+	story.name = "Story"
+	add_child(story)
+	story.command.connect(_command)
 	port.snapshot_received.connect(apply_snapshot)
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
@@ -146,6 +163,8 @@ func change_locale(locale: String) -> void:
 	TranslationServer.set_locale(locale)
 	hud.build()
 	workshop.build()
+	base_hud.build()
+	story.rebuild()
 	if not report_view.report.is_empty():
 		report_view.rebuild()
 	save_preferences()
@@ -187,6 +206,12 @@ func apply_snapshot(s: Dictionary) -> void:
 	terrain.visible = not en_taller
 	actors.visible = not en_taller
 	tracks.visible = not en_taller
+	buildings.visible = not en_taller
+	buildings.update_state(s)
+	base_hud.update_snapshot(s)
+	story.update_snapshot(s)
+	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
+		cancel_placement()
 	workshop.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
@@ -210,7 +235,49 @@ func apply_snapshot(s: Dictionary) -> void:
 
 
 func blocked() -> bool:
-	return state.is_empty() or state.get("paused", false) or state.get("safe_mode", false) or state.get("phase", "") != "operations"
+	return state.is_empty() or state.get("paused", false) or state.get("safe_mode", false) or state.get("phase", "") != "operations" \
+		or (story != null and story.is_open())
+
+
+## Modo de colocación: se marca la zona de la base y el siguiente clic en una casilla libre pide la obra.
+func start_placement(tipo: String) -> void:
+	if blocked() or not state.has("base"):
+		return
+	placing = tipo
+	hud.close_actions()
+	var base: Dictionary = state["base"]
+	var centro: Vector2i = base.get("center", Vector2i.ZERO)
+	var radio := int(base.get("radius", 0))
+	var validas: Array = []
+	var ocupadas: Array = []
+	for x in range(centro.x - radio, centro.x + radio + 1):
+		for y in range(centro.y - radio, centro.y + radio + 1):
+			var t := Vector2i(x, y)
+			if not terrain.in_bounds(t):
+				continue
+			if _placement_valid(t):
+				validas.append(t)
+			else:
+				ocupadas.append(t)
+	buildings.show_zone(validas, ocupadas)
+	hud.show_notice("PLACE_NOTICE")
+
+
+func cancel_placement() -> void:
+	placing = ""
+	buildings.hide_zone()
+	terrain.hide_cursor()
+	hud.set_hover_hint("")
+
+
+func _placement_valid(tile: Vector2i) -> bool:
+	if not state.has("base") or not terrain.in_bounds(tile):
+		return false
+	var base: Dictionary = state["base"]
+	var d: Vector2i = tile - base.get("center", Vector2i.ZERO)
+	if maxi(absi(d.x), absi(d.y)) > int(base.get("radius", 0)):
+		return false
+	return not tile in _blocked_tiles() and tile != state.get("rover_tile", Vector2i(9999, 9999))
 
 
 func _command(command: String, payload: Dictionary) -> void:
@@ -223,7 +290,15 @@ func _command(command: String, payload: Dictionary) -> void:
 	port.submit(command, payload)
 
 
+func _input(e: InputEvent) -> void:
+	if not placing.is_empty() and e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_ESCAPE:
+		cancel_placement()
+		get_viewport().set_input_as_handled()
+
+
 func _report(value: Dictionary) -> void:
+	cancel_placement()
+	base_hud.close_menu()
 	actors.cancel_actions()
 	rig.enabled = false
 	hud.visible = false
@@ -248,6 +323,16 @@ func _update_hover() -> void:
 		hud.set_hover_hint("")
 		return
 	var mouse := get_viewport().get_mouse_position()
+	if not placing.is_empty():
+		var punto = ground_point(mouse)
+		if punto == null or hud.root.get_viewport().gui_get_hovered_control() != null:
+			terrain.hide_cursor()
+			return
+		var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+		var valida := _placement_valid(casilla)
+		terrain.show_cursor(casilla, valida)
+		hud.set_hover_hint(tr("PLACE_HINT") % tr("BLD_" + base_hud._clave(placing)) if valida else tr("TILE_BLOCKED"), mouse)
+		return
 	if hud.root.get_viewport().gui_get_hovered_control() != null or not pick_target(mouse).is_empty():
 		terrain.hide_cursor()
 		hud.set_hover_hint("")
@@ -298,6 +383,21 @@ func _unhandled_input(e: InputEvent) -> void:
 			rig.center_on(actors.rover.position)
 	if blocked() or hud.settings.visible or hud.review_panel.visible:
 		return
+	if not placing.is_empty():
+		if e is InputEventMouseButton and e.pressed:
+			if e.button_index == MOUSE_BUTTON_LEFT:
+				var punto = ground_point(e.position)
+				if punto != null:
+					var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+					if _placement_valid(casilla):
+						port.submit("build", {"building": placing, "tile": casilla})
+						cancel_placement()
+					else:
+						hud.show_notice("TILE_BLOCKED")
+			elif e.button_index == MOUSE_BUTTON_RIGHT:
+				cancel_placement()
+			get_viewport().set_input_as_handled()
+		return
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		var target := pick_target(e.position)
 		if not target.is_empty():
@@ -340,6 +440,8 @@ func _blocked_tiles() -> Array[Vector2i]:
 		lista.append(state["station_tile"])
 	for t in state.get("targets", []):
 		lista.append(t["tile"])
+	for b in state.get("buildings", []):
+		lista.append(b["tile"])
 	return lista
 
 
