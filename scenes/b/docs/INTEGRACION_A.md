@@ -354,3 +354,19 @@ La historia ya no pausa el juego en cada evento. Cada nodo de `content/historia.
 `StoryData` valida `modo`, `escena`, `espera_h`, `metas` y que una radio tenga una sola opción sin final ni requisito de Rocky (`BAD_RADIO`). Estado nuevo en `MissionState`: `historia_radio`, `historia_radio_n`, `historia_t_ultimo`.
 
 Imágenes: las 16 escenas ilustradas (`assets/historia/<id>.jpg`, 1280×720) salen del storyboard de Canva aprobado.
+
+## Combate (bloque C, 24 oct 2026)
+
+Ver `COMBATE.md`. Cambios de contrato para A:
+
+- `Simulation` recibe un séptimo argumento opcional: `Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate)`, con `combate = CombatData.new(...)` cargado de `content/combate.json`. `MissionRunner` ya lo carga (`RUTA_COMBATE`). Sin él no hay combate y el snapshot no trae `combat`.
+- `Simulation.hay_combate_activo()`: el runner publica el snapshot cada cuadro mientras sea `true` (monstruos, rayos o meteoritos en movimiento).
+- Snapshot nuevo:
+  - `combat`: `{"enemies": [{"id","type","pos","hp","hp_max","size","attacking"}], "shots": [{"from","to","ttl","kind","n"}], "impacts": [{"tile","t","total","radius"}], "threat", "threat_extra", "wave": {…próxima oleada…}, "rover_hp"}`.
+  - `nests`: `[{"id","casilla","zona"}]`.
+  - `rover_hp` (0–100) en el nivel superior.
+  - `buildings[*].hp` y `hp_max`.
+- Avisos nuevos: `ENEMIES_ACTIVE`, `METEORS_INCOMING`, `ROVER_DAMAGED`, `WAVE_SOON` (textos `WARN_*` en `i18n/catalog.gd`).
+- Eventos nuevos: `WAVE_STARTED:<id>`, `WAVE_CLEARED:<id>`, `ENEMY_KILLED:<tipo>`, `ROVER_HIT`, `METEOR_SHOWER:<id>`, `METEOR_IMPACT`, `BUILDING_DESTROYED`, `ANTENNA_DAMAGED`.
+- Informe: nueva causa de derrota `CAUSE_ROVER_DESTROYED`.
+- Nuevos edificios en `build_options`: `torreta` y `torreta_2` (la segunda pide hangar). Cada opción trae `range` (alcance en casillas; 0 si no dispara).

@@ -29,6 +29,7 @@ var selected := ""
 var selection: MeshInstance3D
 var route_line: MeshInstance3D
 var cursor: MeshInstance3D
+var range_ring: MeshInstance3D  ## alcance de una torreta mientras se coloca
 var obstacles: Array[Vector2i] = []
 var grid: Node3D
 var grid_manual := false
@@ -675,6 +676,41 @@ func show_cursor(tile: Vector2i, valido: bool) -> void:
 func hide_cursor() -> void:
 	if is_instance_valid(cursor):
 		cursor.visible = false
+	hide_range()
+
+
+## Anillo del alcance (en casillas) alrededor de «tile»; 0 lo oculta.
+func show_range(tile: Vector2i, casillas: float) -> void:
+	if casillas <= 0.0:
+		hide_range()
+		return
+	if range_ring == null:
+		var toro := TorusMesh.new()
+		toro.inner_radius = 0.972
+		toro.outer_radius = 1.0
+		toro.rings = 48
+		toro.ring_segments = 3
+		range_ring = MeshInstance3D.new()
+		range_ring.name = "RangeRing"
+		range_ring.mesh = toro
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.albedo_color = Color(0.55, 0.9, 0.78, 0.9)
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		range_ring.material_override = material
+		range_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(range_ring)
+	var x := tile.x * TILE
+	var z := tile.y * TILE
+	var radio := casillas * TILE
+	range_ring.visible = true
+	range_ring.position = Vector3(x, maxf(height_at(x, z), BASIN_Y) + 0.1, z)
+	range_ring.scale = Vector3(radio, 1.0, radio)
+
+
+func hide_range() -> void:
+	if is_instance_valid(range_ring):
+		range_ring.visible = false
 
 
 ## Metros que el mundo se ha ensanchado respecto del mapa base (0 en el mapa chico).

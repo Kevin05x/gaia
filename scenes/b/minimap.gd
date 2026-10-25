@@ -67,6 +67,16 @@ func _draw() -> void:
 			draw_arc(p, 6.6, 0.0, TAU, 24, Color(UI.TARGET_LIGHT, 0.55), 1.2, true)
 		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -4.2), p + Vector2(4.2, 0), p + Vector2(0, 4.2), p + Vector2(-4.2, 0)]), Color(UI.SURFACE, 0.9))
 		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -3.2), p + Vector2(3.2, 0), p + Vector2(0, 3.2), p + Vector2(-3.2, 0)]), tono)
+	# Monstruos (como mucho 20 puntos) y meteoritos que van a caer.
+	var combate: Dictionary = state.get("combat", {})
+	for m in combate.get("enemies", []):
+		var q := _point_f(m.get("pos", Vector2.ZERO))
+		var grande: bool = float(m.get("size", 1.0)) > 1.5
+		draw_circle(q, 5.4 if grande else 3.6, Color(0.08, 0.04, 0.1, 0.9))
+		draw_circle(q, 4.0 if grande else 2.5, Color("FF5B4A"))
+	for i in combate.get("impacts", []):
+		var qi := point(i.get("tile", Vector2i.ZERO))
+		draw_arc(qi, 5.0, 0.0, TAU, 14, Color("FF9A4D"), 1.6, true)
 	# Estación: casita con tejado.
 	var e := point(state.get("station_tile", Vector2i(-9, -9)))
 	draw_colored_polygon(PackedVector2Array([e + Vector2(-6.5, -0.5), e + Vector2(0, -6.5), e + Vector2(6.5, -0.5)]), Color(UI.SURFACE, 0.95))
@@ -113,7 +123,8 @@ func _draw() -> void:
 func _capa_estatica(mn: Vector2i, mx: Vector2i) -> void:
 	var obstaculos: Array = state.get("obstacles", [])
 	var zonas: Array = state.get("zones", [])
-	var firma := "%s|%s|%d|%s" % [mn, mx, obstaculos.size(), var_to_str(zonas)]
+	var nidos: Array = state.get("nests", [])
+	var firma := "%s|%s|%d|%s|%d" % [mn, mx, obstaculos.size(), var_to_str(zonas), nidos.size()]
 	if _estatica != null and firma == _estatica_firma:
 		return
 	_estatica_firma = firma
@@ -156,6 +167,18 @@ func _capa_estatica(mn: Vector2i, mx: Vector2i) -> void:
 					img.set_pixel(x, y, img.get_pixel(x, y).blend(Color("2f1d13", 0.85)))
 				if p.distance_to(centro + Vector2(-radio * 0.2, -radio * 0.2)) <= radio * 0.62:
 					img.set_pixel(x, y, img.get_pixel(x, y).blend(Color("5d3f2b", 0.95)))
+	# Nidos: cráter oscuro con un punto violeta.
+	var radio_nido := esc * 0.62
+	for n in nidos:
+		var tile: Vector2i = n["tile"]
+		var centro_n := Vector2((tile.x - mn.x + 0.5) * esc, (tile.y - mn.y + 0.5) * esc)
+		for py in range(int(centro_n.y - radio_nido) - 1, int(centro_n.y + radio_nido) + 2):
+			for px in range(int(centro_n.x - radio_nido) - 1, int(centro_n.x + radio_nido) + 2):
+				if px < 0 or py < 0 or px >= img.get_width() or py >= img.get_height():
+					continue
+				var d := Vector2(px + 0.5, py + 0.5).distance_to(centro_n)
+				if d <= radio_nido:
+					img.set_pixel(px, py, Color("2a1633") if d > radio_nido * 0.45 else Color("a77bff"))
 	_estatica = ImageTexture.create_from_image(img)
 
 
@@ -174,6 +197,13 @@ func _cell() -> Vector2:
 
 
 func point(tile: Vector2i) -> Vector2:
+	var mn: Vector2i = _limits()[0]
+	var c := _cell()
+	return Vector2(8, 8) + Vector2((tile.x - mn.x + 0.5) * c.x, (tile.y - mn.y + 0.5) * c.y)
+
+
+## Como point(), pero con casillas fraccionarias (los monstruos andan entre casillas).
+func _point_f(tile: Vector2) -> Vector2:
 	var mn: Vector2i = _limits()[0]
 	var c := _cell()
 	return Vector2(8, 8) + Vector2((tile.x - mn.x + 0.5) * c.x, (tile.y - mn.y + 0.5) * c.y)

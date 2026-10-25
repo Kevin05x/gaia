@@ -10,6 +10,7 @@ const CAUSA_PLAZO := "CAUSE_FAIL"
 const CAUSA_FALLO_MODO_SEGURO := "CAUSE_SAFE_FAIL"
 const CAUSA_MODO_SEGURO := "CAUSE_SAFE"
 const CAUSA_HISTORIA := "CAUSE_STORY_FAIL"
+const CAUSA_ROVER_DESTRUIDO := "CAUSE_ROVER_DESTROYED"
 const CAUSA_SOLAR := "CAUSE_SOLAR"
 const CAUSA_RTG := "CAUSE_RTG"
 const CAUSA_RELE := "CAUSE_RELAY"
@@ -33,6 +34,8 @@ func evaluar(estado: MissionState, eventos: Array[String] = []) -> Dictionary:
 		return _terminar(estado, false, CAUSA_HISTORIA)
 	if estado.enviados >= estado.meta and (not requiere_final or not estado.historia_final.is_empty()):
 		return _terminar(estado, true, CAUSA_EXITO)
+	if estado.rover_hp <= 0.0:
+		return _terminar(estado, false, CAUSA_ROVER_DESTRUIDO)
 	if eventos.has(EnergySystem.EVENTO_MISION_FALLA):
 		return _terminar(estado, false, CAUSA_FALLO_MODO_SEGURO)
 	if estado.sol > _sol_limite:

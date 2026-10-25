@@ -12,6 +12,7 @@ var recoleccion: Dictionary = {}  ## acción -> {tipo de objetivo -> {recurso: c
 var zona_base_radio: int = 0
 var antena_nivel_inicial: int = 0
 var antena_casilla_relativa: Vector2i = Vector2i.ZERO
+var antena_hp: float = 150.0  ## vida de la antena cuando tiene al menos un nivel
 var antena_niveles: Array = []  ## [{"costo", "tiempo_s", "consume_w", "requiere"?}]
 var edificios: Dictionary = {}  ## id -> definición
 var errores: PackedStringArray = PackedStringArray()
@@ -38,6 +39,12 @@ func tiene_edificio(id: String) -> bool:
 
 func edificio(id: String) -> Dictionary:
 	return edificios.get(id, {})
+
+
+## Datos de disparo de un edificio ({} si no es una torreta).
+func combate_de(id: String) -> Dictionary:
+	var combate: Variant = edificio(id).get("combate", {})
+	return combate if combate is Dictionary else {}
 
 
 func ids_edificios() -> Array[String]:
@@ -96,6 +103,7 @@ func _cargar(texto: String) -> void:
 	var antena: Variant = datos.get("antena", {})
 	if antena is Dictionary:
 		antena_nivel_inicial = int(antena.get("nivel_inicial", 0))
+		antena_hp = float(antena.get("hp", 150.0))
 		var rel: Variant = antena.get("casilla_relativa", [0, 0])
 		if rel is Array and rel.size() == 2:
 			antena_casilla_relativa = Vector2i(int(rel[0]), int(rel[1]))
@@ -118,3 +126,11 @@ func _cargar(texto: String) -> void:
 		for recurso in edificios[id]["costo"]:
 			if not recursos.has(str(recurso)):
 				errores.append("UNKNOWN_RESOURCE:%s" % recurso)
+		var requiere := str(edificios[id].get("requiere", ""))
+		if not requiere.is_empty() and not edificios.has(requiere):
+			errores.append("UNKNOWN_BUILDING:%s.requiere" % id)
+		var combate: Variant = edificios[id].get("combate")
+		if combate != null:
+			if not (combate is Dictionary) or float(combate.get("alcance", 0.0)) <= 0.0 or float(combate.get("dano", 0.0)) <= 0.0 \
+					or float(combate.get("cadencia_s", 0.0)) <= 0.0:
+				errores.append("INVALID_FIELD:edificios.%s.combate" % id)

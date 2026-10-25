@@ -23,6 +23,7 @@ var workshop: CanvasLayer
 var story: CanvasLayer  ## introducción y ventana de decisión de la historia
 var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
 var buildings: Node3D  ## edificios de la base
+var combat: Node3D  ## nidos, monstruos, rayos y meteoritos
 var placing := ""  ## edificio que se está colocando ("" si ninguno)
 var state: Dictionary = {}
 var inspection := false
@@ -104,6 +105,13 @@ func _ready() -> void:
 	buildings.name = "Buildings"
 	buildings.ground = terrain.height_at
 	add_child(buildings)
+	combat = preload("res://scenes/b/combat_view.gd").new()
+	combat.ground = terrain.height_at
+	combat.buildings = buildings
+	add_child(combat)
+	buildings.building_lost.connect(func(pos: Vector3) -> void:
+		combat.fogonazo(pos + Vector3(0, 0.8, 0), Color("FF9A4D"), 3.0, 0.7)
+		combat.fogonazo(pos + Vector3(0, 0.4, 0), Color("4a3a36"), 2.4, 1.0))
 	base_hud = preload("res://scenes/b/base_hud.gd").new()
 	base_hud.name = "BaseHud"
 	add_child(base_hud)
@@ -211,6 +219,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	tracks.visible = not en_taller
 	buildings.visible = not en_taller
 	buildings.update_state(s)
+	combat.update_state(s)
 	base_hud.update_snapshot(s)
 	story.update_snapshot(s)
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
@@ -271,6 +280,14 @@ func cancel_placement() -> void:
 	buildings.hide_zone()
 	terrain.hide_cursor()
 	hud.set_hover_hint("")
+
+
+## Alcance en casillas de un edificio de defensa (0 si no dispara).
+func _alcance_de(tipo: String) -> float:
+	for o in state.get("build_options", []):
+		if o.get("id", "") == tipo:
+			return float(o.get("range", 0.0))
+	return 0.0
 
 
 func _placement_valid(tile: Vector2i) -> bool:
@@ -334,6 +351,7 @@ func _update_hover() -> void:
 		var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
 		var valida := _placement_valid(casilla)
 		terrain.show_cursor(casilla, valida)
+		terrain.show_range(casilla, _alcance_de(placing) if valida else 0.0)
 		hud.set_hover_hint(tr("PLACE_HINT") % tr("BLD_" + base_hud._clave(placing)) if valida else tr("TILE_BLOCKED"), mouse)
 		return
 	if hud.root.get_viewport().gui_get_hovered_control() != null or not pick_target(mouse).is_empty():
@@ -445,6 +463,8 @@ func _blocked_tiles() -> Array[Vector2i]:
 		lista.append(t["tile"])
 	for b in state.get("buildings", []):
 		lista.append(b["tile"])
+	for n in state.get("nests", []):
+		lista.append(n["tile"])
 	return lista
 
 
