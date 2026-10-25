@@ -1340,6 +1340,8 @@ func _unhandled_input(e: InputEvent) -> void:
 			review_panel.hide()
 		elif _close_popups():
 			pass
+		elif bool(snapshot.get("moving", false)) and str(snapshot.get("phase", "")) == "operations" and not bool(snapshot.get("paused", false)):
+			command.emit("stop", {})  # Esc con el rover en marcha: se detiene en la casilla que está pisando
 		elif not pause_button.disabled:
 			_toggle_pause()
 		get_viewport().set_input_as_handled()

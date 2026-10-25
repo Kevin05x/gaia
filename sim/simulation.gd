@@ -106,9 +106,13 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 		"select":
 			return _seleccionar(str(carga.get("target_id", "")))
 		"move":
-			return _mover(carga.get("tile", Vector2i.ZERO))
+			var casilla: Vector2i = carga.get("tile", Vector2i.ZERO)
+			return _con_redireccion(func() -> Dictionary: return _mover(casilla))
 		"approach":
-			return _acercar(str(carga.get("target_id", _seleccion)))
+			var objetivo_id := str(carga.get("target_id", _seleccion))
+			return _con_redireccion(func() -> Dictionary: return _acercar(objetivo_id))
+		"stop":
+			return _detener()
 		"act":
 			return _actuar(str(carga.get("action", "")), str(carga.get("target_id", _seleccion)))
 		"transmit":
@@ -327,6 +331,43 @@ func _seleccionar(objetivo_id: String) -> Dictionary:
 			_seleccion = objetivo_id
 			return {"ok": true, "reason": ""}
 	return {"ok": false, "reason": "NO_TARGET"}
+
+
+## Detiene la marcha del rover (Esc). {"ok", "reason", "path": tramo que le queda por terminar, "seconds_per_tile"}.
+func _detener() -> Dictionary:
+	if not estado.en_movimiento or estado.movimiento_en_curso.is_empty():
+		return {"ok": false, "reason": "NOT_MOVING"}
+	var segundos := float(estado.movimiento_en_curso["seconds_per_tile"])
+	var tramo := _movimiento.detener(estado)
+	return {"ok": true, "reason": "", "path": tramo, "seconds_per_tile": segundos}
+
+
+## Con el rover en marcha, una orden de ir a otro sitio reemplaza a la anterior: el rover termina el tramo que está
+## recorriendo y sale desde esa casilla. Si la orden nueva no se puede cumplir, la marcha anterior sigue igual.
+func _con_redireccion(iniciar: Callable) -> Dictionary:
+	if not estado.en_movimiento or estado.movimiento_en_curso.is_empty() or estado.fase != "operations" or estado.pausado:
+		return iniciar.call()
+	var copia := {"mov": estado.movimiento_en_curso.duplicate(true), "casilla": estado.casilla_rover, "wh": estado.bateria_wh}
+	var tramo := _movimiento.detener(estado)
+	var resultado: Dictionary = iniciar.call()
+	if not resultado["ok"]:
+		estado.movimiento_en_curso = copia["mov"]
+		estado.casilla_rover = copia["casilla"]
+		estado.bateria_wh = copia["wh"]
+		estado.en_movimiento = true
+		return resultado
+	resultado["redirected"] = true
+	if not tramo.is_empty() and not Array(resultado.get("path", [])).is_empty():
+		# La vista termina primero el tramo en curso y luego sigue el camino nuevo, sin cortar en diagonal.
+		var camino: Array = tramo.duplicate()
+		camino.append_array(resultado["path"])
+		resultado["path"] = camino
+	elif Array(resultado.get("path", [])).is_empty():
+		# El destino nuevo es la casilla donde se detiene: solo falta terminar el tramo en curso.
+		resultado["path"] = tramo
+		if not resultado.has("seconds_per_tile") or float(resultado["seconds_per_tile"]) <= 0.0:
+			resultado["seconds_per_tile"] = float(copia["mov"]["seconds_per_tile"])
+	return resultado
 
 
 func _mover(casilla: Vector2i) -> Dictionary:

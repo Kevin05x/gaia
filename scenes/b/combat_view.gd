@@ -257,6 +257,20 @@ func _plantilla(tipo: String) -> Node3D:
 	return _plantillas[tipo]
 
 
+func _exit_tree() -> void:
+	for tipo in _plantillas:
+		(_plantillas[tipo] as Node3D).free()  # las plantillas viven fuera del árbol: se liberan a mano
+	_plantillas.clear()
+
+
+## Un monstruo de cada tipo (fuera del árbol) para que ShaderWarmup compile sus materiales antes de la primera oleada.
+func muestras_para_precalentar() -> Array[Node3D]:
+	var lista: Array[Node3D] = []
+	for tipo in ["arana", "void_biter", "coloso"]:
+		lista.append(_plantilla(tipo).duplicate() as Node3D)
+	return lista
+
+
 func _brillo(padre: Node3D, pos: Vector3, radio: float, color: Color, nombre: String = "Eye") -> MeshInstance3D:
 	var ojo := MeshInstance3D.new()
 	ojo.name = nombre
