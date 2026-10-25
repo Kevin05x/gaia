@@ -176,6 +176,8 @@ func snapshot() -> Dictionary:
 	datos["targets"] = _objetivos_para_la_vista()
 	datos["warnings"] = _avisos()
 	datos["available_actions"] = _acciones_disponibles()
+	datos["zones"] = _mapa.zonas_para_la_vista()
+	datos["rover_zone"] = _mapa.zona_de(estado.casilla_rover)
 	if estado.fase == "workshop":
 		datos["workshop"] = _taller()
 	if _economia != null:

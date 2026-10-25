@@ -33,6 +33,8 @@ var quality := true
 var landing_in_progress := false
 var selected_target := ""
 var map_signature := ""
+var _blocked_cache: Dictionary = {}
+var _blocked_cache_revision := ""
 var _hover_tile := Vector2i(999, 999)
 static var translations_registered := false
 
@@ -46,6 +48,7 @@ func _ready() -> void:
 	port = get_node("Port")
 	terrain = preload("res://scenes/b/terrain.gd").new()
 	terrain.name = "Terrain"
+	terrain.lazy = true  # el mundo se construye con el tamaño del mapa, una sola vez
 	add_child(terrain)
 	actors = preload("res://scenes/b/actors.gd").new()
 	actors.name = "Actors"
@@ -199,7 +202,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	state = s.duplicate(true)
 	var signature := str(s.get("map_revision", 0))
 	if map_signature != signature:
-		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}))
+		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}), s.get("zones", []))
 		map_signature = signature
 		tracks.clear()
 	var en_taller: bool = s.get("phase", "") == "workshop"
@@ -344,8 +347,8 @@ func _update_hover() -> void:
 		return
 	var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
 	var dentro: bool = terrain.in_bounds(tile)
-	var libre: bool = dentro and not tile in _blocked_tiles() or dentro and target_at_tile(tile) != ""
-	if dentro or Vector2(point.x, point.z).length() < 34.0:
+	var libre: bool = dentro and not _blocked_set().has(tile) or dentro and target_at_tile(tile) != ""
+	if dentro or Vector2(point.x, point.z).length() < 34.0 + terrain.extra_size():
 		terrain.show_cursor(tile, libre)
 	else:
 		terrain.hide_cursor()
@@ -445,9 +448,19 @@ func _blocked_tiles() -> Array[Vector2i]:
 	return lista
 
 
+## Lo mismo que _blocked_tiles() como diccionario (búsqueda directa), recalculado solo cuando cambia el mapa.
+func _blocked_set() -> Dictionary:
+	if _blocked_cache_revision != map_signature or _blocked_cache.is_empty():
+		_blocked_cache.clear()
+		for t in _blocked_tiles():
+			_blocked_cache[t] = true
+		_blocked_cache_revision = map_signature
+	return _blocked_cache
+
+
 ## Casilla libre más cercana a «tile» (y al rover si hay empate). Si «tile» ya está libre, la devuelve igual.
 func nearest_free_tile(tile: Vector2i) -> Vector2i:
-	var bloqueadas := _blocked_tiles()
+	var bloqueadas := _blocked_set()
 	var origen: Vector2i = state.get("rover_tile", Vector2i.ZERO)
 	# Casillas a las que el rover sí puede llegar (relleno en 4 direcciones, como la ruta del simulador).
 	var alcanzables := {origen: true}
@@ -458,7 +471,7 @@ func nearest_free_tile(tile: Vector2i) -> Vector2i:
 		i += 1
 		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var sig: Vector2i = actual + d
-			if alcanzables.has(sig) or not terrain.in_bounds(sig) or sig in bloqueadas:
+			if alcanzables.has(sig) or not terrain.in_bounds(sig) or bloqueadas.has(sig):
 				continue
 			alcanzables[sig] = true
 			cola.append(sig)

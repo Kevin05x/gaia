@@ -68,7 +68,7 @@ Incluye en `available_actions` todas las acciones y `approach`, `transmit`, `upg
 
 Tipos de objetivo: `rock`, `mineral`, `buried`. IDs únicos y estables. Cambia `map_revision` cuando cambien posiciones, tipos o conjunto de objetivos/obstáculos. Revelado y agotamiento se actualizan en snapshots sin reconstruir el mapa. `rover_tile` siempre es la última posición confirmada. Al cargar o teletransportar usa `teleport=true` en un solo snapshot para cancelar una ruta anterior.
 
-Coordenadas: X horizontal de cuadrícula, Y de Vector2i corresponde a Z del mundo; 1 casilla = 2 metros; límites visuales -11..11. El relieve de +/-18 cm es cosmético. A usa la misma cuadrícula y casillas bloqueadas. Si cambia el mapa/límite del producto, actualiza también minimapa y conversión visual.
+Coordenadas: X horizontal de cuadrícula, Y de Vector2i corresponde a Z del mundo; 1 casilla = 2 metros; límites del mapa actual -35..35 (71×71 casillas; ver `MAPA_GRANDE.md`). El relieve de +/-18 cm es cosmético. A usa la misma cuadrícula y casillas bloqueadas. Si cambia el mapa/límite del producto, actualiza también minimapa y conversión visual.
 
 `chapter_title_key` y `brief_key` opcionales seleccionan textos de capítulos; A registra sus traducciones. No hay historia obligatoria incrustada en las reglas de la vista.
 
@@ -146,7 +146,9 @@ Cambio de cámara fuera del contrato: la vista actual usa cámara ortográfica (
  "is_night": false,                 # hora fuera de [amanecer, atardecer) de balance.json
  "dust": 0.12,                      # 0..1; incluye la tormenta. A lo sube y baja de forma continua
  "link_next": {"opens": true, "hour": 17.0, "sol": 1},   # próximo cambio del enlace; opens=false: próximo cierre
- "bounds": {"min": Vector2i(-11, -11), "max": Vector2i(11, 11)},   # últimas casillas válidas
+ "bounds": {"min": Vector2i(-35, -35), "max": Vector2i(35, 35)},   # últimas casillas válidas (mapa grande)
+ "zones": [{"id": "orilla", "center": Vector2i(-12, -12)}],   # zonas del mapa (el centro más cercano manda)
+ "rover_zone": "orilla",   # zona donde está el rover
  "warnings": [
    {"id": "LOW_BATTERY", "severity": "warning", "key": "WARN_LOW_BATTERY", "values": [18]}
  ],

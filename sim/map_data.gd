@@ -14,7 +14,9 @@ var estacion: Vector2i = Vector2i.ZERO
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
 var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
+var zonas: Array[Dictionary] = []  ## {"id", "centro"}: cada casilla pertenece a la zona de centro más cercano
 var errores: PackedStringArray = PackedStringArray()
+var _fijas: Dictionary = {}  ## casilla -> true: estación, obstáculos y objetivos (búsqueda rápida para las rutas)
 
 
 static func desde_archivo(archivo: String) -> MapData:
@@ -38,12 +40,27 @@ func dentro_de_limites(casilla: Vector2i) -> bool:
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
 func bloqueada(casilla: Vector2i) -> bool:
-	if not dentro_de_limites(casilla) or casilla == estacion or obstaculos.has(casilla) or bloqueos_extra.has(casilla):
-		return true
-	for objetivo in objetivos:
-		if objetivo["tile"] == casilla:
-			return true
-	return false
+	return not dentro_de_limites(casilla) or _fijas.has(casilla) or bloqueos_extra.has(casilla)
+
+
+## Id de la zona de la casilla (la de centro más cercano); "" si el mapa no tiene zonas.
+func zona_de(casilla: Vector2i) -> String:
+	var mejor := ""
+	var mejor_d := INF
+	for zona in zonas:
+		var d := Vector2(casilla - Vector2i(zona["centro"])).length_squared()
+		if d < mejor_d:
+			mejor_d = d
+			mejor = str(zona["id"])
+	return mejor
+
+
+## Zonas para la vista: [{"id", "center"}].
+func zonas_para_la_vista() -> Array[Dictionary]:
+	var lista: Array[Dictionary] = []
+	for zona in zonas:
+		lista.append({"id": zona["id"], "center": zona["centro"]})
+	return lista
 
 
 ## Ruta más corta (4 direcciones) sin incluir la casilla de salida. Vacía si no hay ruta,
@@ -123,10 +140,45 @@ func _cargar(texto: String) -> void:
 		_leer_objetivos(datos["objetivos"])
 	else:
 		errores.append("INVALID_FIELD:objetivos")
+	if datos.has("zonas"):
+		_leer_zonas(datos["zonas"])
 	if errores.is_empty():
 		_comprobar_ocupacion()
 	if errores.is_empty():
+		_reconstruir_fijas()
 		_comprobar_alcanzables()
+
+
+func _reconstruir_fijas() -> void:
+	_fijas.clear()
+	_fijas[estacion] = true
+	for casilla in obstaculos:
+		_fijas[casilla] = true
+	for objetivo in objetivos:
+		_fijas[objetivo["tile"]] = true
+
+
+func _leer_zonas(valor: Variant) -> void:
+	if not (valor is Array):
+		errores.append("INVALID_FIELD:zonas")
+		return
+	var vistas := {}
+	for entrada in valor:
+		if not (entrada is Dictionary) or str(entrada.get("id", "")).is_empty():
+			errores.append("INVALID_FIELD:zonas")
+			continue
+		var id := str(entrada["id"])
+		if vistas.has(id):
+			errores.append("DUPLICATE_ZONE:%s" % id)
+			continue
+		vistas[id] = true
+		var centro: Variant = _leer_casilla(entrada.get("centro"), "zonas.%s" % id)
+		if centro == null:
+			continue
+		if not dentro_de_limites(centro):
+			errores.append("OUT_OF_BOUNDS:zonas.%s" % id)
+			continue
+		zonas.append({"id": id, "centro": centro})
 
 
 func _leer_limites(valor: Variant) -> bool:
@@ -203,16 +255,26 @@ func _comprobar_ocupacion() -> void:
 			ocupadas[casilla] = elemento[0]
 
 
-## Cada objetivo debe tener alguna casilla contigua a la que el rover pueda llegar desde el inicio.
+## Cada objetivo debe tener alguna casilla contigua a la que el rover pueda llegar desde el inicio (un solo relleno
+## desde la salida, no una ruta por objetivo: el mapa es grande).
 func _comprobar_alcanzables() -> void:
+	var llegadas := {inicio_rover: true}
+	var cola: Array[Vector2i] = [inicio_rover]
+	var indice := 0
+	while indice < cola.size():
+		var actual := cola[indice]
+		indice += 1
+		for desplazamiento in VECINOS:
+			var siguiente: Vector2i = actual + desplazamiento
+			if llegadas.has(siguiente) or bloqueada(siguiente):
+				continue
+			llegadas[siguiente] = true
+			cola.append(siguiente)
 	for objetivo in objetivos:
 		var alcanzable := false
 		var casilla_objetivo: Vector2i = objetivo["tile"]
 		for desplazamiento in VECINOS:
-			var vecino: Vector2i = casilla_objetivo + desplazamiento
-			if bloqueada(vecino):
-				continue
-			if vecino == inicio_rover or not ruta(inicio_rover, vecino).is_empty():
+			if llegadas.has(casilla_objetivo + desplazamiento):
 				alcanzable = true
 				break
 		if not alcanzable:

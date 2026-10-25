@@ -49,6 +49,25 @@ var _n := 0
 var _decor: Node3D
 var _grid_timer := 0.0
 
+## Tamaño del mundo. Con un mapa grande todo lo que rodea al área jugable se aleja «_s» metros (múltiplo de 8)
+## del mapa base de 23 m; las proporciones del diorama se conservan.
+var zones: Array = []  ## [{"id": String, "center": Vector2 en metros}]
+var lazy := false  ## true: el mundo se construye al recibir el mapa (configure), no al entrar en el árbol
+var _s := 0.0
+var _inner := INNER
+var _outer := OUTER
+var _lake := LAKE_CENTER
+var _play := PLAY_EDGE
+var _built := false
+var _firma := ""
+var _world: Node3D
+var _acc: Dictionary = {}  ## instancias por familia y trozo, antes de volcarlas en MultiMesh
+var _obstaculos_datos: Array = []
+const CHUNK := 128.0  ## lado (m) de los trozos de las rocas escasas (centrados en el origen): cada uno se culla por su cuenta
+const CHUNK_FINO := 48.0  ## ídem para lo muy numeroso (guijarros y fragmentos), que además se oculta a lo lejos
+const HASH := 4.0  ## lado (m) de la rejilla que acelera las pruebas de distancia al colocar rocas
+const ZONE_LOOK := {"orilla": [Color("DDC7A3"), 0.5], "falla": [Color("A9C4D3"), 0.62], "nucleo": [Color("5E4A45"), 0.7]}
+
 
 func _init() -> void:
 	_noise.seed = 20261023
@@ -66,19 +85,21 @@ func _init() -> void:
 	_hills.seed = 88
 	_hills.frequency = 0.017
 	_hills.fractal_octaves = 3
-	_n = int(2.0 * INNER / CELL) + 1
+	_calcular_alturas()
+
+
+func _calcular_alturas() -> void:
+	_n = int(2.0 * _inner / CELL) + 1
 	_heights.resize(_n * _n)
 	for j in range(_n):
 		for i in range(_n):
-			_heights[j * _n + i] = _raw_height(-INNER + i * CELL, -INNER + j * CELL)
+			_heights[j * _n + i] = _raw_height(-_inner + i * CELL, -_inner + j * CELL)
 
 
 func _ready() -> void:
-	_build_ground()
-	_build_outer()
-	_build_basin()
-	_build_lake()
-	_build_mountains()
+	_world = Node3D.new()
+	_world.name = "World"
+	add_child(_world)
 	_build_grid()
 	_build_cursor()
 	selection = Art.ring(self, 0.8, Vector3.ZERO, TARGET_LIGHT)
@@ -87,7 +108,73 @@ func _ready() -> void:
 	_decor = Node3D.new()
 	_decor.name = "Decor"
 	add_child(_decor)
-	_build_decor()
+	if not lazy:
+		_build_world()
+		_build_decor()
+
+
+func _build_world() -> void:
+	for hijo in _world.get_children():
+		_world.remove_child(hijo)
+		hijo.queue_free()
+	_build_ground()
+	_build_outer()
+	_build_basin()
+	_build_lake()
+	_build_mountains()
+	_built = true
+	_firma = "%d|%s" % [int(_s), var_to_str(zones)]
+
+
+## Ajusta el mundo al tamaño del mapa y a sus zonas; no hace nada si ya está construido así.
+func _ajustar_mundo() -> void:
+	var lado := maxi(maxi(absi(bounds_min.x), absi(bounds_min.y)), maxi(absi(bounds_max.x), absi(bounds_max.y)))
+	var nuevo := maxf(0.0, ceilf((float(lado) * TILE + 1.0 - PLAY_EDGE) / 8.0) * 8.0)
+	if _built and _firma == "%d|%s" % [int(nuevo), var_to_str(zones)]:
+		return
+	_s = nuevo
+	_inner = INNER + nuevo
+	_outer = OUTER + nuevo
+	_lake = LAKE_CENTER * (1.0 + nuevo / 48.0)
+	_play = PLAY_EDGE + nuevo
+	_calcular_alturas()
+	_build_world()
+
+
+func _leer_zonas(valor: Array) -> void:
+	zones = []
+	for z in valor:
+		var c: Vector2i = z.get("center", Vector2i.ZERO)
+		zones.append({"id": str(z.get("id", "")), "center": Vector2(c.x * TILE, c.y * TILE)})
+
+
+## Color de la zona en (x, z): RGB del tono y, en alfa, cuánto pesa. Las zonas se mezclan con suavidad (~20 m).
+func _zona_mezcla(x: float, z: float) -> Color:
+	var distancias: Array[float] = []
+	var mejor := INF
+	for zn in zones:
+		var d: float = Vector2(x, z).distance_to(zn["center"])
+		distancias.append(d)
+		mejor = minf(mejor, d)
+	var total := 0.0
+	var rgb := Vector3.ZERO
+	var fuerza := 0.0
+	for k in range(zones.size()):
+		var peso := exp(-(distancias[k] - mejor) / 9.0)
+		var look: Array = ZONE_LOOK.get(str(zones[k]["id"]), [Color("C79170"), 0.0])
+		var tono: Color = look[0]
+		rgb += Vector3(tono.r, tono.g, tono.b) * peso
+		fuerza += float(look[1]) * peso
+		total += peso
+	return Color(rgb.x / total, rgb.y / total, rgb.z / total, fuerza / total)
+
+
+func _tinte_roca(color: Color, p: Vector2) -> Color:
+	if zones.is_empty():
+		return color
+	var m := _zona_mezcla(p.x, p.y)
+	var fade := 1.0 - smoothstep(0.0, 16.0, _square(p.x, p.y) - _s)
+	return color.lerp(Color(m.r, m.g, m.b), m.a * 0.5 * fade)
 
 
 # ---------------------------------------------------------------- relieve
@@ -101,9 +188,19 @@ func _round(x: float, z: float) -> float:
 	return pow(pow(absf(x), 4.0) + pow(absf(z), 4.0), 0.25) + _noise.get_noise_2d(z * 0.6, x * 0.6) * 3.0
 
 
-func _raw_height(x: float, z: float) -> float:
+## Distancias al borde del área jugable: x = cuadrada y y = redondeada (con ruido). En un mapa grande se descuenta el margen.
+func _edges(x: float, z: float) -> Vector2:
 	var c := _square(x, z)
-	var r := _round(x, z)
+	var base := pow(pow(absf(x), 4.0) + pow(absf(z), 4.0), 0.25)
+	if _s > 0.0:
+		base *= maxf(c - _s, 0.0) / maxf(c, 0.001)
+	return Vector2(c - _s, base + _noise.get_noise_2d(z * 0.6, x * 0.6) * 3.0)
+
+
+func _raw_height(x: float, z: float) -> float:
+	var e := _edges(x, z)
+	var c := e.x
+	var r := e.y
 	var h := _noise.get_noise_2d(x, z) * 0.2 + _dune.get_noise_2d(x, z) * 0.85 + _dune.get_noise_2d(x * 2.7 + 9.0, z * 2.7) * 0.18
 	# Franja de transición: el suelo sube con surcos secos y luego baja hacia la cuenca.
 	var borde := c + maxf(0.0, _noise.get_noise_2d(x * 0.3, z * 0.3)) * 2.0
@@ -118,10 +215,10 @@ func _raw_height(x: float, z: float) -> float:
 
 ## 0 dentro del pasillo hacia el lago (se mantiene bajo y despejado) y 1 fuera de él.
 func _corridor_mask(x: float, z: float) -> float:
-	var dir := LAKE_CENTER.normalized()
+	var dir := _lake.normalized()
 	var p := Vector2(x, z)
 	var along := p.dot(dir)
-	if along < 20.0:
+	if along < 20.0 + _s:
 		return 1.0
 	var lateral := absf(p.dot(Vector2(-dir.y, dir.x)))
 	var ancho := 8.0 + along * 0.15
@@ -130,11 +227,11 @@ func _corridor_mask(x: float, z: float) -> float:
 
 ## Colinas y crestas entre el área jugable y las montañas: dejan libre el pasillo del lago y el propio lago.
 func _outer_height(x: float, z: float) -> float:
-	var d := _square(x, z)
+	var d := _square(x, z) - _s
 	var subida := smoothstep(41.0, 60.0, d) * (1.0 - smoothstep(66.0, 80.0, d))
 	if subida <= 0.0:
 		return BASIN_Y
-	var local := (Vector2(x, z) - LAKE_CENTER).rotated(-LAKE_ROT)
+	var local := (Vector2(x, z) - _lake).rotated(-LAKE_ROT)
 	var en_lago := smoothstep(1.0, 1.9, pow(local.x / 54.0, 2.0) + pow(local.y / 25.0, 2.0))
 	var mascara := subida * en_lago * lerpf(0.16, 1.0, _corridor_mask(x, z))
 	if mascara <= 0.0:
@@ -169,12 +266,12 @@ func _outer_vertex(st: SurfaceTool, x: float, z: float) -> void:
 func _build_outer() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var pasos := int(2.0 * OUTER / OUTER_CELL)
+	var pasos := int(2.0 * _outer / OUTER_CELL)
 	for j in range(pasos):
 		for i in range(pasos):
-			var x := -OUTER + i * OUTER_CELL
-			var z := -OUTER + j * OUTER_CELL
-			if x >= -INNER and x + OUTER_CELL <= INNER and z >= -INNER and z + OUTER_CELL <= INNER:
+			var x := -_outer + i * OUTER_CELL
+			var z := -_outer + j * OUTER_CELL
+			if x >= -_inner and x + OUTER_CELL <= _inner and z >= -_inner and z + OUTER_CELL <= _inner:
 				continue
 			var c := OUTER_CELL
 			_outer_vertex(st, x, z)
@@ -188,15 +285,15 @@ func _build_outer() -> void:
 	colinas.mesh = st.commit()
 	colinas.material_override = W.ground_material()
 	colinas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(colinas)
+	_world.add_child(colinas)
 
 
 ## Altura exacta del suelo dibujado (interpolación en el mismo triángulo de la malla).
 func height_at(x: float, z: float) -> float:
-	if absf(x) >= INNER or absf(z) >= INNER:
+	if absf(x) >= _inner or absf(z) >= _inner:
 		return _outer_height(x, z)
-	var fx := (x + INNER) / CELL
-	var fz := (z + INNER) / CELL
+	var fx := (x + _inner) / CELL
+	var fz := (z + _inner) / CELL
 	var i := clampi(floori(fx), 0, _n - 2)
 	var j := clampi(floori(fz), 0, _n - 2)
 	var u := fx - i
@@ -211,7 +308,7 @@ func height_at(x: float, z: float) -> float:
 
 
 func _vertex(i: int, j: int) -> Vector3:
-	return Vector3(-INNER + i * CELL, _heights[j * _n + i], -INNER + j * CELL)
+	return Vector3(-_inner + i * CELL, _heights[j * _n + i], -_inner + j * CELL)
 
 
 func _ground_color(pos: Vector3, normal_y: float) -> Color:
@@ -224,8 +321,12 @@ func _ground_color(pos: Vector3, normal_y: float) -> Color:
 	# Vetas claras de arena en las crestas de las dunas.
 	var cresta := smoothstep(0.1, 0.55, _dune.get_noise_2d(pos.x + 40.0, pos.z - 17.0))
 	color = color.lerp(Color("D19A72"), cresta * 0.35)
-	var hacia_cuenca := smoothstep(27.0, 38.0, maxf(_square(pos.x, pos.z), _round(pos.x, pos.z)))
+	var e := _edges(pos.x, pos.z)
+	var hacia_cuenca := smoothstep(27.0, 38.0, maxf(e.x, e.y))
 	color = color.lerp(BASIN, hacia_cuenca)
+	if not zones.is_empty():
+		var zona := _zona_mezcla(pos.x, pos.z)
+		color = color.lerp(Color(zona.r, zona.g, zona.b), zona.a * (1.0 - smoothstep(0.0, 16.0, e.x)))
 	color = color.lerp(SHADOW_ROCK, clampf((0.97 - normal_y) * 3.0, 0.0, 0.5))
 	var grano := 1.0 + _fine.get_noise_2d(pos.x, pos.z) * 0.08
 	return Color(color.r * grano, color.g * grano, color.b * grano)
@@ -250,25 +351,70 @@ func _emit_vertex(st: SurfaceTool, i: int, j: int) -> void:
 	st.add_vertex(v)
 
 
-## Suelo continuo de normales suaves (dunas) con color por vértice; las facetas quedan para rocas y montañas.
+## Suelo continuo de normales suaves (dunas) con color por vértice, indexado y partido en trozos de 22 celdas:
+## cada trozo se descarta solo si queda fuera de la cámara. Las facetas quedan para rocas y montañas.
 func _build_ground() -> void:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for j in range(_n - 1):
-		for i in range(_n - 1):
-			# Vértices en sentido horario visto desde arriba (cara frontal de Godot).
-			_emit_vertex(st, i, j)
-			_emit_vertex(st, i + 1, j)
-			_emit_vertex(st, i, j + 1)
-			_emit_vertex(st, i + 1, j)
-			_emit_vertex(st, i + 1, j + 1)
-			_emit_vertex(st, i, j + 1)
-	var suelo := MeshInstance3D.new()
-	suelo.name = "Ground"
-	suelo.mesh = st.commit()
-	suelo.material_override = W.ground_material()
-	suelo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(suelo)
+	var n := _n
+	var posiciones := PackedVector3Array()
+	var normales := PackedVector3Array()
+	var colores := PackedColorArray()
+	posiciones.resize(n * n)
+	normales.resize(n * n)
+	colores.resize(n * n)
+	for j in range(n):
+		for i in range(n):
+			var v := _vertex(i, j)
+			var nrm := _smooth_normal(i, j)
+			posiciones[j * n + i] = v
+			normales[j * n + i] = nrm
+			colores[j * n + i] = _ground_color(v, nrm.y)
+	var paso := 22
+	for cj in range(0, n - 1, paso):
+		for ci in range(0, n - 1, paso):
+			var i1 := mini(ci + paso, n - 1)
+			var j1 := mini(cj + paso, n - 1)
+			var w := i1 - ci + 1
+			var h := j1 - cj + 1
+			var pv := PackedVector3Array()
+			var pn := PackedVector3Array()
+			var pc := PackedColorArray()
+			var uv := PackedVector2Array()
+			var idx := PackedInt32Array()
+			pv.resize(w * h)
+			pn.resize(w * h)
+			pc.resize(w * h)
+			uv.resize(w * h)
+			for j in range(h):
+				for i in range(w):
+					var k := (cj + j) * n + ci + i
+					pv[j * w + i] = posiciones[k]
+					pn[j * w + i] = normales[k]
+					pc[j * w + i] = colores[k]
+					uv[j * w + i] = Vector2(posiciones[k].x, posiciones[k].z) / 5.0
+			for j in range(h - 1):
+				for i in range(w - 1):
+					var a0 := j * w + i
+					var a1 := a0 + 1
+					var a2 := a0 + w
+					var a3 := a2 + 1
+					# Sentido horario visto desde arriba (cara frontal de Godot).
+					for q in [a0, a1, a2, a1, a3, a2]:
+						idx.push_back(q)
+			var arrays := []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = pv
+			arrays[Mesh.ARRAY_NORMAL] = pn
+			arrays[Mesh.ARRAY_COLOR] = pc
+			arrays[Mesh.ARRAY_TEX_UV] = uv
+			arrays[Mesh.ARRAY_INDEX] = idx
+			var malla := ArrayMesh.new()
+			malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			var suelo := MeshInstance3D.new()
+			suelo.name = "Ground_%d_%d" % [ci / paso, cj / paso]
+			suelo.mesh = malla
+			suelo.material_override = W.ground_material()
+			suelo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_world.add_child(suelo)
 
 
 ## Lecho del antiguo lago: plano facetado pálido que continúa la malla detallada hasta las lomas.
@@ -284,7 +430,7 @@ func _build_basin() -> void:
 	while x < lado:
 		var z := -lado
 		while z < lado:
-			if not (x >= -INNER and x + paso <= INNER and z >= -INNER and z + paso <= INNER):
+			if not (x >= -_inner and x + paso <= _inner and z >= -_inner and z + paso <= _inner):
 				var a := Vector3(x, y, z)
 				var b := Vector3(x + paso, y, z)
 				var c := Vector3(x, y, z + paso)
@@ -303,7 +449,7 @@ func _build_basin() -> void:
 	cuenca.mesh = st.commit()
 	cuenca.material_override = W.vertex_material()
 	cuenca.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(cuenca)
+	_world.add_child(cuenca)
 
 
 ## Antiguo lago: lecho pálido y liso en la cuenca, delante de la vista inicial (contorno irregular, un solo plano).
@@ -320,7 +466,7 @@ func _build_lake() -> void:
 			var rx := 44.0 * (1.0 + _noise.get_noise_2d(cos(ang) * 4.0, sin(ang) * 4.0) * 0.35)
 			var rz := 19.0 * (1.0 + _noise.get_noise_2d(cos(ang) * 4.0 + 7.0, sin(ang) * 4.0) * 0.4)
 			var local := Vector2(cos(ang) * rx * t, sin(ang) * rz * t).rotated(LAKE_ROT)
-			var pos := Vector3(LAKE_CENTER.x + local.x, y, LAKE_CENTER.y + local.y)
+			var pos := Vector3(_lake.x + local.x, y, _lake.y + local.y)
 			fila.append({"p": pos, "c": _lake_color(pos, t)})
 		rejilla.append(fila)
 	var st := SurfaceTool.new()
@@ -341,7 +487,7 @@ func _build_lake() -> void:
 	lago.mesh = st.commit()
 	lago.material_override = W.water_material()
 	lago.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(lago)
+	_world.add_child(lago)
 
 
 ## Color del lago: agua clara con reflejos, orilla húmeda más oscura y bancos de arena en el interior.
@@ -360,18 +506,18 @@ func _lake_color(pos: Vector3, t: float) -> Color:
 
 ## Pasillo entre el origen y el lago (la vista inicial mira hacia allí): sin bloques ni mesetas que lo tapen.
 func _in_view_corridor(p: Vector2) -> bool:
-	var destino := LAKE_CENTER
+	var destino := _lake
 	var largo := destino.length()
 	var dir := destino / largo
 	var along := p.dot(dir)
-	if along < 20.0 or along > largo + 10.0:
+	if along < 20.0 + _s or along > largo + 10.0:
 		return false
 	var lateral := absf(p.dot(Vector2(-dir.y, dir.x)))
 	return lateral < 9.0 + along * 0.22
 
 
 func _in_lake(p: Vector2) -> bool:
-	var local := (p - LAKE_CENTER).rotated(-LAKE_ROT)
+	var local := (p - _lake).rotated(-LAKE_ROT)
 	return pow(local.x / 54.0, 2.0) + pow(local.y / 25.0, 2.0) < 1.0
 
 
@@ -381,6 +527,9 @@ func _build_mountains() -> void:
 	ruido.seed = 314
 	ruido.frequency = 1.0
 	var radios := [76.0, 84.0, 92.0, 100.0, 108.0, 116.0, 126.0, 136.0, 146.0, 156.0, 166.0]
+	var o := _s * 1.4  # las lomas se alejan más que el borde: las esquinas del mapa están a 1,41 veces
+	for q in range(radios.size()):
+		radios[q] += o
 	var segmentos := 160
 	var puntos: Array = []
 	for k in range(radios.size()):
@@ -390,11 +539,11 @@ func _build_mountains() -> void:
 			var r: float = radios[k] + ruido.get_noise_2d(cos(ang) * 3.0, sin(ang) * 3.0 + k) * 5.0
 			var n1 := (ruido.get_noise_2d(cos(ang) * 2.2, sin(ang) * 2.2) + 1.0) * 0.5
 			var n2 := (ruido.get_noise_2d(cos(ang) * 1.4 + 40.0, sin(ang) * 1.4) + 1.0) * 0.5
-			var h := BASIN_Y + (2.5 + 6.0 * n1) * _bump(r, 102.0, 24.0) + (9.0 + 15.0 * n2) * _bump(r, 158.0, 32.0)
-			h += ruido.get_noise_2d(cos(ang) * 9.0, sin(ang) * 9.0 + k * 0.5) * 1.6 * smoothstep(80.0, 100.0, r)
+			var h := BASIN_Y + (2.5 + 6.0 * n1) * _bump(r - o, 102.0, 24.0) + (9.0 + 15.0 * n2) * _bump(r - o, 158.0, 32.0)
+			h += ruido.get_noise_2d(cos(ang) * 9.0, sin(ang) * 9.0 + k * 0.5) * 1.6 * smoothstep(80.0, 100.0, r - o)
 			var cresta := 1.0 - absf(ruido.get_noise_2d(cos(ang) * 6.0 + 20.0, sin(ang) * 6.0 + k * 0.35))
-			h += cresta * cresta * 4.5 * smoothstep(100.0, 150.0, r) * _bump(r, 158.0, 34.0)
-			h += ruido.get_noise_2d(cos(ang) * 17.0, sin(ang) * 17.0 + k) * 1.1 * smoothstep(90.0, 130.0, r)
+			h += cresta * cresta * 4.5 * smoothstep(100.0, 150.0, r - o) * _bump(r - o, 158.0, 34.0)
+			h += ruido.get_noise_2d(cos(ang) * 17.0, sin(ang) * 17.0 + k) * 1.1 * smoothstep(90.0, 130.0, r - o)
 			anillo.append(Vector3(cos(ang) * r, h, sin(ang) * r))
 		puntos.append(anillo)
 	var rng := RandomNumberGenerator.new()
@@ -432,7 +581,7 @@ func _build_mountains() -> void:
 	lomas.mesh = st.commit()
 	lomas.material_override = W.vertex_material(false)
 	lomas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(lomas)
+	_world.add_child(lomas)
 
 
 func _bump(r: float, centro: float, ancho: float) -> float:
@@ -528,6 +677,11 @@ func hide_cursor() -> void:
 		cursor.visible = false
 
 
+## Metros que el mundo se ha ensanchado respecto del mapa base (0 en el mapa chico).
+func extra_size() -> float:
+	return _s
+
+
 func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= bounds_min.x and tile.y >= bounds_min.y and tile.x <= bounds_max.x and tile.y <= bounds_max.y
 
@@ -555,35 +709,39 @@ func _process(delta: float) -> void:
 ## los bloques grandes quedan en la franja de transición y la cuenca.
 func _build_decor() -> void:
 	for hijo in _decor.get_children():
+		_decor.remove_child(hijo)
 		hijo.queue_free()
+	_acc.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20261023
-	var reservado: Array[Vector2] = []
-	for id in targets:
-		reservado.append(Vector2(targets[id].position.x, targets[id].position.z))
-	for t in obstacles:
-		reservado.append(Vector2(t.x * TILE, t.y * TILE))
-	reservado.append(Vector2.ZERO)
+	var reservado: Dictionary = {}  # rejilla con lo que no se debe tapar: objetivos, obstáculos y el origen
+	_hash_poner(reservado, Vector2.ZERO)
 	var contactos: Array = []  # [posición, radio, opacidad] de las sombras de contacto
 	var halos: Array[Vector3] = []  # rocas grandes alrededor de las que se reparten guijarros (x, radio, z)
-	for t in obstacles:
-		contactos.append([Vector3(t.x * TILE, height_at(t.x * TILE, t.y * TILE) + 0.07, t.y * TILE), 1.3, 0.6])
-		halos.append(Vector3(t.x * TILE, 1.0, t.y * TILE))
 	for id in targets:
 		var tp: Vector3 = targets[id].position
+		_hash_poner(reservado, Vector2(tp.x, tp.z))
 		contactos.append([Vector3(tp.x, height_at(tp.x, tp.z) + 0.07, tp.z), 1.25, 0.6])
 		halos.append(Vector3(tp.x, 0.9, tp.z))
+	for t in obstacles:
+		_hash_poner(reservado, Vector2(t.x * TILE, t.y * TILE))
+		contactos.append([Vector3(t.x * TILE, height_at(t.x * TILE, t.y * TILE) + 0.07, t.y * TILE), 1.3, 0.6])
+		halos.append(Vector3(t.x * TILE, 1.0, t.y * TILE))
+	for o in _obstaculos_datos:
+		_add_inst("obst_%s%d" % [o["familia"], o["variante"]], W.rock_mesh(o["familia"], o["variante"]), o["pos"], o["base"], o["color"], {"sombra": true})
 	# zona: "inner" = dentro del área jugable (solo piezas pequeñas que no parecen objetivos ni obstáculos);
 	# "ring" = franja de transición y cuenca (bloques y mesetas grandes).
+	var fa := pow((_play + 14.0) / (PLAY_EDGE + 14.0), 2.0) * (0.7 if _s > 0.0 else 1.0)  # el área jugable crece con el cuadrado
+	var fr := (_play + 30.0) / (PLAY_EDGE + 30.0)  # la franja exterior crece con el perímetro
 	var familias := [
-		{"id": "pebble", "mesh": "pebble", "count": 360, "min": 0.05, "max": 0.2, "zone": "inner", "clear": 1.2},
-		{"id": "fragment", "mesh": "fragment", "count": 200, "min": 0.16, "max": 0.5, "zone": "inner", "clear": 1.9},
-		{"id": "block", "mesh": "block", "count": 70, "min": 0.6, "max": 1.7, "zone": "ring", "clear": 2.0},
-		{"id": "boulder", "mesh": "boulder", "count": 70, "min": 0.8, "max": 2.2, "zone": "ring", "clear": 2.0},
-		{"id": "outcrop", "mesh": "outcrop", "count": 30, "min": 0.9, "max": 2.6, "zone": "ring", "clear": 2.0},
-		{"id": "mesa0", "mesh": "mesa0", "count": 20, "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0},
-		{"id": "mesa1", "mesh": "mesa1", "count": 20, "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0},
-		{"id": "mesa_big", "mesh": "mesa0", "count": 12, "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0},
+		{"id": "pebble", "mesh": "pebble", "count": int(360 * fa), "min": 0.05, "max": 0.2, "zone": "inner", "clear": 1.2, "vis": 110.0, "variants": 1, "trozo": CHUNK_FINO},
+		{"id": "fragment", "mesh": "fragment", "count": int(200 * fa), "min": 0.16, "max": 0.5, "zone": "inner", "clear": 1.9, "vis": 110.0, "variants": 2, "trozo": CHUNK_FINO},
+		{"id": "block", "mesh": "block", "count": int(70 * fr), "min": 0.6, "max": 1.7, "zone": "ring", "clear": 2.0, "vis": 0.0, "variants": 2},
+		{"id": "boulder", "mesh": "boulder", "count": int(70 * fr), "min": 0.8, "max": 2.2, "zone": "ring", "clear": 2.0, "vis": 0.0, "variants": 2},
+		{"id": "outcrop", "mesh": "outcrop", "count": int(30 * fr), "min": 0.9, "max": 2.6, "zone": "ring", "clear": 2.0, "vis": 0.0, "variants": 2},
+		{"id": "mesa0", "mesh": "mesa0", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
+		{"id": "mesa1", "mesh": "mesa1", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
+		{"id": "mesa_big", "mesh": "mesa0", "count": int(12 * fr), "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0, "vis": 0.0, "variants": 1},
 	]
 	var paleta := [Color("B98160"), Color("A56E52"), Color("B07A5C"), Color("C69770"), Color("96654C")]
 	# Cada familia pequeña usa 3 variantes de forma para que no se repita el mismo canto.
@@ -593,36 +751,32 @@ func _build_decor() -> void:
 			d["variant"] = 0
 			expandidas.append(d)
 		else:
-			for v in range(3):
+			var nv: int = d["variants"]
+			for v in range(nv):
 				var copia: Dictionary = d.duplicate()
 				copia["variant"] = v
 				copia["id"] = "%s_%d" % [d["id"], v]
-				copia["count"] = int(ceil(float(d["count"]) / 3.0))
+				copia["count"] = int(ceil(float(d["count"]) / nv))
 				expandidas.append(copia)
 	familias = expandidas
 	var paleta_mesa := [Color("C58C66"), Color("B67E5C"), Color("CE9A72"), Color("AE7154")]
 	for datos in familias:
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = true
 		var malla_id: String = datos["mesh"]
-		if malla_id.begins_with("mesa"):
-			mm.mesh = W.mesa_mesh(int(malla_id.substr(4)))
-		else:
-			mm.mesh = W.rock_mesh(malla_id, int(datos["variant"]))
-		var transformadas: Array[Transform3D] = []
-		var colores: Array[Color] = []
-		var colocados: Array[Vector3] = []
+		var malla: Mesh = W.mesa_mesh(int(malla_id.substr(4))) if malla_id.begins_with("mesa") else W.rock_mesh(malla_id, int(datos["variant"]))
+		var colocados: Dictionary = {}
+		var cuantos := 0
 		var intentos := 0
 		var zona: String = datos["zone"]
-		while transformadas.size() < int(datos["count"]) and intentos < 6000:
+		var alcance := float(datos["max"]) * 0.6 + 1.0  # hasta dónde estorba una roca ya colocada de esta familia
+		var rango := (_play + 45.0) if zona == "inner" or zona == "ring" else (80.0 + _s)
+		var tope := 6000 + int(float(datos["count"]) * 12.0)
+		while cuantos < int(datos["count"]) and intentos < tope:
 			intentos += 1
-			var rango := 68.0 if zona == "inner" or zona == "ring" else 80.0
 			var p := Vector2(rng.randf_range(-rango, rango), rng.randf_range(-rango, rango))
-			var c := _square(p.x, p.y)
+			var c := _square(p.x, p.y) - _s
 			match zona:
 				"inner":
-					if c > 30.0 and rng.randf() < 0.55:
+					if c > 44.0 or (c > 30.0 and rng.randf() < 0.55):
 						continue
 				"ring":
 					if c < PLAY_EDGE + 1.5:
@@ -639,25 +793,16 @@ func _build_decor() -> void:
 				continue
 			if zona != "inner" and _in_view_corridor(p):
 				continue
-			var libre := true
-			for q in reservado:
-				if p.distance_to(q) < float(datos["clear"]):
-					libre = false
-					break
-			if not libre:
+			if _hash_cerca(reservado, p, float(datos["clear"])):
 				continue
-			for q in colocados:
-				if Vector2(p.x - q.x, p.y - q.z).length() < q.y * 0.6 + 1.0:
-					libre = false
-					break
-			if not libre:
+			if _hash_cerca(colocados, p, alcance, true):
 				continue
 			var escala := rng.randf_range(datos["min"], datos["max"])
 			var alto := escala * (rng.randf_range(0.55, 0.9) if zona == "mesa" or zona == "far" else rng.randf_range(0.75, 1.15))
 			var base := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(escala * rng.randf_range(0.85, 1.2), alto, escala * rng.randf_range(0.8, 1.1)))
 			var y := height_at(p.x, p.y) - escala * 0.1
-			transformadas.append(Transform3D(base, Vector3(p.x, y, p.y)))
-			colocados.append(Vector3(p.x, escala, p.y))
+			_hash_poner(colocados, p, escala)
+			cuantos += 1
 			if escala >= 0.45:
 				contactos.append([Vector3(p.x, y + escala * 0.1 + 0.07, p.y), escala * (1.15 if zona != "inner" else 1.3), 0.55])
 				if zona != "far" and escala >= 0.8 and escala < 3.0:
@@ -666,83 +811,116 @@ func _build_decor() -> void:
 			if c > 38.0:
 				tono = tono.lerp(BASIN, 0.3)
 			tono = tono.lerp(CLAY, 0.3)
-			colores.append(tono * rng.randf_range(1.0, 1.2))
+			tono = _tinte_roca(tono, p)
+			var grande := float(datos["max"]) >= 0.8 and zona != "mesa" and zona != "far"
+			_add_inst(str(datos["id"]), malla, Vector3(p.x, y, p.y), base, tono * rng.randf_range(1.0, 1.2),
+				{"sombra": grande, "vis": float(datos["vis"]), "trozo": float(datos.get("trozo", CHUNK))})
+	_build_cliffs(rng, reservado)
+	_build_halos(rng, halos)
+	_volcar_instancias()
+	# Sombras de contacto: una llamada de dibujo por trozo.
+	var por_trozo: Dictionary = {}
+	for contacto in contactos:
+		var q: Vector3 = contacto[0]
+		por_trozo.get_or_add(Vector2i(floori((q.x + CHUNK_FINO / 2.0) / CHUNK_FINO), floori((q.z + CHUNK_FINO / 2.0) / CHUNK_FINO)), []).append(contacto)
+	for trozo in por_trozo:
+		W.ao_blobs(_decor, por_trozo[trozo])
+
+
+## Anota una instancia en el grupo de su familia y su trozo; _volcar_instancias() crea después un MultiMesh por grupo.
+func _add_inst(familia: String, malla: Mesh, pos: Vector3, base: Basis, color: Color, opciones: Dictionary) -> void:
+	var lado := float(opciones.get("trozo", CHUNK))
+	var clave := "%s_%d_%d" % [familia, floori((pos.x + lado / 2.0) / lado), floori((pos.z + lado / 2.0) / lado)]
+	if not _acc.has(clave):
+		_acc[clave] = {"mesh": malla, "t": [], "c": [], "opciones": opciones}
+	_acc[clave]["t"].append(Transform3D(base, pos))
+	_acc[clave]["c"].append(color)
+
+
+func _volcar_instancias() -> void:
+	for clave in _acc:
+		var g: Dictionary = _acc[clave]
+		var transformadas: Array = g["t"]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = g["mesh"]
 		mm.instance_count = transformadas.size()
 		for k in range(transformadas.size()):
 			mm.set_instance_transform(k, transformadas[k])
-			var col := colores[k]
+			var col: Color = g["c"][k]
 			col.a = 1.0
 			mm.set_instance_color(k, col)
+		var opciones: Dictionary = g["opciones"]
 		var inst := MultiMeshInstance3D.new()
-		inst.name = "Decor_" + str(datos["id"])
+		inst.name = "Decor_" + str(clave)
 		inst.multimesh = mm
 		inst.material_override = W.rock_material()
-		var grande := float(datos["max"]) >= 0.8 and zona != "mesa" and zona != "far"
-		inst.set_meta("proyecta_sombra", grande)
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if grande and W.quality else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var proyecta := bool(opciones.get("sombra", false))
+		inst.set_meta("proyecta_sombra", proyecta)
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if proyecta and W.quality else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var lejos := float(opciones.get("vis", 0.0))
+		if lejos > 0.0:
+			inst.visibility_range_end = lejos
+			inst.visibility_range_end_margin = 8.0
 		_decor.add_child(inst)
-	_build_cliffs(rng, reservado)
-	_build_halos(rng, halos)
-	if not contactos.is_empty():
-		W.ao_blobs(_decor, contactos)
+	_acc.clear()
+
+
+func _celda(p: Vector2) -> Vector2i:
+	return Vector2i(floori(p.x / HASH), floori(p.y / HASH))
+
+
+## Guarda el punto en la rejilla; «tam» es el tamaño de la roca (para el espaciado de las de su misma familia).
+func _hash_poner(h: Dictionary, p: Vector2, tam: float = 0.0) -> void:
+	h.get_or_add(_celda(p), []).append(Vector3(p.x, tam, p.y))
+
+
+## ¿Hay algo a menos de «radio» de p? Con «por_tamano» cada vecino estorba hasta tam * 0.6 + 1.
+func _hash_cerca(h: Dictionary, p: Vector2, radio: float, por_tamano: bool = false) -> bool:
+	var c := _celda(p)
+	var alcance := int(ceil(radio / HASH))
+	for dx in range(-alcance, alcance + 1):
+		for dz in range(-alcance, alcance + 1):
+			var lista: Variant = h.get(Vector2i(c.x + dx, c.y + dz))
+			if lista == null:
+				continue
+			for q in lista:
+				var d := Vector2(p.x - q.x, p.y - q.z).length()
+				if d < ((q.y * 0.6 + 1.0) if por_tamano else radio):
+					return true
+	return false
 
 
 ## Guijarros caídos alrededor de las rocas grandes (uno de los rasgos más visibles del mockup).
 func _build_halos(rng: RandomNumberGenerator, halos: Array[Vector3]) -> void:
 	var paleta := [Color("B07A5A"), Color("9C6648"), Color("BF8B66"), Color("8E5D44")]
-	for variante in range(3):
-		var transformadas: Array[Transform3D] = []
-		var colores: Array[Color] = []
-		for h in halos:
-			if rng.randi() % 3 != variante:
-				continue
-			for k in range(rng.randi_range(2, 4)):
-				var ang := rng.randf() * TAU
-				var radio: float = h.y * rng.randf_range(0.9, 1.7) + 0.2
-				var x: float = h.x + cos(ang) * radio
-				var z: float = h.z + sin(ang) * radio
-				var e := rng.randf_range(0.05, 0.17) * clampf(h.y, 0.8, 1.6)
-				var base := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(e * 1.1, e * rng.randf_range(0.6, 1.0), e))
-				transformadas.append(Transform3D(base, Vector3(x, height_at(x, z) - e * 0.15, z)))
-				colores.append(paleta[rng.randi() % 4] * rng.randf_range(0.8, 0.98))
-		if transformadas.is_empty():
-			continue
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = true
-		mm.mesh = W.rock_mesh("pebble", variante)
-		mm.instance_count = transformadas.size()
-		for k in range(transformadas.size()):
-			mm.set_instance_transform(k, transformadas[k])
-			var col := colores[k]
-			col.a = 1.0
-			mm.set_instance_color(k, col)
-		var inst := MultiMeshInstance3D.new()
-		inst.name = "Halo_%d" % variante
-		inst.multimesh = mm
-		inst.material_override = W.rock_material()
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_decor.add_child(inst)
+	for h in halos:
+		for k in range(rng.randi_range(2, 4)):
+			var ang := rng.randf() * TAU
+			var radio: float = h.y * rng.randf_range(0.9, 1.7) + 0.2
+			var x: float = h.x + cos(ang) * radio
+			var z: float = h.z + sin(ang) * radio
+			var e := rng.randf_range(0.05, 0.17) * clampf(h.y, 0.8, 1.6)
+			var base := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(e * 1.1, e * rng.randf_range(0.6, 1.0), e))
+			_add_inst("halo", W.rock_mesh("pebble", 0), Vector3(x, height_at(x, z) - e * 0.15, z), base,
+				_tinte_roca(paleta[rng.randi() % 4], Vector2(x, z)) * rng.randf_range(0.8, 0.98), {"vis": 110.0, "trozo": CHUNK_FINO})
 
 
 ## Farallones: grupos de lajas altas y estratificadas con bloques caídos alrededor, sobre las colinas y la franja exterior.
-func _build_cliffs(rng: RandomNumberGenerator, reservado: Array[Vector2]) -> void:
+func _build_cliffs(rng: RandomNumberGenerator, reservado: Dictionary) -> void:
 	var grupos := {}
 	var centros: Array[Vector2] = []
 	var paleta := [Color("B98563"), Color("A97656"), Color("C49169"), Color("9F6E52")]
 	var intentos := 0
-	while centros.size() < 16 and intentos < 800:
+	var cuantos := roundi(16.0 * (_play + 30.0) / (PLAY_EDGE + 30.0))
+	while centros.size() < cuantos and intentos < 4000:
 		intentos += 1
-		var ang := rng.randf() * TAU
-		var dist := rng.randf_range(34.0, 66.0)
-		var p := Vector2(cos(ang), sin(ang)) * dist
-		if _square(p.x, p.y) < PLAY_EDGE + 5.0 or _in_lake(p) or _in_view_corridor(p):
+		var p := Vector2(rng.randf_range(-_play - 66.0, _play + 66.0), rng.randf_range(-_play - 66.0, _play + 66.0))
+		var borde := _square(p.x, p.y) - _s
+		if borde < PLAY_EDGE + 5.0 or borde > 66.0 or _in_lake(p) or _in_view_corridor(p):
 			continue
-		var libre := true
-		for q in reservado:
-			if p.distance_to(q) < 5.0:
-				libre = false
-				break
+		var libre := not _hash_cerca(reservado, p, 5.0)
 		for q in centros:
 			if p.distance_to(q) < 15.0:
 				libre = false
@@ -805,33 +983,38 @@ func apply_quality() -> void:
 
 # ---------------------------------------------------------------- objetivos, obstáculos, selección y ruta
 
-func configure(defs: Array, blocked: Array, limites: Dictionary = {}) -> void:
+func configure(defs: Array, blocked: Array, limites: Dictionary = {}, zonas: Array = []) -> void:
 	_outline.clear()
 	_outlined = ""
 	for n in targets.values():
 		n.queue_free()
 	targets.clear()
-	for node in get_tree().get_nodes_in_group("b_obstacle"):
-		if node.get_parent() == self:
-			node.queue_free()
 	obstacles.clear()
+	_obstaculos_datos.clear()
 	if not limites.is_empty():
 		bounds_min = limites.get("min", bounds_min)
 		bounds_max = limites.get("max", bounds_max)
+	_leer_zonas(zonas)
+	if is_instance_valid(_world):
+		_ajustar_mundo()
+	if not limites.is_empty() and is_instance_valid(grid):
 		_rebuild_grid()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 404
+	# Los obstáculos se dibujan como instancias de MultiMesh por trozo (ver _build_decor), no como un nodo cada uno.
 	for value in blocked:
 		var tile: Vector2i = value
 		obstacles.append(tile)
 		var x := tile.x * TILE
 		var z := tile.y * TILE
 		var familia := "block" if rng.randf() < 0.6 else "outcrop"
-		var piedra := W.rock(self, familia, rng.randi() % 3, Vector3(x, height_at(x, z) - 0.1, z),
-			Vector3(rng.randf_range(0.85, 1.0), rng.randf_range(0.9, 1.25), rng.randf_range(0.8, 0.95)) * (0.9 if familia == "outcrop" else 1.0),
-			[Color("A9714F"), Color("9C6648"), Color("B47B58")][rng.randi() % 3])
-		piedra.rotation.y = rng.randf() * TAU
-		piedra.add_to_group("b_obstacle")
+		var variante := rng.randi() % 2
+		var escala := Vector3(rng.randf_range(0.85, 1.0), rng.randf_range(0.9, 1.25), rng.randf_range(0.8, 0.95)) * (0.9 if familia == "outcrop" else 1.0)
+		var color: Color = [Color("A9714F"), Color("9C6648"), Color("B47B58")][rng.randi() % 3]
+		var giro := rng.randf() * TAU
+		color = _tinte_roca(color, Vector2(x, z))
+		_obstaculos_datos.append({"familia": familia, "variante": variante, "color": color,
+			"pos": Vector3(x, height_at(x, z) - 0.1, z), "base": Basis(Vector3.UP, giro).scaled(escala)})
 	for d in defs:
 		var id := str(d.id)
 		var tile: Vector2i = d.tile

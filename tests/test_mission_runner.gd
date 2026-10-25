@@ -61,7 +61,7 @@ func test_empieza_en_el_aterrizaje_con_el_diseno_inicial() -> void:
 	assert_gt(snapshots.size(), 0, "publica un snapshot al empezar")
 	var datos := _ultimo()
 	assert_eq(datos["phase"], "landing")
-	assert_eq(datos["targets"].size(), 9)
+	assert_eq(datos["targets"].size(), 39)
 	assert_eq(datos["design"]["power"], "solar")
 	assert_has(datos["design"]["instruments"], "panorama")
 	assert_true(datos["design"]["companion"])
