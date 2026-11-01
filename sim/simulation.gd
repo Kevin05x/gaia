@@ -28,6 +28,8 @@ var _economia: Economy  ## null: misión sin base ni recursos (pruebas antiguas)
 var _datos_historia: StoryData  ## null: misión sin historia
 var _datos_combate: CombatData  ## null: misión sin monstruos (necesita también economía)
 var _datos_tutorial: TutorialData  ## null: sin tutorial
+var _datos_hitos: HitosData  ## null: sin hitos (la ciencia solo sale de los análisis)
+var _hitos: HitosSystem
 var _recursos: ResourceSystem
 var _edificios: BuildSystem
 var _historia: StorySystem
@@ -41,7 +43,7 @@ var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye e
 ## «economia», «historia» y «combate» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
 ## El combate (monstruos y torretas) necesita la economía, porque las torretas son edificios.
 func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, economia: Economy = null,
-		historia: StoryData = null, combate: CombatData = null, tutorial: TutorialData = null) -> void:
+		historia: StoryData = null, combate: CombatData = null, tutorial: TutorialData = null, hitos: HitosData = null) -> void:
 	_balance = balance
 	_reglas = reglas
 	_mapa = mapa
@@ -50,6 +52,7 @@ func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, ec
 	_datos_historia = historia
 	_datos_combate = combate
 	_datos_tutorial = tutorial
+	_datos_hitos = hitos
 	_diseno = MissionDesign.new(catalogo, reglas)
 	reiniciar()
 
@@ -66,6 +69,7 @@ func reiniciar() -> void:
 	_seleccion = ""
 	_potencia_nominal_w = 0.0
 	_mapa.bloqueos_extra.clear()
+	_mapa.liberadas.clear()
 	_construir_sistemas(0.0)
 	if _recursos != null:
 		_recursos.iniciar(estado)
@@ -107,12 +111,17 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			return _seleccionar(str(carga.get("target_id", "")))
 		"move":
 			var casilla: Vector2i = carga.get("tile", Vector2i.ZERO)
+			estado.descargar_al_llegar = false
 			return _con_redireccion(func() -> Dictionary: return _mover(casilla))
 		"approach":
 			var objetivo_id := str(carga.get("target_id", _seleccion))
+			estado.descargar_al_llegar = false
 			return _con_redireccion(func() -> Dictionary: return _acercar(objetivo_id))
 		"stop":
+			estado.descargar_al_llegar = false
 			return _detener()
+		"unload":
+			return _descargar_bodega()
 		"act":
 			return _actuar(str(carga.get("action", "")), str(carga.get("target_id", _seleccion)))
 		"transmit":
@@ -178,16 +187,23 @@ func avanzar(delta_s: float) -> Array[String]:
 	var habia_accion := not estado.accion_en_curso.is_empty()
 	var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
 	eventos.append_array(eventos_ciencia)
+	_liberar_agotados(eventos_ciencia)
 	if _combate != null:
 		_combate.reaccionar(estado, eventos_ciencia)
 	if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
 		eventos.append(EVENTO_ACCION_CANCELADA)
 	eventos.append_array(_movimiento.avanzar(estado, delta_s))
+	if estado.descargar_al_llegar and not estado.en_movimiento:
+		estado.descargar_al_llegar = false
+		eventos.append_array(_descargar_aqui())
 	eventos.append_array(_comunicaciones.avanzar(estado, delta_s))
 	if _edificios != null:
 		eventos.append_array(_edificios.avanzar(estado, delta_s, horas))
 	if _combate != null:
 		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
+	_anotar_progreso(eventos)
+	if _hitos != null:
+		eventos.append_array(_hitos.avanzar(estado))
 	if _tutorial != null:
 		eventos.append_array(_tutorial.avanzar(estado, delta_s, eventos))
 	informe = _resultado.evaluar(estado, eventos)
@@ -197,6 +213,72 @@ func avanzar(delta_s: float) -> Array[String]:
 	elif _historia != null:
 		eventos.append_array(_historia.comprobar(estado))
 	return eventos
+
+
+const EVENTO_DESCARGA := "CARGO_UNLOADED"  ## CARGO_UNLOADED:<unidades>
+
+
+## Casillas de los almacenes donde se descarga la bodega: la estación y los domos terminados.
+func almacenes() -> Array[Vector2i]:
+	var lista: Array[Vector2i] = [estado.casilla_estacion]
+	for edificio in estado.edificios:
+		if edificio["type"] == "domo" and int(edificio["level"]) >= 1:
+			lista.append(edificio["tile"])
+	return lista
+
+
+func junto_a_almacen() -> bool:
+	for c in almacenes():
+		var d: Vector2i = c - estado.casilla_rover
+		if maxi(absi(d.x), absi(d.y)) <= (2 if c == estado.casilla_estacion else 1):
+			return true
+	return false
+
+
+## Orden «unload»: si el rover está junto a un almacén descarga ya; si no, va al más cercano y descarga al llegar.
+func _descargar_bodega() -> Dictionary:
+	if _recursos == null or not _recursos.usa_bodega():
+		return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+	if _recursos.carga_total(estado) <= 0:
+		return {"ok": false, "reason": "CARGO_EMPTY"}
+	if junto_a_almacen():
+		var eventos := _descargar_aqui()
+		return {"ok": true, "reason": "", "path": [], "seconds_per_tile": 0.0, "events": eventos}
+	var resultado := _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, almacenes()))
+	if resultado["ok"]:
+		estado.descargar_al_llegar = true
+	return resultado
+
+
+func _descargar_aqui() -> Array[String]:
+	var eventos: Array[String] = []
+	if _recursos == null or not junto_a_almacen():
+		return eventos
+	var r: Array = _recursos.descargar(estado)
+	if int(r[0]) > 0:
+		eventos.append("%s:%d" % [EVENTO_DESCARGA, int(r[0])])
+	eventos.append_array(r[1])
+	return eventos
+
+
+## Contadores que usan los hitos: zonas por las que pasó el rover y oleadas superadas.
+func _anotar_progreso(eventos: Array[String]) -> void:
+	var zona := _mapa.zona_de(estado.casilla_rover)
+	if not zona.is_empty() and not estado.zonas_visitadas.has(zona):
+		estado.zonas_visitadas.append(zona)
+	for evento in eventos:
+		if evento.begins_with(CombatSystem.EVENTO_OLEADA_DERROTADA):
+			estado.oleadas_derrotadas += 1
+
+
+## Un objetivo agotado desaparece del mapa y libera su casilla (se puede pisar y construir encima).
+func _liberar_agotados(eventos_ciencia: Array[String]) -> void:
+	for evento in eventos_ciencia:
+		if evento.begins_with(ScienceSystem.EVENTO_OBJETIVO_AGOTADO + ":"):
+			var id := evento.get_slice(":", 1)
+			for objetivo in estado.objetivos:
+				if objetivo["id"] == id:
+					_mapa.liberar(objetivo["tile"])
 
 
 ## Snapshot completo para la vista: el del estado más objetivos con sus acciones, avisos y
@@ -213,6 +295,9 @@ func snapshot() -> Dictionary:
 	if _economia != null:
 		datos["resources"] = estado.recursos.duplicate()
 		datos["resource_capacity"] = _recursos.capacidad(estado)
+		if _recursos.usa_bodega():
+			datos["cargo"] = {"items": estado.carga.duplicate(), "total": _recursos.carga_total(estado),
+				"capacity": _recursos.capacidad_bodega(), "near_storage": junto_a_almacen(), "going": estado.descargar_al_llegar}
 		datos["buildings"] = _edificios.para_la_vista(estado)
 		datos["build_options"] = _edificios.opciones(estado)
 		datos["base"] = {"center": estado.casilla_estacion, "radius": _economia.zona_base_radio,
@@ -222,6 +307,8 @@ func snapshot() -> Dictionary:
 		datos["story"] = _historia.para_la_vista(estado)
 	if _tutorial != null:
 		datos["tutorial"] = _tutorial.para_la_vista(estado)
+	if _hitos != null:
+		datos["science_goals"] = _hitos.para_la_vista(estado)
 	if _combate != null:
 		datos["combat"] = _combate.para_la_vista(estado)
 		datos["nests"] = _mapa.nidos_para_la_vista()
@@ -279,6 +366,9 @@ func cargar(datos: Dictionary) -> bool:
 	_construir_sistemas(_potencia_nominal_w)
 	if _edificios != null:
 		_edificios.sincronizar_mapa(estado)
+	for objetivo in estado.objetivos:
+		if objetivo.get("depleted", false):
+			_mapa.liberar(objetivo["tile"])
 	_reloj.actualizar(estado)
 	return true
 
@@ -320,6 +410,7 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 			_resultado.requiere_nave_nivel = maxi(_economia.modulos_de(_datos_historia.nave).size(), 1)
 	if _datos_tutorial != null:
 		_tutorial = TutorialSystem.new(_datos_tutorial, _edificios)
+	_hitos = HitosSystem.new(_datos_hitos) if _datos_hitos != null else null
 
 
 func _seleccionar(objetivo_id: String) -> Dictionary:

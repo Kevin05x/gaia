@@ -23,3 +23,42 @@ La calidad no cambia: mismas sombras, mismos modelos, misma resolución y mismos
 ## Medir
 
 `F3` muestra el panel de rendimiento en el juego. En escritorio: `godot --headless -s` con los pasos `tparts`, `spike=N` y `tcmd=…` del script de capturas de desarrollo.
+
+# Ronda F: la web ya no se congela (31 oct 2026)
+
+Kevin reportó tres cosas en el navegador: el juego se congelaba al entrar o al crear partida («Esperar / Salir»), iba a 20–30 cuadros por segundo y el fondo del menú temblaba. Su equipo: gráficos Intel UHD con Chrome sobre ANGLE/Direct3D 11.
+
+## Fuentes consultadas
+
+- Godot, issue #72584: en la web los congelamientos al cargar vienen sobre todo de **compilar sombreadores**. ANGLE en Chrome es lento porque valida cada sombreador.
+- Foro de Godot (lag por compilación de partículas en Compatibility): mostrar los efectos un cuadro detrás de una pantalla opaca al cargar. Los ubershaders se desactivaron en la web.
+- Godot, *Optimizing 3D performance*: el agrupado automático de mallas solo existe en Forward+. En Compatibility (WebGL) cada malla visible es una llamada de dibujo, así que conviene reutilizar mallas y materiales y usar MultiMesh.
+- Guías de exportación web de Godot 4: la versión sin hilos corre todo en el hilo principal. Hay que tener poco trabajo en `_process` y no hacer trabajos largos de golpe.
+
+## Medición
+
+Exportación web real, Chromium sin pantalla y GPU por software, así que sirve para comparar, no como cifra absoluta. Escena de medición en `_medir.gd`, fuera del repo.
+
+| | antes | después |
+|---|---|---|
+| Cuadro más largo durante la carga | 8,7 s | 3,5 s |
+| `_ready` del juego (escritorio) | 2,26 s | 0,29 s |
+| Llamadas de dibujo en partida | 325 | 267–273 |
+| Cuadro medio al construir (GPU por software) | 529 ms | 342 ms |
+
+Sin dibujar, el trabajo de CPU por cuadro ya iba a 16,7 ms (el tope de 60 cuadros por segundo). El cuello de botella era la GPU y las compilaciones, no la lógica.
+
+## Cambios
+
+- **Carga por pasos** (`scenes/menu/loading.gd`): un recurso por cuadro, luego se monta el juego y la pantalla espera a que la vista avise `listo`.
+- **Terreno por pasos** (`terrain.gd`, `por_pasos`): suelo, colinas, cuenca y decorado se construyen en cuadros distintos y al final se emite `mundo_listo`.
+- **Precalentado gradual** (`shader_warmup.gd`): 4 muestras por cuadro, primero con sombras y luego sin ellas. Se descartan las muestras repetidas, que tienen los mismos materiales.
+- **Vista previa del editor sin cargar**: `mission.tscn` instanciaba y borraba la escena de vista previa de B en cada partida. Ahora es un *placeholder*.
+- **Menos llamadas de dibujo**: los modelos del equipo se funden en una malla con una superficie por material (un cristal pasa de 16 a 2 o 3). Los trozos del decorado menudo pasan de 48 m a 96 m.
+- **Resolución 3D automática** (`calidad_dinamica.gd`): si durante 2,5 s el juego va a menos de unos 42 cuadros por segundo, el mundo 3D se dibuja al 85 %, luego al 72 % y como mínimo al 60 %. La interfaz sigue nítida. Si el equipo va sobrado, vuelve a subir.
+- **Exportación**: fuera de la web van GUT, las pruebas, las herramientas y los documentos.
+- **Menú**: sin acercamiento lento del fondo (con pocos cuadros por segundo se veía temblar) y sin logotipo flotante. El logotipo entra con un fundido y un destello, y cada 9 s un brillo sutil lo cruza.
+
+# Ronda G (1 nov 2026)
+
+La medición y los cambios están en `RONDA_G.md`: paisaje lejano indexado, calidad automática que empieza con MSAA 2x, barrera en MultiMesh y la interfaz sin rehacerse en cada snapshot.

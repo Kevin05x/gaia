@@ -13,6 +13,7 @@ const RUTA_ECONOMIA := "res://content/economia.json"
 const RUTA_HISTORIA := "res://content/historia.json"
 const RUTA_COMBATE := "res://content/combate.json"
 const RUTA_TUTORIAL := "res://content/tutorial.json"
+const RUTA_HITOS := "res://content/hitos.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -101,6 +102,12 @@ func _process(delta: float) -> void:
 			_aviso("NOTICE_ANTENNA_HIT")
 		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
 			_aviso("NOTICE_METEORS")
+		elif evento == ResourceSystem.EVENTO_PRIMERA_CARGA:
+			_aviso("CARGO_FIRST")
+		elif evento.begins_with(Simulation.EVENTO_DESCARGA + ":"):
+			_aviso_descarga(int(evento.get_slice(":", 1)))
+		elif evento.begins_with(HitosSystem.EVENTO_HITO + ":") and view != null:
+			view.celebrar_hito(evento.get_slice(":", 1))
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
 		if crear_vista:
 			Sesion.borrar()  # misión terminada: ya no hay partida que continuar
@@ -141,10 +148,11 @@ func _crear_simulacion() -> void:
 	var historia := StoryData.desde_archivo(RUTA_HISTORIA)
 	var combate := CombatData.desde_archivo(RUTA_COMBATE)
 	var tutorial := TutorialData.desde_archivo(RUTA_TUTORIAL)
-	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores, tutorial.errores]:
+	var hitos := HitosData.desde_archivo(RUTA_HITOS)
+	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores, tutorial.errores, hitos.errores]:
 		errores.append_array(lista)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial)
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
 
 
 ## "agregar_piezas" es false al rediseñar: el taller conserva las piezas ya elegidas.
@@ -165,6 +173,13 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 		port.reject(resultado["reason"])
 		return
 	match orden:
+		"unload":
+			if not resultado["path"].is_empty():
+				port.present_path(resultado["path"], resultado["seconds_per_tile"])
+				_aviso("CARGO_GOING")
+			for evento in resultado.get("events", []):
+				if str(evento).begins_with(Simulation.EVENTO_DESCARGA + ":"):
+					_aviso_descarga(int(str(evento).get_slice(":", 1)))
 		"move", "approach", "stop":
 			# Con «stop» o una orden nueva en plena marcha, el camino empieza por el tramo que el rover está terminando.
 			if not resultado["path"].is_empty():
@@ -193,6 +208,12 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 func _publicar() -> void:
 	_desde_ultimo_snapshot = 0.0
 	port.apply_snapshot(sim.snapshot())
+
+
+func _aviso_descarga(unidades: int) -> void:
+	if view != null:
+		view.hud.show_notice(tr("CARGO_UNLOADED") % unidades)
+		view.al_descargar()
 
 
 func _aviso(clave: String) -> void:

@@ -123,7 +123,7 @@ func test_empieza_con_recursos_iniciales_y_sin_antena() -> void:
 	var datos := sim.snapshot()
 	assert_eq(datos["resources"], {"rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0})
 	assert_eq(datos["antenna_level"], 0)
-	assert_eq(datos["resource_capacity"], 150)
+	assert_eq(datos["resource_capacity"], 300)
 	assert_eq(datos["buildings"].size(), 1, "solo el sitio de la antena")
 	assert_eq(datos["base"]["antenna_tile"], Vector2i(-7, -9))
 
@@ -203,8 +203,14 @@ func test_taladrar_un_mineral_da_olivino() -> void:
 	sim.estado.casilla_rover = Vector2i(6, 1)  # junto a JZ-06 (mineral en 6,2)
 	assert_true(sim.ejecutar("act", {"action": "drill", "target_id": "JZ-06"})["ok"])
 	_avanzar(5.0)
+	assert_eq(int(sim.estado.carga.get("olivino", 0)), 14, "lo taladrado va a la bodega del rover")
+	assert_eq(int(sim.estado.carga.get("rocas", 0)), 4)
+	assert_eq(sim.estado.recursos["olivino"], 0, "aún no está en el almacén")
+	sim.estado.casilla_rover = sim.estado.casilla_estacion + Vector2i(1, 1)
+	assert_true(sim.ejecutar("unload")["ok"])
 	assert_eq(sim.estado.recursos["olivino"], 14)
 	assert_eq(sim.estado.recursos["rocas"], 34)
+	assert_true(sim.estado.carga.is_empty())
 
 
 func test_construir_un_panel_solar() -> void:

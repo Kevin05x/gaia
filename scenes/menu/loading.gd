@@ -1,6 +1,9 @@
 extends Control
-## Pantalla de carga: imagen fija de Marte en alta resolución, un consejo y una barra de progreso mientras se carga la
-## escena del juego en segundo plano. Se queda al menos un instante para que se lea el consejo.
+## Pantalla de carga: imagen fija de Marte, un consejo y una barra de progreso. En la web no hay hilos: todo lo pesado
+## corre en el hilo principal y, si se hace de golpe, el navegador ofrece «Esperar / Salir». Por eso la carga va en
+## pasos, uno por cuadro: primero los recursos (escenas, modelos, sonidos), luego se monta el juego y por último se
+## espera a que el terreno (construido por pasos) y el precalentado de sombreadores terminen. La pantalla se queda
+## hasta entonces: el jugador nunca ve el juego a medio montar.
 const UI := preload("res://scenes/b/ui_style.gd")
 const Texto := preload("res://scenes/menu/menu_text.gd")
 const Sesion := preload("res://scenes/menu/game_session.gd")
@@ -8,6 +11,19 @@ const IMAGEN := "res://assets/menu/pantalla_carga.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
 const TIEMPO_MINIMO := 2.2
 const CONSEJOS := 6
+const ESPERA_MAXIMA_S := 40.0  ## si la preparación no avisa, la carga se va igual
+## Lo que se carga antes de montar el juego, un recurso por cuadro (así ningún cuadro tarda demasiado).
+const RECURSOS := ["res://scenes/b/ui_style.gd", "res://scenes/b/terrain.gd", "res://scenes/b/actors.gd",
+	"res://scenes/b/hud.gd", "res://scenes/b/workshop.gd", "res://scenes/b/base_hud.gd", "res://scenes/b/story_panel.gd",
+	"res://scenes/b/buildings.gd", "res://scenes/b/combat_view.gd", "res://scenes/b/audio.gd",
+	"res://scenes/b/assets/models/rover.tscn", "res://scenes/b/assets/models/station.tscn",
+	"res://scenes/b/assets/models/drone.tscn", "res://scenes/b/assets/models/companion.tscn",
+	"res://scenes/b/mission.tscn", "res://scenes/a/mission_runner.gd", "res://scenes/a/game.tscn"]
+const MODELOS := ["anthena_juego", "cristal5_brillo", "hielo_2", "hielo_3", "foco", "hangar_cuadrado", "hangar_roundA",
+	"taladro", "torreta_doble", "torreta_simple"]
+const Equipo := preload("res://scenes/b/modelos_equipo.gd")
+
+static var reservas: Array = []  ## recursos ya cargados: se quedan en memoria para que el juego no los vuelva a leer
 
 var barra: ColorRect
 var etiqueta: Label
@@ -16,8 +32,8 @@ var velo: ColorRect
 var progreso := 0.0
 var _t := 0.0
 var _consejo_t := 0.0
-var _listo := false
 var _ancho_barra := 0.0
+var _objetivo := 0.0
 
 
 func _ready() -> void:
@@ -81,7 +97,7 @@ func _ready() -> void:
 	velo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(velo)
 	create_tween().tween_property(velo, "color:a", 0.0, 0.4)
-	ResourceLoader.load_threaded_request(Sesion.ESCENA_JUEGO)
+	_cargar.call_deferred()
 
 
 func _nuevo_consejo() -> void:
@@ -94,41 +110,56 @@ func _process(delta: float) -> void:
 	if _consejo_t > 4.0:
 		_consejo_t = 0.0
 		_nuevo_consejo()
-	var avance: Array = []
-	var estado := ResourceLoader.load_threaded_get_status(Sesion.ESCENA_JUEGO, avance)
-	var real: float = float(avance[0]) if not avance.is_empty() else 0.0
-	var objetivo := minf(real, _t / TIEMPO_MINIMO)
-	progreso = move_toward(progreso, objetivo, delta * 0.9)
+	progreso = move_toward(progreso, _objetivo, delta * 1.2)
 	barra.anchor_right = 0.0
 	barra.offset_right = _ancho_barra * progreso
 	etiqueta.text = "%s  %d%%" % [tr("M_LOADING"), roundi(progreso * 100.0)]
-	if estado == ResourceLoader.THREAD_LOAD_LOADED and _t >= TIEMPO_MINIMO and not _listo:
-		progreso = 1.0
-		_listo = true
-		_cambiar()
-	elif estado == ResourceLoader.THREAD_LOAD_FAILED and not _listo:
-		_listo = true
-		get_tree().change_scene_to_file(Sesion.ESCENA_JUEGO)
 
 
-func _cambiar() -> void:
-	# La imagen de carga se queda a la vista («Preparando… 100 %») mientras el juego se construye; así el paso no deja
-	# una pantalla vacía. Se dibujan un par de fotogramas antes del trabajo pesado y el juego se monta sin cortar a negro.
-	etiqueta.text = "%s  100%%" % tr("M_LOADING")
-	barra.offset_right = _ancho_barra
-	set_process(false)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var escena = ResourceLoader.load_threaded_get(Sesion.ESCENA_JUEGO)
-	if not (escena is PackedScene):
-		get_tree().change_scene_to_file(Sesion.ESCENA_JUEGO)
-		return
-	var juego: Node = (escena as PackedScene).instantiate()
+func _fijar(valor: float) -> void:
+	_objetivo = clampf(valor, _objetivo, 1.0)
+
+
+## Carga por pasos (ver la cabecera). Cada «await» deja dibujar un cuadro: el navegador sigue respondiendo.
+func _cargar() -> void:
 	var arbol := get_tree()
+	await arbol.process_frame
+	var total := RECURSOS.size() + MODELOS.size()
+	var hechos := 0
+	for ruta in RECURSOS:
+		if ResourceLoader.exists(ruta):
+			reservas.append(load(ruta))
+		hechos += 1
+		_fijar(0.6 * hechos / total)
+		await arbol.process_frame
+	for nombre in MODELOS:
+		Equipo.precargar([nombre])
+		hechos += 1
+		_fijar(0.6 * hechos / total)
+		await arbol.process_frame
+	while _t < TIEMPO_MINIMO * 0.5:
+		await arbol.process_frame
+	var escena = load(Sesion.ESCENA_JUEGO)
+	if not (escena is PackedScene):
+		arbol.change_scene_to_file(Sesion.ESCENA_JUEGO)
+		return
+	_fijar(0.65)
+	await arbol.process_frame
+	var juego: Node = (escena as PackedScene).instantiate()
 	arbol.root.add_child(juego)
+	_fijar(0.72)
+	# El juego se prepara por pasos detrás de esta pantalla (terreno y sombreadores).
+	var vista = juego.get("view")
+	var inicio := _t
+	while vista != null and is_instance_valid(vista) and vista.has_method("esta_listo") and not vista.esta_listo() \
+			and _t - inicio < ESPERA_MAXIMA_S:
+		_fijar(0.72 + 0.26 * float(vista.preparacion()))
+		await arbol.process_frame
+	_fijar(1.0)
+	while progreso < 0.999 or _t < TIEMPO_MINIMO:
+		await arbol.process_frame
 	await arbol.process_frame
-	await arbol.process_frame
-	# Con el juego ya dibujándose, la carga se desvanece y desaparece.
+	# Con el juego ya dibujándose detrás, la carga se desvanece y desaparece.
 	var capa := CanvasLayer.new()
 	capa.layer = 100
 	arbol.root.add_child(capa)

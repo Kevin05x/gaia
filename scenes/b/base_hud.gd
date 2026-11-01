@@ -8,6 +8,7 @@ const Icon := preload("res://scenes/b/hud_icon.gd")
 
 signal command(command: String, payload: Dictionary)
 signal placement_requested(building: String)
+signal menu_cambiado(abierto: bool)  ## el menú Construir se abrió o se cerró (la vista oculta lo que tapa)
 
 const RECURSOS: Array[String] = ["rocas", "olivino", "hielo", "xenolito"]
 const COLORES := {"rocas": Color("C9A27E"), "olivino": Color("8DB06A"), "hielo": Color("A8DCEB"), "xenolito": Color("B98AE0")}
@@ -25,6 +26,11 @@ var _rover: Label
 var _rover_chip: PanelContainer
 var _menu_box: VBoxContainer
 var _menu_signature := ""
+var _bodega: PanelContainer  ## bodega del rover: carga actual y botón para descargar
+var _bodega_texto: Label
+var _bodega_barra: ProgressBar
+var descargar_button: Button
+var _carga_antes := -1
 var _filas: Dictionary = {}  ## tipo -> controles de su fila en el menú
 var _interruptores: Dictionary = {}  ## id -> CheckButton de encendido
 var _modulos: Dictionary = {}  ## id -> controles del siguiente módulo
@@ -83,9 +89,11 @@ func build() -> void:
 	build_button.icon = null
 	build_button.custom_minimum_size = Vector2(0, 36)
 	build_button.add_theme_font_size_override("font_size", 14)
+	build_button.tooltip_text = tr("ACT_INFO_BUILD")
 	UI.place(build_button, "bl", 20, 64, 150, 36)
 	root.add_child(build_button)
 	build_button.pressed.connect(toggle_menu)
+	_construir_bodega()
 	menu = PanelContainer.new()
 	menu.add_theme_stylebox_override("panel", UI.box(0.88, UI.RADIUS_PANEL, 0.3, 1, 16, 14))
 	UI.place(menu, "bl", 20, 110, 420, 360)
@@ -100,6 +108,75 @@ func build() -> void:
 	desplazable.add_child(_menu_box)
 	if not snapshot.is_empty():
 		update_snapshot(snapshot)
+
+
+## Bodega del rover junto al botón Construir: «Bodega 37/90», una barra fina y el botón Descargar (o «Ir a
+## descargar» si el rover está lejos de la estación y de los domos).
+func _construir_bodega() -> void:
+	_bodega = PanelContainer.new()
+	_bodega.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_NORMAL, UI.RADIUS_PILL, 0.25, 1, 12, 4))
+	_bodega.tooltip_text = tr("CARGO_TIP")
+	UI.place(_bodega, "bl", 180, 64, 300, 36)
+	root.add_child(_bodega)
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	_bodega.add_child(fila)
+	var icono := Icon.make("weight", 14, UI.AMBER)
+	icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.add_child(icono)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 2)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	fila.add_child(col)
+	_bodega_texto = UI.label(col, "", 12, UI.CREAM)
+	_bodega_barra = ProgressBar.new()
+	_bodega_barra.show_percentage = false
+	_bodega_barra.custom_minimum_size = Vector2(0, 4)
+	var fondo := StyleBoxFlat.new()
+	fondo.bg_color = Color(UI.CREAM, 0.15)
+	fondo.set_corner_radius_all(2)
+	var lleno := StyleBoxFlat.new()
+	lleno.bg_color = UI.AMBER
+	lleno.set_corner_radius_all(2)
+	_bodega_barra.add_theme_stylebox_override("background", fondo)
+	_bodega_barra.add_theme_stylebox_override("fill", lleno)
+	col.add_child(_bodega_barra)
+	descargar_button = Button.new()
+	descargar_button.theme_type_variation = "PillButton"
+	descargar_button.focus_mode = Control.FOCUS_NONE
+	descargar_button.add_theme_font_size_override("font_size", 12)
+	descargar_button.custom_minimum_size = Vector2(110, 26)
+	descargar_button.pressed.connect(func() -> void: command.emit("unload", {}))
+	fila.add_child(descargar_button)
+	_bodega.visible = false
+
+
+func _fijar_bodega(s: Dictionary) -> void:
+	var bodega: Dictionary = s.get("cargo", {})
+	_bodega.visible = not bodega.is_empty()
+	if bodega.is_empty():
+		return
+	var total := int(bodega.get("total", 0))
+	var tope := maxi(int(bodega.get("capacity", 1)), 1)
+	_bodega_texto.text = "%s  %d / %d" % [tr("CARGO"), total, tope]
+	_bodega_texto.add_theme_color_override("font_color", UI.CORAL if total >= tope else UI.CREAM)
+	_bodega_barra.max_value = tope
+	_bodega_barra.value = total
+	var cerca: bool = bodega.get("near_storage", false)
+	descargar_button.text = tr("CARGO_UNLOAD") if cerca else tr("CARGO_GO_UNLOAD")
+	descargar_button.disabled = total <= 0 or bool(bodega.get("going", false)) or bool(s.get("paused", false))
+	if _carga_antes >= 0 and total > _carga_antes:
+		_latido(_bodega)  # algo entró en la bodega: un pequeño pulso
+	_carga_antes = total
+
+
+## Pulso corto de escala (al recoger algo o al descargar).
+static func _latido(c: Control) -> void:
+	c.pivot_offset = c.size / 2.0
+	var t := c.create_tween()
+	t.tween_property(c, "scale", Vector2(1.08, 1.08), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(c, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _chip(padre: Control, icono: Control) -> PanelContainer:
@@ -120,16 +197,30 @@ func _chip(padre: Control, icono: Control) -> PanelContainer:
 
 func toggle_menu() -> void:
 	menu.visible = not menu.visible and _usable()
+	menu_cambiado.emit(menu.visible)
 	if not menu.visible:
 		cerrar_ficha()
 	if menu.visible:
 		_menu_signature = ""
 		_fill_menu()
+		_entrar(menu)
+
+
+## Entrada suave de un panel: aparece y crece desde su esquina inferior (0,2 s). Sin esto los paneles «saltan» a la
+## vista. Anima escala y opacidad, no la posición, para no pelearse con los anclajes.
+static func _entrar(panel: Control) -> void:
+	panel.pivot_offset = Vector2(0, panel.size.y)
+	panel.modulate.a = 0.0
+	panel.scale = Vector2(0.96, 0.96)
+	var t := panel.create_tween().set_parallel()
+	t.tween_property(panel, "modulate:a", 1.0, 0.16).set_ease(Tween.EASE_OUT)
+	t.tween_property(panel, "scale", Vector2.ONE, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func close_menu() -> void:
 	if is_instance_valid(menu):
 		menu.visible = false
+		menu_cambiado.emit(false)
 	cerrar_ficha()
 
 
@@ -144,16 +235,20 @@ func update_snapshot(s: Dictionary) -> void:
 	var visible_base := _usable()
 	_bar.visible = visible_base
 	build_button.visible = visible_base
+	_bodega.visible = visible_base
 	if not visible_base:
 		menu.visible = false
 		cerrar_ficha()
 		return
+	_fijar_bodega(s)
 	var recursos: Dictionary = s.get("resources", {})
 	var tope := int(s.get("resource_capacity", 0))
 	for r in RECURSOS:
 		var chip: PanelContainer = _chips[r]
 		var cantidad := int(recursos.get(r, 0))
 		var texto: Label = chip.get_meta("text")
+		if texto.text != str(cantidad) and texto.text != "0" and cantidad > int(texto.text):
+			_latido(chip)  # el almacén creció (descarga): el número late
 		texto.text = str(cantidad)
 		texto.add_theme_color_override("font_color", UI.AMBER if cantidad >= tope else UI.CREAM)
 		chip.tooltip_text = "%s  %d / %d" % [tr("RES_" + r.to_upper()), cantidad, tope]
@@ -345,7 +440,9 @@ func abrir_ficha(tipo: String) -> void:
 	for op in snapshot.get("build_options", []):
 		if str(op.get("id", "")) == tipo:
 			_llenar_ficha(op)
-	_ficha.visible = true
+	if not _ficha.visible:
+		_ficha.visible = true
+		_entrar(_ficha)
 
 
 func cerrar_ficha() -> void:
@@ -426,6 +523,11 @@ func _crear_ficha() -> void:
 
 
 func _llenar_ficha(op: Dictionary) -> void:
+	# Con la ficha abierta llega un snapshot varias veces por segundo: solo se rehace si cambió algo de lo que muestra.
+	var firma := var_to_str([op, TranslationServer.get_locale()])
+	if _ficha.get_meta("firma", "") == firma:
+		return
+	_ficha.set_meta("firma", firma)
 	var tipo := str(op.get("id", ""))
 	var clave := _clave(tipo)
 	(_ficha.get_meta("titulo") as Label).text = tr("BLD_" + clave)
@@ -441,6 +543,8 @@ func _llenar_ficha(op: Dictionary) -> void:
 		filas.append([tr("INFO_DAMAGE"), str(roundi(float(info["damage"])))])
 		filas.append([tr("INFO_FIRE_RATE"), tr("INFO_FIRE_RATE_VALUE") % _decimal(float(info.get("fire_rate_s", 0.0)))])
 		filas.append([tr("INFO_RANGE"), tr("INFO_RANGE_VALUE") % _decimal(float(info.get("range", 0.0)))])
+	if info.has("shield_hp_s"):
+		filas.append([tr("INFO_SHIELD"), tr("INFO_SHIELD_VALUE") % roundi(float(info["shield_hp_s"]))])
 	if int(info.get("capacity", 0)) > 0:
 		filas.append([tr("INFO_CAPACITY"), tr("INFO_CAPACITY_VALUE") % int(info["capacity"])])
 	var produce: Dictionary = info.get("produces_per_hour", {})
@@ -517,7 +621,8 @@ func _fijar_modulo(m: Dictionary, e: Dictionary) -> void:
 ## Tipo de edificio -> sufijo de su clave de texto (BLD_SOLAR...).
 static func _clave(tipo: String) -> String:
 	return {"panel_solar": "SOLAR", "luz": "LIGHT", "domo": "DOME", "extractor_hielo": "EXTRACTOR", "hangar": "HANGAR",
-		"antena": "ANTENNA", "torreta": "TURRET", "torreta_2": "TURRET2", "nave_fuga": "SHIP"}.get(tipo, tipo.to_upper())
+		"antena": "ANTENNA", "torreta": "TURRET", "torreta_2": "TURRET2", "nave_fuga": "SHIP",
+		"barrera": "WALL", "compuerta": "GATE"}.get(tipo, tipo.to_upper())
 
 
 ## Esc cierra primero la ficha y luego el menú de construcción (antes que la pausa del HUD).

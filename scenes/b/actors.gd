@@ -32,6 +32,8 @@ var flight=0.0
 var paused=false
 var safe=false
 var landed=false
+var _ruta_nueva=false  ## el primer tramo de una ruta arranca suave (sin salto de velocidad)
+var _giro_antes=0.0  ## rumbo del cuadro anterior (para el balanceo al girar)
 var antenna_top=Vector3(0,1.9,0)  ## punta de la antena respecto a la estación (de aquí sale la animación de transmisión)
 var landing_clock=0.0
 var landing_active=false
@@ -98,6 +100,7 @@ func set_antenna(level: int) -> void:
  for i in range(antenna_levels.size()):antenna_levels[i].visible=i==clampi(level-1,0,2)
  antenna_top=Vector3(0,[1.9,2.5,2.9][clampi(level-1,0,2)],0)
 func follow_path(tiles: Array, seconds: float) -> void:
+ _ruta_nueva=route.is_empty()
  route=tiles.duplicate();seconds_per_tile=maxf(.01,seconds);segment_time=0;segment_start=rover.position
 func start_action(a: Dictionary) -> void:
  active_action=a.duplicate(true);active_action["elapsed"]=0.0
@@ -120,13 +123,15 @@ func _process(delta: float) -> void:
  if not route.is_empty() and not safe and not landing_active:
   segment_time+=delta
   var target=at_tile(route[0]);var old=rover.position
-  rover.position=segment_start.lerp(target,clampf(segment_time/seconds_per_tile,0,1))
-  if dust_ground.is_valid():rover.position.y=dust_ground.call(rover.position.x,rover.position.z)
+  rover.position=segment_start.lerp(target,_avance(clampf(segment_time/seconds_per_tile,0,1)))
+  # Suspensión: un leve vaivén al rodar (la simulación no cambia: es solo la carrocería).
+  if dust_ground.is_valid():rover.position.y=dust_ground.call(rover.position.x,rover.position.z)+absf(sin(animation_clock*11.0))*.025
   var dir=target-segment_start
   if dir.length_squared()>.01:rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-dir.x,-dir.z),minf(1,delta*8))
   for wheel in parts.wheels:wheel.rotate_x(old.distance_to(rover.position)/.43)
   if segment_time>=seconds_per_tile:
-   route.pop_front();segment_start=target;segment_time=0
+   route.pop_front();segment_start=target;segment_time=0;_ruta_nueva=false
+ _inclinar(delta)
  if not active_action.is_empty():
   active_action.elapsed+=delta
   var action=str(active_action.get("action",""))
@@ -154,6 +159,28 @@ func _process(delta: float) -> void:
  companion.position.y=(dust_ground.call(companion.position.x,companion.position.z) if dust_ground.is_valid() else 0)+absf(sin(animation_clock*3))*.05
  dust.position=Vector3(rover.position.x,2,rover.position.z)
  link.base=station.global_position+antenna_top
+
+## Avance dentro de un tramo: arranca suave en el primero, frena en el último y es constante entre medias, con la
+## misma velocidad en las uniones (curvas con derivada 0 y 1 en los extremos que tocan).
+func _avance(t: float) -> float:
+ var primero=_ruta_nueva;var ultimo=route.size()<=1
+ if primero and ultimo:return t*t*(3.0-2.0*t)
+ if primero:return t*t*(2.0-t)
+ if ultimo:return 1.0-(1.0-t)*(1.0-t)*(1.0+t)
+ return t
+
+## La carrocería se inclina con la pendiente del suelo (cabeceo y alabeo) y se balancea un poco al girar.
+func _inclinar(delta: float) -> void:
+ if not dust_ground.is_valid() or landing_active:return
+ var y=rover.rotation.y;var p=rover.position
+ var f=Vector3(-sin(y),0,-cos(y));var r=Vector3(cos(y),0,-sin(y))
+ var h=func(q: Vector3) -> float: return dust_ground.call(q.x,q.z)
+ var cabeceo=atan2(h.call(p+f*.9)-h.call(p-f*.9),1.8)
+ var giro=wrapf(y-_giro_antes,-PI,PI)/maxf(delta,.001);_giro_antes=y
+ var alabeo=atan2(h.call(p+r*.7)-h.call(p-r*.7),1.4)-clampf(giro*.03,-.06,.06)
+ var k=1.0-exp(-delta*8.0)
+ rover.rotation.x=lerpf(rover.rotation.x,clampf(cabeceo,-.35,.35),k)
+ rover.rotation.z=lerpf(rover.rotation.z,clampf(alabeo,-.3,.3),k)
 
 func _end_work() -> void:
  work_beam.visible=false;work_ring.visible=false;work_column.visible=false;drilling.emitting=false

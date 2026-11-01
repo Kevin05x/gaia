@@ -23,6 +23,7 @@ const SFX := {
 	"escena": [preload("res://scenes/b/assets/audio/escena.wav"), -14.0],
 	"final_ok": [preload("res://scenes/b/assets/audio/final_ok.wav"), -9.0],
 	"final_mal": [preload("res://scenes/b/assets/audio/final_mal.wav"), -9.0],
+	"hito": [preload("res://scenes/b/assets/audio/hito.wav"), -11.0],
 }
 const SFX_VOCES := 6  ## sonidos de combate que pueden oírse a la vez
 const TRAMO_CAIDA_SONIDO := 0.6  ## fracción del aviso a partir de la cual suena la caída del meteorito

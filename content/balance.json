@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "estado": "provisional: cifras del proveedor de prueba de B (scenes/b/review_host.gd); no son reglas definitivas",
+  "estado": "provisional (ronda G, 1 nov 2026): la ciencia sale sobre todo de los hitos de content/hitos.json (etapas de la misión); cada análisis suelto da 1–2 datos. Memoria de 60 que no bloquea la recogida; cada objetivo se taladra 4 veces para sacar recursos (la ciencia solo cuenta la primera vez).",
   "tiempo": {
     "duracion_sol_s": 300,
     "hora_inicio": 8.0,
@@ -29,9 +29,10 @@
     "companion": { "costo_wh": 15, "duracion_s": 6.0, "usos_por_sol": 4 }
   },
   "ciencia": {
-    "memoria_capacidad": 45,
-    "rendimiento": { "spectrometer": 5, "drill": 10, "drill_enterrado": 14 },
-    "meteo_por_sol": 2,
+    "memoria_capacidad": 60,
+    "rendimiento": { "spectrometer": 1, "drill": 1, "drill_enterrado": 2 },
+    "meteo_por_sol": 1,
+    "extracciones_por_objetivo": 4,
     "minerales_por_mineral": 1,
     "minerales_companero": 3,
     "minerales_mejora_antena": 3,

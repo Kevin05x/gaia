@@ -2,7 +2,7 @@ extends SceneTree
 ## Herramienta de desarrollo: fotografía cada edificio (los mismos modelos del juego) y guarda su imagen para las
 ## fichas del menú de construcción en assets/edificios/<tipo>.png (fondo transparente, 3/4 desde arriba).
 ## Uso (necesita GPU o xvfb):  godot --rendering-driver opengl3 -s tools/renderizar_fichas.gd
-const TIPOS := ["panel_solar", "luz", "domo", "extractor_hielo", "hangar", "torreta", "torreta_2", "antena", "nave_fuga"]
+const TIPOS := ["panel_solar", "luz", "domo", "extractor_hielo", "hangar", "torreta", "torreta_2", "antena", "nave_fuga", "barrera", "compuerta"]
 const LADO := 384
 const SALIDA := "res://assets/edificios/"
 

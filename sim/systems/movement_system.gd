@@ -46,6 +46,25 @@ func iniciar_acercar(estado: MissionState, objetivo_id: String) -> Dictionary:
 	return _iniciar(estado, _plan_acercar(estado, objetivo_id))
 
 
+## Lleva el rover junto a cualquiera de las casillas dadas (la ruta más corta). Sin ruta: NO_PATH.
+func iniciar_acercar_a(estado: MissionState, casillas: Array) -> Dictionary:
+	var motivo := _motivo_general(estado)
+	if not motivo.is_empty():
+		return _iniciar(estado, _plan(motivo, []))
+	var mejor: Array[Vector2i] = []
+	for c in casillas:
+		var casilla: Vector2i = c
+		if maxi(absi(estado.casilla_rover.x - casilla.x), absi(estado.casilla_rover.y - casilla.y)) <= 1:
+			return _iniciar(estado, _plan("", [], 0.0))
+		for desplazamiento in CONTIGUAS:
+			var ruta := _mapa.ruta(estado.casilla_rover, casilla + desplazamiento)
+			if not ruta.is_empty() and (mejor.is_empty() or ruta.size() < mejor.size()):
+				mejor = ruta
+	if mejor.is_empty():
+		return _iniciar(estado, _plan("NO_PATH", []))
+	return _iniciar(estado, _con_energia(estado, mejor))
+
+
 ## Avanza el movimiento los segundos reales indicados. Devuelve los eventos ocurridos.
 func avanzar(estado: MissionState, delta_s: float) -> Array[String]:
 	var eventos: Array[String] = []

@@ -4,6 +4,7 @@ extends RefCounted
 ## almacén (más con cada domo listo) y pago de costos. Los números salen de economia.json; sin nodos.
 
 const EVENTO_RECURSO_NUEVO := "RESOURCE_FIRST"  ## RESOURCE_FIRST:<recurso>, la primera vez que se consigue
+const EVENTO_PRIMERA_CARGA := "CARGO_FIRST"  ## la primera vez que algo entra en la bodega del rover
 
 var _economia: Economy
 
@@ -65,6 +66,56 @@ func sumar(estado: MissionState, cantidades: Dictionary) -> Array[String]:
 	return eventos
 
 
-## Recursos al terminar una acción sobre un objetivo de ese tipo (o sin objetivo, como el compañero).
+## Recursos al terminar una acción sobre un objetivo de ese tipo (o sin objetivo, como el compañero). Con bodega,
+## van a la bodega del rover (lo que no cabe se pierde) y hay que descargarlos en la estación o en un domo.
 func recolectar(estado: MissionState, accion: String, tipo: String) -> Array[String]:
-	return sumar(estado, _economia.recoleccion_de(accion, tipo))
+	var cantidades := _economia.recoleccion_de(accion, tipo)
+	if _economia.bodega_rover <= 0:
+		return sumar(estado, cantidades)
+	var eventos: Array[String] = []
+	if not estado.bodega_avisada and not cantidades.is_empty():
+		estado.bodega_avisada = true
+		eventos.append(EVENTO_PRIMERA_CARGA)
+	for recurso in cantidades:
+		var hueco := maxi(_economia.bodega_rover - carga_total(estado), 0)
+		var entra := mini(int(cantidades[recurso]), hueco)
+		if entra > 0:
+			estado.carga[recurso] = int(estado.carga.get(recurso, 0)) + entra
+	return eventos
+
+
+func usa_bodega() -> bool:
+	return _economia.bodega_rover > 0
+
+
+func capacidad_bodega() -> int:
+	return _economia.bodega_rover
+
+
+func carga_total(estado: MissionState) -> int:
+	var total := 0
+	for recurso in estado.carga:
+		total += int(estado.carga[recurso])
+	return total
+
+
+func bodega_llena(estado: MissionState) -> bool:
+	return usa_bodega() and carga_total(estado) >= _economia.bodega_rover
+
+
+## Pasa la bodega a la base (sin superar la capacidad del almacén; lo que no cabe se queda en la bodega).
+## Devuelve [unidades descargadas, eventos de recurso nuevo].
+func descargar(estado: MissionState) -> Array:
+	var movido := 0
+	var cantidades := {}
+	var tope := capacidad(estado)
+	for recurso in estado.carga.keys():
+		var hueco := maxi(tope - int(estado.recursos.get(recurso, 0)), 0)
+		var pasa := mini(int(estado.carga[recurso]), hueco)
+		if pasa > 0:
+			cantidades[recurso] = pasa
+			estado.carga[recurso] = int(estado.carga[recurso]) - pasa
+			movido += pasa
+		if int(estado.carga.get(recurso, 0)) <= 0:
+			estado.carga.erase(recurso)
+	return [movido, sumar(estado, cantidades)]

@@ -48,10 +48,7 @@ func _construir_fondo() -> void:
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fondo)
-	fondo.resized.connect(func() -> void: fondo.pivot_offset = Vector2(fondo.size.x * 0.82, fondo.size.y * 0.62))
-	var deriva := create_tween().set_loops()
-	deriva.tween_property(fondo, "scale", Vector2(1.045, 1.045), 26.0).from(Vector2.ONE).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	deriva.tween_property(fondo, "scale", Vector2.ONE, 26.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Fondo quieto: el acercamiento lento de antes, con pocos cuadros por segundo en la web, se veía temblar.
 	# Oscurece el lado izquierdo (donde va la lista) y el borde inferior.
 	add_child(_degradado(Vector2(0, 0), Vector2(1, 0), [0.0, 0.7], [Color(0.03, 0.02, 0.05, 0.82), Color(0.03, 0.02, 0.05, 0.0)]))
 	add_child(_degradado(Vector2(0, 1), Vector2(0, 0), [0.0, 0.3], [Color(0.03, 0.02, 0.05, 0.7), Color(0.03, 0.02, 0.05, 0.0)]))
@@ -122,6 +119,20 @@ func _construir_interfaz() -> void:
 	primero.grab_focus.call_deferred()
 
 
+## Destello diagonal que cruza el logotipo según «barrido» (−0,4 a 1,4); fuera de ese rango no hace nada.
+const BRILLO_LOGO := """shader_type canvas_item;
+uniform float barrido = -1.0;
+void fragment() {
+	vec4 c = COLOR;
+	float d = (UV.x + UV.y * 0.35) - barrido;
+	float banda = smoothstep(0.16, 0.0, abs(d));
+	c.rgb += vec3(1.0, 0.86, 0.62) * banda * 0.55 * c.a;
+	COLOR = c;
+}
+"""
+static var _logo_visto := false
+
+
 func _crear_logotipo() -> Control:
 	if ResourceLoader.exists(LOGOTIPO):
 		var imagen := TextureRect.new()
@@ -131,12 +142,28 @@ func _crear_logotipo() -> Control:
 		imagen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		imagen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		UI.place(imagen, "tl", 70, 56, 580, 164)
-		# La flotación se hace en el sombreador: mover un Control por tween lo ajusta a píxeles enteros y se ve a saltitos.
+		# Sin flotar (se veía genérico): el logotipo entra una vez con un fundido y un destello de luz que lo cruza,
+		# y después cada tanto un brillo muy sutil recorre las letras. El destello lo mueve un tween, no cada cuadro.
 		var sombreador := Shader.new()
-		sombreador.code = "shader_type canvas_item;\nuniform float amplitud = 5.0;\nuniform float periodo = 6.4;\nvoid vertex() {\n\tVERTEX.y += (0.5 - 0.5 * cos(TIME * 6.2831853 / periodo)) * amplitud;\n}\n"
-		var material_flota := ShaderMaterial.new()
-		material_flota.shader = sombreador
-		imagen.material = material_flota
+		sombreador.code = BRILLO_LOGO
+		var material_brillo := ShaderMaterial.new()
+		material_brillo.shader = sombreador
+		material_brillo.set_shader_parameter("barrido", -1.0)
+		imagen.material = material_brillo
+		imagen.pivot_offset = Vector2(110, 82)
+		if not _logo_visto:
+			_logo_visto = true
+			imagen.modulate.a = 0.0
+			imagen.scale = Vector2(0.97, 0.97)
+			var entrada := imagen.create_tween().set_parallel(true)
+			entrada.tween_property(imagen, "modulate:a", 1.0, 0.9).set_delay(0.15)
+			entrada.tween_property(imagen, "scale", Vector2.ONE, 1.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			entrada.tween_property(material_brillo, "shader_parameter/barrido", 1.4, 1.3).from(-0.4).set_delay(0.5) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		var repeticion := imagen.create_tween().set_loops()
+		repeticion.tween_interval(9.0)
+		repeticion.tween_property(material_brillo, "shader_parameter/barrido", 1.4, 1.6).from(-0.4) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		return imagen
 	var logo := Logo.new()
 	logo.disposicion = "horizontal"
@@ -364,20 +391,13 @@ func _abrir_ajustes() -> void:
 	_interruptor(cuerpo, tr("M_SET_MUTE"), bool(prefs["muted"]), func(v: bool) -> void:
 		Texto.guardar("audio", "muted", v)
 		Texto.aplicar_audio())
-	# Gráficos
+	# Gráficos: ajuste predefinido y, en su panel, cada opción por separado.
 	fila = _fila(cuerpo, tr("M_SET_GRAPHICS"))
-	var calidad := ButtonGroup.new()
-	for alta in [true, false]:
-		var b := Button.new()
-		b.text = tr("M_SET_GRAPHICS_HIGH") if alta else tr("M_SET_GRAPHICS_LOW")
-		b.toggle_mode = true
-		b.button_group = calidad
-		b.custom_minimum_size = Vector2(110, 40)
-		b.button_pressed = bool(prefs["quality"]) == alta
-		b.pressed.connect(func() -> void: Texto.guardar("visual", "quality", alta))
-		fila.add_child(b)
-	var nota := UI.label(cuerpo, tr("M_SET_GRAPHICS_NOTE"), 13, Color(UI.CREAM, 0.6))
-	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var mas := Button.new()
+	mas.text = tr("M_SET_GRAPHICS_MORE") + "  ·  " + _nombre_graficos(Graficos.cargar())
+	mas.custom_minimum_size = Vector2(250, 40)
+	mas.pressed.connect(_abrir_graficos)
+	fila.add_child(mas)
 	# Tamaño de ventana (solo en escritorio)
 	if not Texto.tamanos_disponibles().is_empty():
 		var ventana := HFlowContainer.new()
@@ -394,6 +414,18 @@ func _abrir_ajustes() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if v else DisplayServer.WINDOW_MODE_WINDOWED))
 	_interruptor(cuerpo, tr("M_SET_TUTORIAL"), bool(prefs["tutorial"]), func(v: bool) -> void:
 		Texto.guardar("ui", "tutorial", v))
+
+
+func _nombre_graficos(g: Dictionary) -> String:
+	var preset := Graficos.preset_de(g)
+	return tr("GFX_CUSTOM") if preset == "personalizada" else tr("GFX_" + preset.to_upper())
+
+
+func _abrir_graficos() -> void:
+	var cuerpo := _abrir_panel(tr("GRAPHICS"), 620, 600)
+	var opciones := OpcionesGraficos.new(Graficos.cargar(), 17)
+	cuerpo.add_child(opciones)
+	opciones.cambiado.connect(func(g: Dictionary) -> void: Graficos.guardar(g))
 
 
 func _fila(padre: Control, titulo: String) -> HBoxContainer:

@@ -16,6 +16,7 @@ var _materiales_restos: Array[StandardMaterial3D] = []
 var _caja := BoxMesh.new()
 var _esfera := SphereMesh.new()
 var _activos := 0
+signal exploto(pos: Vector3, tamano: float)  ## para sacudir la cámara
 
 
 func _ready() -> void:
@@ -86,6 +87,7 @@ func explotar(pos: Vector3, tamano: float = 1.0, partes: int = 12) -> void:
 		var v := Vector3(cos(angulo) * fuerza, randf_range(4.0, 8.5) * sqrt(tamano), sin(angulo) * fuerza)
 		var lado := randf_range(0.1, 0.34) * tamano
 		_resto(pos, v, Vector3(lado, lado * randf_range(0.4, 1.2), lado * randf_range(0.5, 1.1)))
+	exploto.emit(pos, tamano)
 	set_process(true)
 
 

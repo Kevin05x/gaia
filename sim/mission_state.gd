@@ -56,6 +56,9 @@ var companero_usos: int = 0  ## ayudas de Rocky hechas en ese sol
 
 ## Base y economía (content/economia.json); vacíos cuando la misión no usa economía.
 var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
+var carga: Dictionary = {}  ## lo que lleva la bodega del rover hasta descargarlo en la estación o en un domo
+var descargar_al_llegar: bool = false
+var bodega_avisada: bool = false  ## ya se explicó que lo recogido va a la bodega  ## el rover va camino de un almacén para descargar
 var recursos_vistos: Array = []  ## recursos ya conseguidos alguna vez
 var edificios: Array[Dictionary] = []  ## ver BuildSystem
 var siguiente_edificio: int = 1
@@ -72,6 +75,10 @@ var historia_rama: String = ""
 var historia_radio: String = ""  ## último nodo de radio (no detiene la misión)
 var historia_radio_n: int = 0  ## contador de nodos de radio: la vista muestra la tarjeta cuando cambia
 var historia_t_ultimo: float = -1000.0  ## hora de juego absoluta en que se resolvió el último nodo
+var zonas_visitadas: Array = []  ## zonas del mapa por las que ya pasó el rover (hito «mapa del cráter»)
+var oleadas_derrotadas: int = 0  ## oleadas superadas (hito «base defendida»)
+var hitos_hechos: Array = []  ## ids de los hitos científicos ya cumplidos
+var datos_pendientes: float = 0.0  ## datos de hitos que aún no caben en la memoria
 var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el clímax); -1 = sin tope
 
 ## Tutorial del Sol 1 (content/tutorial.json)
