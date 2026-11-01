@@ -30,6 +30,7 @@ const RUTAS_NUMERICAS: Array[String] = [
 	"ciencia.minerales_companero",
 	"ciencia.minerales_mejora_antena",
 	"ciencia.nivel_antena_max",
+	"ciencia.extracciones_por_objetivo",
 	"comunicaciones.rele.unidades_por_s",
 	"comunicaciones.rele.costo_wh_por_unidad",
 	"comunicaciones.directa.unidades_por_s",

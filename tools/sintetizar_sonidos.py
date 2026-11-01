@@ -344,10 +344,24 @@ def obra_fin(dur=1.0):
     return x
 
 
+def hito(dur=1.5):
+    """Hito científico: arpegio rápido y brillante (mi mayor) con un destello suave por encima."""
+    x = np.zeros(int(dur * SR))
+    for ini, f in [(0.0, 659.3), (0.08, 830.6), (0.16, 987.8), (0.26, 1318.5)]:
+        c = _campana(f, dur - ini, 0.45)
+        i = int(ini * SR)
+        x[i:i + len(c)] += c[:len(x) - i]
+    t = t_of(dur)
+    rng = np.random.default_rng(7)
+    brillo = hp(rng.standard_normal(len(t)), 5000) * np.exp(-t * 6.0) * 0.08
+    return x + brillo
+
+
 if __name__ == "__main__":
     out = sys.argv[1]
     Path(out).mkdir(parents=True, exist_ok=True)
     save(out, "motor.wav", rover())
+    save(out, "hito.wav", hito())
     save(out, "drill.wav", drill())
     save(out, "laser.wav", laser())
     save(out, "radar.wav", radar())

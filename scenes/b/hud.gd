@@ -17,6 +17,7 @@ const LOGOTIPO := "res://assets/menu/gaia_logo.png"  ## logotipo del menú (si f
 signal command(command: String, payload: Dictionary)
 signal locale_changed(locale: String)
 signal preferences_changed(volume: float, muted: bool, quality: bool)
+signal graficos_changed(g: Dictionary)  ## Opciones › Gráficos
 signal menu_requested  ## «Salir al menú» del menú de pausa
 
 ## Filas de la lista del objetivo que siempre existen (las pruebas de B leen buttons.drill).
@@ -39,6 +40,7 @@ var inspection := false
 var volume := 0.65
 var muted := false
 var quality := true
+var graficos: Dictionary = {}  ## configuración gráfica (Graficos) para el panel de opciones
 var target_id := ""
 
 var _ops: Array[Control] = []
@@ -46,6 +48,8 @@ var _title: Label
 var _objective: Label
 var _goals: VBoxContainer  ## metas del objetivo con su avance (historia)
 var _goals_sig := ""
+var abrir_ciencia: Callable  ## si está, la píldora de ciencia abre el panel de objetivos científicos
+var metas_tapadas: Callable  ## true si el menú Construir ocupa el sitio de las metas (entonces se ocultan)
 var _map: Control
 var _mark: Control
 var _energy_icon: Control
@@ -53,13 +57,8 @@ var _energy_text: Label
 var _energy_pill: Button
 var _science_text: Label
 var _science_pill: Button
-var _warn_slot: PanelContainer
-var _warn_text: Label
-var _warn_more: Button
-var _warn_list: PanelContainer
-var _warn_list_box: VBoxContainer
-var _crit_slot: PanelContainer
-var _crit_text: Label
+var _avisos: HudAvisos  ## franjas de avisos y críticos (scenes/b/hud_avisos.gd)
+var _warn_list: PanelContainer  ## lista desplegable de avisos (de _avisos)
 var _toast: PanelContainer
 var _toast_text: Label
 var _toast_until := 0.0
@@ -103,6 +102,10 @@ var _menu_resume: Button
 var _hover_hint: PanelContainer
 var _hover_label: Label
 var _debug: Label
+var _fps_t := 0.0
+var _fps_peor_ms := 0.0
+var _fps_hist: Array[float] = []
+var _fps_check: CheckButton  ## casilla «Mostrar FPS» de Opciones (para mantenerla al día con la tecla P)
 var _was_night := false
 var _night_known := false
 var _pending_help := false
@@ -234,7 +237,12 @@ func _build_top_right() -> void:
 	UI.place(_science_pill, "tr", 60, 22, 150, 30)
 	_science_text = _science_pill.get_meta("text")
 	_science_pill.tooltip_text = tr("SENT")
-	_science_pill.pressed.connect(func(): _toggle_panel(_info))
+	_science_pill.pressed.connect(func():
+		if abrir_ciencia.is_valid():
+			_close_popups()
+			abrir_ciencia.call()  # panel de objetivos científicos (componente aparte)
+		else:
+			_toggle_panel(_info))
 	_ops.append(_science_pill)
 	_energy_pill = _pill_button("battery", 140, 30)
 	UI.place(_energy_pill, "tr", 220, 22, 140, 30)
@@ -260,32 +268,15 @@ func _fit_top_right() -> void:
 
 
 func _build_slots() -> void:
-	_warn_slot = _slot("warning", UI.WARN)
-	UI.place(_warn_slot, "tc", -70, 20, 340, 48)
-	_warn_text = _warn_slot.get_meta("text")
-	_warn_more = Button.new()
-	_warn_more.theme_type_variation = "PillButton"
-	_warn_more.focus_mode = Control.FOCUS_NONE
-	_warn_more.custom_minimum_size = Vector2(44, 30)
-	_warn_more.add_theme_font_size_override("font_size", UI.FONT_SECONDARY)
-	_warn_more.visible = false
-	_warn_slot.get_meta("row").add_child(_warn_more)
-	_warn_more.pressed.connect(func(): _toggle_panel(_warn_list))
-	_crit_slot = _slot("critical", UI.CORAL)
-	UI.place(_crit_slot, "tc", -70, 76, 340, 48)
-	_crit_text = _crit_slot.get_meta("text")
-	_warn_list = PanelContainer.new()
-	_warn_list.add_theme_stylebox_override("panel", UI.box(0.8, UI.RADIUS_PANEL, 0.3, 1, 14, 10, UI.WARN))
-	UI.place(_warn_list, "tc", -70, 132, 340, 0)
-	_warn_list_box = VBoxContainer.new()
-	_warn_list_box.add_theme_constant_override("separation", 8)
-	_warn_list.add_child(_warn_list_box)
-	_warn_list.visible = false
-	root.add_child(_warn_list)
+	_avisos = HudAvisos.new(self)
+	_warn_list = _avisos.lista
 	_toast = PanelContainer.new()
 	_toast.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PILL, 0.35, 1, 18, 8))
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(_toast, "bc", 0, 128, 360, 0)
+	# Desplazado a la derecha del centro: la tarjeta de radio ocupa la esquina inferior izquierda (hasta x = 580).
+	_toast.offset_left += 140
+	_toast.offset_right += 140
 	_toast_text = UI.label(_toast, "", UI.FONT_SECONDARY)
 	_toast_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -319,6 +310,7 @@ func _build_bottom() -> void:
 	_comms = PanelContainer.new()
 	_comms.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_NORMAL, UI.RADIUS_PILL, 0.25, 1, 14, 6))
 	_comms.mouse_filter = Control.MOUSE_FILTER_STOP
+	_comms.tooltip_text = tr("ACT_INFO_RELAY")
 	UI.place(_comms, "br", 20, 20, 166, 32)
 	_comms.custom_minimum_size = Vector2(166, 32)
 	root.add_child(_comms)
@@ -385,9 +377,21 @@ func _build_bottom() -> void:
 	UI.place(_progress, "bc", 0, 68, 220, 6)
 	_progress.visible = false
 	root.add_child(_progress)
-	_debug = UI.label(root, "", 12, Color(UI.CREAM, 0.8))
-	UI.place(_debug, "bl", 20, 66, 420, 18)
-	_debug.visible = inspection
+	_debug = UI.label(root, "", 13, Color(UI.CREAM, 0.95))
+	# Arriba al centro: es el único hueco libre (abajo están la bodega, las acciones y la radio).
+	_debug.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_debug.offset_left = -150
+	_debug.offset_right = 150
+	_debug.offset_top = 8
+	_debug.offset_bottom = 54
+	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var fondo_fps := StyleBoxFlat.new()
+	fondo_fps.bg_color = Color(0.05, 0.04, 0.04, 0.72)
+	fondo_fps.set_corner_radius_all(6)
+	fondo_fps.set_content_margin_all(6)
+	_debug.add_theme_stylebox_override("normal", fondo_fps)
+	_debug.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_debug.visible = inspection or Graficos.mostrar_fps()
 
 
 func _build_target_ui() -> void:
@@ -554,7 +558,19 @@ func _build_pause() -> void:
 	nota.custom_minimum_size.x = 372
 	# Subvista de opciones.
 	settings = _subview(tr("OPTIONS"))
-	var cuerpo: VBoxContainer = settings.get_meta("body")
+	# Dos columnas: lo general a la izquierda y los gráficos a la derecha (cabe en 1280×720 sin desplazarse).
+	UI.place(settings, "c", 0, 0, 900, 610)
+	var columnas := HBoxContainer.new()
+	columnas.add_theme_constant_override("separation", 28)
+	(settings.get_meta("body") as VBoxContainer).add_child(columnas)
+	var cuerpo := VBoxContainer.new()
+	cuerpo.add_theme_constant_override("separation", 12)
+	cuerpo.custom_minimum_size.x = 360
+	columnas.add_child(cuerpo)
+	var derecha := VBoxContainer.new()
+	derecha.add_theme_constant_override("separation", 10)
+	derecha.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columnas.add_child(derecha)
 	var idioma := HBoxContainer.new()
 	idioma.add_theme_constant_override("separation", 8)
 	cuerpo.add_child(idioma)
@@ -580,17 +596,12 @@ func _build_pause() -> void:
 	sonido.text = tr("SOUND")
 	sonido.button_pressed = not muted
 	cuerpo.add_child(sonido)
-	var calidad := CheckButton.new()
-	calidad.text = tr("QUALITY")
-	calidad.button_pressed = quality
-	cuerpo.add_child(calidad)
 	var completa := CheckButton.new()
 	completa.text = tr("FULLSCREEN")
 	completa.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	cuerpo.add_child(completa)
 	deslizador.value_changed.connect(func(valor: float): volume = valor; preferences_changed.emit(volume, muted, quality))
 	sonido.toggled.connect(func(on: bool): muted = not on; preferences_changed.emit(volume, muted, quality))
-	calidad.toggled.connect(func(on: bool): quality = on; preferences_changed.emit(volume, muted, quality))
 	completa.toggled.connect(func(on: bool): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
 	if not Texto.tamanos_disponibles().is_empty():
 		UI.label(cuerpo, tr("WINDOW_SIZE"), UI.FONT_SECONDARY)
@@ -599,6 +610,18 @@ func _build_pause() -> void:
 		ventana.add_theme_constant_override("v_separation", 6)
 		cuerpo.add_child(ventana)
 		Texto.botones_tamano(ventana, func(): completa.set_pressed_no_signal(false))
+	UI.label(derecha, tr("GRAPHICS"), UI.FONT_TEXT, UI.AMBER)
+	var opciones_graficos := OpcionesGraficos.new(graficos if not graficos.is_empty() else Graficos.cargar(), 14)
+	derecha.add_child(opciones_graficos)
+	_fps_check = opciones_graficos.casilla_fps()
+	opciones_graficos.fps_cambiado.connect(func(on: bool) -> void:
+		_debug.visible = on or inspection
+		_debug.text = ""
+		_fps_hist.clear())
+	opciones_graficos.cambiado.connect(func(g: Dictionary) -> void:
+		graficos = g
+		quality = bool(g["texturas"])
+		graficos_changed.emit(g))
 	UI.label(cuerpo, tr("SAVED_SETTINGS"), 12, Color(UI.CREAM, 0.7))
 	# Subvista de ayuda.
 	help_view = _subview(tr("HELP_TITLE"))
@@ -850,6 +873,7 @@ func update_snapshot(s: Dictionary) -> void:
 	var seguro := bool(s.get("safe_mode", false))
 	for c in _ops:
 		c.visible = en_operacion
+	_goals.visible = en_operacion and not (metas_tapadas.is_valid() and metas_tapadas.call())
 	_landing_text.visible = fase == "landing"
 	# Los cambios de tema de un control rehacen su diseño: solo se tocan cuando cambia la fase de aterrizaje.
 	var titulo_aterrizaje := fase == "landing"
@@ -881,7 +905,7 @@ func update_snapshot(s: Dictionary) -> void:
 	var bateria: Dictionary = s.get("battery", {})
 	var capacidad := maxf(1.0, float(bateria.get("capacity", 1.0)))
 	var porcentaje := roundi(float(bateria.get("wh", 0.0)) / capacidad * 100.0)
-	var baja := _has_warning(s, "LOW_BATTERY") if s.has("warnings") else porcentaje <= 20
+	var baja := HudAvisos.hay(s, "LOW_BATTERY") if s.has("warnings") else porcentaje <= 20
 	var tono := UI.CORAL if seguro else (UI.AMBER if baja else UI.CREAM)
 	_energy_text.text = tr("ENERGY_PILL") % porcentaje
 	if tono != _tono_energia:
@@ -902,7 +926,7 @@ func update_snapshot(s: Dictionary) -> void:
 		show_notice("NIGHT_NOTICE")
 	_was_night = noche
 	_night_known = true
-	_update_warnings(s, en_operacion)
+	_avisos.actualizar(s, en_operacion)
 	_update_comms(s)
 	var bloqueado := pausa or seguro or not en_operacion
 	var disponibles: Dictionary = s.get("available_actions", {})
@@ -912,7 +936,7 @@ func update_snapshot(s: Dictionary) -> void:
 		var motivo := str(d.get("reason", ""))
 		b.visible = accion == "upgrade" or motivo != "NO_INSTRUMENT"
 		b.disabled = bloqueado or not bool(d.get("enabled", false))
-		b.tooltip_text = tr(motivo) if b.disabled and not motivo.is_empty() else _hotkey_hint(accion)
+		b.tooltip_text = _ayuda(accion, tr(motivo) if b.disabled and not motivo.is_empty() else _hotkey_hint(accion))
 		if accion == "upgrade" and s.has("base"):
 			var nivel := int(s.get("antenna_level", 0))
 			var base: Dictionary = s["base"]
@@ -926,7 +950,7 @@ func update_snapshot(s: Dictionary) -> void:
 	var dt: Dictionary = disponibles.get("transmit", {"enabled": false, "reason": "WAIT"})
 	buttons.transmit.disabled = bloqueado or not bool(dt.get("enabled", false))
 	buttons.transmit.text = tr("STOP_SHORT") if s.get("transmitting", false) else tr("TRANSMIT_SHORT")
-	buttons.transmit.tooltip_text = tr(str(dt.get("reason", ""))) if buttons.transmit.disabled else _hotkey_hint("transmit")
+	buttons.transmit.tooltip_text = _ayuda("transmit", tr(str(dt.get("reason", ""))) if buttons.transmit.disabled else _hotkey_hint("transmit"))
 	_refresh_target(s, bloqueado)
 	_update_info(s)
 	_update_summary(s)
@@ -954,80 +978,17 @@ func update_snapshot(s: Dictionary) -> void:
 		_pending_help = false
 
 
+## Texto al pasar el mouse por un botón: qué hace (ACT_INFO_*) y debajo el atajo o por qué no se puede ahora.
+func _ayuda(accion: String, extra: String) -> String:
+	var clave := "ACT_INFO_" + accion.to_upper()
+	var que_hace := tr(clave)
+	if que_hace == clave:
+		return extra
+	return que_hace if extra.is_empty() else que_hace + "\n\n" + extra
+
+
 func _hotkey_hint(accion: String) -> String:
 	return "%s  [%s]" % [tr(accion.to_upper()) if accion != "transmit" else tr("TRANSMIT_SHORT"), HOTKEY_TEXT[accion]] if HOTKEY_TEXT.has(accion) else ""
-
-
-func _has_warning(s: Dictionary, id: String) -> bool:
-	for aviso in s.get("warnings", []):
-		if str(aviso.get("id", "")) == id:
-			return true
-	return false
-
-
-func _warning_list(s: Dictionary) -> Array:
-	if s.has("warnings"):
-		return s["warnings"]
-	# Proveedor de revisión de B (sin avisos): solo los estados evidentes.
-	var lista := []
-	if s.get("safe_mode", false):
-		lista.append({"id": "SAFE_MODE", "severity": "critical", "key": "WARN_SAFE_MODE", "values": []})
-	if s.get("storm", false):
-		lista.append({"id": "STORM_ACTIVE", "severity": "warning", "key": "WARN_STORM_ACTIVE", "values": []})
-	return lista
-
-
-func _format(aviso: Dictionary) -> String:
-	var valores = aviso.get("values", [])
-	if str(aviso.get("key", "")) == "WARN_STORM_SOON" and valores is Array and not valores.is_empty():
-		var horas := float(valores[0]) * 24.0
-		if horas < 24.0:  # menos de un sol: se dice en horas, no «0.1 soles»
-			return tr("WARN_STORM_SOON_H") % maxi(1, ceili(horas))
-	var texto := tr(str(aviso.get("key", "")))
-	if valores is Array and not valores.is_empty():
-		texto = texto % valores
-	return _decimal(texto)
-
-
-## En español los decimales llevan coma.
-func _decimal(texto: String) -> String:
-	if not TranslationServer.get_locale().begins_with("es"):
-		return texto
-	var er := RegEx.new()
-	er.compile("(\\d)\\.(\\d)")
-	return er.sub(texto, "$1,$2", true)
-
-
-func _update_warnings(s: Dictionary, en_operacion: bool) -> void:
-	var criticos := []
-	var avisos := []
-	if en_operacion:
-		for aviso in _warning_list(s):
-			if str(aviso.get("severity", "")) == "critical":
-				criticos.append(aviso)
-			else:
-				avisos.append(aviso)
-	if criticos.is_empty():
-		_fade(_crit_slot, false)
-	else:
-		_crit_text.text = _format(criticos[0])
-		_fade(_crit_slot, true)
-	if avisos.is_empty():
-		_fade(_warn_slot, false)
-		_warn_list.visible = false
-	else:
-		_warn_text.text = _format(avisos[0])
-		_warn_more.visible = avisos.size() > 1
-		_warn_more.text = tr("MORE_WARNINGS") % (avisos.size() - 1)
-		_fade(_warn_slot, true)
-		for hijo in _warn_list_box.get_children():
-			hijo.queue_free()
-		for aviso in avisos:
-			var linea := UI.label(_warn_list_box, _format(aviso), UI.FONT_SECONDARY)
-			linea.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			linea.custom_minimum_size.x = 360
-		if avisos.size() < 2:
-			_warn_list.visible = false
 
 
 func _time_text(s: Dictionary, sol: int, hora: float) -> String:
@@ -1061,7 +1022,7 @@ func _update_comms(s: Dictionary) -> void:
 	else:
 		_comms_detail.text = siguiente if abierto else tr(motivo) if not motivo.is_empty() else siguiente
 		_comms_detail.add_theme_color_override("font_color", Color(UI.CREAM, 0.85))
-	_comms_wants = abierto or bool(s.get("transmitting", false)) or _has_warning(s, "LINK_OPENING_SOON")
+	_comms_wants = abierto or bool(s.get("transmitting", false)) or HudAvisos.hay(s, "LINK_OPENING_SOON")
 
 
 func _set_comms_expanded(on: bool) -> void:
@@ -1075,7 +1036,7 @@ func _set_comms_expanded(on: bool) -> void:
 	else:
 		_comms_row.visible = false
 		_comms_tween.tween_property(_comms, "custom_minimum_size", Vector2(166, 32), 0.18)
-		_comms_tween.tween_callback(func(): _comms.size = _comms.get_combined_minimum_size(); _comms.reset_size())
+		_comms_tween.tween_callback(func(): _comms.reset_size())
 
 
 func _target() -> Dictionary:
@@ -1149,7 +1110,8 @@ func _set_row(fila: Button, deshabilitada: bool, motivo: String) -> void:
 	etiqueta.text = tr(motivo) if mostrar else ""
 	etiqueta.visible = mostrar
 	fila.theme_type_variation = "RowButtonReason" if mostrar else "RowButton"
-	fila.tooltip_text = tr(motivo) if mostrar else ""
+	var accion := str(_rows.find_key(fila)) if _rows.values().has(fila) else ""
+	fila.tooltip_text = _ayuda(accion, tr(motivo) if mostrar else "")
 
 
 func _update_info(s: Dictionary) -> void:
@@ -1169,7 +1131,7 @@ func _update_info(s: Dictionary) -> void:
 	if s.get("storm", false):
 		tormenta = tr("STORM_ACTIVE_SHORT")
 	elif float(s.get("storm_in", -1.0)) > 0.0:
-		tormenta = _decimal(tr("STORM_IN") % float(s.get("storm_in", 0.0)))
+		tormenta = HudAvisos.decimal(tr("STORM_IN") % float(s.get("storm_in", 0.0)))
 	_info_values["INFO_STORM"].text = tormenta
 
 
@@ -1281,16 +1243,54 @@ func _process(delta: float) -> void:
 			_progress.visible = false
 	_place_target_ui()
 	_layout_actions()
+	# Con el menú de pausa u opciones abierto, el HUD sube por encima de la base, la ciencia y la radio (que si no
+	# asoman por encima del panel oscuro).
+	var capa := 9 if is_instance_valid(_dim) and _dim.visible else 5
+	if layer != capa:
+		layer = capa
 	var querer := _comms_wants or _comms_hover
 	if querer != _comms_expanded and _comms.visible:
 		_set_comms_expanded(querer)
 	if _debug.visible:
-		_debug.text = "%s%d FPS · %d draw · %.1fk tris" % [tr("INSPECTION") + " · " if inspection else "", Engine.get_frames_per_second(),
-			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-			Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0]
+		_actualizar_fps(delta)
 	var vista := get_parent()
 	if vista != null and vista.get("rig") != null and vista.has_method("blocked"):
 		vista.rig.enabled = not vista.blocked() and not settings.visible and not review_panel.visible
+
+
+## Contador de rendimiento: FPS, el peor cuadro de los últimos 2 s, tiempo por cuadro y carga gráfica.
+func _actualizar_fps(delta: float) -> void:
+	_fps_peor_ms = maxf(_fps_peor_ms, delta * 1000.0)
+	_fps_t += delta
+	if _fps_t < 0.5 and _debug.text != "":
+		return
+	_fps_t = 0.0
+	_fps_hist.append(_fps_peor_ms)
+	_fps_peor_ms = 0.0
+	if _fps_hist.size() > 4:
+		_fps_hist.pop_front()
+	var peor := 0.0
+	for ms in _fps_hist:
+		peor = maxf(peor, ms)
+	var extra := ""
+	var vista := get_parent()
+	if vista != null and vista.get("calidad") != null and is_instance_valid(vista.get("calidad")):
+		extra = " · " + tr("GFX_FPS_AUTO") % int(vista.calidad.nivel())
+	var fps := Engine.get_frames_per_second()
+	_debug.text = "%s%d FPS · %s %d · %.1f ms\n%d draw · %.1fk tris · %s %d%%%s" % [
+		tr("INSPECTION") + " · " if inspection else "", fps, tr("GFX_FPS_MIN"), roundi(1000.0 / maxf(peor, 1.0)),
+		1000.0 / maxf(fps, 1), roundi(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0,
+		str(graficos.get("preset", "")).capitalize(), roundi(get_viewport().scaling_3d_scale * 100.0), extra]
+
+
+func _poner_fps(activo: bool) -> void:
+	_debug.visible = activo
+	_debug.text = ""
+	_fps_hist.clear()
+	Graficos.guardar_fps(activo)
+	if is_instance_valid(_fps_check):
+		_fps_check.set_pressed_no_signal(activo)
 
 
 ## Fila de acciones: centrada abajo, pero nunca bajo el panel de comunicación ni sobre el reloj.
@@ -1299,12 +1299,26 @@ func _layout_actions() -> void:
 		return
 	var ancho_vista := root.size.x
 	var ancho := maxf(_actions_row.get_combined_minimum_size().x, 1.0)
-	var comms_izq := ancho_vista - 20.0 - (_comms.size.x if _comms.visible else 0.0)
+	# Se usa el ancho del panel del relé ya desplegado (336) aunque esté animándose: así no se mueve a saltos.
+	var ancho_comms := maxf(_comms.size.x, 336.0 if _comms_expanded else 166.0) if _comms.visible else 0.0
+	var comms_izq := ancho_vista - 20.0 - ancho_comms
 	var izq := ancho_vista * 0.5 - ancho * 0.5
 	izq = minf(izq, comms_izq - 16.0 - ancho)
 	izq = maxf(izq, 180.0)
 	_actions_row.offset_left = izq
 	_actions_row.offset_right = izq + ancho
+	# Si aun así no caben en la misma línea (pantallas estrechas o relé desplegado), el relé sube por encima de la fila.
+	# El relé queda siempre pegado a la derecha (antes, al plegarse, fijar su tamaño lo corría a la izquierda un poco
+	# cada vez hasta tapar la fila de acciones).
+	if _comms.offset_right != -20.0 or _comms.offset_left != -186.0:
+		_comms.offset_right = -20.0
+		_comms.offset_left = -186.0
+	var encima := _comms.visible and izq + ancho > comms_izq - 12.0
+	var abajo := 20.0 + (48.0 if encima else 0.0)
+	if not is_equal_approx(-_comms.offset_bottom, abajo):
+		var alto := _comms.offset_bottom - _comms.offset_top
+		_comms.offset_bottom = -abajo
+		_comms.offset_top = -abajo - alto
 
 
 func _input(e: InputEvent) -> void:
@@ -1312,7 +1326,7 @@ func _input(e: InputEvent) -> void:
 	if not (e is InputEventMouseButton and e.pressed) or not is_instance_valid(root):
 		return
 	var cerrado := false
-	for par in [[_info, [_energy_pill, _science_pill]], [_summary, [_summary_button]], [_warn_list, [_warn_more]], [_list, [_arrow]]]:
+	for par in [[_info, [_energy_pill, _science_pill]], [_summary, [_summary_button]], [_warn_list, [_avisos.boton_mas]], [_list, [_arrow]]]:
 		var panel: Control = par[0]
 		if not panel.visible or panel.get_global_rect().has_point(e.position):
 			continue
@@ -1349,7 +1363,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		review_panel.visible = not review_panel.visible
 		get_viewport().set_input_as_handled()
 	elif tecla == KEY_F3 or tecla == KEY_P:  # P: alternativa para teclados donde F3 exige Fn o lo captura el editor/navegador
-		_debug.visible = not _debug.visible
+		_poner_fps(not _debug.visible)
 		get_viewport().set_input_as_handled()
 	elif tecla == KEY_F1 or tecla == KEY_H:
 		show_help()

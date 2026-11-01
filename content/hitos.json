@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "estado": "ronda G (1 nov 2026): la ciencia avanza por etapas. Cada hito da un tramo de datos a la memoria (luego hay que transmitirlos). Los hitos siguen los cuatro objetivos científicos de Mars 2020 Perseverance (geología, astrobiología, muestras y preparación para humanos). Suman 88; los análisis sueltos dan muy poco (1–2) y la meteo 1 por sol, así que el 100 % llega cerca del final y no en el primer sol.",
+  "objetivos": [
+    { "id": "geologia", "nombre": { "es": "Geología del cráter", "en": "Crater geology" } },
+    { "id": "astrobiologia", "nombre": { "es": "Astrobiología", "en": "Astrobiology" } },
+    { "id": "muestras", "nombre": { "es": "Muestras para la Tierra", "en": "Samples for Earth" } },
+    { "id": "humanos", "nombre": { "es": "Preparar la llegada humana", "en": "Prepare for humans" } }
+  ],
+  "hitos": [
+    { "id": "primera_lectura", "objetivo": "geologia", "datos": 4, "condicion": { "rocas_analizadas": 1 },
+      "nombre": { "es": "Primera lectura del espectrómetro", "en": "First spectrometer reading" } },
+    { "id": "estratos", "objetivo": "geologia", "datos": 8, "condicion": { "rocas_analizadas": 5 },
+      "nombre": { "es": "Estratos del delta (5 rocas)", "en": "Delta strata (5 rocks)" } },
+    { "id": "mapa_crater", "objetivo": "geologia", "datos": 8, "condicion": { "zonas": 3 },
+      "nombre": { "es": "Mapa del cráter (3 zonas)", "en": "Crater map (3 zones)" } },
+    { "id": "olivino", "objetivo": "astrobiologia", "datos": 6, "condicion": { "minerales": 1 },
+      "nombre": { "es": "Olivino: rastro de agua antigua", "en": "Olivine: trace of ancient water" } },
+    { "id": "hielo", "objetivo": "astrobiologia", "datos": 8, "condicion": { "enterrados": 1 },
+      "nombre": { "es": "Hielo del subsuelo", "en": "Subsurface ice" } },
+    { "id": "biofirmas", "objetivo": "astrobiologia", "datos": 10, "condicion": { "minerales": 4, "enterrados": 3 },
+      "nombre": { "es": "Posibles biofirmas", "en": "Possible biosignatures" } },
+    { "id": "primer_nucleo", "objetivo": "muestras", "datos": 4, "condicion": { "muestras": 1 },
+      "nombre": { "es": "Primer núcleo de roca", "en": "First rock core" } },
+    { "id": "coleccion", "objetivo": "muestras", "datos": 8, "condicion": { "muestras": 8 },
+      "nombre": { "es": "Colección de muestras (8)", "en": "Sample collection (8)" } },
+    { "id": "enlace", "objetivo": "humanos", "datos": 6, "condicion": { "antena": 1 },
+      "nombre": { "es": "Enlace con la Tierra (Antena Nv. 1)", "en": "Link to Earth (Antenna Lv. 1)" } },
+    { "id": "energia_base", "objetivo": "humanos", "datos": 4, "condicion": { "paneles": 2 },
+      "nombre": { "es": "Base con energía (2 paneles)", "en": "Powered base (2 panels)" } },
+    { "id": "antena_2", "objetivo": "humanos", "datos": 8, "condicion": { "antena": 2 },
+      "nombre": { "es": "Antena Nv. 2", "en": "Antenna Lv. 2" } },
+    { "id": "base_defendida", "objetivo": "humanos", "datos": 6, "condicion": { "oleadas": 1 },
+      "nombre": { "es": "Base defendida (1 oleada)", "en": "Base defended (1 wave)" } },
+    { "id": "antena_3", "objetivo": "humanos", "datos": 8, "condicion": { "antena": 3 },
+      "nombre": { "es": "Antena Nv. 3", "en": "Antenna Lv. 3" } }
+  ]
+}

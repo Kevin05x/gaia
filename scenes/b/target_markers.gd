@@ -28,8 +28,8 @@ func _draw() -> void:
 		return
 	var marco := Rect2(Vector2.ZERO, size).grow(-BORDE)
 	for t in targets:
-		if not t.get("revealed", false):
-			continue
+		if not t.get("revealed", false) or t.get("depleted", false):
+			continue  # agotado: el objetivo ya no está en el mapa
 		var id := str(t.get("id", ""))
 		var datos: Dictionary = project.call(id)
 		if datos.is_empty():

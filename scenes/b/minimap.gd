@@ -61,7 +61,7 @@ func _draw() -> void:
 	# Todo lo que sigue va a un lote que se dibuja con una sola llamada (antes eran ~4 por objetivo y 2 por monstruo).
 	# Objetivos revelados: rombo con aro.
 	for t in state.get("targets", []):
-		if not t.get("revealed", false):
+		if not t.get("revealed", false) or t.get("depleted", false):
 			continue
 		var p := point(t.get("tile", Vector2i.ZERO))
 		var agotado: bool = t.get("depleted", false)

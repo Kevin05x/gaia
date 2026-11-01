@@ -17,6 +17,8 @@ var estacion: Vector2i = Vector2i.ZERO
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
 var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
+var muros: Dictionary = {}  ## casilla -> id del muro o compuerta: los monstruos los rodean o los rompen
+var liberadas: Dictionary = {}  ## casillas de objetivos ya agotados: el objetivo desaparece y la casilla queda libre
 var zonas: Array[Dictionary] = []  ## {"id", "centro"}: cada casilla pertenece a la zona de centro más cercano
 var nidos: Array[Dictionary] = []  ## {"id", "tile", "zone"}: de aquí salen los monstruos; el rover no los pisa
 var errores: PackedStringArray = PackedStringArray()
@@ -46,7 +48,25 @@ func dentro_de_limites(casilla: Vector2i) -> bool:
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
 func bloqueada(casilla: Vector2i) -> bool:
-	return not dentro_de_limites(casilla) or _fijas.has(casilla) or bloqueos_extra.has(casilla)
+	return not dentro_de_limites(casilla) or (_fijas.has(casilla) and not liberadas.has(casilla)) or bloqueos_extra.has(casilla)
+
+
+## Coste extra (en pasos) de atravesar un muro: si hay un hueco a menos de esta distancia, los monstruos lo rodean;
+## si la barrera está cerrada, van hacia el muro y lo golpean hasta romperlo (como en Clash of Clans).
+const COSTO_MURO := 12
+
+
+func fijar_muros(nuevos: Dictionary) -> void:
+	if nuevos.size() != muros.size() or not nuevos.keys().all(func(k) -> bool: return muros.has(k)):
+		muros = nuevos.duplicate()
+		_campo.clear()
+
+
+## El objetivo de esa casilla se agotó y desaparece: la casilla se puede pisar y construir.
+func liberar(casilla: Vector2i) -> void:
+	if not liberadas.has(casilla):
+		liberadas[casilla] = true
+		_campo.clear()  # los monstruos también pueden pasar por ahí
 
 
 ## Id de la zona de la casilla (la de centro más cercano); "" si el mapa no tiene zonas.
@@ -85,7 +105,7 @@ func es_nido(casilla: Vector2i) -> bool:
 func bloqueada_para_enemigos(casilla: Vector2i) -> bool:
 	if not dentro_de_limites(casilla):
 		return true
-	return _fijas.has(casilla) and not _casillas_nido.has(casilla) and casilla != estacion
+	return _fijas.has(casilla) and not liberadas.has(casilla) and not _casillas_nido.has(casilla) and casilla != estacion
 
 
 ## Pasos que le faltan a un monstruo en «casilla» para llegar a la estación (-1 si no puede).
@@ -107,30 +127,46 @@ func paso_hacia_la_estacion(casilla: Vector2i) -> Vector2i:
 		if pasos < 0 or pasos >= mejor:
 			continue
 		if desplazamiento.x != 0 and desplazamiento.y != 0 and (bloqueada_para_enemigos(casilla + Vector2i(desplazamiento.x, 0)) \
-				or bloqueada_para_enemigos(casilla + Vector2i(0, desplazamiento.y))):
-			continue  # sin cortar esquinas
+				or bloqueada_para_enemigos(casilla + Vector2i(0, desplazamiento.y)) or muros.has(siguiente) \
+				or muros.has(casilla + Vector2i(desplazamiento.x, 0)) or muros.has(casilla + Vector2i(0, desplazamiento.y))):
+			continue  # sin cortar esquinas ni colarse entre muros
 		mejor = pasos
 		elegido = siguiente
 	return elegido
 
 
-## Relleno desde la estación (un solo cálculo: el mapa es fijo; los edificios no estorban a los monstruos).
+## Relleno desde la estación. Se rehace solo si cambian los muros o una casilla agotada se libera; los demás
+## edificios no estorban a los monstruos (los atacan al pasar).
 func _calcular_campo() -> void:
+	# Distancias con coste (algoritmo de Dial: cubetas por coste, los costes son enteros pequeños). Pisar un muro cuesta
+	# 1 + COSTO_MURO; en diagonal no se cuela entre dos muros ni por esquinas bloqueadas.
 	_campo = {estacion: 0}
-	var cola: Array[Vector2i] = [estacion]
-	var indice := 0
-	while indice < cola.size():
-		var actual := cola[indice]
-		indice += 1
-		for desplazamiento in VECINOS_ENEMIGOS:
-			var siguiente: Vector2i = actual + desplazamiento
-			if _campo.has(siguiente) or bloqueada_para_enemigos(siguiente):
-				continue
-			if desplazamiento.x != 0 and desplazamiento.y != 0 and (bloqueada_para_enemigos(actual + Vector2i(desplazamiento.x, 0)) \
-					or bloqueada_para_enemigos(actual + Vector2i(0, desplazamiento.y))):
-				continue
-			_campo[siguiente] = int(_campo[actual]) + 1
-			cola.append(siguiente)
+	var cubetas: Dictionary = {0: [estacion]}
+	var coste := 0
+	var pendientes := 1
+	while pendientes > 0:
+		var cubeta: Array = cubetas.get(coste, [])
+		cubetas.erase(coste)
+		for actual in cubeta:
+			pendientes -= 1
+			if int(_campo[actual]) != coste:
+				continue  # ya se llegó por un camino más barato
+			for desplazamiento in VECINOS_ENEMIGOS:
+				var siguiente: Vector2i = actual + desplazamiento
+				if bloqueada_para_enemigos(siguiente):
+					continue
+				if desplazamiento.x != 0 and desplazamiento.y != 0:
+					var a: Vector2i = actual + Vector2i(desplazamiento.x, 0)
+					var b: Vector2i = actual + Vector2i(0, desplazamiento.y)
+					if bloqueada_para_enemigos(a) or bloqueada_para_enemigos(b) or muros.has(a) or muros.has(b) or muros.has(siguiente):
+						continue
+				var nuevo := coste + 1 + (COSTO_MURO if muros.has(siguiente) else 0)
+				if _campo.has(siguiente) and int(_campo[siguiente]) <= nuevo:
+					continue
+				_campo[siguiente] = nuevo
+				cubetas.get_or_add(nuevo, []).append(siguiente)
+				pendientes += 1
+		coste += 1
 
 
 ## Ruta más corta (4 direcciones) sin incluir la casilla de salida. Vacía si no hay ruta,

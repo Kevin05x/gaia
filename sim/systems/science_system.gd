@@ -61,6 +61,9 @@ func principal_de(lista: Array[Dictionary], objetivo: Dictionary) -> String:
 	for entrada in lista:
 		if not hechas.has(entrada["id"]):
 			return entrada["id"]
+	for entrada in lista:
+		if entrada["reason"] != "DEPLETED":
+			return entrada["id"]  # ya analizado: lo principal pasa a ser seguir extrayendo
 	return lista[0]["id"]
 
 
@@ -161,17 +164,16 @@ func _motivo(estado: MissionState, accion: String, objetivo_id: String) -> Strin
 		return "NO_INSTRUMENT"
 	if estado.bateria_wh < float(definicion["costo_wh"]):
 		return "LOW_ENERGY"
+	if accion == "drill" and recursos != null and recursos.bodega_llena(estado):
+		return "CARGO_FULL"  # el taladro es para sacar recursos: primero hay que descargar la bodega
 	if not objetivo.is_empty():
 		var casilla: Vector2i = objetivo["tile"]
 		if maxi(absi(estado.casilla_rover.x - casilla.x), absi(estado.casilla_rover.y - casilla.y)) > 1:
 			return "TOO_FAR"
 		var hechas: Array = objetivo.get("done", [])
-		if hechas.has(accion):
+		if hechas.has(accion) and (accion != "drill" or int(objetivo.get("extractions", 1)) >= extracciones_maximas()):
 			return "DEPLETED"
-		# Si ya no se puede enviar más (tope de la historia), la memoria llena no debe frenar la recogida de recursos.
-		var sin_envio := estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max
-		if not sin_envio and estado.datos + _rendimiento(accion, objetivo["type"]) > estado.memoria_capacidad:
-			return "MEMORY_FULL"
+		# La memoria llena ya no bloquea nada: la ciencia que no cabe se pierde, pero los recursos se recogen igual.
 	if accion == "drone":
 		if estado.tormenta:
 			return "WEATHER"
@@ -201,6 +203,11 @@ func _objetivo(estado: MissionState, objetivo_id: String) -> Dictionary:
 		_posicion[estado.objetivos[k]["id"]] = k
 	i = _posicion.get(objetivo_id, -1)
 	return estado.objetivos[i] if i >= 0 else {}
+
+
+## Veces que se puede taladrar un mismo objetivo para sacar recursos (la ciencia solo cuenta la primera).
+func extracciones_maximas() -> int:
+	return maxi(1, int(_balance.numero("ciencia.extracciones_por_objetivo")))
 
 
 func _rendimiento(accion: String, tipo: String) -> float:
@@ -236,14 +243,19 @@ func _analizar(estado: MissionState, accion: String, objetivo_id: String, evento
 		return
 	if not objetivo.has("done"):
 		objetivo["done"] = []
-	objetivo["done"].append(accion)
-	estado.datos = minf(estado.memoria_capacidad, estado.datos + _rendimiento(accion, objetivo["type"]))
-	if objetivo["type"] == "mineral":
-		estado.minerales += int(_balance.numero("ciencia.minerales_por_mineral"))
+	var primera_vez: bool = not objetivo["done"].has(accion)
+	if primera_vez:
+		# La ciencia sale solo la primera vez que se analiza el objetivo con cada instrumento.
+		objetivo["done"].append(accion)
+		estado.datos = minf(estado.memoria_capacidad, estado.datos + _rendimiento(accion, objetivo["type"]))
+		if objetivo["type"] == "mineral":
+			estado.minerales += int(_balance.numero("ciencia.minerales_por_mineral"))
+	if accion == "drill":
+		objetivo["extractions"] = int(objetivo.get("extractions", 0)) + 1
 	if recursos != null:
 		eventos.append_array(recursos.recolectar(estado, accion, objetivo["type"]))
 	var requeridas: Array = ACCIONES_POR_TIPO.get(objetivo["type"], [])
-	var completo := true
+	var completo := int(objetivo.get("extractions", 0)) >= extracciones_maximas() or not requeridas.has("drill")
 	for requerida in requeridas:
 		if not objetivo["done"].has(requerida):
 			completo = false

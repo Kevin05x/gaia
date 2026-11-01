@@ -24,13 +24,13 @@ static func poner(padre: Node3D, nombre: String, ancho: float, pos: Vector3 = Ve
 	var centro := caja.get_center()
 	var ajuste := Transform3D(Basis.from_euler(Vector3(0, giro, 0)).scaled(Vector3.ONE * escala), pos) \
 		* Transform3D(Basis.IDENTITY, Vector3(-centro.x, -caja.position.y, -centro.z))
-	for p in datos["piezas"]:
-		var copia := MeshInstance3D.new()
-		copia.mesh = p[0]
-		copia.material_override = p[1]
-		copia.transform = ajuste * (p[2] as Transform3D)
-		padre.add_child(copia)
-		creadas.append(copia)
+	# Rendimiento (WebGL no agrupa mallas): todas las piezas van fundidas en una sola malla con una superficie por
+	# material. Un cristal de 16 piezas pasa de 16 llamadas de dibujo a 2 o 3.
+	var copia := MeshInstance3D.new()
+	copia.mesh = datos["fusion"]
+	copia.transform = ajuste
+	padre.add_child(copia)
+	creadas.append(copia)
 	return creadas
 
 
@@ -75,6 +75,7 @@ static func _datos(nombre: String) -> Dictionary:
 			lista.append([mi.mesh, mi.material_override, p[1]])
 		datos["piezas"] = lista
 		datos["caja"] = caja
+		datos["fusion"] = _fundir(lista)
 	raiz.free()
 	return datos
 
@@ -86,3 +87,25 @@ static func _recoger(nodo: Node, acumulada: Transform3D, salida: Array) -> void:
 			if hijo is MeshInstance3D and (hijo as MeshInstance3D).mesh != null:
 				salida.append([hijo, xf])
 			_recoger(hijo, xf, salida)
+
+
+## Una malla con una superficie por material, con todas las piezas ya colocadas en su sitio.
+static func _fundir(piezas: Array) -> ArrayMesh:
+	var grupos: Dictionary = {}  ## material -> [[malla, superficie, transformación]]
+	var orden: Array = []
+	for p in piezas:
+		var malla: Mesh = p[0]
+		for i in malla.get_surface_count():
+			var material: Material = p[1] if p[1] != null else malla.surface_get_material(i)
+			if not grupos.has(material):
+				grupos[material] = []
+				orden.append(material)
+			grupos[material].append([malla, i, p[2]])
+	var fusion := ArrayMesh.new()
+	for material in orden:
+		var st := SurfaceTool.new()
+		for parte in grupos[material]:
+			st.append_from(parte[0], parte[1], parte[2])
+		st.commit(fusion)
+		fusion.surface_set_material(fusion.get_surface_count() - 1, material)
+	return fusion

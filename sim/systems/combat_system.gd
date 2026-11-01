@@ -256,6 +256,14 @@ func _mover_y_atacar(estado: MissionState, delta_s: float) -> Array[String]:
 				enemigo["atk"] = TTL_ATAQUE
 				eventos.append_array(_golpear(estado, def, blanco))
 			continue
+		# La barrera: si el siguiente paso es un muro, el monstruo se planta delante y lo golpea hasta romperlo.
+		var muro_id: String = _mapa.muros.get(enemigo["dest"], "")
+		if not muro_id.is_empty() and (enemigo["pos"] as Vector2).distance_to(Vector2(enemigo["dest"])) <= 1.05:
+			if float(enemigo["cd"]) <= 0.0:
+				enemigo["cd"] = float(def["cadencia_s"])
+				enemigo["atk"] = TTL_ATAQUE
+				eventos.append_array(_golpear(estado, def, {"kind": "edificio", "id": muro_id}))
+			continue
 		var destino := Vector2(enemigo["dest"])
 		var falta: Vector2 = destino - enemigo["pos"]
 		var paso := float(def["velocidad"]) * delta_s
@@ -272,7 +280,8 @@ func _blanco_en_alcance(estado: MissionState, pos: Vector2, alcance: float) -> D
 	var mejor := {}
 	var mejor_d := alcance
 	for edificio in estado.edificios:
-		if not _edificios.es_objetivo(edificio):
+		# Los muros no atraen a los monstruos: solo golpean el que les cierra el paso (ver _mover_y_atacar).
+		if not _edificios.es_objetivo(edificio) or _edificios.es_muro(edificio["type"]):
 			continue
 		var d := pos.distance_to(Vector2(edificio["tile"]))
 		if d <= mejor_d:

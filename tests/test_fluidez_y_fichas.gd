@@ -208,17 +208,77 @@ func test_hay_muestras_de_todos_los_edificios_para_precalentar() -> void:
 	assert_gt(con_obra, 5, "las obras usan el material de revelado")
 
 
-func test_la_vista_precalienta_y_quita_la_cortina() -> void:
+func test_la_vista_precalienta_por_partes_y_avisa_al_estar_lista() -> void:
 	var juego: Node = load("res://scenes/a/game.tscn").instantiate()
 	add_child_autofree(juego)
 	await get_tree().process_frame
 	var vista: Node = juego.view
 	assert_not_null(vista.warmup)
-	assert_true(vista.warmup.activo() or not is_instance_valid(vista.cortina))
-	assert_gt(vista.warmup.cantidad(), 30, "edificios, monstruos y efectos en reserva")
-	for i in range(30):
+	assert_gt(vista.warmup.cantidad(), 15, "edificios, monstruos y efectos en reserva")
+	var visibles := 0
+	for m in vista.warmup.get_children():
+		if (m as Node3D).visible:
+			visibles += 1
+	assert_lte(visibles, ShaderWarmup.POR_CUADRO, "pocas muestras por cuadro: el navegador no se congela")
+	assert_false(vista.esta_listo())
+	for i in range(400):
+		if vista.esta_listo():
+			break
 		await get_tree().process_frame
+	assert_true(vista.esta_listo(), "terreno construido y sombreadores precalentados")
+	assert_true(vista.terrain._built)
 	assert_false(vista.warmup.activo())
 	assert_eq(vista.warmup.get_child_count(), 0, "las muestras se borran")
 	await get_tree().create_timer(0.5).timeout
 	assert_false(is_instance_valid(vista.cortina), "la cortina se desvanece")
+
+
+func test_el_terreno_por_pasos_reparte_el_trabajo_en_varios_cuadros() -> void:
+	var terreno: Node3D = load("res://scenes/b/terrain.gd").new()
+	terreno.lazy = true
+	terreno.por_pasos = true
+	add_child_autofree(terreno)
+	terreno.configure([], [Vector2i(3, 3)], {"min": Vector2i(-35, -35), "max": Vector2i(35, 35)}, [])
+	assert_true(terreno.construyendo(), "configure() vuelve enseguida y el mundo sigue por pasos")
+	assert_false(terreno._built)
+	await wait_for_signal(terreno.mundo_listo, 5.0)
+	assert_true(terreno._built)
+	assert_false(terreno.construyendo())
+
+
+# --- Ronda F ---------------------------------------------------------------------------------------------------------
+
+func test_la_calidad_baja_sola_y_por_orden_si_el_equipo_va_lento() -> void:
+	var calidad: Node = preload("res://scenes/b/calidad_dinamica.gd").new()
+	add_child_autofree(calidad)
+	calidad.set_process(false)
+	assert_eq(get_viewport().msaa_3d, Viewport.MSAA_2X, "empieza con los bordes suavizados")
+	calidad.medir = func() -> bool: return true
+	for i in range(80):
+		calidad._process(0.04)  # 25 cuadros por segundo
+	assert_eq(calidad.nivel(), 1)
+	assert_eq(get_viewport().msaa_3d, Viewport.MSAA_DISABLED, "primero se quita el suavizado")
+	assert_eq(calidad.escala(), 1.0, "sin tocar aún la resolución")
+	for i in range(400):
+		calidad._process(0.04)
+	assert_gte(calidad.escala(), 0.8, "nunca baja tanto como para verse pixelado")
+	calidad.medir = func() -> bool: return false
+	var nivel: int = calidad.nivel()
+	for i in range(200):
+		calidad._process(0.04)
+	assert_eq(calidad.nivel(), nivel, "en pausa o en un menú no mide")
+	get_viewport().scaling_3d_scale = 1.0
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+
+
+func test_la_radio_espera_mientras_el_menu_construir_ocupa_su_sitio() -> void:
+	var panel: CanvasLayer = load("res://scenes/b/story_panel.gd").new()
+	add_child_autofree(panel)
+	var tapada := [true]  # las lambdas copian las variables locales: se usa un arreglo para poder cambiarlo
+	panel.radio_tapada = func() -> bool: return tapada[0]
+	panel._radio_cola.append({"dialogue": [{"who": "houston", "text": {"es": "hola", "en": "hi"}}]})
+	panel._process(0.1)
+	assert_false(is_instance_valid(panel.radio_root) and panel.radio_root.visible, "no se abre encima del menú")
+	tapada[0] = false
+	panel._process(0.1)
+	assert_true(is_instance_valid(panel.radio_root) and panel.radio_root.visible, "se abre al cerrar el menú")

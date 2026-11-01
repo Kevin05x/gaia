@@ -115,7 +115,9 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		var modelo := Node3D.new()
 		nodo.add_child(modelo)
 		datos["model"] = modelo
-		_modelo(modelo, tipo, maxi(nivel, 1 if en_obra else 0), en_obra, nivel)
+		# Un muro terminado lo dibuja MurosView junto con los demás (MultiMesh); aquí solo quedan su barra y avisos.
+		if not (MurosView.es_muro(tipo) and not en_obra):
+			_modelo(modelo, tipo, maxi(nivel, 1 if en_obra else 0), en_obra, nivel)
 		datos["fx"] = {}
 		datos["alto"] = EscapeShip.ALTURA_TOTAL if tipo == "nave_fuga" else 1.2
 		if tipo != "nave_fuga":
@@ -135,6 +137,8 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		(datos["bar"] as Node3D).position.y = EscapeShip.ALTURA_TOTAL + 0.4
 	else:
 		modelo_actual.scale = Vector3.ONE
+	if MurosView.es_muro(tipo):
+		(datos["bar"] as Node3D).position.y = 2.1
 	var anillo: Node3D = datos["ring"]
 	anillo.scale = Vector3.ONE * (2.1 if tipo == "nave_fuga" else 1.0)
 	anillo.visible = en_obra
@@ -182,6 +186,14 @@ func _avisar_cambios(datos: Dictionary, nodo: Node3D, tipo: String, nivel: int, 
 		building_started.emit(base)
 	elif era_obra and not en_obra:
 		building_done.emit(base, tipo)
+		_saltito(nodo)
+
+
+## Al terminar una obra el edificio se asienta con un pequeño rebote (se estira y vuelve).
+func _saltito(nodo: Node3D) -> void:
+	var t := nodo.create_tween()
+	t.tween_property(nodo, "scale", Vector3(1.06, 1.12, 1.06), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(nodo, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
 ## Altura (m, ya escalada) del centro del módulo «n» de la nave.
@@ -206,6 +218,9 @@ func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, niv
 	if tipo == "nave_fuga":
 		EscapeShip.construir(padre, nivel_real, en_obra)
 		return
+	if MurosView.es_muro(tipo):
+		MurosView.pieza(padre, tipo, en_obra)
+		return
 	if MODELOS.has(tipo):
 		var info: Array = MODELOS[tipo]
 		var ancho := float(info[1])
@@ -222,7 +237,7 @@ func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, niv
 ## que el navegador compile sus sombreadores antes de jugar: así la primera obra no congela la imagen.
 func muestras_para_precalentar() -> Array[Node3D]:
 	var lista: Array[Node3D] = []
-	var tipos: Array = ["panel_solar", "antena"]
+	var tipos: Array = ["panel_solar", "antena", "barrera", "compuerta"]
 	tipos.append_array(MODELOS.keys())
 	Equipo.precargar(MODELOS.values().map(func(v: Array) -> String: return str(v[0])))
 	for tipo in tipos:

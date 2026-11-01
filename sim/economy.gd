@@ -8,6 +8,7 @@ extends RefCounted
 var recursos: Array[String] = []
 var recursos_iniciales: Dictionary = {}
 var capacidad_base: int = 0
+var bodega_rover: int = 0  ## unidades que lleva la bodega del rover (0: lo recogido va directo a la base)
 var recoleccion: Dictionary = {}  ## acción -> {tipo de objetivo -> {recurso: cantidad}} o {recurso: cantidad}
 var zona_base_radio: int = 0
 var antena_nivel_inicial: int = 0
@@ -99,6 +100,7 @@ func _cargar(texto: String) -> void:
 		for r in recursos:
 			recursos_iniciales[r] = int(iniciales.get(r, 0))
 	capacidad_base = int(datos.get("capacidad_base", 0))
+	bodega_rover = maxi(int(datos.get("bodega_rover", 0)), 0)
 	if capacidad_base <= 0:
 		errores.append("INVALID_FIELD:capacidad_base")
 	var rec: Variant = datos.get("recoleccion", {})

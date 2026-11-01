@@ -8,6 +8,7 @@ static var _materials: Dictionary = {}
 static var quality := true  ## calidad alta: texturas con relieve; false: color de vértice liso (equipos modestos)
 static var _meshes: Dictionary = {}
 static var _contact_texture: Texture2D
+static var sombras_decor := true  ## opción de sombras: las rocas grandes proyectan sombra solo si está activa
 
 
 ## Material opaco compartido: color por vértice (y por instancia en MultiMesh), mate.
@@ -17,7 +18,7 @@ static func vertex_material(sombra_propia := true) -> StandardMaterial3D:
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
 		m.roughness = 1.0
-		m.metallic_specular = 0.2
+		m.metallic_specular = 0.04  # regolito: casi sin brillo (con el cielo claro, el reflejo lo lavaba)
 		if not sombra_propia:
 			m.disable_receive_shadows = true
 		_materials[clave] = m
@@ -42,7 +43,7 @@ static func ground_material() -> StandardMaterial3D:
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
 		m.roughness = 1.0
-		m.metallic_specular = 0.25
+		m.metallic_specular = 0.04
 		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		_materials["ground"] = m
 		apply_quality()
@@ -55,7 +56,7 @@ static func rock_material() -> StandardMaterial3D:
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
 		m.roughness = 0.92
-		m.metallic_specular = 0.3
+		m.metallic_specular = 0.12
 		m.uv1_triplanar = true
 		m.uv1_scale = Vector3(0.7, 0.7, 0.7)
 		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
@@ -86,10 +87,15 @@ static func apply_quality() -> void:
 			roca.normal_enabled = true
 			roca.normal_texture = r["normal"]
 			roca.albedo_color = Color(1.25, 1.25, 1.25)
+			# Borde iluminado suave (contraluz del polvo): separa las rocas del suelo en vez de fundirse con él.
+			roca.rim_enabled = true
+			roca.rim = 0.35
+			roca.rim_tint = 0.6
 		else:
 			roca.albedo_texture = null
 			roca.normal_enabled = false
 			roca.albedo_color = Color.WHITE
+			roca.rim_enabled = false
 
 
 ## Material sin iluminación (líneas, cursor, huellas). Con alpha si transparente.
@@ -196,7 +202,7 @@ static func rock_mesh(familia: String, variante: int = 0) -> ArrayMesh:
 	if _meshes.has(clave):
 		return _meshes[clave]
 	if STONE_PRESETS.has(familia):
-		var piedra := stone_mesh(familia, variante)
+		var piedra := _con_oclusion(stone_mesh(familia, variante))
 		_meshes[clave] = piedra
 		return piedra
 	var rng := RandomNumberGenerator.new()
@@ -260,9 +266,43 @@ static func rock_mesh(familia: String, variante: int = 0) -> ArrayMesh:
 				_face(st, a, c, b, tono)
 			if j < anillos - 1:
 				_face(st, b, c, d, tono * 0.97)
-	var malla := st.commit()
+	var malla := _con_oclusion(st.commit())
 	_meshes[clave] = malla
 	return malla
+
+
+## Oclusión ambiental horneada en el color de vértice: la parte baja de la roca (donde toca el suelo y le llega menos
+## cielo) se oscurece poco a poco y la alta queda igual. Se hace una vez por malla al crearla: al jugar no cuesta nada.
+static func _con_oclusion(malla: ArrayMesh) -> ArrayMesh:
+	if malla == null or malla.get_surface_count() == 0:
+		return malla
+	var datos := malla.surface_get_arrays(0)
+	var vertices: PackedVector3Array = datos[Mesh.ARRAY_VERTEX]
+	if vertices.is_empty():
+		return malla
+	var colores: PackedColorArray = datos[Mesh.ARRAY_COLOR]
+	if colores.size() != vertices.size():
+		colores = PackedColorArray()
+		colores.resize(vertices.size())
+		colores.fill(Color.WHITE)
+	var bajo := INF
+	var alto := -INF
+	for v in vertices:
+		bajo = minf(bajo, v.y)
+		alto = maxf(alto, v.y)
+	var rango := maxf(alto - bajo, 0.001)
+	for i in vertices.size():
+		var t := (vertices[i].y - bajo) / rango
+		var ao := lerpf(0.58, 1.0, smoothstep(0.0, 0.6, t))
+		var c := colores[i]
+		colores[i] = Color(c.r * ao, c.g * ao, c.b * ao, c.a)
+	datos[Mesh.ARRAY_COLOR] = colores
+	var material := malla.surface_get_material(0)
+	var nueva := ArrayMesh.new()
+	nueva.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, datos)
+	if material != null:
+		nueva.surface_set_material(0, material)
+	return nueva
 
 
 static func _face(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
@@ -320,10 +360,25 @@ static func contact_texture() -> Texture2D:
 		for y in range(64):
 			for x in range(64):
 				var d := Vector2(x - 31.5, y - 31.5).length() / 31.5
-				var a := clampf(1.0 - d, 0.0, 1.0)
-				img.set_pixel(x, y, Color(0.12, 0.06, 0.04, a * a * 0.75))
+				# Núcleo más denso y borde muy suave: se lee como contacto, no como un disco.
+				var g := exp(-d * d * 3.0) * (1.0 - smoothstep(0.8, 1.0, d))  # campana suave que llega a 0 en el borde
+				img.set_pixel(x, y, Color(0.10, 0.05, 0.05, g * 0.9))
 		_contact_texture = ImageTexture.create_from_image(img)
 	return _contact_texture
+
+
+## Material de las sombras de contacto (manchas suaves sin luz, opacidad por instancia).
+static func ao_material() -> StandardMaterial3D:
+	var m: StandardMaterial3D = _materials.get("ao")
+	if m == null:
+		m = StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.vertex_color_use_as_albedo = true
+		m.albedo_texture = contact_texture()
+		m.render_priority = -1
+		_materials["ao"] = m
+	return m
 
 
 ## Sombras de contacto de muchas rocas en una sola llamada de dibujo: items = [Vector3(x, y, z) con el radio en w aparte].
@@ -342,15 +397,7 @@ static func ao_blobs(parent: Node3D, items: Array) -> MultiMeshInstance3D:
 		var r: float = it[1] * 2.0
 		mm.set_instance_transform(k, Transform3D(Basis.IDENTITY.scaled(Vector3(r, 1.0, r)), it[0]))
 		mm.set_instance_color(k, Color(1, 1, 1, it[2]))
-	var m: StandardMaterial3D = _materials.get("ao")
-	if m == null:
-		m = StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.vertex_color_use_as_albedo = true
-		m.albedo_texture = contact_texture()
-		m.render_priority = -1
-		_materials["ao"] = m
+	var m := ao_material()
 	var n := MultiMeshInstance3D.new()
 	n.name = "ContactShadows"
 	n.multimesh = mm
