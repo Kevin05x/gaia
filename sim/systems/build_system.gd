@@ -41,21 +41,35 @@ func casilla_antena(estado: MissionState) -> Vector2i:
 	return estado.casilla_estacion + _economia.antena_casilla_relativa
 
 
-## Las casillas con edificios (y obras) bloquean el paso del rover.
+## Las casillas con edificios (y obras) bloquean el paso del rover, salvo las compuertas. Los muros y compuertas,
+## además, frenan a los monstruos: el mapa los anota para que rodeen la barrera o la rompan.
 func sincronizar_mapa(estado: MissionState) -> void:
 	_mapa.bloqueos_extra.clear()
+	var muros := {}
 	for edificio in estado.edificios:
-		_mapa.bloqueos_extra[edificio["tile"]] = true
+		var def := _economia.edificio(edificio["type"])
+		if not bool(def.get("paso_rover", false)):
+			_mapa.bloqueos_extra[edificio["tile"]] = true
+		if bool(def.get("muro", false)):
+			muros[edificio["tile"]] = edificio["id"]
+	_mapa.fijar_muros(muros)
 
 
-func en_zona_base(estado: MissionState, casilla: Vector2i) -> bool:
+## true si el tipo es parte de la barrera (muro o compuerta).
+func es_muro(tipo: String) -> bool:
+	return bool(_economia.edificio(tipo).get("muro", false))
+
+
+func en_zona_base(estado: MissionState, casilla: Vector2i, extra: int = 0) -> bool:
 	var d := casilla - estado.casilla_estacion
-	return maxi(absi(d.x), absi(d.y)) <= _economia.zona_base_radio and _mapa.dentro_de_limites(casilla)
+	return maxi(absi(d.x), absi(d.y)) <= _economia.zona_base_radio + extra and _mapa.dentro_de_limites(casilla)
 
 
-func hay_obra(estado: MissionState) -> bool:
+## true si hay una obra en curso. Los muros se imprimen aparte (en paralelo, sin ocupar a la cuadrilla): con
+## «de_muros» se pregunta solo por ellos y, sin él, solo por los demás edificios.
+func hay_obra(estado: MissionState, de_muros: bool = false) -> bool:
 	for edificio in estado.edificios:
-		if int(edificio["target_level"]) > int(edificio["level"]):
+		if int(edificio["target_level"]) > int(edificio["level"]) and es_muro(edificio["type"]) == de_muros:
 			return true
 	return false
 
@@ -205,6 +219,14 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 				if modulos_totales(str(edificio["type"])) > 0:
 					eventos.append("%s:%s:%d" % [EVENTO_MODULO, edificio["type"], int(edificio["level"])])
 		elif int(edificio["level"]) >= 1 and edificio["active"] and horas > 0.0:
+			# Escudo de la barrera: muros y compuertas se recargan solos, pero solo tras unos segundos sin recibir golpes
+			# (si no, un monstruo débil nunca podría romperlos).
+			var def_escudo := _economia.edificio(edificio["type"])
+			var regenera := float(def_escudo.get("regenera_hp_s", 0.0))
+			if regenera > 0.0:
+				edificio["calma_s"] = float(edificio.get("calma_s", 999.0)) + delta_s
+				if float(edificio["calma_s"]) >= float(def_escudo.get("escudo_espera_s", 0.0)):
+					edificio["hp"] = minf(float(edificio["hp"]) + regenera * delta_s, vida_maxima(edificio))
 			var produce: Variant = _economia.edificio(edificio["type"]).get("produce_por_hora", {})
 			if produce is Dictionary and not produce.is_empty():
 				edificio["produced"] = float(edificio["produced"]) + horas
@@ -271,6 +293,7 @@ func opciones(estado: MissionState) -> Array[Dictionary]:
 			"power_w": float(def.get("genera_w_solar", def.get("genera_w", 0.0))) - float(def.get("consume_w", 0.0)),
 			"seconds": float(def["tiempo_s"]), "count": cantidad(estado, tipo), "max": int(def.get("maximo", -1)),
 			"enabled": disp["enabled"], "reason": disp["reason"], "range": float(def.get("combate", {}).get("alcance", 0.0)),
+			"zone_extra": int(def.get("zona_extra", 0)), "wall": bool(def.get("muro", false)),
 			"info": ficha(tipo)})
 	return lista
 
@@ -285,6 +308,8 @@ func ficha(tipo: String) -> Dictionary:
 		datos["damage"] = float(combate.get("dano", 0.0))
 		datos["fire_rate_s"] = float(combate.get("cadencia_s", 0.0))
 		datos["range"] = float(combate.get("alcance", 0.0))
+	if def.has("regenera_hp_s"):
+		datos["shield_hp_s"] = float(def["regenera_hp_s"])
 	if def.has("modulos"):
 		datos["modules"] = (def["modulos"] as Array).size()
 		datos["hp_module"] = float(def.get("hp_modulo", 0))
@@ -320,6 +345,7 @@ func danar(estado: MissionState, id: String, dano: float) -> Array[String]:
 	if edificio.is_empty() or dano <= 0.0 or not es_objetivo(edificio):
 		return eventos
 	edificio["hp"] = maxf(float(edificio["hp"]) - dano, 0.0)
+	edificio["calma_s"] = 0.0  # el escudo deja de recargarse un rato
 	if float(edificio["hp"]) > 0.0:
 		return eventos
 	if edificio["type"] == ANTENA:
@@ -369,14 +395,14 @@ func _antena(estado: MissionState) -> Dictionary:
 	return {}
 
 
-func _motivo_comun(estado: MissionState) -> String:
+func _motivo_comun(estado: MissionState, tipo: String = "") -> String:
 	if estado.fase != "operations":
 		return "MISSION_END" if estado.fase == "report" else "LANDING"
 	if estado.pausado:
 		return "PAUSED"
 	if estado.modo_seguro:
 		return "SAFE"
-	if hay_obra(estado):
+	if not es_muro(tipo) and hay_obra(estado):
 		return "BUILD_BUSY"
 	return ""
 
@@ -384,7 +410,7 @@ func _motivo_comun(estado: MissionState) -> String:
 func _motivo(estado: MissionState, tipo: String, casilla: Variant) -> String:
 	if not _economia.tiene_edificio(tipo):
 		return "UNKNOWN_BUILDING"
-	var comun := _motivo_comun(estado)
+	var comun := _motivo_comun(estado, tipo)
 	if not comun.is_empty():
 		return comun
 	var def := _economia.edificio(tipo)
@@ -403,7 +429,7 @@ func _motivo(estado: MissionState, tipo: String, casilla: Variant) -> String:
 	if casilla == null:
 		return ""
 	var c: Vector2i = casilla
-	if not en_zona_base(estado, c):
+	if not en_zona_base(estado, c, int(def.get("zona_extra", 0))):
 		return "OUT_OF_BASE"
 	if _mapa.bloqueada(c) or c == estado.casilla_rover:
 		return "TILE_BLOCKED"

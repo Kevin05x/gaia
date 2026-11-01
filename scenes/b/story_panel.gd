@@ -36,6 +36,7 @@ var radio_root: Control
 var radio_visto := -1  ## último «n» de radio ya mostrado (-1: aún no hemos visto ningún snapshot)
 var radio_line := -1  ## línea que se ve en la tarjeta (-1: tarjeta cerrada)
 var _radio: Dictionary = {}
+var radio_tapada: Callable  ## true si otro panel ocupa ahora el rincón de la radio (entonces espera sin avanzar)
 var _radio_cola: Array = []  ## radios que llegaron mientras otra seguía abierta
 var _radio_t := 0.0
 
@@ -574,9 +575,11 @@ func _process(delta: float) -> void:
 			_espera_t += delta
 			if _espera_t >= ESPERA_IMAGEN:
 				_mostrar_texto()
+	var tapada: bool = radio_tapada.is_valid() and radio_tapada.call()
 	if is_instance_valid(radio_root):
-		radio_root.visible = not escena  # la radio se esconde mientras haya una escena abierta
-	if escena or bool(snapshot.get("paused", false)):
+		# La radio se esconde mientras haya una escena abierta o un panel que ocupa su sitio (el menú Construir).
+		radio_root.visible = not escena and not tapada
+	if escena or tapada or bool(snapshot.get("paused", false)):
 		return
 	if radio_line < 0:
 		if not _radio_cola.is_empty():

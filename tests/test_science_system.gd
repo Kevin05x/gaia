@@ -113,12 +113,12 @@ func test_accion_no_aplicable_al_tipo_de_objetivo() -> void:
 	assert_eq(_motivo("drill", "B1"), "")
 
 
-func test_memoria_llena() -> void:
+func test_memoria_llena_no_bloquea_y_la_ciencia_extra_se_pierde() -> void:
 	_agregar("R1", Vector2i(1, 0), "rock")
-	estado.datos = estado.memoria_capacidad - balance.numero("ciencia.rendimiento.spectrometer") + 1.0
-	assert_eq(_motivo("spectrometer", "R1"), "MEMORY_FULL")
-	estado.datos = estado.memoria_capacidad - balance.numero("ciencia.rendimiento.spectrometer")
-	assert_eq(_motivo("spectrometer", "R1"), "")
+	estado.datos = estado.memoria_capacidad - 1.0
+	assert_eq(_motivo("spectrometer", "R1"), "", "con la memoria llena se puede seguir recogiendo")
+	_completar("spectrometer", "R1")
+	assert_eq(estado.datos, estado.memoria_capacidad, "lo que no cabe se pierde")
 
 
 func test_dron_clima_noche_y_un_vuelo_por_sol() -> void:
@@ -145,19 +145,42 @@ func test_espectrometro_suma_datos_y_marca_el_objetivo() -> void:
 	assert_true(eventos.has("ACTION_DONE:spectrometer:R1"))
 
 
-func test_la_roca_se_agota_con_las_dos_acciones() -> void:
+func _taladrar_hasta_agotar(id: String) -> Array[String]:
+	var eventos: Array[String] = []
+	for i in range(ciencia.extracciones_maximas()):
+		estado.bateria_wh = estado.bateria_capacidad_wh
+		if _motivo("drill", id) != "":
+			break
+		eventos = _completar("drill", id)
+	return eventos
+
+
+func test_la_roca_se_agota_con_el_analisis_y_todas_sus_extracciones() -> void:
 	_agregar("R1", Vector2i(1, 0), "rock")
 	_completar("spectrometer", "R1")
-	var eventos := _completar("drill", "R1")
+	_completar("drill", "R1")
+	assert_false(estado.objetivos[0]["depleted"], "aún quedan extracciones")
+	assert_eq(_motivo("drill", "R1"), "", "se puede volver a taladrar")
+	assert_eq(_motivo("spectrometer", "R1"), "DEPLETED", "el análisis solo se hace una vez")
+	var eventos := _taladrar_hasta_agotar("R1")
 	assert_true(estado.objetivos[0]["depleted"])
 	assert_true(eventos.has("TARGET_DEPLETED:R1"))
-	assert_eq(_motivo("spectrometer", "R1"), "DEPLETED")
+	assert_eq(_motivo("drill", "R1"), "DEPLETED")
+
+
+func test_repetir_el_taladro_da_recursos_pero_no_ciencia() -> void:
+	_agregar("R1", Vector2i(1, 0), "rock")
+	_completar("drill", "R1")
+	var datos := estado.datos
+	_completar("drill", "R1")
+	assert_eq(estado.datos, datos, "la ciencia solo cuenta la primera vez")
 
 
 func test_el_enterrado_rinde_mas_y_se_agota_con_el_taladro() -> void:
 	_agregar("B1", Vector2i(0, 1), "buried")
-	var eventos := _completar("drill", "B1")
+	_completar("drill", "B1")
 	assert_eq(estado.datos, balance.numero("ciencia.rendimiento.drill_enterrado"))
+	var eventos := _taladrar_hasta_agotar("B1")
 	assert_true(estado.objetivos[0]["depleted"])
 	assert_true(eventos.has("TARGET_DEPLETED:B1"))
 
@@ -169,6 +192,8 @@ func test_el_mineral_da_minerales() -> void:
 	assert_eq(estado.datos, balance.numero("ciencia.rendimiento.drill"))
 	_completar("spectrometer", "M1")
 	assert_eq(estado.minerales, 2)
+	_taladrar_hasta_agotar("M1")
+	assert_eq(estado.minerales, 2, "los minerales de ciencia también cuentan una sola vez")
 	assert_true(estado.objetivos[0]["depleted"])
 
 
@@ -299,7 +324,8 @@ func test_memoria_llena_no_frena_recursos_si_ya_no_se_puede_enviar() -> void:
 	estado.casilla_rover = Vector2i(0, 0)
 	estado.bateria_wh = estado.bateria_capacidad_wh
 	estado.datos = float(estado.memoria_capacidad)
-	assert_eq(_motivo("spectrometer", "R9"), "MEMORY_FULL")
+	assert_eq(_motivo("spectrometer", "R9"), "")
 	estado.envio_max = 10.0
 	estado.enviados = 10.0
 	assert_eq(_motivo("spectrometer", "R9"), "")
+

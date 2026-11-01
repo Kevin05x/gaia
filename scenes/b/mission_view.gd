@@ -26,6 +26,12 @@ var story: CanvasLayer  ## introducción y ventana de decisión de la historia
 var tutorial: CanvasLayer  ## cartel del tutorial del Sol 1
 var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
 var buildings: Node3D  ## edificios de la base
+var muros: MurosView  ## barrera de la base (muros y compuertas terminados)
+var textos: TextosFlotantes  ## «+3 Olivino» al recoger o descargar
+var sombras: SombrasContacto  ## manchas de contacto bajo estación, edificios, muros, Rocky y el dron
+var motas: PolvoAmbiente  ## polvo flotando cerca de la cámara (opción gráfica)
+var _antes: Dictionary = {}  ## recursos y bodega del snapshot anterior (para los textos flotantes)
+var _puestos: Dictionary = {}  ## casillas donde ya se pidió un muro en este modo de colocación (hasta que llegue el snapshot)
 var combat: Node3D  ## nidos, monstruos, rayos y meteoritos
 var placing := ""  ## edificio que se está colocando ("" si ninguno)
 var state: Dictionary = {}
@@ -42,6 +48,11 @@ var _blocked_cache_revision := ""
 var _hover_tile := Vector2i(999, 999)
 var warmup: Node3D  ## precalentado de sombreadores al empezar
 var cortina: CanvasLayer  ## cortina oscura mientras dura el precalentado
+var _listo := false
+var calidad: Node  ## resolución 3D automática según lo que aguante el equipo
+var graficos: Dictionary = Graficos.de_preset(Graficos.DEFECTO)  ## configuración gráfica elegida (Opciones)
+var ciencia: CanvasLayer  ## panel de objetivos científicos (hitos)
+signal listo  ## terreno construido y sombreadores precalentados: la pantalla de carga ya puede irse
 static var translations_registered := false
 
 
@@ -55,6 +66,7 @@ func _ready() -> void:
 	terrain = preload("res://scenes/b/terrain.gd").new()
 	terrain.name = "Terrain"
 	terrain.lazy = true  # el mundo se construye con el tamaño del mapa, una sola vez
+	terrain.por_pasos = true  # y repartido en varios cuadros, detrás de la pantalla de carga
 	add_child(terrain)
 	actors = preload("res://scenes/b/actors.gd").new()
 	actors.name = "Actors"
@@ -96,6 +108,8 @@ func _ready() -> void:
 	hud.volume = volume
 	hud.muted = muted
 	hud.quality = quality
+	hud.graficos = graficos
+	hud.graficos_changed.connect(aplicar_graficos)
 	hud.build()
 	workshop = preload("res://scenes/b/workshop.gd").new()
 	workshop.name = "Workshop"
@@ -118,6 +132,24 @@ func _ready() -> void:
 	explosions.name = "Explosions"
 	explosions.ground = terrain.height_at
 	add_child(explosions)
+	explosions.exploto.connect(func(pos: Vector3, tamano: float) -> void: rig.sacudir(pos, 0.07 * tamano))
+	sombras = SombrasContacto.new()
+	sombras.name = "SombrasContacto"
+	sombras.ground = terrain.height_at
+	add_child(sombras)
+	sombras.seguir(actors.companion, 0.85, 0.65)
+	sombras.seguir(actors.drone, 0.7, 0.6, 4.0)
+	motas = PolvoAmbiente.new()
+	motas.name = "PolvoAmbiente"
+	motas.objetivo = rig.camera
+	add_child(motas)
+	textos = TextosFlotantes.new()
+	textos.name = "Textos"
+	add_child(textos)
+	muros = MurosView.new()
+	muros.name = "Muros"
+	muros.ground = terrain.height_at
+	add_child(muros)
 	buildings.building_lost.connect(func(pos: Vector3, tipo: String) -> void:
 		var grande := tipo in ["hangar", "extractor_hielo", "domo", "torreta_2"]
 		explosions.explotar(pos, 1.6 if grande else 1.1, 14 if grande else 10)
@@ -135,11 +167,17 @@ func _ready() -> void:
 		explosions.polvo(pos, 1.3 if tipo == "hangar" or tipo == "domo" else 1.0)
 		if is_instance_valid(audio):
 			audio.sfx("obra_fin", 0.0))
+	terrain.target_depleted.connect(func(pos: Vector3) -> void:
+		explosions.polvo(pos, 0.9))
 	base_hud = preload("res://scenes/b/base_hud.gd").new()
 	base_hud.name = "BaseHud"
 	add_child(base_hud)
 	base_hud.command.connect(_command)
 	base_hud.placement_requested.connect(start_placement)
+	ciencia = preload("res://scenes/b/hud_ciencia.gd").new()
+	ciencia.name = "Ciencia"
+	add_child(ciencia)
+	hud.abrir_ciencia = ciencia.toggle
 	story = preload("res://scenes/b/story_panel.gd").new()
 	story.name = "Story"
 	add_child(story)
@@ -150,6 +188,11 @@ func _ready() -> void:
 	tutorial.command.connect(_command)
 	tutorial.step_changed.connect(func() -> void: audio.ping())
 	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
+	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta()
+	hud.metas_tapadas = func() -> bool: return base_hud.menu.visible
+	base_hud.menu_cambiado.connect(func(_abierto: bool) -> void:
+		if not state.is_empty():
+			hud.update_snapshot(state))
 	tutorial.target_for = func(clave: String) -> Control:  # se consulta cada cuadro: el HUD puede reconstruirse
 		return base_hud.build_button if clave == "construir" else hud.highlight_nodes().get(clave, null)
 	port.snapshot_received.connect(apply_snapshot)
@@ -180,6 +223,46 @@ func _ready() -> void:
 	else:
 		hud.show_notice("WAIT")
 	_precalentar()
+	calidad = preload("res://scenes/b/calidad_dinamica.gd").new()
+	calidad.name = "CalidadDinamica"
+	calidad.medir = func() -> bool:
+		return _listo and not blocked() and DisplayServer.window_is_focused()
+	calidad.al_recortar = _recortar
+	add_child(calidad)
+	aplicar_graficos(graficos, false)
+
+
+## Aplica la configuración gráfica (Opciones › Gráficos) a la luz, las sombras, los materiales, el decorado, el polvo
+## y la calidad automática, y la guarda.
+func aplicar_graficos(nuevo: Dictionary, guardar: bool = true) -> void:
+	graficos = Graficos.normalizar(nuevo.duplicate())
+	quality = bool(graficos["texturas"])
+	lighting.post = bool(graficos["post"])
+	lighting.quality = quality
+	lighting.fijar_sombras(int(graficos["sombras"]))
+	W.quality = quality
+	W.sombras_decor = int(graficos["sombras"]) > 0
+	W.apply_quality()
+	terrain.factor_distancia = Graficos.FACTOR_DISTANCIA[int(graficos["distancia"])]
+	terrain.apply_quality()
+	actors.dust.amount = 130 if bool(graficos["polvo"]) else 36
+	motas.emitting = bool(graficos["polvo"])
+	motas.visible = bool(graficos["polvo"])
+	if is_instance_valid(calidad):
+		calidad.configurar(Graficos.msaa(graficos), float(graficos["resolucion"]), bool(graficos["auto"]),
+			bool(graficos["post"]), int(graficos["sombras"]) > 0)
+	if guardar:
+		Graficos.guardar(graficos)
+
+
+## Ajuste automático en un equipo muy justo: tras quitar suavizado y resolución, quita el brillo (1) y luego las
+## sombras (2) solo en esta partida. 0 vuelve a lo elegido.
+func _recortar(nivel: int) -> void:
+	var post := bool(graficos["post"]) and nivel < 1
+	var sombras := int(graficos["sombras"]) if nivel < 2 else 0
+	if lighting.post != post or lighting.sombras != sombras:
+		lighting.post = post
+		lighting.fijar_sombras(sombras)
 
 
 ## Rendimiento (web): compila de antemano los sombreadores de edificios, monstruos y efectos, detrás de una cortina
@@ -199,15 +282,52 @@ func _precalentar() -> void:
 	negro.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	negro.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cortina.add_child(negro)
+	lighting.set_process(false)  # el cielo no debe cambiar las sombras mientras se precalienta
 	warmup.terminado.connect(func() -> void:
+		lighting.set_process(true)
+		lighting.apply(true)
+		_comprobar_listo()
 		var t := negro.create_tween()
 		t.tween_property(negro, "modulate:a", 0.0, 0.35)
 		t.tween_callback(cortina.queue_free))
+	terrain.mundo_listo.connect(_comprobar_listo)
 	var extra: Array = []
 	extra.append_array(buildings.muestras_para_precalentar())
+	extra.append_array(MurosView.muestras())
 	extra.append_array(combat.muestras_para_precalentar())
 	extra.append(terrain.muestra_contorno())
-	warmup.empezar([actors, combat, explosions, terrain, buildings, tracks], extra)
+	warmup.empezar([actors, combat, explosions, terrain, buildings, tracks, textos], extra)
+
+
+## Se descargó la bodega: sonido de confirmación (el almacén late en el HUD).
+func al_descargar() -> void:
+	audio.sfx("obra_fin", 0.1)
+
+
+## Un hito científico se cumplió: cartel y sonido de enlace.
+func celebrar_hito(id: String) -> void:
+	if not state.is_empty():
+		ciencia.update_snapshot(state)
+	ciencia.celebrar(id)
+	audio.sfx("hito", 0.0)
+
+
+## Avance de la preparación (0..1) para la pantalla de carga: terreno por pasos y precalentado de sombreadores.
+func preparacion() -> float:
+	var a := 0.0 if terrain.construyendo() or not terrain._built else 0.5
+	var b: float = warmup.avance() if warmup != null else 1.0
+	return a + 0.5 * b
+
+
+func esta_listo() -> bool:
+	return _listo
+
+
+func _comprobar_listo() -> void:
+	if _listo or warmup == null or warmup.activo() or terrain.construyendo() or not terrain._built:
+		return
+	_listo = true
+	listo.emit()
 
 
 func _exit_tree() -> void:
@@ -230,6 +350,8 @@ func setup_locale() -> void:
 		volume = config.get_value("audio", "volume", 0.65)
 		muted = config.get_value("audio", "muted", false)
 		quality = config.get_value("visual", "quality", true)
+	graficos = Graficos.cargar()
+	quality = bool(graficos["texturas"])
 	TranslationServer.set_locale(language)
 
 
@@ -250,12 +372,9 @@ func set_preferences(value: float, is_muted: bool, high_quality: bool, save: boo
 	muted = is_muted
 	quality = high_quality
 	audio.set_volume(volume, muted)
-	lighting.quality = quality
-	lighting.apply()
-	W.quality = quality
-	W.apply_quality()
-	terrain.apply_quality()
-	actors.dust.amount = 130 if quality else 36
+	if high_quality != bool(graficos["texturas"]):
+		# Interruptor antiguo de calidad: Alta o Baja completa.
+		aplicar_graficos(Graficos.de_preset("alta" if high_quality else "baja"), save)
 	if save:
 		save_preferences()
 
@@ -283,8 +402,17 @@ func apply_snapshot(s: Dictionary) -> void:
 	tracks.visible = not en_taller
 	buildings.visible = not en_taller
 	buildings.update_state(s)
+	muros.visible = not en_taller
+	muros.update_state(s)
+	sombras.visible = not en_taller
+	sombras.update_state(s, actors.station.global_position)
+	_textos_de_recursos(s)
+	if not _puestos.is_empty() and not placing.is_empty():
+		_puestos.clear()  # el snapshot ya trae las obras pedidas (o la simulación las rechazó: la casilla vuelve a estar libre)
+		start_placement(placing)
 	combat.update_state(s)
 	base_hud.update_snapshot(s)
+	ciencia.update_snapshot(s)
 	story.update_snapshot(s)
 	tutorial.update_snapshot(s)
 	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible)
@@ -296,6 +424,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	actors.apply_state(s)
 	hud.update_snapshot(s)
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
+	motas.fijar_polvo(float(s.get("dust", 0.0)))
 	rig.enabled = not blocked()
 	if s.get("phase", "") == "landing" and not landing_in_progress and not actors.landed:
 		landing_in_progress = true
@@ -321,11 +450,13 @@ func blocked() -> bool:
 func start_placement(tipo: String) -> void:
 	if blocked() or not state.has("base"):
 		return
+	if placing != tipo:
+		_puestos.clear()
 	placing = tipo
 	hud.close_actions()
 	var base: Dictionary = state["base"]
 	var centro: Vector2i = base.get("center", Vector2i.ZERO)
-	var radio := int(base.get("radius", 0))
+	var radio := _radio_de(tipo)
 	var validas: Array = []
 	var ocupadas: Array = []
 	for x in range(centro.x - radio, centro.x + radio + 1):
@@ -338,14 +469,58 @@ func start_placement(tipo: String) -> void:
 			else:
 				ocupadas.append(t)
 	buildings.show_zone(validas, ocupadas)
-	hud.show_notice("PLACE_NOTICE")
+	if _puestos.is_empty():
+		hud.show_notice("PLACE_WALL_NOTICE" if MurosView.es_muro(tipo) else "PLACE_NOTICE")
 
 
 func cancel_placement() -> void:
 	placing = ""
+	_puestos.clear()
 	buildings.hide_zone()
 	terrain.hide_cursor()
 	hud.set_hover_hint("")
+
+
+## «+N recurso» flotando: sobre el rover cuando llena la bodega y sobre la base cuando descarga en el almacén.
+func _textos_de_recursos(s: Dictionary) -> void:
+	var recursos: Dictionary = s.get("resources", {})
+	var bodega: Dictionary = (s.get("cargo", {}) as Dictionary).get("items", {})
+	var antes_r: Dictionary = _antes.get("r", {})
+	var antes_b: Dictionary = _antes.get("b", {})
+	var jugando: bool = s.get("phase", "") == "operations" and not _antes.is_empty() and visible
+	_antes = {"r": recursos.duplicate(), "b": bodega.duplicate()}
+	if not jugando:
+		return
+	var sobre_rover: Vector3 = actors.rover.global_position + Vector3(0, 2.0, 0)
+	var en_base: Vector3 = actors.station.global_position + Vector3(0, 2.6, 0)
+	for r in bodega:
+		var mas := int(bodega[r]) - int(antes_b.get(r, 0))
+		if mas > 0:
+			textos.mostrar(sobre_rover, "+%d %s" % [mas, tr("RES_" + str(r).to_upper())], (base_hud.COLORES as Dictionary).get(r, Color.WHITE))
+	for r in recursos:
+		var mas := int(recursos[r]) - int(antes_r.get(r, 0))
+		if mas > 0:
+			# Sin bodega (partidas antiguas) el recurso entra directo: el texto sale del rover.
+			textos.mostrar(en_base if s.has("cargo") else sobre_rover, "+%d %s" % [mas, tr("RES_" + str(r).to_upper())],
+				(base_hud.COLORES as Dictionary).get(r, Color.WHITE))
+
+
+## Radio (en casillas desde la estación) donde se puede colocar «tipo»: los muros pueden ir un poco más afuera.
+func _radio_de(tipo: String) -> int:
+	var radio := int((state.get("base", {}) as Dictionary).get("radius", 0))
+	for o in state.get("build_options", []):
+		if o.get("id", "") == tipo:
+			return radio + int(o.get("zone_extra", 0))
+	return radio
+
+
+## Pide un muro en «casilla» sin salir del modo de colocación (se pueden trazar varios seguidos arrastrando).
+func _poner_muro(casilla: Vector2i) -> void:
+	if _puestos.has(casilla) or not _placement_valid(casilla):
+		return
+	_puestos[casilla] = true
+	port.submit("build", {"building": placing, "tile": casilla})
+	start_placement(placing)
 
 
 ## Alcance en casillas de un edificio de defensa (0 si no dispara).
@@ -361,9 +536,9 @@ func _placement_valid(tile: Vector2i) -> bool:
 		return false
 	var base: Dictionary = state["base"]
 	var d: Vector2i = tile - base.get("center", Vector2i.ZERO)
-	if maxi(absi(d.x), absi(d.y)) > int(base.get("radius", 0)):
+	if maxi(absi(d.x), absi(d.y)) > _radio_de(placing):
 		return false
-	return not tile in _blocked_tiles() and tile != state.get("rover_tile", Vector2i(9999, 9999))
+	return not _blocked_set().has(tile) and not _puestos.has(tile) and tile != state.get("rover_tile", Vector2i(9999, 9999))
 
 
 func _command(command: String, payload: Dictionary) -> void:
@@ -424,6 +599,9 @@ func _update_hover() -> void:
 		var valida := _placement_valid(casilla)
 		terrain.show_cursor(casilla, valida)
 		terrain.show_range(casilla, _alcance_de(placing) if valida else 0.0)
+		# Muros: con el botón pulsado se traza la barrera casilla a casilla, como una línea.
+		if valida and MurosView.es_muro(placing) and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			_poner_muro(casilla)
 		hud.set_hover_hint(tr("PLACE_HINT") % tr("BLD_" + base_hud._clave(placing)) if valida else tr("TILE_BLOCKED"), mouse)
 		return
 	if hud.root.get_viewport().gui_get_hovered_control() != null or not pick_target(mouse).is_empty():
@@ -482,7 +660,12 @@ func _unhandled_input(e: InputEvent) -> void:
 				var punto = ground_point(e.position)
 				if punto != null:
 					var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
-					if _placement_valid(casilla):
+					if MurosView.es_muro(placing):
+						if _placement_valid(casilla):
+							_poner_muro(casilla)
+						else:
+							hud.show_notice("TILE_BLOCKED")
+					elif _placement_valid(casilla):
 						port.submit("build", {"building": placing, "tile": casilla})
 						cancel_placement()
 					else:
@@ -519,7 +702,7 @@ func _unhandled_input(e: InputEvent) -> void:
 ## Objetivo revelado cuya casilla es «tile» ("" si no hay).
 func target_at_tile(tile: Vector2i) -> String:
 	for t in state.get("targets", []):
-		if t.get("revealed", false) and t.get("tile", Vector2i(9999, 9999)) == tile:
+		if t.get("revealed", false) and not t.get("depleted", false) and t.get("tile", Vector2i(9999, 9999)) == tile:
 			return str(t["id"])
 	return ""
 
@@ -532,7 +715,8 @@ func _blocked_tiles() -> Array[Vector2i]:
 	if state.has("station_tile"):
 		lista.append(state["station_tile"])
 	for t in state.get("targets", []):
-		lista.append(t["tile"])
+		if not t.get("depleted", false):
+			lista.append(t["tile"])
 	for b in state.get("buildings", []):
 		lista.append(b["tile"])
 	for n in state.get("nests", []):
@@ -542,11 +726,17 @@ func _blocked_tiles() -> Array[Vector2i]:
 
 ## Lo mismo que _blocked_tiles() como diccionario (búsqueda directa), recalculado solo cuando cambia el mapa.
 func _blocked_set() -> Dictionary:
-	if _blocked_cache_revision != map_signature or _blocked_cache.is_empty():
+	# Se rehace si cambia el mapa, un edificio o un objetivo agotado (que libera su casilla).
+	var agotados := 0
+	for t in state.get("targets", []):
+		if t.get("depleted", false):
+			agotados += 1
+	var firma := "%s|%d|%d" % [map_signature, (state.get("buildings", []) as Array).size(), agotados]
+	if _blocked_cache_revision != firma or _blocked_cache.is_empty():
 		_blocked_cache.clear()
 		for t in _blocked_tiles():
 			_blocked_cache[t] = true
-		_blocked_cache_revision = map_signature
+		_blocked_cache_revision = firma
 	return _blocked_cache
 
 

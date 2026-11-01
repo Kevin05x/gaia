@@ -53,7 +53,11 @@ var _grid_timer := 0.0
 ## Tamaño del mundo. Con un mapa grande todo lo que rodea al área jugable se aleja «_s» metros (múltiplo de 8)
 ## del mapa base de 23 m; las proporciones del diorama se conservan.
 var zones: Array = []  ## [{"id": String, "center": Vector2 en metros}]
+var factor_distancia := 1.0  ## opción «distancia de dibujo»: multiplica hasta dónde se ve el decorado menudo
 var lazy := false  ## true: el mundo se construye al recibir el mapa (configure), no al entrar en el árbol
+var por_pasos := false  ## true: lo pesado de configure() se reparte en varios cuadros (la web no se congela)
+var _construyendo := false
+signal mundo_listo  ## el mundo terminó de construirse por pasos
 var _s := 0.0
 var _inner := INNER
 var _outer := OUTER
@@ -65,7 +69,7 @@ var _world: Node3D
 var _acc: Dictionary = {}  ## instancias por familia y trozo, antes de volcarlas en MultiMesh
 var _obstaculos_datos: Array = []
 const CHUNK := 128.0  ## lado (m) de los trozos de las rocas escasas (centrados en el origen): cada uno se culla por su cuenta
-const CHUNK_FINO := 48.0  ## ídem para lo muy numeroso (guijarros y fragmentos), que además se oculta a lo lejos
+const CHUNK_FINO := 96.0  ## ídem para lo muy numeroso (guijarros y fragmentos), que además se oculta a lo lejos. Trozos grandes: en WebGL cada trozo es una llamada de dibujo
 const HASH := 4.0  ## lado (m) de la rejilla que acelera las pruebas de distancia al colocar rocas
 const ZONE_LOOK := {"orilla": [Color("DDC7A3"), 0.5], "falla": [Color("A9C4D3"), 0.62], "nucleo": [Color("5E4A45"), 0.7]}
 
@@ -115,31 +119,65 @@ func _ready() -> void:
 
 
 func _build_world() -> void:
-	for hijo in _world.get_children():
-		_world.remove_child(hijo)
-		hijo.queue_free()
-	_build_ground()
-	_build_outer()
-	_build_basin()
-	_build_lake()
-	_build_mountains()
-	_built = true
-	_firma = "%d|%s" % [int(_s), var_to_str(zones)]
+	for paso in _pasos_mundo():
+		paso.call()
+
+
+## El mundo en pasos separados: con «por_pasos» cada uno va en su propio cuadro y la web no se congela al cargar.
+func _pasos_mundo() -> Array[Callable]:
+	return [
+		func() -> void:
+			for hijo in _world.get_children():
+				_world.remove_child(hijo)
+				hijo.queue_free()
+			_build_ground(),
+		_build_outer,
+		func() -> void:
+			_build_basin()
+			_build_lake()
+			_world.add_child(Horizonte.lomas(_s, _fine))  # paisaje lejano: scenes/b/horizonte.gd
+			_world.add_child(Horizonte.mesetas(_s, _fine))
+			_built = true
+			_firma = "%d|%s" % [int(_s), var_to_str(zones)],
+	]
+
+
+## Construye lo pendiente del mundo repartido en varios cuadros y avisa con «mundo_listo».
+func _construir_por_pasos(pasos: Array[Callable]) -> void:
+	_construyendo = true
+	for paso in pasos:
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return
+		paso.call()
+	_construyendo = false
+	mundo_listo.emit()
+
+
+## true mientras el mundo aún se está construyendo por pasos.
+func construyendo() -> bool:
+	return _construyendo
 
 
 ## Ajusta el mundo al tamaño del mapa y a sus zonas; no hace nada si ya está construido así.
 func _ajustar_mundo() -> void:
+	if _preparar_medidas():
+		_build_world()
+
+
+## Fija el tamaño del mundo y sus alturas; true si hay que (re)construirlo.
+func _preparar_medidas() -> bool:
 	var lado := maxi(maxi(absi(bounds_min.x), absi(bounds_min.y)), maxi(absi(bounds_max.x), absi(bounds_max.y)))
 	var nuevo := maxf(0.0, ceilf((float(lado) * TILE + 1.0 - PLAY_EDGE) / 8.0) * 8.0)
 	if _built and _firma == "%d|%s" % [int(nuevo), var_to_str(zones)]:
-		return
+		return false
 	_s = nuevo
 	_inner = INNER + nuevo
 	_outer = OUTER + nuevo
 	_lake = LAKE_CENTER * (1.0 + nuevo / 48.0)
 	_play = PLAY_EDGE + nuevo
 	_calcular_alturas()
-	_build_world()
+	return true
 
 
 func _leer_zonas(valor: Array) -> void:
@@ -333,6 +371,23 @@ func _ground_color(pos: Vector3, normal_y: float) -> Color:
 	return Color(color.r * grano, color.g * grano, color.b * grano)
 
 
+## Oclusión del relieve horneada en el color: los fondos (más bajos que su entorno a 2 y 4 m) se oscurecen y las
+## crestas se aclaran un poco. Da volumen a las dunas sin ningún efecto de pantalla.
+func _oclusion_suelo(i: int, j: int) -> float:
+	var h := _heights[j * _n + i]
+	var suma := 0.0
+	var cuenta := 0
+	for paso in [1, 2]:
+		for d in [Vector2i(paso, 0), Vector2i(-paso, 0), Vector2i(0, paso), Vector2i(0, -paso)]:
+			var ii: int = clampi(i + d.x, 0, _n - 1)
+			var jj: int = clampi(j + d.y, 0, _n - 1)
+			suma += _heights[jj * _n + ii]
+			cuenta += 1
+	var hondo := suma / cuenta - h  # > 0: más bajo que lo de alrededor
+	var ao := 1.0 - clampf(hondo * 0.35, 0.0, 0.22) + clampf(-hondo * 0.15, 0.0, 0.06)
+	return ao
+
+
 func _smooth_normal(i: int, j: int) -> Vector3:
 	var i0 := maxi(i - 1, 0)
 	var i1 := mini(i + 1, _n - 1)
@@ -368,7 +423,7 @@ func _build_ground() -> void:
 			var nrm := _smooth_normal(i, j)
 			posiciones[j * n + i] = v
 			normales[j * n + i] = nrm
-			colores[j * n + i] = _ground_color(v, nrm.y)
+			colores[j * n + i] = _ground_color(v, nrm.y) * _oclusion_suelo(i, j)
 	var paso := 22
 	for cj in range(0, n - 1, paso):
 		for ci in range(0, n - 1, paso):
@@ -520,74 +575,6 @@ func _in_view_corridor(p: Vector2) -> bool:
 func _in_lake(p: Vector2) -> bool:
 	var local := (p - _lake).rotated(-LAKE_ROT)
 	return pow(local.x / 54.0, 2.0) + pow(local.y / 25.0, 2.0) < 1.0
-
-
-## Dos anillos irregulares de lomas que rodean los 360° (sin colisión ni sombras; la niebla los funde).
-func _build_mountains() -> void:
-	var ruido := FastNoiseLite.new()
-	ruido.seed = 314
-	ruido.frequency = 1.0
-	var radios := [76.0, 84.0, 92.0, 100.0, 108.0, 116.0, 126.0, 136.0, 146.0, 156.0, 166.0]
-	var o := _s * 1.4  # las lomas se alejan más que el borde: las esquinas del mapa están a 1,41 veces
-	for q in range(radios.size()):
-		radios[q] += o
-	var segmentos := 160
-	var puntos: Array = []
-	for k in range(radios.size()):
-		var anillo: Array = []
-		for s in range(segmentos):
-			var ang := TAU * s / segmentos
-			var r: float = radios[k] + ruido.get_noise_2d(cos(ang) * 3.0, sin(ang) * 3.0 + k) * 5.0
-			var n1 := (ruido.get_noise_2d(cos(ang) * 2.2, sin(ang) * 2.2) + 1.0) * 0.5
-			var n2 := (ruido.get_noise_2d(cos(ang) * 1.4 + 40.0, sin(ang) * 1.4) + 1.0) * 0.5
-			var h := BASIN_Y + (2.5 + 6.0 * n1) * _bump(r - o, 102.0, 24.0) + (9.0 + 15.0 * n2) * _bump(r - o, 158.0, 32.0)
-			h += ruido.get_noise_2d(cos(ang) * 9.0, sin(ang) * 9.0 + k * 0.5) * 1.6 * smoothstep(80.0, 100.0, r - o)
-			var cresta := 1.0 - absf(ruido.get_noise_2d(cos(ang) * 6.0 + 20.0, sin(ang) * 6.0 + k * 0.35))
-			h += cresta * cresta * 4.5 * smoothstep(100.0, 150.0, r - o) * _bump(r - o, 158.0, 34.0)
-			h += ruido.get_noise_2d(cos(ang) * 17.0, sin(ang) * 17.0 + k) * 1.1 * smoothstep(90.0, 130.0, r - o)
-			anillo.append(Vector3(cos(ang) * r, h, sin(ang) * r))
-		puntos.append(anillo)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var anillos_n := radios.size()
-	var normales: Array = []
-	for k in range(anillos_n):
-		var fila: Array = []
-		for s_idx in range(segmentos):
-			var izq: Vector3 = puntos[k][(s_idx + segmentos - 1) % segmentos]
-			var der: Vector3 = puntos[k][(s_idx + 1) % segmentos]
-			var dentro: Vector3 = puntos[maxi(k - 1, 0)][s_idx]
-			var fuera: Vector3 = puntos[mini(k + 1, anillos_n - 1)][s_idx]
-			var nrm := (fuera - dentro).cross(der - izq)
-			if nrm.y < 0.0:
-				nrm = -nrm
-			fila.append(nrm.normalized())
-		normales.append(fila)
-	for k in range(anillos_n - 1):
-		for s_idx in range(segmentos):
-			var s2 := (s_idx + 1) % segmentos
-			var idxs := [[k, s_idx], [k + 1, s_idx], [k, s2], [k, s2], [k + 1, s_idx], [k + 1, s2]]
-			for ij in idxs:
-				var v: Vector3 = puntos[ij[0]][ij[1]]
-				var base := BASIN.lerp(MOUNTAIN, smoothstep(BASIN_Y + 0.5, BASIN_Y + 6.0, v.y))
-				var tono := base * (1.0 + _fine.get_noise_2d(v.x * 0.7, v.z * 0.7) * 0.10)
-				tono.a = 1.0
-				st.set_color(tono)
-				st.set_normal(normales[ij[0]][ij[1]])
-				st.add_vertex(v)
-	var lomas := MeshInstance3D.new()
-	lomas.name = "Mountains"
-	lomas.mesh = st.commit()
-	lomas.material_override = W.vertex_material(false)
-	lomas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_world.add_child(lomas)
-
-
-func _bump(r: float, centro: float, ancho: float) -> float:
-	var t := (r - centro) / ancho
-	return maxf(0.0, 1.0 - t * t)
 
 
 # ---------------------------------------------------------------- retícula, cursor y rocas decorativas
@@ -894,10 +881,11 @@ func _volcar_instancias() -> void:
 		inst.material_override = W.rock_material()
 		var proyecta := bool(opciones.get("sombra", false))
 		inst.set_meta("proyecta_sombra", proyecta)
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if proyecta and W.quality else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if proyecta and W.quality and W.sombras_decor else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var lejos := float(opciones.get("vis", 0.0))
 		if lejos > 0.0:
-			inst.visibility_range_end = lejos
+			inst.set_meta("vis_base", lejos)
+			inst.visibility_range_end = lejos * factor_distancia
 			inst.visibility_range_end_margin = 8.0
 		_decor.add_child(inst)
 	_acc.clear()
@@ -1004,17 +992,19 @@ func _build_cliffs(rng: RandomNumberGenerator, reservado: Dictionary) -> void:
 		inst.multimesh = mm
 		inst.material_override = W.rock_material()
 		inst.set_meta("proyecta_sombra", g["sombra"])
-		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if g["sombra"] and W.quality else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if g["sombra"] and W.quality and W.sombras_decor else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_decor.add_child(inst)
 
 
-## Activa o quita las sombras de las rocas grandes según la opción de calidad.
+## Activa o quita las sombras de las rocas grandes (texturas y sombras activas) y aplica la distancia de dibujo.
 func apply_quality() -> void:
 	if not is_instance_valid(_decor):
 		return
 	for hijo in _decor.get_children():
 		if hijo is GeometryInstance3D and hijo.has_meta("proyecta_sombra"):
-			hijo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hijo.get_meta("proyecta_sombra") and W.quality else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			hijo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if hijo.get_meta("proyecta_sombra") and W.quality and W.sombras_decor else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if hijo is GeometryInstance3D and hijo.has_meta("vis_base"):
+			(hijo as GeometryInstance3D).visibility_range_end = float(hijo.get_meta("vis_base")) * factor_distancia
 
 
 # ---------------------------------------------------------------- objetivos, obstáculos, selección y ruta
@@ -1031,8 +1021,13 @@ func configure(defs: Array, blocked: Array, limites: Dictionary = {}, zonas: Arr
 		bounds_min = limites.get("min", bounds_min)
 		bounds_max = limites.get("max", bounds_max)
 	_leer_zonas(zonas)
-	if is_instance_valid(_world):
-		_ajustar_mundo()
+	var pasos: Array[Callable] = []
+	if is_instance_valid(_world) and _preparar_medidas():
+		pasos = _pasos_mundo()
+		if not por_pasos:
+			for paso in pasos:
+				paso.call()
+			pasos.clear()
 	if not limites.is_empty() and is_instance_valid(grid):
 		_rebuild_grid()
 	var rng := RandomNumberGenerator.new()
@@ -1069,7 +1064,12 @@ func configure(defs: Array, blocked: Array, limites: Dictionary = {}, zonas: Arr
 		n.visible = d.get("revealed", false)
 		targets[id] = n
 	if is_instance_valid(_decor):
-		_build_decor()
+		if por_pasos and is_inside_tree():
+			pasos.append(_build_decor)
+		else:
+			_build_decor()
+	if not pasos.is_empty():
+		_construir_por_pasos(pasos)
 
 
 ## Roca objetivo: peñasco facetado con capas sedimentarias (franjas de tono) y fragmentos alrededor.
@@ -1107,11 +1107,38 @@ func _buried(n: Node3D, rng: RandomNumberGenerator) -> void:
 	W.rock(n, "block", 1, Vector3(0.1, 0.12, 0.05), Vector3(0.9, 0.12, 0.7), Color("E2C9A0"))
 
 
+signal target_depleted(pos: Vector3)  ## un objetivo se agotó: se hunde en el suelo y deja polvo
+
+
 func update_targets(defs: Array) -> void:
 	for d in defs:
 		var id := str(d.id)
-		if targets.has(id):
-			targets[id].visible = d.get("revealed", false)
+		if not targets.has(id):
+			continue
+		var n: Node3D = targets[id]
+		var agotado: bool = d.get("depleted", false)
+		if agotado:
+			if n.visible and not n.has_meta("agotandose"):
+				_agotar(n)
+			continue
+		n.visible = d.get("revealed", false)
+
+
+## El objetivo agotado se encoge y se hunde (0,6 s) y luego desaparece: su casilla queda libre para construir.
+func _agotar(n: Node3D) -> void:
+	n.set_meta("agotandose", true)
+	if n.name == selected:
+		selection.visible = false
+		_clear_outline()
+	target_depleted.emit(n.position + Vector3(0, 0.4, 0))
+	if not is_inside_tree():
+		n.visible = false
+		return
+	var t := n.create_tween().set_parallel(true)
+	t.tween_property(n, "scale", Vector3(1.15, 0.35, 1.15), 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.chain().tween_property(n, "scale", Vector3(0.05, 0.05, 0.05), 0.42).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(n, "position:y", n.position.y - 0.4, 0.42)
+	t.chain().tween_callback(func() -> void: n.visible = false)
 
 
 func select(id: String) -> void:

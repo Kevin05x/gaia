@@ -18,13 +18,15 @@ var zoom_target := ZOOM_DEFAULT
 var _yaw := yaw
 var _distance := ZOOM_DEFAULT
 var _focus := Vector3.ZERO
+var _sacudida := 0.0  ## fuerza actual de la sacudida (m); se apaga sola
+var _t := 0.0
 
 
 func _ready() -> void:
 	camera = Camera3D.new()
 	camera.name = "Camera"
 	camera.fov = 40.0
-	camera.near = 0.15
+	camera.near = 0.35  # más precisión de profundidad a lo lejos (sin parpadeos entre colinas)
 	camera.far = 600.0
 	add_child(camera)
 	camera.current = true
@@ -61,6 +63,8 @@ func _process(delta: float) -> void:
 		_focus = _focus.lerp(objetivo, 1.0 - exp(-delta * 6.0))
 	_yaw = lerp_angle(_yaw, yaw, 1.0 - exp(-delta * 9.0))
 	_distance = lerpf(_distance, zoom_target, 1.0 - exp(-delta * 10.0))
+	_t += delta
+	_sacudida = maxf(_sacudida - delta * maxf(_sacudida * 4.0, 0.25), 0.0)
 	_apply()
 
 
@@ -70,6 +74,15 @@ func _apply() -> void:
 	var offset := Vector3(sin(_yaw) * cos(pitch), sin(pitch), cos(_yaw) * cos(pitch)) * _distance
 	camera.global_position = _focus + offset
 	camera.look_at(_focus + Vector3(0, 0.9, 0), Vector3.UP)
+	if _sacudida > 0.0:
+		# Vibración suave (no aleatoria): tres senos de frecuencias distintas, se nota pero no marea.
+		camera.global_position += Vector3(sin(_t * 41.0), sin(_t * 53.0 + 1.3) * 0.7, sin(_t * 37.0 + 2.1)) * _sacudida
+
+
+## Sacude la cámara (explosiones): «fuerza» en metros, atenuada con la distancia al punto que mira la cámara.
+func sacudir(pos: Vector3, fuerza: float) -> void:
+	var lejos := Vector2(pos.x - _focus.x, pos.z - _focus.z).length()
+	_sacudida = minf(maxf(_sacudida, fuerza / (1.0 + lejos * lejos * 0.012)), 0.35)
 
 
 func center_on(point: Vector3) -> void:
