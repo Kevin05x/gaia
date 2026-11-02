@@ -112,7 +112,7 @@ func update_state(s: Dictionary, moving: bool) -> void:
 	if not unlocked:
 		return
 	paused = s.get("paused", false)
-	tool_sound.stream_paused = paused
+	_pausar(tool_sound, paused)
 	var descent: bool = s.get("phase", "") == "landing"
 	if descent and not paused:
 		if not landing_sound.playing:
@@ -123,7 +123,7 @@ func update_state(s: Dictionary, moving: bool) -> void:
 		cancel()
 	var silent: bool = s.get("paused", false) or s.get("phase", "") == "report"
 	wind.volume_db = -22 if s.get("storm", false) else -32
-	wind.stream_paused = silent
+	_pausar(wind, silent)
 	if not wind.playing and not silent:
 		wind.play()
 	if moving and not silent:
@@ -141,6 +141,14 @@ func update_state(s: Dictionary, moving: bool) -> void:
 		radio.stop()
 	_transmitting = enviando
 	_sonidos_de_combate(s.get("combat", {}), silent)
+
+
+## Pausa o reanuda solo si cambia. En la web cada «stream_paused = false» reinicia el sonido desde el principio (Godot
+## crea otra fuente de audio), y esto se llamaba en cada snapshot: el viento y la herramienta se oían dobles o con
+## tartamudeo.
+func _pausar(p: AudioStreamPlayer, pausa: bool) -> void:
+	if p.stream_paused != pausa:
+		p.stream_paused = pausa
 
 
 ## Suena un efecto de combate en una voz libre (si todas están ocupadas, se omite: es mejor que cortar otro).

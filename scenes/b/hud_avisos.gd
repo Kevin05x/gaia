@@ -14,6 +14,19 @@ var _caja: VBoxContainer
 var _critica: PanelContainer
 var _texto_critico: Label
 var _firma := ""
+var _bajar := 0.0  ## espacio que deja arriba el contador de FPS cuando está visible
+
+
+## Baja las franjas «dy» píxeles (el contador de FPS ocupa arriba al centro y si no lo tapaban).
+func bajar(dy: float) -> void:
+	if is_equal_approx(dy, _bajar):
+		return
+	for par in [[_franja, 20.0, 48.0], [_critica, 76.0, 48.0]]:
+		(par[0] as Control).offset_top = float(par[1]) + dy
+		(par[0] as Control).offset_bottom = float(par[1]) + float(par[2]) + dy
+	lista.offset_top = 132.0 + dy
+	lista.offset_bottom = 132.0 + dy
+	_bajar = dy
 
 
 func _init(hud: Object) -> void:
