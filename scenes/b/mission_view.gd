@@ -50,7 +50,7 @@ var warmup: Node3D  ## precalentado de sombreadores al empezar
 var cortina: CanvasLayer  ## cortina oscura mientras dura el precalentado
 var _listo := false
 var calidad: Node  ## resolución 3D automática según lo que aguante el equipo
-var graficos: Dictionary = Graficos.de_preset(Graficos.DEFECTO)  ## configuración gráfica elegida (Opciones)
+var graficos: Dictionary = Graficos.de_preset(Graficos.defecto())  ## configuración gráfica elegida (Opciones)
 var ciencia: CanvasLayer  ## panel de objetivos científicos (hitos)
 signal listo  ## terreno construido y sombreadores precalentados: la pantalla de carga ya puede irse
 static var translations_registered := false
@@ -230,6 +230,8 @@ func _ready() -> void:
 	calidad.al_recortar = _recortar
 	add_child(calidad)
 	aplicar_graficos(graficos, false)
+	if warmup != null and warmup.activo():
+		calidad.modo_carga(true)
 
 
 ## Aplica la configuración gráfica (Opciones › Gráficos) a la luz, las sombras, los materiales, el decorado, el polvo
@@ -284,6 +286,8 @@ func _precalentar() -> void:
 	cortina.add_child(negro)
 	lighting.set_process(false)  # el cielo no debe cambiar las sombras mientras se precalienta
 	warmup.terminado.connect(func() -> void:
+		if is_instance_valid(calidad):
+			calidad.modo_carga(false)
 		lighting.set_process(true)
 		lighting.apply(true)
 		_comprobar_listo()
@@ -321,6 +325,15 @@ func preparacion() -> float:
 
 func esta_listo() -> bool:
 	return _listo
+
+
+## La pantalla de carga no vio avances en mucho rato: se termina el precalentado (si quedaba) para que el jugador entre
+## igual. Lo que falte por compilar se compilará al aparecer (algún tirón suelto), pero nunca una pantalla marrón fija.
+func forzar_listo() -> void:
+	if warmup != null and warmup.activo():
+		warmup.terminar()
+	if is_instance_valid(calidad):
+		calidad.modo_carga(false)
 
 
 func _comprobar_listo() -> void:

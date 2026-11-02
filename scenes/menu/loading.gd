@@ -11,7 +11,8 @@ const IMAGEN := "res://assets/menu/pantalla_carga.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
 const TIEMPO_MINIMO := 2.2
 const CONSEJOS := 6
-const ESPERA_MAXIMA_S := 40.0  ## si la preparación no avisa, la carga se va igual
+const SIN_AVANCE_MAX_S := 45.0  ## si la preparación no avanza en este rato, se entra igual (no se queda colgada)
+const ESPERA_MAXIMA_S := 240.0  ## tope absoluto, por si avanza tan lento que nunca acaba
 ## Lo que se carga antes de montar el juego, un recurso por cuadro (así ningún cuadro tarda demasiado).
 const RECURSOS := ["res://scenes/b/ui_style.gd", "res://scenes/b/terrain.gd", "res://scenes/b/actors.gd",
 	"res://scenes/b/hud.gd", "res://scenes/b/workshop.gd", "res://scenes/b/base_hud.gd", "res://scenes/b/story_panel.gd",
@@ -150,10 +151,22 @@ func _cargar() -> void:
 	_fijar(0.72)
 	# El juego se prepara por pasos detrás de esta pantalla (terreno y sombreadores).
 	var vista = juego.get("view")
+	# Equipos lentos tardan más en compilar sombreadores: se espera mientras haya avance, no un tiempo fijo. Antes, a los
+	# 40 s la carga se iba aunque el precalentado siguiera y quedaba una cortina marrón sin barra («no entra»).
 	var inicio := _t
-	while vista != null and is_instance_valid(vista) and vista.has_method("esta_listo") and not vista.esta_listo() \
-			and _t - inicio < ESPERA_MAXIMA_S:
-		_fijar(0.72 + 0.26 * float(vista.preparacion()))
+	var ultimo_avance := _t
+	var avance_antes := -1.0
+	while vista != null and is_instance_valid(vista) and vista.has_method("esta_listo") and not vista.esta_listo():
+		var avance := float(vista.preparacion())
+		if avance > avance_antes + 0.001:
+			avance_antes = avance
+			ultimo_avance = _t
+		if _t - ultimo_avance > SIN_AVANCE_MAX_S or _t - inicio > ESPERA_MAXIMA_S:
+			push_warning("Carga: sin avance (%.2f); se entra igual" % avance)
+			if vista.has_method("forzar_listo"):
+				vista.forzar_listo()
+			break
+		_fijar(0.72 + 0.26 * avance)
 		await arbol.process_frame
 	_fijar(1.0)
 	while progreso < 0.999 or _t < TIEMPO_MINIMO:

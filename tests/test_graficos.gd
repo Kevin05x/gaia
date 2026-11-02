@@ -123,3 +123,23 @@ func test_panel_de_opciones_tiene_la_casilla_fps() -> void:
 	panel.casilla_fps().button_pressed = true
 	assert_signal_emitted_with_parameters(panel, "fps_cambiado", [true])
 	assert_true(Graficos.mostrar_fps())
+
+
+func test_tope_de_pixeles_y_modo_carga() -> void:
+	var c: CalidadDinamica = preload("res://scenes/b/calidad_dinamica.gd").new()
+	add_child_autofree(c)
+	c.configurar(Viewport.MSAA_2X, 1.0, true)
+	assert_true(c.tope_pixeles() <= 1.0 and c.tope_pixeles() >= 0.4)
+	assert_almost_eq(c.escala_real(), minf(1.0, c.tope_pixeles()), 0.001)
+	c.modo_carga(true)
+	assert_almost_eq(get_viewport().scaling_3d_scale, 0.3, 0.001, "durante la carga el 3D va diminuto")
+	assert_eq(get_viewport().msaa_3d, Viewport.MSAA_DISABLED)
+	c.modo_carga(false)
+	assert_almost_eq(get_viewport().scaling_3d_scale, c.escala_real(), 0.001)
+	assert_eq(get_viewport().msaa_3d, Viewport.MSAA_2X)
+	c.configurar(Viewport.MSAA_DISABLED, 1.0, false)
+
+
+func test_ultra_tambien_se_ajusta_solo() -> void:
+	assert_true(Graficos.de_preset("ultra")["auto"], "si el equipo no llega, hasta Ultra baja la calidad")
+	assert_eq(Graficos.defecto(), "alta", "en el escritorio (y en los tests) se empieza en Alta")
