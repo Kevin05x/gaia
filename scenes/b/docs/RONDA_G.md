@@ -104,3 +104,28 @@ Alta cuesta un ~13 % más que la ronda G en una GPU por software, por el brillo,
 - **Postproceso**: exposición 0,94, saturación 1,2 y glow con umbral 1,6 (solo lo que de verdad brilla).
 - **Sin niebla de altura**: en Compatibility se suma también cerca de la cámara y lo lavaba todo (probado y descartado).
 - **Ajuste automático**: en un equipo muy justo, tras quitar el suavizado y bajar la resolución, también quita el brillo y luego las sombras. Solo vale para esa partida y no cambia lo guardado.
+
+## Ajustes tras la prueba en el PC de Kevin (Intel UHD, Chrome)
+
+Reporte: Ultra a 7–25 FPS, unos 4 GB más de RAM en Chrome con el juego abierto, el aviso de batería tapaba el contador
+de FPS, textos «+6 Xenolito» encima del botón de acción, sonidos que se oían dobles y una vez una pantalla marrón que no
+dejaba entrar.
+
+- Sonidos dobles: en la web, cada `stream_paused = false` reinicia el sonido (Godot crea otra fuente en WebAudio) y
+  `audio.gd` lo asignaba en cada snapshot al viento y a la herramienta. Ahora solo se cambia si de verdad cambia.
+- Pantalla marrón: la carga se iba a los 40 s fijos aunque el precalentado de sombreadores siguiera; quedaba la cortina
+  marrón sin barra. Ahora la carga espera mientras haya avance (se rinde a los 45 s sin avance o 4 min en total) y, si
+  se rinde, termina el precalentado (`forzar_listo`) para entrar igual. Durante la carga el 3D se dibuja al 30 % y sin
+  MSAA (nadie lo ve: lo tapa la pantalla de carga).
+- Tope de píxeles del 3D (`Graficos.MAX_PIXELES_3D`, 1920×1080): con escala de Windows o pantallas grandes el navegador
+  pedía lienzos de 2,5–4 millones de píxeles.
+- En el navegador se empieza en Media (Alta en el escritorio) y Ultra también tiene ajuste automático.
+- Contador de FPS: 3 líneas (FPS, mínimo, ms · ajuste, resolución 3D real, nivel automático · RAM del juego (memoria
+  WebAssembly), VRAM, llamadas de dibujo, triángulos). Las franjas de avisos bajan cuando está visible.
+- Textos flotantes: arrancan 70 px por encima del rover (sobre el menú de acciones) y, si salen juntos, cada uno en su
+  fila.
+
+Medición de memoria (Chromium + SwiftShader, 1920×1080, Media): WebAssembly 157 MB, pestaña completa ~1,1 GB (de ellos
+~550 MB del proceso de GPU) y estable durante la partida. En el escritorio (Godot nativo): 111 MB de RAM del motor y
+94 MB de VRAM. Los ~4 GB vistos en Windows no salen del juego en sí: hay que mirar el Administrador de tareas de Chrome
+(Shift+Esc) para separar pestaña y «Proceso de GPU».

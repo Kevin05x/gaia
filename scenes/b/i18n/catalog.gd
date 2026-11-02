@@ -1,10 +1,12 @@
 extends RefCounted
 const TABLES = {
  "es": {
+  "GFX_FPS_RAM": "RAM",
+  "GFX_FPS_VRAM": "VRAM",
   "GFX_FPS": "Mostrar FPS",
   "GFX_FPS_TIP": "Muestra en pantalla los cuadros por segundo y la carga gráfica. También con la tecla P.",
   "GFX_FPS_MIN": "mín",
-  "GFX_FPS_AUTO": "auto nivel %d",
+  "GFX_FPS_AUTO": "auto %d",
   "GFX_NO": "No",
   "GFX_NORMAL_D": "Normal",
   "GRAPHICS": "Gráficos",
@@ -446,10 +448,12 @@ const TABLES = {
   "SCIENCE_PILL": "Ciencia %d/%d"
  },
  "en": {
+  "GFX_FPS_RAM": "RAM",
+  "GFX_FPS_VRAM": "VRAM",
   "GFX_FPS": "Show FPS",
   "GFX_FPS_TIP": "Shows frames per second and graphics load on screen. Also with the P key.",
   "GFX_FPS_MIN": "min",
-  "GFX_FPS_AUTO": "auto level %d",
+  "GFX_FPS_AUTO": "auto %d",
   "GFX_NO": "Off",
   "GFX_NORMAL_D": "Normal",
   "GRAPHICS": "Graphics",

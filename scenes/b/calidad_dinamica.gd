@@ -21,6 +21,7 @@ var _niveles: Array = NIVELES  ## escalones según lo que eligió el jugador (co
 var _t := 0.0
 var _cuadros := 0
 var _desde_cambio := 0.0
+var _carga := false  ## mientras se prepara la misión (detrás de la pantalla de carga): 3D diminuto y sin suavizado
 
 
 func nivel() -> int:
@@ -29,6 +30,30 @@ func nivel() -> int:
 
 func escala() -> float:
 	return _niveles[_nivel][1]
+
+
+## Escala que de verdad se usa: la elegida, sin pasar del tope de píxeles (Graficos.MAX_PIXELES_3D).
+func escala_real() -> float:
+	return minf(float(_niveles[_nivel][1]), tope_pixeles())
+
+
+func tope_pixeles() -> float:
+	var ventana := get_window() if is_inside_tree() else null
+	if ventana == null:
+		return 1.0
+	var pixeles := float(ventana.size.x) * float(ventana.size.y)
+	if pixeles <= 1.0:
+		return 1.0
+	return clampf(sqrt(float(Graficos.MAX_PIXELES_3D) / pixeles), 0.4, 1.0)
+
+
+## Durante la carga nadie ve el 3D (lo tapa la pantalla de carga), pero se dibuja igual para compilar sombreadores:
+## a resolución mínima y sin suavizado esos cuadros son mucho más rápidos y la carga termina antes.
+func modo_carga(activo: bool) -> void:
+	if _carga == activo:
+		return
+	_carga = activo
+	_fijar(_nivel)
 
 
 ## Parte de lo que eligió el jugador (suavizado y resolución) y, si «auto», solo puede bajar desde ahí: primero quita el
@@ -54,6 +79,7 @@ func configurar(msaa: Viewport.MSAA, resolucion: float, auto: bool, con_post: bo
 
 func _ready() -> void:
 	_fijar(0)
+	get_viewport().size_changed.connect(func() -> void: _fijar(_nivel))
 
 
 func _process(delta: float) -> void:
@@ -80,9 +106,9 @@ func _fijar(n: int) -> void:
 	_desde_cambio = 0.0
 	var vp := get_viewport()
 	if vp != null:
-		vp.msaa_3d = _niveles[n][0]
+		vp.msaa_3d = Viewport.MSAA_DISABLED if _carga else _niveles[n][0]
 		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-		vp.scaling_3d_scale = _niveles[n][1]
+		vp.scaling_3d_scale = 0.3 if _carga else escala_real()
 	var recorte: int = _niveles[n][2] if (_niveles[n] as Array).size() > 2 else 0
 	if al_recortar.is_valid():
 		al_recortar.call(recorte)

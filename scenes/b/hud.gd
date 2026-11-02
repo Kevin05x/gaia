@@ -380,10 +380,10 @@ func _build_bottom() -> void:
 	_debug = UI.label(root, "", 13, Color(UI.CREAM, 0.95))
 	# Arriba al centro: es el único hueco libre (abajo están la bodega, las acciones y la radio).
 	_debug.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_debug.offset_left = -150
-	_debug.offset_right = 150
+	_debug.offset_left = -180
+	_debug.offset_right = 180
 	_debug.offset_top = 8
-	_debug.offset_bottom = 54
+	_debug.offset_bottom = 74
 	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var fondo_fps := StyleBoxFlat.new()
 	fondo_fps.bg_color = Color(0.05, 0.04, 0.04, 0.72)
@@ -1253,6 +1253,7 @@ func _process(delta: float) -> void:
 		_set_comms_expanded(querer)
 	if _debug.visible:
 		_actualizar_fps(delta)
+	_avisos.bajar(70.0 if _debug.visible else 0.0)
 	var vista := get_parent()
 	if vista != null and vista.get("rig") != null and vista.has_method("blocked"):
 		vista.rig.enabled = not vista.blocked() and not settings.visible and not review_panel.visible
@@ -1277,11 +1278,34 @@ func _actualizar_fps(delta: float) -> void:
 	if vista != null and vista.get("calidad") != null and is_instance_valid(vista.get("calidad")):
 		extra = " · " + tr("GFX_FPS_AUTO") % int(vista.calidad.nivel())
 	var fps := Engine.get_frames_per_second()
-	_debug.text = "%s%d FPS · %s %d · %.1f ms\n%d draw · %.1fk tris · %s %d%%%s" % [
+	var ventana := get_window().size
+	var vp := get_viewport()
+	_debug.text = "%s%d FPS · %s %d · %.1f ms\n%s · 3D %d×%d%s\n%s %d MB · VRAM %d MB · %d dc · %dk tri" % [
 		tr("INSPECTION") + " · " if inspection else "", fps, tr("GFX_FPS_MIN"), roundi(1000.0 / maxf(peor, 1.0)),
-		1000.0 / maxf(fps, 1), roundi(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
-		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0,
-		str(graficos.get("preset", "")).capitalize(), roundi(get_viewport().scaling_3d_scale * 100.0), extra]
+		1000.0 / maxf(fps, 1), _nombre_ajuste(),
+		roundi(ventana.x * vp.scaling_3d_scale), roundi(ventana.y * vp.scaling_3d_scale), extra,
+		tr("GFX_FPS_RAM"), roundi(_memoria_juego() / 1048576.0),
+		roundi(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
+		roundi(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		roundi(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0)]
+
+
+func _nombre_ajuste() -> String:
+	var p := str(graficos.get("preset", Graficos.preset_de(graficos) if not graficos.is_empty() else ""))
+	if p == "":
+		return ""
+	return tr("GFX_CUSTOM") if p == "personalizada" else tr("GFX_" + p.to_upper())
+
+
+## Memoria del juego en bytes. En la web es la memoria de WebAssembly (todo lo que el juego tiene cargado; el navegador
+## suma aparte la de la tarjeta gráfica); en el escritorio, la que cuenta el motor.
+func _memoria_juego() -> float:
+	if OS.has_feature("web"):
+		var v = JavaScriptBridge.eval("(typeof wasmMemory !== 'undefined' && wasmMemory) ? wasmMemory.buffer.byteLength : ((typeof HEAP8 !== 'undefined') ? HEAP8.length : 0)")
+		if v is float or v is int:
+			return float(v)
+		return 0.0
+	return float(OS.get_static_memory_usage())
 
 
 func _poner_fps(activo: bool) -> void:

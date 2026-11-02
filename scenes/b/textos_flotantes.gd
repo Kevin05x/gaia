@@ -5,8 +5,10 @@ extends Node3D
 const MAX := 10
 const DURACION := 1.5
 const SUBIDA := 1.4
+const SOBRE_PX := 70.0  ## arranca por encima del menú de acciones que sale junto al rover (en píxeles del texto)
+const FILA_PX := 34.0  ## separación entre textos que salen a la vez del mismo sitio
 
-var _textos: Array = []  ## {"node", "t", "base"}
+var _textos: Array = []  ## {"node", "t", "base", "fila"}
 
 
 func _ready() -> void:
@@ -23,26 +25,34 @@ func _ready() -> void:
 		l.outline_render_priority = 11
 		l.visible = false
 		add_child(l)
-		_textos.append({"node": l, "t": DURACION, "base": Vector3.ZERO})
+		_textos.append({"node": l, "t": DURACION, "base": Vector3.ZERO, "fila": 0})
 	set_process(false)
 
 
-## Muestra «texto» sobre «pos». Si ya salen otros en el mismo sitio, este espera su turno (0,45 s después del último)
-## para que suban en fila y no se tapen.
+## Muestra «texto» sobre «pos». Si ya hay otros en el mismo sitio, este toma la fila libre de más arriba (no se tapan
+## aunque salgan juntos) y espera un poco su turno para que se lean de uno en uno.
 func mostrar(pos: Vector3, texto: String, color: Color) -> void:
 	var elegido: Dictionary = _textos[0]
 	var espera := 0.0
+	var ocupadas: Dictionary = {}
 	for t in _textos:
 		if float(t["t"]) > float(elegido["t"]):
 			elegido = t
-		if float(t["t"]) < 0.45 and (t["base"] as Vector3).distance_to(pos) < 1.5:
-			espera = maxf(espera, 0.45 - float(t["t"]))
+		if float(t["t"]) < DURACION and (t["base"] as Vector3).distance_to(pos) < 1.5:
+			ocupadas[int(t["fila"])] = true
+			if float(t["t"]) < 0.3:
+				espera = maxf(espera, 0.3 - float(t["t"]))
+	var fila := 0
+	while ocupadas.has(fila):
+		fila += 1
 	elegido["t"] = -espera
 	elegido["base"] = pos
+	elegido["fila"] = fila
 	var l: Label3D = elegido["node"]
 	l.text = texto
 	l.modulate = Color(color, 0.0)
 	l.position = pos
+	l.offset = Vector2(0, SOBRE_PX + FILA_PX * fila)
 	l.visible = true
 	set_process(true)
 

@@ -36,6 +36,19 @@ func empezar(raices: Array, extra: Array) -> void:
 	_mostrar_grupo(0)
 
 
+## Termina ya (la pantalla de carga se cansó de esperar): borra las muestras y avisa, como si hubiera acabado.
+func terminar() -> void:
+	if _cuadro < 0:
+		return
+	if sol != null:
+		sol.shadow_enabled = _sombras_antes
+	for m in _muestras:
+		m.queue_free()
+	_muestras.clear()
+	_cuadro = -1
+	terminado.emit()
+
+
 func activo() -> bool:
 	return _cuadro >= 0
 
