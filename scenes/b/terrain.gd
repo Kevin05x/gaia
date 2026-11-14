@@ -1085,10 +1085,17 @@ func _strata(n: Node3D, rng: RandomNumberGenerator) -> void:
 	pieza.rotation.y = giro + 0.6
 
 
+const MINERALES_VISTA: Array[String] = ["mineral_cobre", "mineral_oro", "mineral_plata"]
+
+
 ## Mineral expuesto: fragmentos pálidos dentro de una fractura oscura.
 func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
-	# Modelo del equipo de diseño (roca con cristales); si falta el archivo se usa la pieza por código.
-	var modelo := Equipo.poner(n, "cristal5_brillo", 2.8, Vector3(0, -0.03, 0), rng.randf() * TAU)  # olivino: cristal verde del equipo de diseño
+	# Minerales realistas del equipo de arte (cobre nativo, oro en cuarzo, plata nativa), uno al azar por objetivo; si
+	# faltan, el cristal verde anterior y, si tampoco está, la pieza por código. El recurso que da sigue siendo el de
+	# content/economia.json (olivino): el modelo es solo el aspecto.
+	var opciones := MINERALES_VISTA.filter(func(m: String) -> bool: return Equipo.existe(m))
+	var nombre: String = opciones[rng.randi() % opciones.size()] if not opciones.is_empty() else "cristal5_brillo"
+	var modelo := Equipo.poner(n, nombre, 2.6, Vector3(0, -0.03, 0), rng.randf() * TAU)
 	if not modelo.is_empty():
 		return
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))

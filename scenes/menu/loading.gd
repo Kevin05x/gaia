@@ -20,8 +20,8 @@ const RECURSOS := ["res://scenes/b/ui_style.gd", "res://scenes/b/terrain.gd", "r
 	"res://scenes/b/assets/models/rover.tscn", "res://scenes/b/assets/models/station.tscn",
 	"res://scenes/b/assets/models/drone.tscn", "res://scenes/b/assets/models/companion.tscn",
 	"res://scenes/b/mission.tscn", "res://scenes/a/mission_runner.gd", "res://scenes/a/game.tscn"]
-const MODELOS := ["anthena_juego", "cristal5_brillo", "hielo_2", "hielo_3", "foco", "hangar_cuadrado", "hangar_roundA",
-	"taladro", "torreta_doble", "torreta_simple"]
+const MODELOS := ["anthena_juego", "mineral_cobre", "mineral_oro", "mineral_plata", "hielo_2", "hielo_3", "foco", "hangar_cuadrado",
+	"hangar_roundA", "taladro", "torreta_doble", "torreta_simple", "nido_caverna"]
 const Equipo := preload("res://scenes/b/modelos_equipo.gd")
 
 static var reservas: Array = []  ## recursos ya cargados: se quedan en memoria para que el juego no los vuelva a leer
