@@ -15,12 +15,15 @@ var jugando := false
 var _roles: Dictionary = {}  ## id -> roles, fijados al empezar (y reasignados si alguien se va)
 
 
-## true si entró. Falla si la sala está llena, la partida ya empezó o ese id ya está.
+## true si entró. Falla si la sala está llena o ese id ya está. Con la misión en marcha también se puede entrar: los roles se
+## reparten de nuevo entre todos, según cuántos son ahora.
 func anadir(id: int, nombre: String) -> bool:
-	if jugando or orden.size() >= MAXIMO or orden.has(id):
+	if orden.size() >= MAXIMO or orden.has(id):
 		return false
 	orden.append(id)
 	nombres[id] = limpiar_nombre(nombre, orden.size())
+	if jugando:
+		_repartir_roles()
 	return true
 
 
@@ -76,12 +79,16 @@ func configurar(id: int, destino: String, dificultad: String) -> bool:
 func empezar(id: int) -> bool:
 	if jugando or not es_jefe(id) or orden.is_empty():
 		return false
+	jugando = true
+	_repartir_roles()
+	return true
+
+
+func _repartir_roles() -> void:
 	var reparto: Array = Sesion.roles_por_jugador(orden.size())
 	_roles.clear()
 	for i in range(orden.size()):
 		_roles[orden[i]] = Array(reparto[i]).duplicate() if i < reparto.size() else []
-	jugando = true
-	return true
 
 
 ## Roles de un jugador (vacío si no hay partida o no existe).

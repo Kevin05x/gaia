@@ -91,6 +91,11 @@ func _correr() -> void:
 		red.configurar(_arg("destino", "marte"), "estandar")
 		await create_timer(0.3).timeout
 		red.empezar()
+	if _arg("tarde") == "1":  # entra con la misión en marcha: solo comprueba que le llega el estado actual
+		res["tarde_recibio"] = await _esperar(func() -> bool: return fase != "", 25.0)
+		res["roles"] = ",".join(red.mis_roles())
+		await _terminar()
+		return
 	var llego := await _esperar(func() -> bool: return fase == "workshop", 25.0)
 	res["taller"] = llego
 	res["roles"] = ",".join(red.mis_roles())

@@ -252,12 +252,15 @@ func _rpc_hola(nombre: String, protocolo: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if protocolo != PROTOCOLO:
 		_rechazar(id, "NET_ERR_VERSION")
-	elif sala.jugando:
-		_rechazar(id, "NET_ERR_STARTED")
 	elif not sala.anadir(id, nombre):
 		_rechazar(id, "NET_ERR_FULL")
 	else:
 		_enviar_sala()
+		if sala.jugando:
+			# Se une a una misión en marcha: pasa directo a la partida (su vista pide el estado actual al estar lista) y los que
+			# ya juegan se enteran de que los roles se repartieron de nuevo.
+			repartir("ui", {"m": "aviso", "a": ["NET_ROLES_CHANGED"]})
+			_rpc_partida.rpc_id(id, sala.a_dict())
 
 
 @rpc("authority", "reliable")

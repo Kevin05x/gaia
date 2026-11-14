@@ -33,11 +33,22 @@ func test_el_primero_es_el_jefe_y_solo_el_jefe_configura_y_empieza() -> void:
 	assert_true(s.jugando)
 
 
-func test_no_se_entra_ni_se_configura_con_la_partida_empezada() -> void:
-	var s = _sala(2)
+func test_con_la_partida_empezada_no_se_configura_pero_si_se_entra() -> void:
+	var s = _sala(1)
 	s.empezar(100)
-	assert_false(s.anadir(500, "tarde"))
-	assert_false(s.configurar(100, "luna", "facil"))
+	assert_eq(s.roles_de(100).size(), 4, "al empezar solo/a lleva los cuatro roles")
+	assert_false(s.configurar(100, "luna", "facil"), "el destino ya no se cambia")
+	assert_true(s.anadir(500, "tarde"), "se puede entrar con la misión en marcha")
+	assert_eq(s.roles_de(100), ["direccion", "ciencia"], "los roles se reparten de nuevo entre los dos")
+	assert_eq(s.roles_de(500), ["ingenieria", "comunicaciones"])
+	for rol in ["direccion", "ingenieria", "ciencia", "comunicaciones"]:
+		assert_ne(s.quien_tiene(rol), 0, "%s sigue teniendo dueño" % rol)
+
+
+func test_con_la_partida_empezada_tampoco_entra_un_quinto() -> void:
+	var s = _sala(4)
+	s.empezar(100)
+	assert_false(s.anadir(500, "quinto"))
 
 
 func test_roles_como_en_el_equipo_de_una_pantalla() -> void:

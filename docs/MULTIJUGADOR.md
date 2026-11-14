@@ -8,7 +8,7 @@ de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, un
 
 1. **Quien crea la sala** (versión de escritorio): *Menú › MULTIJUGADOR › Crear sala*. Le aparecen sus direcciones IP.
 2. **Los demás**: *MULTIJUGADOR*, escriben la IP (o la dirección `wss://…` del servidor) y pulsan *Entrar*.
-3. El **jefe de sala** (el primero en entrar) elige destino y dificultad y pulsa *Empezar misión*. Después de empezar ya no entra nadie más.
+3. El **jefe de sala** (el primero en entrar) elige destino y dificultad y pulsa *Empezar misión*. Quien llegue después **también puede entrar con la misión en marcha**: pasa directo a la partida y los roles se reparten de nuevo entre todos (máximo 4).
 4. En el taller todos ven el diseño en vivo; Dirección e Ingeniería pueden cambiarlo. Dirección pulsa *Iniciar aterrizaje* y se abre el
    **Go / No-Go en todos los dispositivos**: cada persona vota los roles que le tocan; Dirección lanza cuando todos dicen GO.
 5. En operaciones cada rol hace lo suyo a la vez:
