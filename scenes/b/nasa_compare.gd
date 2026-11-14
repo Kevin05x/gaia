@@ -46,9 +46,9 @@ func build() -> void:
 	_mostrar_foto("selfie")
 	_visor_3d()
 	var segmentos := UI.label(self, tr("CMP_SEGMENTS"), UI.FONT_SECONDARY, UI.AMBER)
-	segmentos.position = Vector2(24, 356)
+	segmentos.position = Vector2(24, 368)
 	var lista := VBoxContainer.new()
-	lista.position = Vector2(24, 380)
+	lista.position = Vector2(24, 392)
 	lista.size = Vector2(400, 150)
 	lista.add_theme_constant_override("separation", 4)
 	add_child(lista)
@@ -123,6 +123,7 @@ func _visor_3d() -> void:
 		return
 	_visor = preload("res://scenes/b/visor_3d.gd").new()
 	_visor.archivos = archivos
+	_visor.tamanos = info.get("tamanos", [])
 	_visor.position = _foto.position
 	_visor.size = _foto.size
 	add_child(_visor)

@@ -4,12 +4,14 @@ extends SubViewportContainer
 ## Tiene su propio mundo 3D (no toca la escena de la misión) y solo existe mientras el panel está abierto.
 
 var archivos: Array = []  ## rutas res:// de los .glb a mostrar, uno al lado del otro
+var tamanos: Array = []  ## medida mayor de cada modelo en la escena (escala de exposición, no real); por defecto 2,2 y 0,9
 var _pivote: Node3D
 var _camara: Camera3D
 var _angulo := 0.6
 var _altura := 0.35
 var _arrastrando := false
 var _radio := 3.0
+var _centro := Vector3(0, 0.55, 0)
 
 
 func _ready() -> void:
@@ -54,17 +56,25 @@ func _ready() -> void:
 		var modelo := escena.instantiate() as Node3D
 		_pivote.add_child(modelo)
 		var caja := _caja(modelo, Transform3D.IDENTITY)
-		var escala := 1.0 / maxf(maxf(caja.size.x, caja.size.z), 0.001) * (2.2 if cajas.is_empty() else 0.9)
+		var i := cajas.size()
+		var objetivo := float(tamanos[i]) if i < tamanos.size() else (2.2 if i == 0 else 0.9)
+		var escala := objetivo / maxf(maxf(caja.size.x, maxf(caja.size.y, caja.size.z)), 0.001)
 		modelo.scale = Vector3.ONE * escala
 		caja = AABB(caja.position * escala, caja.size * escala)
-		modelo.position = Vector3(x - caja.get_center().x, -caja.position.y, -caja.get_center().z)
-		x += caja.size.x * 0.5 + 0.6
+		var cx := 0.0 if i == 0 else x + caja.size.x * 0.5  # uno al lado del otro, sin solaparse
+		modelo.position = Vector3(cx - caja.get_center().x, -caja.position.y, -caja.get_center().z)
+		x = cx + caja.size.x * 0.5 + 0.35
 		cajas.append(caja)
 	if cajas.is_empty():
 		return
-	var total := AABB(_pivote.get_child(0).position + cajas[0].position, cajas[0].size)
-	_pivote.position = Vector3(-x * 0.25, 0, 0)
-	_radio = maxf(total.size.length() * 1.15, 2.6)
+	var total := AABB()
+	for k in range(cajas.size()):
+		var m := _pivote.get_child(k) as Node3D
+		var c := AABB(m.position + cajas[k].position, cajas[k].size)
+		total = c if k == 0 else total.merge(c)
+	_pivote.position = Vector3(-total.get_center().x, 0, -total.get_center().z)  # el conjunto gira sobre su centro
+	_centro = Vector3(0, total.size.y * 0.42, 0)
+	_radio = maxf(total.size.length() * 1.05, 2.6)
 	var suelo := MeshInstance3D.new()
 	var disco := CylinderMesh.new()
 	disco.top_radius = 2.4
@@ -113,7 +123,7 @@ func _process(delta: float) -> void:
 
 
 func _mover_camara() -> void:
-	var centro := Vector3(0, 0.55, 0)
+	var centro := _centro
 	_camara.position = centro + Vector3(cos(_angulo), 0, sin(_angulo)) * _radio * cos(_altura) + Vector3(0, _radio * sin(_altura), 0)
 	_camara.look_at(centro)
 

@@ -167,8 +167,13 @@
  },
  "modelos_3d": {
   "archivos": [
-   "res://assets/nasa/modelos/modulo_lunar.glb"
+   "res://assets/nasa/modelos/modulo_lunar.glb",
+   "res://assets/nasa/modelos/saturn_v.glb"
   ],
-  "credito": "Modelo 3D: NASA 3D Resources (Apollo Lunar Module) · github.com/nasa/NASA-3D-Resources"
+  "credito": "Modelo 3D: NASA 3D Resources (módulo lunar Apolo, Saturn V; escalas de exposición)",
+  "tamanos": [
+   2.0,
+   2.4
+  ]
  }
 }
