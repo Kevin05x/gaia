@@ -1,0 +1,12 @@
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T00:58:54
+Plataforma: Linux (escritorio)
+GPU: llvmpipe (LLVM 20.1.2, 256 bits) · 1.4.318
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 99 en 45 s de operaciones
+FPS medio: 2.2
+Cuadro medio: 460.7 ms · p95: 531.7 ms · peor: 4790.9 ms
+VRAM usada: 228 MB
+Llamadas de dibujo por cuadro: 299
+Simulación pura (CPU, sin gráficos): 0.705 ms por paso · 1200 pasos en 846 ms
+Procesador: Intel(R) Xeon(R) Processor @ 2.10GHz · 2 hilos

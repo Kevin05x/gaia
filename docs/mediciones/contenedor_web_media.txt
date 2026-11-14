@@ -1,0 +1,12 @@
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T01:14:25
+Plataforma: Web (web)
+GPU: WebKit WebGL · OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+Ajuste gráfico: media · ventana (1280, 720)
+Cuadros medidos: 56 en 45 s de operaciones
+FPS medio: 1.2
+Cuadro medio: 818.8 ms · p95: 1466.1 ms · peor: 1586.7 ms
+VRAM usada: 173 MB
+Llamadas de dibujo por cuadro: 260
+Simulación pura (CPU, sin gráficos): 0.903 ms por paso · 1200 pasos en 1083 ms
+Procesador: (navegador) · 2 hilos

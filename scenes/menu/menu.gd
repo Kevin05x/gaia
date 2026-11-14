@@ -84,7 +84,7 @@ func _construir_interfaz() -> void:
 	_capa.add_child(_crear_logotipo())
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 4)
-	UI.place(col, "tl", 92, 262, 380, 420)
+	UI.place(col, "tl", 92, 244, 380, 420)
 	_capa.add_child(col)
 	var guardado: Dictionary = Sesion.resumen()
 	var bloque := VBoxContainer.new()
@@ -177,7 +177,7 @@ func _item(texto: String, accion: Callable, padre: Control) -> Button:
 	var b := Button.new()
 	b.text = texto
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.custom_minimum_size = Vector2(340, 46)
+	b.custom_minimum_size = Vector2(340, 43)
 	b.add_theme_font_override("font", UI.display_font(650, 3))
 	b.add_theme_font_size_override("font_size", 23)
 	b.add_theme_color_override("font_color", Color(UI.CREAM, 0.8))
