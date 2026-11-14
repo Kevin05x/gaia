@@ -1,6 +1,18 @@
 extends RefCounted
 const TABLES = {
  "es": {
+  "SCORE_LINE": "Puntuación %d · récord n.º %d del equipo",
+  "SCORE_ONLY": "Puntuación %d",
+  "DESIGN_CODE": "Código de diseño: %s",
+  "COPY": "Copiar",
+  "COPIED": "Copiado",
+  "WS_CODE": "Código",
+  "WS_CODE_TIP": "Copia el código de tu diseño o pega el de otro equipo para comparar",
+  "WS_CODE_TITLE": "Compartir y comparar diseños",
+  "WS_CODE_TEXT": "Cada diseño tiene un código. Compártelo con otro equipo que tenga el mismo objetivo: así comparan qué decisiones dieron mejor resultado.",
+  "WS_CODE_APPLY": "Cargar este diseño",
+  "WS_CODE_BAD": "Ese código no es válido.",
+  "WS_CODE_OTHER": "Ese código es de una misión a otro destino.",
   "PIEZA_TRAY_DIRECTA_LUNA": "Transferencia directa",
   "PIEZA_TRAY_BALISTICA_LUNA": "Transferencia balística",
   "REF_TRAY_DIRECTA_LUNA": "Rápida, como Apolo 11: entró en órbita lunar a las 75 h 50 min de vuelo (NASA). Gasta más combustible, así que lleva menos carga.",
@@ -581,6 +593,18 @@ const TABLES = {
   "SCIENCE_PILL": "Ciencia %d/%d"
  },
  "en": {
+  "SCORE_LINE": "Score %d · team record #%d",
+  "SCORE_ONLY": "Score %d",
+  "DESIGN_CODE": "Design code: %s",
+  "COPY": "Copy",
+  "COPIED": "Copied",
+  "WS_CODE": "Code",
+  "WS_CODE_TIP": "Copy your design code or paste another team's to compare",
+  "WS_CODE_TITLE": "Share and compare designs",
+  "WS_CODE_TEXT": "Every design has a code. Share it with another team that has the same objective, so you can compare which decisions worked best.",
+  "WS_CODE_APPLY": "Load this design",
+  "WS_CODE_BAD": "That code is not valid.",
+  "WS_CODE_OTHER": "That code is for a mission to another destination.",
   "PIEZA_TRAY_DIRECTA_LUNA": "Direct transfer",
   "PIEZA_TRAY_BALISTICA_LUNA": "Ballistic transfer",
   "REF_TRAY_DIRECTA_LUNA": "Fast, like Apollo 11: it entered lunar orbit 75 h 50 min into the flight (NASA). It burns more fuel, so it carries less payload.",

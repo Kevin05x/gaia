@@ -274,6 +274,89 @@ func _build_options() -> void:
 	UI.place(opciones, "bl", 24, 10, 96, 28)
 	root.add_child(opciones)
 	opciones.pressed.connect(func(): options_requested.emit())
+	var codigo := Button.new()
+	codigo.focus_mode = Control.FOCUS_NONE
+	codigo.text = tr("WS_CODE").to_upper()
+	codigo.tooltip_text = tr("WS_CODE_TIP")
+	codigo.add_theme_font_size_override("font_size", 11)
+	codigo.add_theme_color_override("font_color", TEXT_DIM)
+	codigo.add_theme_color_override("font_hover_color", ORANGE)
+	codigo.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
+	codigo.add_theme_stylebox_override("hover", UI.button_box(Color("2A170B", 0.95), Color(ORANGE, 0.9), 1, 14, 12, 4, 0))
+	UI.place(codigo, "bl", 128, 10, 150, 28)
+	root.add_child(codigo)
+	codigo.pressed.connect(_abrir_codigo)
+
+
+## Compartir y comparar diseños: copia el código de este diseño o pega el de otro equipo.
+func _abrir_codigo() -> void:
+	var Registro := preload("res://scenes/menu/registro.gd")
+	var taller: Dictionary = snapshot.get("workshop", {})
+	var capa := Control.new()
+	capa.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	capa.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(capa)
+	var tapa := ColorRect.new()
+	tapa.color = Color(0.03, 0.02, 0.02, 0.7)
+	tapa.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	capa.add_child(tapa)
+	var caja := PanelContainer.new()
+	caja.add_theme_stylebox_override("panel", UI.box(0.97, 14, 0.35, 1, 26, 20, UI.AMBER))
+	UI.place(caja, "c", 0, 0, 560, 0)
+	capa.add_child(caja)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	caja.add_child(col)
+	var titulo := UI.label(col, tr("WS_CODE_TITLE"), 22, UI.CREAM)
+	UI.display(titulo, 700, 1)
+	var texto := UI.label(col, tr("WS_CODE_TEXT"), 13, Color(UI.CREAM, 0.8))
+	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	texto.custom_minimum_size.x = 500
+	var mio := Registro.codigo(taller.get("selection", {}), Destino.id)
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	col.add_child(fila)
+	var propio := UI.label(fila, tr("DESIGN_CODE") % mio, 15, UI.AMBER)
+	propio.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var copiar := Button.new()
+	copiar.text = tr("COPY")
+	copiar.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(mio)
+		copiar.text = tr("COPIED"))
+	fila.add_child(copiar)
+	var entrada := LineEdit.new()
+	entrada.placeholder_text = "GAIA-M-..."
+	entrada.custom_minimum_size = Vector2(500, 40)
+	col.add_child(entrada)
+	var aviso := UI.label(col, "", 12, UI.WARN)
+	var pie := HBoxContainer.new()
+	pie.alignment = BoxContainer.ALIGNMENT_END
+	pie.add_theme_constant_override("separation", 8)
+	col.add_child(pie)
+	var cerrar := Button.new()
+	cerrar.text = tr("GNG_BACK")
+	cerrar.pressed.connect(func() -> void: capa.queue_free())
+	pie.add_child(cerrar)
+	var aplicar := Button.new()
+	aplicar.theme_type_variation = "PrimaryButton"
+	aplicar.text = tr("WS_CODE_APPLY")
+	pie.add_child(aplicar)
+	aplicar.pressed.connect(func() -> void:
+		var leido := Registro.leer_codigo(entrada.text)
+		if leido.is_empty():
+			aviso.text = tr("WS_CODE_BAD")
+			return
+		if str(leido["destino"]) != Destino.id:
+			aviso.text = tr("WS_CODE_OTHER")
+			return
+		validated = false
+		for categoria in taller.get("selection", {}):
+			for id in (taller["selection"][categoria] as Array).duplicate():
+				command.emit("design_remove", {"part_id": id})
+		for id in leido["piezas"]:
+			command.emit("design_add", {"part_id": id})
+		capa.queue_free())
+	entrada.grab_focus.call_deferred()
 
 
 # ---------------------------------------------------------------- pasos de categoría

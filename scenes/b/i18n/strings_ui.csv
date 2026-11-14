@@ -353,3 +353,15 @@ REF_TRAY_DIRECTA_LUNA,"Rápida, como Apolo 11: entró en órbita lunar a las 75 
 REF_TRAY_BALISTICA_LUNA,"Lenta y eficiente, como CAPSTONE: unos 4 meses (28 jun → 13 nov 2022) usando la gravedad del Sol para ahorrar combustible (NASA). Lleva un 25 % más de carga.","Slow and efficient, like CAPSTONE: about 4 months (28 Jun → 13 Nov 2022) using the Sun's gravity to save fuel (NASA). It carries 25 % more payload."
 NO_EVENT,No hay ningún imprevisto pendiente,There is no pending unexpected event
 INVALID_CHOICE,Esa opción no existe,That option does not exist
+SCORE_LINE,Puntuación %d · récord n.º %d del equipo,Score %d · team record #%d
+SCORE_ONLY,Puntuación %d,Score %d
+DESIGN_CODE,Código de diseño: %s,Design code: %s
+COPY,Copiar,Copy
+COPIED,Copiado,Copied
+WS_CODE,Código,Code
+WS_CODE_TIP,Copia el código de tu diseño o pega el de otro equipo para comparar,Copy your design code or paste another team's to compare
+WS_CODE_TITLE,Compartir y comparar diseños,Share and compare designs
+WS_CODE_TEXT,Cada diseño tiene un código. Compártelo con otro equipo que tenga el mismo objetivo: así comparan qué decisiones dieron mejor resultado.,"Every design has a code. Share it with another team that has the same objective, so you can compare which decisions worked best."
+WS_CODE_APPLY,Cargar este diseño,Load this design
+WS_CODE_BAD,Ese código no es válido.,That code is not valid.
+WS_CODE_OTHER,Ese código es de una misión a otro destino.,That code is for a mission to another destination.

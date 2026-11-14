@@ -15,7 +15,21 @@ func _ready() -> void:
 
 func show_report(data: Dictionary) -> void:
 	report = data.duplicate(true)
+	_registrar()
 	rebuild()
+
+
+## Puntuación, código de diseño y récord (una sola vez por misión).
+func _registrar() -> void:
+	var Registro := preload("res://scenes/menu/registro.gd")
+	var Sesion := preload("res://scenes/menu/game_session.gd")
+	report["score"] = Registro.puntuacion(report, taller)
+	report["design_code"] = Registro.codigo(taller.get("selection", {}), str(report.get("destination", Destino.id)))
+	report["rank"] = Registro.guardar({"score": report["score"], "code": report["design_code"],
+		"destination": str(report.get("destination", Destino.id)), "difficulty": str(report.get("difficulty", Sesion.dificultad)),
+		"players": int(report.get("team", {}).get("players", 1)), "stars": int(report.get("stars", 0)),
+		"sent": int(report.get("sent", 0)), "success": bool(report.get("success", false)),
+		"date": Time.get_date_string_from_system()})
 
 
 func rebuild() -> void:
@@ -54,6 +68,23 @@ func rebuild() -> void:
 		_ending(lienzo)
 	else:
 		_photo(lienzo)
+	var puntos := UI.label(lienzo, tr("SCORE_LINE") % [int(report.get("score", 0)), int(report.get("rank", 0))] if int(report.get("rank", 0)) > 0
+		else tr("SCORE_ONLY") % int(report.get("score", 0)), UI.FONT_SECONDARY, UI.AMBER)
+	puntos.position = Vector2(568, 80)
+	puntos.size = Vector2(368, 24)
+	var fila_codigo := HBoxContainer.new()
+	fila_codigo.position = Vector2(24, 504)
+	fila_codigo.add_theme_constant_override("separation", 8)
+	lienzo.add_child(fila_codigo)
+	UI.label(fila_codigo, tr("DESIGN_CODE") % str(report.get("design_code", "")), 13, Color(UI.CREAM, 0.85))
+	var copiar := Button.new()
+	copiar.text = tr("COPY")
+	copiar.custom_minimum_size = Vector2(80, 28)
+	copiar.add_theme_font_size_override("font_size", 12)
+	copiar.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(str(report.get("design_code", "")))
+		copiar.text = tr("COPIED"))
+	fila_codigo.add_child(copiar)
 	var estrellas := preload("res://scenes/b/stars.gd").new()
 	estrellas.stars = clampi(int(report.get("stars", 0)), 0, 3)
 	estrellas.position = Vector2(568, 112)

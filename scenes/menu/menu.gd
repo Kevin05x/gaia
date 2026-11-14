@@ -105,6 +105,7 @@ func _construir_interfaz() -> void:
 	_item(tr("M_HOWTO"), func() -> void: _tutorial(false), col)
 	_item(tr("M_CONTROLS"), _abrir_controles, col)
 	_item(tr("M_SETTINGS"), _abrir_ajustes, col)
+	_item(tr("M_RECORDS"), _abrir_records, col)
 	_item(tr("M_CREDITS"), _abrir_creditos, col)
 	if not OS.has_feature("web"):
 		_item(tr("M_QUIT"), func() -> void: get_tree().quit(), col)
@@ -550,3 +551,34 @@ func _abrir_creditos() -> void:
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var motor := UI.label(cuerpo, tr("M_CREDITS_ENGINE"), 14, Color(UI.CREAM, 0.55))
 	motor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+## Récords del equipo: las mejores misiones guardadas en este equipo, con su código de diseño para comparar.
+func _abrir_records() -> void:
+	var Registro := preload("res://scenes/menu/registro.gd")
+	var cuerpo := _abrir_panel(tr("M_RECORDS_TITLE"), 760, 560)
+	var lista := Registro.leer()
+	if lista.is_empty():
+		var vacio := UI.label(cuerpo, tr("M_RECORDS_EMPTY"), 15, Color(UI.CREAM, 0.8))
+		vacio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vacio.custom_minimum_size.x = 680
+		return
+	var tabla := GridContainer.new()
+	tabla.columns = 6
+	tabla.add_theme_constant_override("h_separation", 18)
+	tabla.add_theme_constant_override("v_separation", 6)
+	cuerpo.add_child(tabla)
+	for titulo in ["#", tr("M_REC_SCORE"), tr("M_SETUP_DEST"), tr("M_SETUP_DIFF"), tr("M_SETUP_TEAM"), tr("M_REC_CODE")]:
+		var c := UI.label(tabla, titulo, 12, UI.AMBER)
+		UI.display(c, 700, 1)
+	for i in range(mini(lista.size(), 10)):
+		var r: Dictionary = lista[i]
+		var destino := "Luna" if str(r.get("destination", "")) == "luna" else "Marte"
+		if TranslationServer.get_locale().begins_with("en"):
+			destino = "Moon" if destino == "Luna" else "Mars"
+		for valor in [str(i + 1), str(int(r.get("score", 0))), destino, tr("DIFF_" + str(r.get("difficulty", "estandar")).to_upper()),
+				str(int(r.get("players", 1))), str(r.get("code", ""))]:
+			UI.label(tabla, valor, 14, UI.CREAM)
+	var nota := UI.label(cuerpo, tr("M_RECORDS_NOTE"), 12, Color(UI.CREAM, 0.6))
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.custom_minimum_size.x = 680
