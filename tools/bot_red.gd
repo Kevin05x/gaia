@@ -3,6 +3,7 @@ extends SceneTree
 ## su rol, y al final imprime «RES nombre clave=valor». Lo usa tools/probar_red.sh con un servidor y cuatro bots.
 ##   godot --headless --path . -s tools/bot_red.gd -- --dir=127.0.0.1:9191 --nombre=Ana --jefe --esperar=4
 ##   (con --anfitrion crea la sala y juega en vez de unirse a una)
+const Permisos := preload("res://scenes/net/permisos.gd")
 const DISENO: Array[String] = ["cohete_ligero", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro",
 	"taladro", "radar", "dron", "meteo", "companero"]
 
@@ -103,10 +104,12 @@ func _correr() -> void:
 		await _terminar()
 		return
 	await create_timer(0.5).timeout
-	if red.mis_roles().has("direccion"):
-		for id in DISENO:
+	# Cada rol compra las piezas de su área (el anfitrión rechaza las de los demás).
+	for id in DISENO:
+		if Permisos.permite_pieza(red.mis_roles(), id):
 			red.enviar_orden("design_add", {"part_id": id})
-		await create_timer(0.8).timeout
+	if red.mis_roles().has("direccion"):
+		await create_timer(2.0).timeout
 		red.enviar_orden("design_validate", {})
 		await create_timer(0.4).timeout
 		red.enviar_orden("net_review_open", {})

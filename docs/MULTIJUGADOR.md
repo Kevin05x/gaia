@@ -9,7 +9,7 @@ de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, un
 1. **Quien crea la sala** (versión de escritorio): *Menú › MULTIJUGADOR › Crear sala*. Le aparecen sus direcciones IP.
 2. **Los demás**: *MULTIJUGADOR*, escriben la IP (o la dirección `wss://…` del servidor) y pulsan *Entrar*.
 3. El **jefe de sala** (el primero en entrar) elige destino y dificultad y pulsa *Empezar misión*. Quien llegue después **también puede entrar con la misión en marcha**: pasa directo a la partida y los roles se reparten de nuevo entre todos (máximo 4).
-4. En el taller todos ven el diseño en vivo y cualquiera puede elegir piezas (cada rol aporta su parte). Dirección pulsa *Iniciar aterrizaje* y se abre el
+4. En el taller todos ven el diseño en vivo. **Presupuesto y masa son uno solo para todo el equipo**, pero cada rol elige las piezas de su área: Dirección = cohete y trayectoria; Ingeniería = chasis y energía; Comunicaciones = antena; Ciencia = instrumentos. Con 1, 2, 3 o 4 personas siempre queda alguien a cargo de cada área. Al entrar sale una guía (reabrible con «¿Cómo funciona?») y un panel con tu rol, tus áreas y lo que gastó cada área; las áreas ajenas se ven apagadas y el anfitrión rechaza esas piezas. Cualquiera pulsa *Validar* y se abre el
    **Go / No-Go en todos los dispositivos**: cada persona vota los roles que le tocan; Dirección lanza cuando todos dicen GO.
 5. En operaciones cada rol hace lo suyo a la vez:
 
@@ -19,7 +19,8 @@ de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, un
 | Ingeniería | construir, módulos, encender/apagar edificios |
 | Ciencia | acercarse a un objetivo, perforar/analizar, descargar |
 | Comunicaciones | transmitir, mejorar la antena |
-| Todos | seleccionar, detener, terminar el aterrizaje, saltar el tutorial, **diseñar en el taller** (elegir y quitar piezas) |
+| Todos | seleccionar, detener, terminar el aterrizaje, saltar el tutorial, validar el diseño |
+| Dueño de cada área | elegir y quitar las piezas de su área del taller (`Permisos.AREAS`) |
 
 Si alguien da una orden que no es de su rol, ve el aviso «Esa orden le toca a otro rol del equipo». Si alguien se desconecta con la
 misión en marcha, sus roles pasan al jefe de sala.

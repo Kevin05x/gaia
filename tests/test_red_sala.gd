@@ -194,3 +194,54 @@ func test_direccion_del_anfitrion() -> void:
 	assert_eq(RedScript.normalizar_direccion("gaia-sala.onrender.com"), "wss://gaia-sala.onrender.com")
 	assert_eq(RedScript.normalizar_direccion("wss://x.trycloudflare.com"), "wss://x.trycloudflare.com")
 	assert_eq(RedScript.normalizar_direccion("  "), "")
+
+
+func test_cada_rol_tiene_su_area_del_taller() -> void:
+	assert_eq(Permisos.rol_de_categoria("cohetes"), "direccion")
+	assert_eq(Permisos.rol_de_categoria("trayectoria"), "direccion")
+	assert_eq(Permisos.rol_de_categoria("chasis"), "ingenieria")
+	assert_eq(Permisos.rol_de_categoria("energia"), "ingenieria")
+	assert_eq(Permisos.rol_de_categoria("comunicaciones"), "comunicaciones")
+	assert_eq(Permisos.rol_de_categoria("extras"), "ciencia")
+	for categoria in Catalog.CATEGORIAS:
+		assert_ne(Permisos.rol_de_categoria(categoria), "", "la categoría %s tiene dueño" % categoria)
+
+
+func test_las_piezas_se_compran_solo_en_tu_area() -> void:
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	for id in catalogo.piezas:
+		var categoria: String = catalogo.piezas[id]["categoria"]
+		assert_eq(Permisos.categoria_de_pieza(id), categoria, "categoría de %s" % id)
+		var dueno := Permisos.rol_de_categoria(categoria)
+		assert_true(Permisos.permite_pieza([dueno], id), "%s puede con %s" % [dueno, id])
+		assert_true(Permisos.permite_pieza(["direccion", "ingenieria", "comunicaciones", "ciencia"], id), "uno solo puede todo")
+		for otro in ["direccion", "ingenieria", "comunicaciones", "ciencia"]:
+			if otro != dueno:
+				assert_false(Permisos.permite_pieza([otro], id), "%s no puede con %s" % [otro, id])
+		assert_eq(Permisos.razon_de_pieza(id), "NET_AREA_" + dueno.to_upper())
+	assert_true(Permisos.permite_pieza(["ciencia"], "pieza_que_no_existe"), "las desconocidas las rechaza la simulación")
+
+
+func test_con_cualquier_numero_de_jugadores_todas_las_areas_tienen_dueno() -> void:
+	for cuantos in range(1, 5):
+		var s = _sala(cuantos)
+		s.empezar(100)
+		var cubiertas: Array[String] = []
+		for id in s.orden:
+			cubiertas.append_array(Permisos.categorias_de(s.roles_de(id)))
+		for categoria in Catalog.CATEGORIAS:
+			assert_true(cubiertas.has(categoria), "%d jugadores: alguien elige %s" % [cuantos, categoria])
+
+
+func test_gasto_por_rol_suma_las_piezas_de_su_area() -> void:
+	const RolTaller := preload("res://scenes/net/rol_taller.gd")
+	var taller := {"categories": [
+		{"id": "cohetes", "parts": [{"id": "c1", "cost_musd": 150}]},
+		{"id": "chasis", "parts": [{"id": "ch1", "cost_musd": 200}]},
+		{"id": "extras", "parts": [{"id": "x1", "cost_musd": 30}, {"id": "x2", "cost_musd": null}]}],
+		"selection": {"cohetes": ["c1"], "chasis": ["ch1"], "extras": ["x1", "x2"]}}
+	var gasto: Dictionary = RolTaller.gasto_por_rol(taller)
+	assert_eq(gasto["direccion"], 150.0)
+	assert_eq(gasto["ingenieria"], 200.0)
+	assert_eq(gasto["ciencia"], 30.0)
+	assert_eq(gasto["comunicaciones"], 0.0)

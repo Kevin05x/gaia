@@ -463,6 +463,11 @@ func _procesar_orden(id: int, orden: String, carga: Dictionary) -> void:
 	if not Permisos.permite(roles, orden):
 		enviar_a(id, "reject", Permisos.razon_para(orden))
 		return
+	if orden == "design_add" or orden == "design_remove":
+		var pieza := str(limpia.get("part_id", ""))
+		if not Permisos.permite_pieza(roles, pieza):
+			enviar_a(id, "reject", Permisos.razon_de_pieza(pieza))
+			return
 	_port.emisor = id
 	_port.orden_actual = orden
 	_port.command_requested.emit(orden, limpia)

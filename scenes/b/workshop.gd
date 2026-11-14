@@ -36,6 +36,7 @@ const CARD_BG := Color("1A100A", 0.92)
 const TEXT_DIM := Color("D8C3AC", 0.62)
 
 var root: Control
+var consejo_panel: Control  ## el cuadro «Consejo de ingeniería» (en red se oculta para dejar sitio al panel de rol)
 var snapshot: Dictionary = {}
 var category := "cohetes"
 var validated := false
@@ -704,6 +705,7 @@ func _build_tip() -> void:
 	consejo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(consejo, "tl", 24, 168, 196, 220)
 	root.add_child(consejo)
+	consejo_panel = consejo
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	consejo.add_child(col)

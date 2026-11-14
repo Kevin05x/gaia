@@ -7,10 +7,12 @@ const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
 const Permisos := preload("res://scenes/net/permisos.gd")
 const GoNoGo := preload("res://scenes/b/go_no_go.gd")
+const RolTaller := preload("res://scenes/net/rol_taller.gd")
 
 var view: Node
 var port: Node
 var _revision: Control
+var _rol_taller: Control
 var _cayendo := false
 
 
@@ -26,10 +28,23 @@ func _ready() -> void:
 	Musica.reproducir(get_tree(), "juego", 4.0)
 	Red.evento.connect(_al_evento)
 	Red.desconectado.connect(_al_caer)
+	# También con una sola persona: la guía le explica que tiene los cuatro roles.
+	_rol_taller = RolTaller.new()
+	_rol_taller.taller_vista = view.workshop
+	view.workshop.root.add_child(_rol_taller)
+	Red.sala_cambiada.connect(_al_cambiar_sala)
 	Red.avisar_listo()
 
 
+## Entró o salió alguien: los roles se repartieron de nuevo.
+func _al_cambiar_sala() -> void:
+	if is_instance_valid(_rol_taller):
+		_rol_taller.actualizar(port.snapshot.get("workshop", {}))
+
+
 func _exit_tree() -> void:
+	if Red.sala_cambiada.is_connected(_al_cambiar_sala):
+		Red.sala_cambiada.disconnect(_al_cambiar_sala)
 	if Red.evento.is_connected(_al_evento):
 		Red.evento.disconnect(_al_evento)
 	if Red.desconectado.is_connected(_al_caer):
@@ -40,6 +55,8 @@ func _al_evento(tipo: String, datos: Variant) -> void:
 	match tipo:
 		"snapshot":
 			port.apply_snapshot(datos)
+			if is_instance_valid(_rol_taller):
+				_rol_taller.actualizar(port.snapshot.get("workshop", {}))
 			# El diseño dejó de estar abierto (despegó o se rediseñó): la revisión ya no tiene sentido.
 			if str(datos.get("phase", datos.get("fase", "workshop"))) != "workshop":
 				_cerrar_revision()
