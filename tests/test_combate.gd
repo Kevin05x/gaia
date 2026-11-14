@@ -535,6 +535,40 @@ func test_matar_al_ultimo_de_la_oleada_la_da_por_derrotada() -> void:
 	assert_true(sim.estado.enemigos.is_empty())
 	assert_eq(eventos.count("ENEMY_KILLED:arana"), 2)
 	assert_eq(eventos.count("WAVE_CLEARED:prueba"), 1)
+	assert_eq(sim.snapshot()["combat"]["bionutrients"].size(), 2)
+	for lote in sim.estado.bionutrientes_en_suelo.values():
+		sim.estado.casilla_rover = Vector2i(Vector2(lote["pos"]).round())
+		_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 2)
+	assert_true(sim.snapshot()["combat"]["bionutrients"].is_empty())
+	assert_eq(sim.estado.bionutrientes_recogidos, 2)
+
+
+func test_los_depositos_conservan_lo_que_no_cabe_y_sobreviven_al_guardado() -> void:
+	var coloso := _monstruo("coloso", Vector2(-2.0, -9.0), Vector2i(-2, -9))
+	coloso["hp"] = 0.0
+	sim._combate._retirar_abatidos(sim.estado)
+	var id: String = coloso["id"]
+	assert_eq(sim.estado.bionutrientes_en_suelo[id]["cantidad"], 6)
+	var datos := sim.guardar()
+	datos["estado"]["recursos"].erase("bionutrientes")  # partidas de la versión anterior
+	var restaurada := _nueva()
+	assert_true(restaurada.cargar(datos))
+	assert_eq(int(restaurada.estado.recursos["bionutrientes"]), 0)
+	sim = restaurada
+	sim.estado.casilla_rover = Vector2i(-2, -9)
+	sim.estado.carga["rocas"] = economia.bodega_rover - 2
+	_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 2)
+	assert_eq(sim.estado.bionutrientes_en_suelo[id]["cantidad"], 4)
+	sim.estado.casilla_rover = sim.estado.casilla_estacion + Vector2i(1, 0)
+	assert_true(sim.ejecutar("unload")["ok"])
+	assert_eq(int(sim.estado.recursos["bionutrientes"]), 2)
+	sim.estado.casilla_rover = Vector2i(-2, -9)
+	_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 4)
+	assert_true(sim.estado.bionutrientes_en_suelo.is_empty())
+	assert_eq(sim.estado.bionutrientes_recogidos, 6)
 
 
 func test_dos_torretas_paran_la_primera_oleada_y_sin_ellas_la_base_sufre() -> void:

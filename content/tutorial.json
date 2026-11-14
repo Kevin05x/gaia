@@ -52,8 +52,8 @@
       "id": "noche",
       "resalta": "",
       "texto": {
-        "es": "Ojo: la antena y el taladro despiertan a la fauna. Cuando caiga la noche, construye torretas: cada disparo gasta batería.",
-        "en": "Careful: the antenna and the drill wake the fauna. When night falls, build turrets: every shot drains battery."
+        "es": "Prepárate para la primera oleada. Las torretas gastan batería al disparar. Si una criatura cae, acerca el rover a la señal turquesa para recoger sus bionutrientes y descárgalos en la base.",
+        "en": "Get ready for the first wave. Turrets draw battery power when they fire. When a creature falls, drive to its teal marker to collect bionutrients and unload them at base."
       },
       "condicion": { "leer_s": 16 }
     }

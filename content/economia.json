@@ -1,8 +1,8 @@
 {
   "version": 1,
   "estado": "provisional (24 oct 2026): costos, tiempos y vida de la tabla B del documento de historia de Dider y Scarlet; la energía pasó de «E/s» a vatios para encajar con la batería del rover. Se reajusta tras el enunciado del 28 oct.",
-  "recursos": ["rocas", "olivino", "hielo", "xenolito"],
-  "recursos_iniciales": { "rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0 },
+  "recursos": ["rocas", "olivino", "hielo", "xenolito", "bionutrientes"],
+  "recursos_iniciales": { "rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0, "bionutrientes": 0 },
   "capacidad_base": 300,
   "bodega_rover": 90,
   "recoleccion": {

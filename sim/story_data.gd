@@ -6,9 +6,9 @@ extends RefCounted
 
 const CONDICIONES: Array[String] = ["inicio", "antena_min", "noche", "tormenta", "sol_min", "enviados_pct_min", "final_decidido"]
 const METAS: Array[String] = ["antena", "edificio", "recurso", "enviados_pct", "sol", "bateria_pct", "rocky_hp", "modulos"]
-const MODOS: Array[String] = ["decision", "radio"]
+const MODOS: Array[String] = ["decision", "radio", "automatico"]
 const ESCENAS: Array[String] = ["completa", "corta"]
-const EFECTOS: Array[String] = ["bateria_pct", "datos", "etica", "rocky_hp", "recursos", "completa_transmision"]
+const EFECTOS: Array[String] = ["bateria_pct", "datos", "etica", "rocky_hp", "recursos", "carga", "completa_transmision"]
 
 var inicio: String = ""
 var nave: String = ""  ## edificio que hay que construir para ganar tras el clímax ("" = ninguno)
@@ -71,7 +71,11 @@ func _validar_nodo(id: String, def: Variant) -> void:
 		errores.append("INVALID_NODE:%s" % id)
 		return
 	var disparadores: Variant = def.get("disparadores", [])
-	if not (disparadores is Array) or disparadores.is_empty():
+	if def.has("campo"):
+		var punto: Variant = def["campo"]
+		if not (punto is Dictionary) or not (punto.get("casilla") is Array) or punto["casilla"].size() != 2:
+			errores.append("INVALID_FIELD_SITE:%s" % id)
+	if not (disparadores is Array) or (disparadores.is_empty() and not def.has("campo")):
 		errores.append("MISSING_TRIGGER:%s" % id)
 	else:
 		for disparador in disparadores:
@@ -97,8 +101,8 @@ func _validar_nodo(id: String, def: Variant) -> void:
 	if not (opciones is Array) or opciones.is_empty():
 		errores.append("MISSING_OPTIONS:%s" % id)
 		return
-	if str(def.get("modo", "decision")) == "radio":
-		# La radio no espera al jugador: elige sola su única opción, que no puede terminar la partida ni exigir a Rocky.
+	if str(def.get("modo", "decision")) != "decision":
+		# Las escenas automáticas eligen su única opción. No pueden terminar la partida ni exigir a Rocky.
 		var unica: Variant = opciones[0]
 		if opciones.size() != 1 or not (unica is Dictionary) or unica.has("final") or unica.has("termina") \
 				or unica.has("requiere_companero"):

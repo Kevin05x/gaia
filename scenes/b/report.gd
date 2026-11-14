@@ -108,6 +108,8 @@ func rebuild() -> void:
 		var linea := UI.label(causas, "• " + texto, UI.FONT_TEXT)
 		linea.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		linea.custom_minimum_size.x = 340
+	if report.has("bionutrients_collected"):
+		UI.label(causas, tr("BIO_COLLECTED") % int(report["bionutrients_collected"]), UI.FONT_TEXT, UI.TEAL)
 	var registro: Array = report.get("story_log", [])
 	if not registro.is_empty():
 		var cabecera := UI.label(causas, tr("DECISIONS_LOG"), UI.FONT_SECONDARY, UI.AMBER)
