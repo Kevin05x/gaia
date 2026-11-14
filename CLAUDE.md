@@ -15,9 +15,9 @@ Lee este archivo antes de tocar nada. Resume qué es el proyecto, qué se decidi
 
 | Rama | Equipo | Trabajo |
 | --- | --- | --- |
-| `a/historia-sin-monstruos` | Scarlett y Tony | Historia nueva y quitar los monstruos de Marte |
+| `a/historia-sin-monstruos` | Scarlett y Tony | Historia nueva y bionutrientes: los monstruos se quedan y al matarlos dan bionutrientes (el nombre de la rama quedó viejo) |
 | `b/cohetes-telescopio` | Amner y Evelyn | Más cohetes y el telescopio (Evelyn, modelos 3D) |
-| `b/dias-y-realismo` | Kevin y Arturo | Paso de los días y realismo gráfico (Arturo, arte) |
+| `b/dias-y-realismo` | Kevin y Arturo | Energía de la Luna, paso de los días y realismo gráfico (Arturo, arte) |
 
 Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron los modelos 3D del equipo. El detalle de tareas está en `docs/REPARTO_FINAL.md` y `docs/GAIA_Reparto_de_ramas.pdf`.
 
@@ -30,12 +30,14 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - El rover de la versión web usa bloques (los modelos 3D no van en web). El ajuste Baja usa el rover de detalle reducido.
 - Las imágenes hechas con IA llevan la marca visible «Imagen generada con IA · AI-generated».
 - Marte y Luna comparten el mismo taller; cada destino tiene sus propios JSON (`*_luna.json`).
-- Se decidió quitar los monstruos de Marte desactivando el combate en `content/destinos.json` (la Luna ya corre sin combate), no borrando el código.
+- **Los monstruos NO se quitan** (decisión del 14 nov): al matarlos dan **bionutrientes**, un recurso nuevo que lo implementa el equipo de historia (`a/historia-sin-monstruos`). No borrar el combate. La Luna sigue sin fauna ni combate.
+- **Energía de la Luna:** hoy usa la misma curva solar que Marte. En la realidad, en el polo sur el Sol se queda a pocos grados del horizonte, las crestas reciben más de la mitad del tiempo luz y las zonas de sombra permanente (donde hay hielo) no reciben nada. Se va a rehacer esa lógica en `b/dias-y-realismo` (ver `docs/REPARTO_FINAL.md`).
 
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
 - Dónde está la **historia nueva** (aún no está en el repositorio).
+- Qué hacen los **bionutrientes** (para qué sirven) y cuántos da cada monstruo. Lo decide el equipo de historia.
 - `content/rules.json` pone la tormenta de polvo en el sol 3, pero el plan y la historia dicen sol 4–5. Unificar.
 - Comentario viejo en `scenes/b/sky_light.gd` ("casillas de 2 m"; ahora 4 m).
 - El README dice 466 pruebas; ahora son **473**.
