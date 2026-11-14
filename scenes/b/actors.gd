@@ -27,7 +27,7 @@ var work_column: MeshInstance3D
 var arm_home=Vector3.ZERO
 var arm_trabajo=Vector3.ZERO  ## posición del brazo extendido sobre la roca
 const ESCALA_COMPANERO := 0.8  ## el compañero (robot de apoyo inventado) mide ≈ 1 m: la mitad del rover
-const ESCALA_ESTACION := 0.7  ## la estación mide 4,1 m de lado (cabe en su casilla de 4 m)
+const ESCALA_ESTACION := 1.8  ## la estación mide 10,6 m de lado: ocupa 3 × 3 casillas (estacion_radio del mapa) y triplica al rover
 var base_props: Node3D  ## escenografía de la base (modelos del equipo de diseño) detrás de la estación
 var base_tile=Vector2i(999,999)
 var tip_offset := .355  ## rad: la punta del brazo queda a la derecha del frente del rover (el rover de la NASA lo calcula de su modelo)

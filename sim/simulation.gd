@@ -251,7 +251,7 @@ func almacenes() -> Array[Vector2i]:
 func junto_a_almacen() -> bool:
 	for c in almacenes():
 		var d: Vector2i = c - estado.casilla_rover
-		if maxi(absi(d.x), absi(d.y)) <= (2 if c == estado.casilla_estacion else 1):
+		if maxi(absi(d.x), absi(d.y)) <= (_mapa.radio_estacion + 1 if c == estado.casilla_estacion else 1):
 			return true
 	return false
 
@@ -265,7 +265,7 @@ func _descargar_bodega() -> Dictionary:
 	if junto_a_almacen():
 		var eventos := _descargar_aqui()
 		return {"ok": true, "reason": "", "path": [], "seconds_per_tile": 0.0, "events": eventos}
-	var resultado := _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, almacenes()))
+	var resultado := _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, almacenes(), {estado.casilla_estacion: _mapa.radio_estacion + 1}))
 	if resultado["ok"]:
 		estado.descargar_al_llegar = true
 	return resultado

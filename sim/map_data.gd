@@ -14,6 +14,7 @@ var limite_min: Vector2i = Vector2i(-11, -11)
 var limite_max: Vector2i = Vector2i(11, 11)
 var inicio_rover: Vector2i = Vector2i.ZERO
 var estacion: Vector2i = Vector2i.ZERO
+var radio_estacion := 0  ## casillas que ocupa el edificio de la estación alrededor de su centro (1: 3 × 3); «estacion_radio» del mapa
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
 var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
@@ -45,6 +46,11 @@ static func desde_texto(texto: String) -> MapData:
 
 func dentro_de_limites(casilla: Vector2i) -> bool:
 	return casilla.x >= limite_min.x and casilla.x <= limite_max.x and casilla.y >= limite_min.y and casilla.y <= limite_max.y
+
+
+## true si la casilla es parte del edificio de la estación (su centro y, con radio, las de alrededor).
+func en_estacion(casilla: Vector2i) -> bool:
+	return maxi(absi(casilla.x - estacion.x), absi(casilla.y - estacion.y)) <= radio_estacion
 
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
@@ -106,7 +112,7 @@ func es_nido(casilla: Vector2i) -> bool:
 func bloqueada_para_enemigos(casilla: Vector2i) -> bool:
 	if not dentro_de_limites(casilla):
 		return true
-	return _fijas.has(casilla) and not liberadas.has(casilla) and not _casillas_nido.has(casilla) and casilla != estacion
+	return _fijas.has(casilla) and not liberadas.has(casilla) and not _casillas_nido.has(casilla) and not en_estacion(casilla)
 
 
 ## Pasos que le faltan a un monstruo en «casilla» para llegar a la estación (-1 si no puede).
@@ -237,6 +243,8 @@ func _cargar(texto: String) -> void:
 	var puesto: Variant = _leer_casilla(datos["estacion"], "estacion")
 	if puesto != null:
 		estacion = puesto
+	if datos.has("estacion_radio"):
+		radio_estacion = clampi(int(datos["estacion_radio"]), 0, 3)
 	if datos["obstaculos"] is Array:
 		var indice := 0
 		for valor in datos["obstaculos"]:
@@ -266,7 +274,9 @@ func _cargar(texto: String) -> void:
 
 func _reconstruir_fijas() -> void:
 	_fijas.clear()
-	_fijas[estacion] = true
+	for dx in range(-radio_estacion, radio_estacion + 1):
+		for dy in range(-radio_estacion, radio_estacion + 1):
+			_fijas[estacion + Vector2i(dx, dy)] = true
 	for casilla in obstaculos:
 		_fijas[casilla] = true
 	for objetivo in objetivos:
@@ -417,7 +427,7 @@ func _comprobar_ocupacion() -> void:
 		var casilla: Vector2i = elemento[1]
 		if not dentro_de_limites(casilla):
 			errores.append("OUT_OF_BOUNDS:%s" % elemento[0])
-		elif ocupadas.has(casilla):
+		elif ocupadas.has(casilla) or (elemento[0] != "estacion" and en_estacion(casilla)):
 			errores.append("TILE_OCCUPIED:%d,%d" % [casilla.x, casilla.y])
 		else:
 			ocupadas[casilla] = elemento[0]
