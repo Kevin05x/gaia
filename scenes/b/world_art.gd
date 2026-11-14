@@ -128,6 +128,7 @@ static func _rugosidad(m: StandardMaterial3D, t: Dictionary) -> void:
 
 ## Activa o quita las texturas de los materiales compartidos (opción «calidad alta» de los ajustes).
 static func apply_quality() -> void:
+	preload("res://scenes/b/material_edificio.gd").aplicar(quality)
 	var texs: Dictionary = TEX_DESTINO["luna" if Destino.es_luna() else "marte"]
 	var suelo: StandardMaterial3D = _materials.get("ground")
 	if suelo != null:

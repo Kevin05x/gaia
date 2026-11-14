@@ -111,7 +111,8 @@ func test_las_texturas_de_marte_son_de_1024_como_mucho_y_van_comprimidas() -> vo
 		assert_string_contains(importacion, "detect_3d/compress_to=0", "%s: el editor no cambia sus ajustes al abrirse" % f)
 		if f.ends_with("_normal.jpg"):
 			assert_string_contains(importacion, "compress/normal_map=1", "%s: marcada como mapa de normales" % f)
-	assert_eq(archivos, 12, "Marte y Luna, suelo y roca: detalle, normal y rugosidad (el color de referencia está en _fuentes)")
+	assert_eq(archivos, 15, "Marte y Luna, suelo y roca: detalle, normal y rugosidad (el color de referencia está en _fuentes), " +
+		"más la chapa de los edificios: detalle, normal y máscaras")
 	assert_lt(total, MAX_BYTES_TEXTURAS, "las texturas pesan %.1f MB" % (total / 1048576.0))
 
 

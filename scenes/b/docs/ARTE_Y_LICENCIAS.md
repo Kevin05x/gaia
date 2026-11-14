@@ -189,3 +189,17 @@ Scripts de Blender escritos por Claude (Anthropic) a petición de Arturo, ejecut
   - **Repetición:** en la Luna el suelo repite cada 20 m en lugar de cada 12,5 m.
   - Lo cubren las pruebas de `tests/test_relieve_suelo.gd`.
 - **Avisos técnicos para el equipo.** (1) Blender 5.3 guarda los JPEG **de color** con un marcador CICP que Godot 4.7 no lee (la textura se queda vacía, sin error visible); por eso las imágenes de los `.glb` van en WebP. (2) Godot no importa el barniz glTF (`KHR_materials_clearcoat`): el brillo del hielo y de los cristales viene de su rugosidad. (3) Al unir piezas en Blender, las que no tienen color por vértice heredan negro con alfa 0; hay que darles blanco antes.
+
+## Cuarta ronda de arte: chapa realista en los edificios (14 nov 2026, noche · Arturo Valdivieso)
+
+Igual que en las rondas anteriores, el script y el sombreador los escribió Claude (Anthropic) a petición de Arturo, que los revisó con capturas del juego. No se usó ningún generador de imágenes ni de modelos con IA: las texturas salen de ruido periódico y formas simples, sin píxeles de fotos.
+
+- **Texturas de chapa** (`_fuentes/texturas_edificios.py`, uso: `blender -b --factory-startup -P texturas_edificios.py`): `assets/texturas/edificio_paneles_detalle.jpg`, `_normal.jpg` y `_mascaras.jpg` (1024 px, repetibles). Son paneles atornillados como los de un módulo espacial: juntas hundidas, remaches, tapas de registro, rayones, manchas y suciedad que escurre desde las juntas. Las máscaras guardan la rugosidad (R), dónde se pega el polvo (G) y la oclusión de las juntas (B).
+- **Sombreador** `scenes/b/shaders/edificio.gdshader` (con `scenes/b/material_edificio.gd`). Conserva el color de cada pieza y le pone la chapa en proyección triplanar, en metros reales del objeto (una repetición cada 3 m, con paneles de 37 cm a 1,1 m). Como usa las coordenadas del objeto, la textura no resbala cuando la torreta gira o el dron vuela. Encima pone el polvo del destino: gris en la Luna y ocre en Marte, en las caras que miran hacia arriba y en la franja baja que toca el suelo. Los dos tonos de polvo se eligieron a ojo para que casen con la paleta del terreno, que es estilizada: no son una medición.
+- **Dónde se usa:**
+  - Los 7 modelos de edificios: foco, domo, extractor, hangar, antena y las dos torretas. Sus materiales emisivos (ventanas y luces) se quedan como estaban y siguen brillando de noche.
+  - Las mallas de bloques fundidas: estación, paneles solares, grúa, compañero, dron y rover web. Al fundirlas, cada pieza guarda su rugosidad y su metal en UV2. Las celdas solares ahora son lisas y reflejan.
+  - Los minerales, cristales, rocas y el nido conservan sus materiales.
+- **Calidad baja:** sin texturas de chapa; queda solo el polvo.
+- **Suelo de cerca.** Se probó una capa de microdetalle (gravilla de milímetros) sobre el regolito, pero el «detalle» de `StandardMaterial3D` **reemplaza** el mapa de normales de la textura grande, así que aplanaba los cráteres. Se quitó, y el suelo queda como en la ronda anterior. En su lugar, el filtrado anisótropo pasó a 16× (`project.godot`): el suelo ya no se emborrona cuando la cámara lo mira casi de lado.
+- Lo cubren las pruebas de `tests/test_material_edificio.gd`. El presupuesto de texturas de `tests/test_optimizacion_arte.gd` pasa de 12 a 15 archivos.

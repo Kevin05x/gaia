@@ -3,6 +3,10 @@ extends RefCounted
 ## se apoya en el suelo (base en y = 0) y sus mallas quedan como hijas directas del nodo padre, de modo que el contorno
 ## de selección y la fusión de mallas funcionan igual que con las piezas hechas por código.
 const CARPETA := "res://assets/modelos/"
+const MaterialEdificio := preload("res://scenes/b/material_edificio.gd")
+## Modelos de edificios: sus materiales (salvo los que brillan, «emisivo_*») pasan al material realista de chapa con
+## polvo (material_edificio.gd). Los minerales, cristales, rocas y el nido conservan los suyos.
+const EDIFICIOS := ["foco", "hangar_roundA", "taladro", "hangar_cuadrado", "anthena_juego", "torreta_simple", "torreta_doble"]
 
 
 static func existe(nombre: String) -> bool:
@@ -49,6 +53,7 @@ static var _cache: Dictionary = {}  ## nombre -> {"piezas": [[Mesh, Material, Tr
 ## Suelta los modelos guardados (al salir de la misión): Godot no debe cerrar con mallas aún retenidas.
 static func vaciar() -> void:
 	_cache.clear()
+	MaterialEdificio.vaciar()
 
 
 static func _datos(nombre: String) -> Dictionary:
@@ -77,6 +82,8 @@ static func _datos(nombre: String) -> Dictionary:
 		datos["piezas"] = lista
 		datos["caja"] = caja
 		datos["fusion"] = _fundir(lista)
+		if nombre in EDIFICIOS:
+			_realista(datos["fusion"], caja.position.y)
 	raiz.free()
 	return datos
 
@@ -88,6 +95,15 @@ static func _recoger(nodo: Node, acumulada: Transform3D, salida: Array) -> void:
 			if hijo is MeshInstance3D and (hijo as MeshInstance3D).mesh != null:
 				salida.append([hijo, xf])
 			_recoger(hijo, xf, salida)
+
+
+## Cambia los materiales de la malla fundida por el material realista (los emisivos se quedan: brillan de noche).
+static func _realista(malla: ArrayMesh, base_y: float) -> void:
+	for i in malla.get_surface_count():
+		var m := malla.surface_get_material(i)
+		if m == null or m.resource_name.begins_with("emisivo_") or (m is StandardMaterial3D and (m as StandardMaterial3D).emission_enabled):
+			continue
+		malla.surface_set_material(i, MaterialEdificio.desde(m, base_y))
 
 
 ## Una malla con una superficie por material, con todas las piezas ya colocadas en su sitio.
