@@ -15,8 +15,6 @@
  },
  "capacidad_base": 300,
  "obra_con_rover": true,
- "pruebas_recursos_ilimitados": 1,
- "_pruebas_recursos_ilimitados": "TEMPORAL para probar la construcción: poner en 0 antes del PR a develop.",
  "bodega_rover": 90,
  "recoleccion": {
   "spectrometer": {

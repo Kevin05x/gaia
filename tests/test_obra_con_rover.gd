@@ -1,7 +1,7 @@
 extends GutTest
 ## Obra con rover (content/economia.json › obra_con_rover): al ordenar una obra el rover va hasta ella, la obra solo
 ## empieza cuando el rover llega a una casilla contigua y, al terminar, el rover vuelve a donde estaba. Los muros se
-## imprimen solos. También el modo TEMPORAL de recursos ilimitados para probar la construcción.
+## imprimen solos.
 
 const DISENO: Array[String] = ["cohete_ligero", "chasis_base", "panel_solar", "antena_rele",
 	"camara", "espectrometro", "taladro", "radar"]
@@ -22,9 +22,9 @@ func _nueva(economia: Economy) -> Simulation:
 
 
 func before_each() -> void:
-	var economia := Economy.desde_archivo("res://content/economia.json").para_pruebas(true)
-	economia.recursos_ilimitados = true  # sin preocuparse por los costos
-	sim = _nueva(economia)
+	sim = _nueva(Economy.desde_archivo("res://content/economia.json").para_pruebas(true))
+	for recurso in sim.estado.recursos:
+		sim.estado.recursos[recurso] = 300  # almacén lleno: estas pruebas no miran los costos
 
 
 ## Primera casilla de la base donde se puede construir «tipo» a 3 casillas o más del rover.
@@ -157,13 +157,3 @@ func test_la_antena_tambien_espera_al_rover() -> void:
 		assert_true(_obra("antena")["waiting_rover"])
 	_avanzar((r["path"] as Array).size() * float(r["seconds_per_tile"]) + 0.3)
 	assert_false(_obra("antena")["waiting_rover"], "con el rover al lado la mejora empieza")
-
-
-func test_recursos_ilimitados_no_cobran_y_por_defecto_si() -> void:
-	var antes: Dictionary = sim.estado.recursos.duplicate()
-	assert_true(sim.ejecutar("build", {"building": "hangar", "tile": _casilla_lejos("hangar")})["ok"], "sin recursos reales")
-	assert_eq(sim.estado.recursos, antes, "no se cobra")
-	var real := _nueva(Economy.desde_archivo("res://content/economia.json").para_pruebas())
-	assert_eq(int(real.estado.recursos["rocas"]), 30, "sin el modo temporal se empieza con lo de economia.json")
-	assert_false(Economy.desde_texto('{"recursos": ["rocas"], "capacidad_base": 10, "zona_base_radio": 2, "antena": {"niveles": [{"costo": {}}]}, "edificios": {}}').recursos_ilimitados,
-		"si el archivo no lo dice, los recursos no son ilimitados")

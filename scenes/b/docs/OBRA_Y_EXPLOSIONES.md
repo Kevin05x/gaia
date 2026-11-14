@@ -34,7 +34,3 @@ Antes, la obra empezaba sola, «a distancia». Ahora es tu rover el que construy
   - La obra muestra «Esperando al rover» hasta que el rover llega.
   - Junto a la obra, el rover se gira, extiende el brazo y suelda, con chispas y un destello azulado que parpadea (`actors.gd`, `_soldar`).
   - El runner presenta los caminos de ida y vuelta (`Simulation.ruta_en_curso()`).
-
-### TEMPORAL: recursos ilimitados para probar la construcción
-
-`"pruebas_recursos_ilimitados": 1` en `content/economia.json` y `content/economia_luna.json`: el almacén empieza lleno (300 de cada recurso) y las obras no cobran. **Hay que ponerlo en 0 en los dos archivos antes del PR a `develop`.** Las pruebas no dependen de este valor: usan `Economy.para_pruebas()`.
