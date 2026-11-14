@@ -5,12 +5,16 @@ extends RefCounted
 ## una sola vez (antes, seis), así la carga gasta unas 6 veces menos en esto. Sin colisión ni sombras.
 const W := preload("res://scenes/b/world_art.gd")
 const BASIN_Y := -0.55
-const BASIN := Color("C99C78")
-const MOUNTAIN := Color("85655C")
-const ESTRATO_A := Color("9A5E44")
-const ESTRATO_B := Color("C48B66")
-const CUMBRE := Color("D8A884")
-const CIELO := Color("C9957A")
+## Paleta acercada a la foto NASA PIA24542 (Jezero), como la del terreno: el borde del cráter se ve claro y desvaído por
+## el polvo del aire (colinas medidas #C5AA8C, cielo junto al horizonte #DABFA2). Ver ARTE_Y_LICENCIAS.md.
+const BASIN := Color("B59372")
+const MOUNTAIN := Color("886D5A")
+const ESTRATO_A := Color("936A4E")
+const ESTRATO_B := Color("C69772")
+const CUMBRE := Color("D9B493")
+const CIELO := Color("DAB495")
+const AIRE_LOMAS := 0.12  ## bruma de las lomas (a 76–170 m); las mesetas, más lejos, llevan más
+const AIRE_MESETAS := 0.55
 
 
 ## Lomas: 17 anillos con crestas finas, estratos de color (como las paredes del delta de Jezero), laderas empinadas
@@ -43,7 +47,9 @@ static func lomas(s: float, fino: FastNoiseLite) -> MeshInstance3D:
 			h += ruido.get_noise_2d(c * 17.0, sn * 17.0 + k * 0.6) * 1.1 * smoothstep(90.0, 130.0, r - o)
 			anillo[s_idx] = Vector3(c * r, h, sn * r)
 		puntos.append(anillo)
-	return _malla(puntos, "Mountains", 0.0, fino)
+	var nodo := _malla(puntos, "Mountains", AIRE_LOMAS, fino)
+	nodo.material_override = W.mountain_material()  # estratos en triplanar (Marte, calidad con texturas)
+	return nodo
 
 
 ## Horizonte lejano: mesetas en terrazas más allá de las lomas, aclaradas hacia el color del cielo (perspectiva aérea
@@ -71,7 +77,7 @@ static func mesetas(s: float, fino: FastNoiseLite) -> MeshInstance3D:
 			var h := BASIN_Y + alto * perfil + ruido.get_noise_2d(c * 30.0, sn * 30.0 + k) * 1.2 * perfil
 			anillo[s_idx] = Vector3(c * r, h, sn * r)
 		puntos.append(anillo)
-	return _malla(puntos, "Skyline", 0.45, fino)
+	return _malla(puntos, "Skyline", AIRE_MESETAS, fino)
 
 
 ## Une los anillos en una malla indexada con color por vértice. «aire» (0..1) aclara hacia el color del cielo.

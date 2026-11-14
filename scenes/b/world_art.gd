@@ -78,6 +78,26 @@ const ESCALA_SUELO_MARTE := 0.4  ## las UV del suelo repiten cada 5 m; con 0,4 l
 const ESCALA_ROCA_MARTE := 0.35  ## triplanar: estratos de unos 11 cm en lugar de 5 cm
 
 
+const ESCALA_LOMAS_MARTE := 0.06  ## lomas lejanas: la textura repite cada ~17 m (estratos de ~60 cm, visibles a 100 m)
+
+
+## Lomas del paisaje lejano: color de vértice y, en Marte con texturas, la roca en estratos en triplanar a escala grande.
+static func mountain_material() -> StandardMaterial3D:
+	if not _materials.has("mountain"):
+		var m := StandardMaterial3D.new()
+		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
+		m.roughness = 1.0
+		m.metallic_specular = 0.04
+		m.disable_receive_shadows = true
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3(ESCALA_LOMAS_MARTE, ESCALA_LOMAS_MARTE, ESCALA_LOMAS_MARTE)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		_materials["mountain"] = m
+		apply_quality()
+	return _materials["mountain"]
+
+
 ## {"albedo", "normal", "rugosidad"} de una textura de Marte, o {} si falta algún archivo (se usan las de código).
 static func _tex_marte(nombre: String) -> Dictionary:
 	var clave := "tex_" + nombre
@@ -119,6 +139,13 @@ static func apply_quality() -> void:
 			suelo.normal_enabled = false
 			suelo.albedo_color = Color.WHITE
 			_rugosidad(suelo, {})
+	var lomas: StandardMaterial3D = _materials.get("mountain")
+	if lomas != null:
+		var lm := _tex_marte("roca_estratos") if (quality and marte) else {}
+		lomas.albedo_texture = lm.get("albedo")
+		lomas.normal_enabled = not lm.is_empty()
+		lomas.normal_texture = lm.get("normal")
+		lomas.albedo_color = Color(1.25, 1.25, 1.25) if not lm.is_empty() else Color.WHITE
 	var roca: StandardMaterial3D = _materials.get("rock")
 	if roca != null:
 		if quality:
