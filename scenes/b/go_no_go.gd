@@ -11,12 +11,18 @@ const INSTRUMENTOS_CIENTIFICOS: Array[String] = ["espectrometro", "taladro", "ca
 
 signal launch_confirmed
 signal cancelled
+## Modo red: este jugador votó (valor null = quitó su voto). Los votos de los demás llegan con aplicar_voto_remoto().
+signal voto_cambiado(rol: String, valor: Variant)
 
 var taller: Dictionary = {}
 var jugadores := 2
 var _votos: Dictionary = {}  ## rol -> true (GO) / false (NO GO)
 var _lanzar: Button
 var _aviso: Label
+## Modo red: roles de ESTE jugador (solo vota los suyos) y si es quien puede lanzar. Vacío = todo el equipo en una pantalla.
+var roles_propios: Array = []
+var es_lider := true
+var _botones: Dictionary = {}  ## rol -> [GO, NO GO]
 
 
 func build() -> void:
@@ -53,6 +59,7 @@ func build() -> void:
 	volver.text = tr("GNG_BACK")
 	volver.custom_minimum_size = Vector2(200, 42)
 	volver.pressed.connect(func() -> void: cancelled.emit())
+	volver.disabled = not es_lider
 	pie.add_child(volver)
 	_lanzar = Button.new()
 	_lanzar.theme_type_variation = "PrimaryButton"
@@ -109,6 +116,7 @@ func _fila(rol: String, jugador: int) -> Control:
 	var detalle := UI.label(textos, str(c["detalle"]), 12, Color(UI.CREAM, 0.75))
 	detalle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detalle.custom_minimum_size.x = 470
+	var mio := roles_propios.is_empty() or roles_propios.has(rol)
 	var go := Button.new()
 	go.text = "GO"
 	go.toggle_mode = true
@@ -123,6 +131,7 @@ func _fila(rol: String, jugador: int) -> Control:
 			_votos[rol] = true
 		else:
 			_votos.erase(rol)
+		voto_cambiado.emit(rol, _votos.get(rol, null))
 		_actualizar())
 	no.toggled.connect(func(on: bool) -> void:
 		if on:
@@ -130,10 +139,26 @@ func _fila(rol: String, jugador: int) -> Control:
 			_votos[rol] = false
 		else:
 			_votos.erase(rol)
+		voto_cambiado.emit(rol, _votos.get(rol, null))
 		_actualizar())
+	go.disabled = not mio
+	no.disabled = not mio
+	_botones[rol] = [go, no]
 	fila.add_child(go)
 	fila.add_child(no)
 	return fila
+
+
+## Modo red: el voto de otro jugador (null = lo quitó).
+func aplicar_voto_remoto(rol: String, valor: Variant) -> void:
+	if valor == null:
+		_votos.erase(rol)
+	else:
+		_votos[rol] = bool(valor)
+	if _botones.has(rol):
+		_botones[rol][0].set_pressed_no_signal(valor != null and bool(valor))
+		_botones[rol][1].set_pressed_no_signal(valor != null and not bool(valor))
+	_actualizar()
 
 
 func _roles() -> Array:
@@ -154,13 +179,13 @@ func _actualizar() -> void:
 			faltan += 1
 		elif not _votos[rol]:
 			en_contra.append(tr("ROLE_" + str(rol).to_upper()))
-	_lanzar.disabled = faltan > 0 or not en_contra.is_empty()
+	_lanzar.disabled = faltan > 0 or not en_contra.is_empty() or not es_lider
 	if not en_contra.is_empty():
 		_aviso.text = tr("GNG_NOGO") % ", ".join(en_contra)
 	elif faltan > 0:
 		_aviso.text = tr("GNG_WAITING") % faltan
 	else:
-		_aviso.text = tr("GNG_ALL_GO")
+		_aviso.text = tr("GNG_ALL_GO") + ("" if es_lider else " " + tr("NET_WAIT_DIRECTION"))
 
 
 func _confirmar() -> void:

@@ -6,6 +6,7 @@ static var ruta := RUTA  ## archivo de la partida (las pruebas usan otro para no
 const ESCENA_MENU := "res://scenes/menu/menu.tscn"
 const ESCENA_CARGA := "res://scenes/menu/loading.tscn"
 const ESCENA_JUEGO := "res://scenes/a/game.tscn"
+const ESCENA_CLIENTE_RED := "res://scenes/net/cliente.tscn"
 
 ## true cuando el menú pidió «Continuar»: MissionRunner restaura la partida al arrancar y baja el indicador.
 static var cargar_al_iniciar := false
@@ -13,6 +14,8 @@ static var cargar_al_iniciar := false
 static var dificultad := "estandar"
 static var destino := "marte"  ## «marte» o «luna» (content/destinos.json)
 static var jugadores := 1
+## true en una partida en red: la vista habla con el anfitrión por scenes/net/red.gd y no hay partida guardada ni «Continuar».
+static var en_red := false
 ## Votos del último «Go / No-Go» del equipo en el taller: [{"rol", "jugador", "go"}].
 static var votos: Array = []
 
@@ -61,7 +64,7 @@ static func resumen() -> Dictionary:
 ## Abre la pantalla de carga y de ahí el juego. "continuar" restaura la partida guardada.
 static func empezar(arbol: SceneTree, continuar: bool) -> void:
 	cargar_al_iniciar = continuar
-	arbol.change_scene_to_file(ESCENA_CARGA if ResourceLoader.exists(ESCENA_CARGA) else ESCENA_JUEGO)
+	arbol.change_scene_to_file(ESCENA_CARGA if ResourceLoader.exists(ESCENA_CARGA) else escena_juego())
 
 
 ## Recupera la dificultad y el equipo de la partida guardada (si los tiene).
@@ -89,6 +92,12 @@ static func roles_por_jugador(cuantos: int) -> Array:
 	return reglas.get("roles_equipo", {}).get(str(clampi(cuantos, 1, 4)), [["direccion", "ingenieria", "ciencia", "comunicaciones"]])
 
 
+## La escena de juego: la de siempre, o el cliente de red si se juega con otros dispositivos.
+static func escena_juego() -> String:
+	return ESCENA_CLIENTE_RED if en_red else ESCENA_JUEGO
+
+
 static func volver_al_menu(arbol: SceneTree) -> void:
 	arbol.paused = false
+	en_red = false
 	arbol.change_scene_to_file(ESCENA_MENU)

@@ -102,6 +102,7 @@ func _construir_interfaz() -> void:
 	sangria.custom_minimum_size.y = 8
 	bloque.add_child(sangria)
 	_item(tr("M_NEW"), _nueva_partida, col)
+	_item(tr("M_MULTI"), _abrir_multijugador, col)
 	_item(tr("M_HOWTO"), func() -> void: _tutorial(false), col)
 	_item(tr("M_CONTROLS"), _abrir_controles, col)
 	_item(tr("M_SETTINGS"), _abrir_ajustes, col)
@@ -335,6 +336,20 @@ func _texto_roles(n: int) -> String:
 			nombres.append(tr("ROLE_" + str(rol).to_upper()))
 		partes.append(tr("GNG_PLAYER") % (i + 1) + ": " + " + ".join(nombres))
 	return tr("M_SETUP_TEAM_D") + "\n" + "  ·  ".join(partes)
+
+
+## Partida en red (scenes/net/): sala, jugadores y, al empezar el jefe, todos pasan a la carga a la vez.
+func _abrir_multijugador() -> void:
+	_cerrar_panel()
+	var panel := preload("res://scenes/net/lobby_panel.gd").new()
+	panel.build()
+	panel.cerrado.connect(_cerrar_panel)
+	panel.partida_lista.connect(func() -> void:
+		_cerrar_panel()
+		_ir_al_juego(false))
+	_panel = panel
+	add_child(panel)
+	move_child(panel, get_child_count() - 2)
 
 
 func _empezar_nueva() -> void:

@@ -1264,8 +1264,11 @@ func _message(codigo: String) -> String:
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		var jugadores := int(preload("res://scenes/menu/game_session.gd").jugadores)
-		if jugadores > 1:
+		var sesion := preload("res://scenes/menu/game_session.gd")
+		var jugadores := int(sesion.jugadores)
+		if jugadores > 1 and sesion.en_red:
+			command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
+		elif jugadores > 1:
 			_revision_de_equipo(taller, jugadores)
 		else:
 			command.emit("design_start", {})

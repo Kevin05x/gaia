@@ -210,6 +210,14 @@ static func install() -> void:
 				traduccion.add_message(clave, catalogo[idioma][clave])
 			TranslationServer.add_translation(traduccion)
 			Destino.registrar(traduccion)
+		var red = preload("res://scenes/net/net_text.gd").TABLES
+		for idioma in red:
+			var traduccion := Translation.new()
+			traduccion.locale = idioma
+			for clave in red[idioma]:
+				traduccion.add_message(clave, red[idioma][clave])
+			TranslationServer.add_translation(traduccion)
+			Destino.registrar(traduccion)
 		_instaladas = true
 	TranslationServer.set_locale(String(preferencias().get("language", "es")))
 	aplicar_audio()
