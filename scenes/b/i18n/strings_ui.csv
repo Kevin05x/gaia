@@ -118,7 +118,9 @@ CAUSE_SAFE_FAIL,Los modos seguros repetidos terminaron la misión antes de trans
 REDESIGN,Volver al diseño de misión,Return to mission design
 PHOTO_FALLBACK,Ilustración original · imagen NASA no disponible,Original illustration · NASA image unavailable
 PHOTO_SOURCE,Abrir fuente de la imagen,Open image source
-CREDITS,"Modelos, interfaz y audio originales del equipo GAIA · sin afiliación oficial con NASA","Original models, interface & audio for GAIA · no official NASA affiliation"
+CREDITS,"Interfaz y audio originales del equipo GAIA.
+Fotos y modelos 3D de la NASA con su crédito · sin afiliación oficial.","Interface & audio original to the GAIA team.
+NASA photos & 3D models credited · no official affiliation."
 REVIEW_HELP,Revisión B: F2 abre escenarios de prueba. A reemplaza este proveedor de estado.,B review: F2 opens test scenarios. A replaces this state provider.
 REVIEW_TITLE,REVISIÓN DE ESTADOS VISUALES,VISUAL STATE REVIEW
 REVIEW_NOTE,Estos botones inyectan estados de prueba. No forman parte de las reglas finales de A.,These buttons inject test states. They are not A final rules.

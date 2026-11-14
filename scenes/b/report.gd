@@ -94,7 +94,7 @@ func rebuild() -> void:
 	titulo.position = Vector2(568, 168)
 	var desplazable := ScrollContainer.new()
 	desplazable.position = Vector2(568, 196)
-	desplazable.size = Vector2(368, 204)
+	desplazable.size = Vector2(368, 308)
 	desplazable.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	lienzo.add_child(desplazable)
 	var causas := VBoxContainer.new()
@@ -119,8 +119,8 @@ func rebuild() -> void:
 	_imprevistos(causas)
 	_equipo(causas)
 	var creditos := UI.label(lienzo, tr("CREDITS"), 12, Color(UI.CREAM, 0.6))
-	creditos.position = Vector2(24, 548)
-	creditos.size = Vector2(440, 30)
+	creditos.position = Vector2(24, 544)
+	creditos.size = Vector2(440, 36)
 	creditos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var boton_rediseno := Button.new()
 	boton_rediseno.theme_type_variation = "PrimaryButton"
