@@ -85,3 +85,10 @@ Ronda E (25 oct 2026): las escenas se exportaron de nuevo desde Canva a 1920 × 
 | `assets/nasa/modelos/*.glb` | Perseverance, Ingenuity, módulo lunar Apolo, Saturn V | NASA 3D Resources (github.com/nasa/NASA-3D-Resources, «free and without copyright»). Se descomprimieron (Draco) y simplificaron con gltf-transform; **no son obra del equipo** y no se incluyen en la versión web |
 
 Estas fotos y modelos **no** llevan marca de agua de IA porque no son IA; las imágenes generadas con IA (logo, fondo del menú, carga e historia) sí la llevan. El código se desarrolló con asistencia de Claude (Anthropic) bajo la dirección del equipo; los créditos del menú lo declaran.
+
+## Escala 1:1, rover real y lanzamiento con fotos (14 nov 2026)
+
+- El rover de la partida (escritorio) es `assets/nasa/modelos/perseverance.glb` de NASA 3D Resources, simplificado con gltf-transform y animado por código (`scenes/b/rover_nasa.gd`). El modelo reproduce el rover real, **incluidas las insignias del vehículo**; se muestra como representación fiel de un recurso oficial, con crédito en el juego y en `docs/DATOS_NASA.md`. En la versión web se usa el rover propio del equipo.
+- El helicóptero es `ingenuity.glb` (mismo origen) a 1,2 m de rotor a rotor.
+- La escena de lanzamiento usa como fondo las fotos oficiales `lanzamiento.jpg` (Atlas V, Frank Michaux/NASA) y `luna_lanzamiento.jpg` (Saturn V, NASA), con un movimiento de cámara y texto de interfaz superpuestos; las fotos no se alteran más que el recorte y el zoom.
+- Las medidas de todos los objetos están en `docs/ESCALAS.md`.

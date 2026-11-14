@@ -23,6 +23,22 @@ Misma partida (diseño inicial en Marte, 12 s de calentamiento y 45 s medidos, 1
 
 Archivos originales en `docs/mediciones/`.
 
+### Antes y después del rover real y la escala 1:1 (14 nov 2026, mismo equipo y misma partida)
+
+La v2 reemplazó el rover de bloques por el Perseverance de la NASA (≈ 100 superficies y 42 000 triángulos) y el mundo pasó de 24 a 71 casillas de lado (cada una de 4 m).
+
+| Ajuste | Llamadas de dibujo | VRAM | Cuadro medio (software) | Simulación pura |
+|--------|-------------------|------|-------------------------|-----------------|
+| Alta, **antes** (rover de bloques) | 299 | 228 MB | 461 ms | 0,705 ms/paso |
+| Alta, rover real con texturas de 1024 px | 455 | 320 MB | 455 ms | 0,498 ms/paso |
+| Alta, rover real con texturas de 512 px (**versión final**) | 453 | 274 MB | 459 ms | 0,655 ms/paso |
+| Baja, rover real en detalle reducido | 324 | 228 MB | 142 ms (7,0 FPS) | 0,619 ms/paso |
+| Media (Compatibility), rover real | 501 | 163 MB | 215 ms (antes 224 ms) | 0,519 ms/paso |
+
+Lo que se hizo para contener el costo: texturas del Perseverance a 512 px (−46 MB de VRAM frente a 1024 px, sin diferencia visible a la distancia de juego), detalle reducido del rover en el ajuste Baja (de 99 a 52 superficies; no carga las texturas), y el rover se funde por tipo de acabado en una malla por pieza móvil. Archivos en `docs/mediciones/v2_*`.
+
+**Lectura honesta:** con render por software el cuadro medio no empeoró (la CPU simulando la GPU ya estaba saturada), pero las llamadas de dibujo subieron un 50 % y la VRAM 46 MB en Alta. En una tarjeta gráfica real 450 llamadas de dibujo son pocas, pero **no se midió**: en una GPU integrada Intel UHD el costo extra puede notarse. Por eso el detalle reducido existe y queda documentado, y `Medir_rendimiento.bat` es la forma de comprobarlo en la PC del equipo. El peor cuadro de la medición (≈ 11 s) ocurre al compilar sombreadores en software y no es representativo de una GPU real, pero tampoco se verificó allí.
+
 ### Qué sí y qué no dicen estas cifras
 
 - **Sí:** el banco de simulación pura no depende de la GPU. En este equipo, la web tarda **≈1,3 veces más** (0,903 frente a 0,67–0,71 ms por paso) que el código nativo. Es una diferencia real y repetible de CPU.

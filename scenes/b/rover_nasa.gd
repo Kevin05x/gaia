@@ -314,13 +314,13 @@ static var _acabados: Dictionary = {}  ## clave -> material compartido con color
 ## Acabado compartido que se parece al material original (metal o pintura, y su rugosidad); el tono va en el vértice.
 static func _acabado(m: BaseMaterial3D) -> StandardMaterial3D:
 	var metal := m.metallic >= 0.5
-	var rugosidad := 0.25 if m.roughness < 0.38 else (0.5 if m.roughness < 0.7 else 0.85)
+	var rugosidad := 0.35 if m.roughness < 0.38 else (0.5 if m.roughness < 0.7 else 0.85)
 	var clave := "%s_%.2f" % ["metal" if metal else "pintura", rugosidad]
 	if not _acabados.has(clave):
 		var n := StandardMaterial3D.new()
 		n.vertex_color_use_as_albedo = true
 		n.vertex_color_is_srgb = true
-		n.metallic = 0.85 if metal else 0.05
+		n.metallic = 0.6 if metal else 0.05  # aluminio satinado: con 0,85 se veía como cromo negro
 		n.roughness = rugosidad
 		n.resource_name = clave
 		_acabados[clave] = n

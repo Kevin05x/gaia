@@ -26,7 +26,7 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 
 | Archivo | Título | Id NASA | Crédito | URL |
 |---|---|---|---|---|
-| `assets/nasa/lanzamiento.jpg` | Mars 2020 Liftoff | KSC-20200730-PH-FMX01_0042 | NASA/Frank Michaux | https://images.nasa.gov/details/KSC-20200730-PH-FMX01_0042 |
+| `assets/nasa/lanzamiento.jpg` (también fondo de la escena de lanzamiento) | Mars 2020 Liftoff | KSC-20200730-PH-FMX01_0042 | NASA/Frank Michaux | https://images.nasa.gov/details/KSC-20200730-PH-FMX01_0042 |
 | `assets/nasa/lago.jpg` | Ancient Jezero Crater (Illustration) | PIA24172 | NASA/JPL-Caltech | https://images.nasa.gov/details/PIA24172 |
 | `assets/nasa/jezero.jpg` | Jezero Crater, Mars 2020's Landing Site | PIA23239 | NASA/JPL-Caltech/MSSS/JHU-APL | https://images.nasa.gov/details/PIA23239 |
 | `assets/nasa/aterrizaje.jpg` | Perseverance Touches Down on Mars (Illustration) | PIA24319 | NASA/JPL-Caltech | https://images.nasa.gov/details/PIA24319 |
@@ -61,7 +61,7 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 
 ## Modelos 3D (NASA 3D Resources)
 
-Repositorio oficial: <https://github.com/nasa/NASA-3D-Resources>, descrito por la NASA como «free and without copyright». Los modelos originales vienen comprimidos con Draco; se descomprimieron y se simplificaron (menos triángulos, texturas reducidas) con `gltf-transform` 4.1.1 para que el juego cargue rápido. Son `perseverance.glb`, `ingenuity.glb`, `modulo_lunar.glb` y `saturn_v.glb`. Se muestran a escala de exposición, no a escala real entre sí, y solo en la versión de escritorio.
+Repositorio oficial: <https://github.com/nasa/NASA-3D-Resources>, descrito por la NASA como «free and without copyright». Los modelos originales vienen comprimidos con Draco; se descomprimieron y se simplificaron (menos triángulos, texturas reducidas) con `gltf-transform` 4.1.1 para que el juego cargue rápido. Son `perseverance.glb`, `ingenuity.glb`, `modulo_lunar.glb` y `saturn_v.glb`. En el visor 3D se muestran a escala de exposición. **En la partida de escritorio el Perseverance y el Ingenuity se usan a escala real 1:1** (ver `docs/ESCALAS.md`): `perseverance.glb` se reduce a ≈ 42 000 triángulos (`gltf-transform simplify`, ratio 0,25), se separan por código sus seis ruedas, el brazo, el mástil y la cabeza para animarlos, y se levanta el mástil a su posición de trabajo (2,2 m). Siguen siendo modelos de NASA 3D Resources, sin cambios de diseño; solo en la versión de escritorio (la web usa un rover propio).
 
 ## Recursos oficiales del reto que sirvieron de base
 

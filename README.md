@@ -16,6 +16,7 @@ Dos destinos: **Marte (cráter Jezero)**, con historia, y **la Luna (polo sur)**
 - `docs/CUMPLIMIENTO.md`: requisitos del reto, recomendaciones de la NASA y propuestas propias, con evidencia y límites.
 - `docs/DATOS_NASA.md`: cada dato, imagen y modelo de la NASA con su fuente.
 - `docs/PLATAFORMA.md`: decisión escritorio/web y mediciones.
+- `docs/ESCALAS.md`: escala 1:1 del mundo 3D (rover real de 3 m, casilla de 4 m) y las pruebas que la protegen.
 - `scenes/b/docs/ARTE_Y_LICENCIAS.md`: arte, audio, modelos, licencias y uso de IA.
 
 ## Bucle del juego
