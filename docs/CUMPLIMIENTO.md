@@ -1,0 +1,57 @@
+# Cumplimiento del reto — NASA Space Apps 2026, «Space Mission Design Game»
+
+Equipo **Full Galácticos** (sede Cajamarca). Estado real al 14 de noviembre de 2026. Tres columnas distintas, para no mezclar:
+**Obligatorio** (lo exige el reto o las reglas oficiales), **Recomendado** (lo sugiere la NASA en sus recursos) y **Propuesta nuestra** (decisión del equipo).
+Cada fila dice dónde está la evidencia en el repositorio y si **falta algo**. Nada aquí está marcado como cumplido sin que se haya comprobado.
+
+## 1. Obligatorio
+
+| # | Requisito | Estado | Evidencia | Pendiente / límite |
+|---|-----------|--------|-----------|--------------------|
+| O1 | Un juego que enseñe a diseñar una misión espacial | Cumple | Taller de diseño (cohete, trayectoria, chasis, energía, comunicaciones, instrumentos) → lanzamiento → crucero → aterrizaje → operaciones → informe. `scenes/b/workshop.gd`, `sim/mission_design.gd` | — |
+| O2 | Usar al menos un dato o recurso de la NASA (premio global) | Cumple | Datos con fuente en `content/nasa/*.json` (se muestran en el juego en «Tu misión frente a la real»); fotos oficiales de images.nasa.gov; modelos 3D de NASA 3D Resources; método de los 4 segmentos del recurso «Design and Develop Science Missions». Ver `docs/DATOS_NASA.md` | — |
+| O3 | Todo lo entregado en inglés | Parcial | El juego tiene español e inglés (`scenes/b/i18n/`, selector en Configuración); cada dato NASA tiene `es` y `en` | **El texto de la entrega, el video/diapositivas y los subtítulos los debe preparar el equipo en inglés** (hay borrador en el PDF de sustentación). La parte en inglés del juego no se revisó con un hablante nativo |
+| O4 | Demo: video ≤30 s con subtítulos en inglés **o** ≤7 diapositivas | Pendiente (equipo) | Guion de 30 s y de 7 diapositivas en el PDF de sustentación | Hay que grabar/montar el video o las diapositivas |
+| O5 | Imágenes hechas con IA con marca de agua visible | Cumple | Logo, fondo del menú, pantalla de carga e imágenes de historia llevan la franja «Imagen generada con IA · AI-generated» y el menú muestra la etiqueta. `assets/historia`, `assets/menu` | Las capturas del juego muestran esa marca |
+| O6 | Declarar el uso de IA en código, datos y audio | Cumple | `scenes/b/docs/ARTE_Y_LICENCIAS.md` y créditos del menú: el código se escribió con asistencia de Claude (Anthropic); logo y fondos con el generador de imágenes de Canva; música y sonidos sintetizados por código (`tools/sintetizar_*.py`) | Debe repetirse en el formulario de entrega |
+| O7 | No usar marcas ni logos de la NASA | Cumple | No se usa el logo de la NASA ni el «meatball»; el juego se llama GAIA. Las fotos y modelos oficiales se muestran con su crédito y y los créditos del menú aclaran que GAIA no está afiliado a la NASA ni cuenta con su respaldo | — |
+| O8 | La IA no puede haber «inventado la idea» | A confirmar por el equipo | La idea de partida (diseñar y operar una misión con masa, energía y enlace limitados) viene del documento de ideas del equipo (`IDEAS PARA JUEGO DE NASA SPACE.pdf`). La IA ayudó a desarrollar y documentar, no a elegir la idea | **El equipo debe poder afirmarlo con sus propias palabras en la entrega**; no lo puedo certificar yo |
+| O9 | Código y contenido propio o con licencia compatible | Cumple | Modelos NASA 3D Resources («free and without copyright»); fuentes Inter y Space Grotesk (SIL OFL); resto original. Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md` | Los modelos 3D del equipo de diseño (Arturo Valdivieso) están documentados allí |
+
+## 2. Recomendado por la NASA (recursos oficiales)
+
+| # | Recurso / sugerencia | Estado | Evidencia | Límite |
+|---|----------------------|--------|-----------|--------|
+| R1 | Los **cuatro segmentos** de una misión (lanzamiento, espacial, terrestre, usuarios) | Cumple | El informe y «Tu misión frente a la real» describen cada segmento con los datos de la partida | — |
+| R2 | Trayectoria y tiempo de viaje como decisión de diseño | Cumple (simplificado) | 4 trayectorias con días de crucero y factor de carga (`content/parts.json`); animación orbital del crucero (`scenes/b/launch_cruise.gd`); depende del destino (Marte/Luna) | No se usó **GMAT** ni **Mission Viz**: las trayectorias son un modelo simple y se declara así |
+| R3 | Restricciones reales: masa, presupuesto, energía, comunicaciones | Cumple | `sim/` (energía por día y noche, ventanas de relé, memoria, presupuesto) y pruebas GUT (466) | La escala de costos y masas es reducida para jugar en minutos; el juego lo avisa en pantalla |
+| R4 | Roles de equipo (como en un diseño real) | Cumple | Go/No-Go con 4 roles y 1–4 jugadores (`scenes/b/go_no_go.gd`) | Se juega en un mismo equipo; no hay modo en línea |
+| R5 | Eventos inesperados como en misiones reales | Cumple | 9 imprevistos con hecho real y fuente (`content/imprevistos.json`), por destino | — |
+| R6 | Concept Maturity Levels (CML) y Mission Design Laboratory | No usado | — | Mencionados en el PDF como inspiración; no hay un CML explícito en el juego |
+| R7 | Juego de telescopio / CubeSat 101 / reto VR 2023 / juegos de la CSA | No usado | — | Se revisaron como referencia, no se incorporaron |
+
+## 3. Propuesta nuestra
+
+| # | Propuesta | Estado | Evidencia |
+|---|-----------|--------|-----------|
+| P1 | Dos destinos: Marte (Jezero, con historia) y la Luna (polo sur, sin historia ni combate) | Hecho | `content/destinos.json`, `content/*_luna.json` |
+| P2 | Dificultades y récords locales con código de diseño para comparar | Hecho | `scenes/menu/registro.gd`, `scenes/menu/game_session.gd` |
+| P3 | Visor 3D con modelos oficiales (Perseverance, Ingenuity, módulo lunar Apolo, Saturn V) | Hecho (solo escritorio) | `scenes/b/visor_3d.gd`; los modelos **no** van en la versión web para no engordarla |
+| P4 | Versión de escritorio como versión principal (gráficos Forward+) y web como versión de prueba rápida | Hecho | `export_presets.cfg`, `project.godot`; ver `docs/PLATAFORMA.md` |
+| P5 | Medidor de rendimiento reproducible | Hecho | `scenes/a/medidor.gd`, `docs/mediciones/` |
+
+## 4. Criterios de jurado (referencia propia)
+
+| Criterio | Cómo lo atendemos | Honestidad |
+|----------|-------------------|------------|
+| Impacto | Enseña que diseñar una misión es negociar masa, energía, enlace y tiempo | Sin pruebas con usuarios reales todavía |
+| Creatividad | Mismo diseño en dos mundos; imprevistos con decisión; comparación con la misión real | — |
+| Validez | Cifras con fuente; escala reducida declarada; pruebas automáticas | Las trayectorias no vienen de GMAT |
+| Relevancia | Datos, fotos y modelos de la NASA son parte central de la comparación | — |
+| Presentación | PDF de sustentación y guion | Falta el video/diapositivas finales |
+
+## 5. Lo que NO está verificado
+
+- Rendimiento en una GPU real: todas las mediciones del repositorio se hicieron en un contenedor **sin GPU** (software); ver `docs/PLATAFORMA.md`. El `.bat` de medición existe para que el equipo lo corra en su PC.
+- Forward+ no se probó en una GPU real: en el contenedor se ejecutó con Vulkan por software.
+- El inglés del juego no pasó por revisión de un hablante nativo.

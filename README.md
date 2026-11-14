@@ -6,7 +6,17 @@ Juego 3D de diseño de misiones espaciales para el **NASA Space Apps Challenge 2
 
 ## Jugar
 
-Versión publicada: <https://kevin05x.github.io/gaia/>
+- **Escritorio (recomendada):** paquete de Windows con `GAIA.exe` (gráficos Forward+). Si no abre o va lento, usa `GAIA (modo compatible).bat`. Ver `docs/PLATAFORMA.md`.
+- **Navegador (prueba rápida):** <https://kevin05x.github.io/gaia/>
+
+Dos destinos: **Marte (cráter Jezero)**, con historia, y **la Luna (polo sur)**. Tres dificultades y de 1 a 4 personas por equipo (Go/No-Go por roles).
+
+## Documentación
+
+- `docs/CUMPLIMIENTO.md`: requisitos del reto, recomendaciones de la NASA y propuestas propias, con evidencia y límites.
+- `docs/DATOS_NASA.md`: cada dato, imagen y modelo de la NASA con su fuente.
+- `docs/PLATAFORMA.md`: decisión escritorio/web y mediciones.
+- `scenes/b/docs/ARTE_Y_LICENCIAS.md`: arte, audio, modelos, licencias y uso de IA.
 
 ## Bucle del juego
 
@@ -20,8 +30,9 @@ Versión publicada: <https://kevin05x.github.io/gaia/>
 ## Tecnología
 
 - Godot 4.7.2 Standard, GDScript (sin .NET).
-- Renderer Compatibility, exportación web de un solo hilo.
-- Datos de la NASA: `images-api.nasa.gov` y `api.nasa.gov`.
+- Escritorio: renderer Forward+ (sombras suaves, SSAO, SSIL y niebla volumétrica según el ajuste gráfico). Web: Compatibility, un solo hilo.
+- Simulación en código puro (`sim/`), contenido en JSON (`content/`), 466 pruebas GUT (`tests/`).
+- Datos de la NASA: press kits de NASA/JPL, NASA Science, NASA Image and Video Library y NASA 3D Resources (ver `docs/DATOS_NASA.md`).
 
 ## Cómo correrlo
 
