@@ -13,6 +13,7 @@ const EVENTO_NIVEL_ANTENA := "ANTENNA_LEVEL"  ## ANTENNA_LEVEL:<nivel>
 const EVENTO_EDIFICIO_DESTRUIDO := "BUILDING_DESTROYED"  ## BUILDING_DESTROYED:<tipo>:<id>
 const EVENTO_MODULO_PERDIDO := "MODULE_LOST"  ## MODULE_LOST:<tipo>:<módulos que quedan>, un ataque destruyó un módulo
 const EVENTO_ANTENA_DANADA := "ANTENNA_DAMAGED"  ## ANTENNA_DAMAGED:<nivel que queda>
+const EVENTO_OBRA_INICIADA := "BUILD_STARTED"  ## BUILD_STARTED:<tipo>:<id>, el rover llegó a la obra y empieza a construir
 const ANTENA := "antena"
 
 var _economia: Economy
@@ -105,9 +106,47 @@ func construir(estado: MissionState, tipo: String, casilla: Vector2i) -> Diction
 	var id := "%s-%d" % [tipo, estado.siguiente_edificio]
 	estado.siguiente_edificio += 1
 	estado.edificios.append({"id": id, "type": tipo, "tile": casilla, "level": 0, "target_level": 1, "elapsed": 0.0,
-		"seconds": float(def["tiempo_s"]), "active": true, "hp": _vida_inicial(def), "produced": 0.0, "cd": 0.0})
+		"seconds": float(def["tiempo_s"]), "active": true, "hp": _vida_inicial(def), "produced": 0.0, "cd": 0.0,
+		"espera_rover": _necesita_rover(tipo)})
 	sincronizar_mapa(estado)
 	return {"ok": true, "reason": "", "id": id}
+
+
+## La obra de «tipo» espera al rover (economia.json › obra_con_rover). Los muros se imprimen solos, en paralelo.
+func _necesita_rover(tipo: String) -> bool:
+	return _economia.obra_con_rover and not es_muro(tipo)
+
+
+## Obra que espera al rover para empezar ({} si no hay ninguna).
+func obra_esperando_rover(estado: MissionState) -> Dictionary:
+	for edificio in estado.edificios:
+		if bool(edificio.get("espera_rover", false)) and int(edificio["target_level"]) > int(edificio["level"]):
+			return edificio
+	return {}
+
+
+## Obra (no muro) en curso o esperando al rover ({} si no hay ninguna).
+func obra_actual(estado: MissionState) -> Dictionary:
+	for edificio in estado.edificios:
+		if int(edificio["target_level"]) > int(edificio["level"]) and not es_muro(edificio["type"]):
+			return edificio
+	return {}
+
+
+## true si el rover está quieto en una casilla contigua a la del edificio (o en diagonal).
+func rover_junto_a(estado: MissionState, edificio: Dictionary) -> bool:
+	var d: Vector2i = Vector2i(edificio["tile"]) - estado.casilla_rover
+	return not estado.en_movimiento and maxi(absi(d.x), absi(d.y)) <= 1
+
+
+## Si el rover ya está junto a la obra que lo espera, la obra empieza. Devuelve los eventos (BUILD_STARTED).
+func arrancar_obra_con_rover(estado: MissionState) -> Array[String]:
+	var eventos: Array[String] = []
+	var obra := obra_esperando_rover(estado)
+	if not obra.is_empty() and rover_junto_a(estado, obra):
+		obra["espera_rover"] = false
+		eventos.append("%s:%s:%s" % [EVENTO_OBRA_INICIADA, obra["type"], obra["id"]])
+	return eventos
 
 
 ## En un edificio por módulos la vida es la del módulo que recibe los golpes («hp_modulo»): al llegar a 0 se pierde ese módulo.
@@ -145,7 +184,8 @@ func construir_modulo(estado: MissionState, id: String) -> Dictionary:
 	edificio["target_level"] = int(edificio["level"]) + 1
 	edificio["elapsed"] = 0.0
 	edificio["seconds"] = float(modulo["tiempo_s"])
-	return {"ok": true, "reason": ""}
+	edificio["espera_rover"] = _necesita_rover(str(edificio["type"]))
+	return {"ok": true, "reason": "", "id": id}
 
 
 func _motivo_modulo(estado: MissionState, edificio: Dictionary) -> String:
@@ -181,7 +221,8 @@ func mejorar_antena(estado: MissionState) -> Dictionary:
 	antena["target_level"] = estado.nivel_antena + 1
 	antena["elapsed"] = 0.0
 	antena["seconds"] = float(nivel.get("tiempo_s", 10))
-	return {"ok": true, "reason": ""}
+	antena["espera_rover"] = _necesita_rover(ANTENA)
+	return {"ok": true, "reason": "", "id": str(antena["id"])}
 
 
 ## Costo del siguiente nivel de la antena ({} si ya está al máximo).
@@ -207,6 +248,8 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 		return eventos  # sin energía no se construye ni se produce
 	for edificio in estado.edificios:
 		if int(edificio["target_level"]) > int(edificio["level"]):
+			if bool(edificio.get("espera_rover", false)):
+				continue  # la obra aún no empieza: el rover va de camino
 			edificio["elapsed"] = float(edificio["elapsed"]) + delta_s
 			if float(edificio["elapsed"]) >= float(edificio["seconds"]):
 				edificio["level"] = int(edificio["target_level"])
@@ -232,7 +275,8 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 				edificio["produced"] = float(edificio["produced"]) + horas
 				var horas_enteras := floorf(float(edificio["produced"]))
 				if horas_enteras >= 1.0:
-					edificio["produced"] = float(edificio["produced"]) - horas_enteras
+					# sin restos de coma flotante (4e-15 en vez de 0): el guardado escribe menos decimales y no coincidiría
+					edificio["produced"] = snappedf(float(edificio["produced"]) - horas_enteras, 1e-9)
 					var cantidades := {}
 					for recurso in produce:
 						cantidades[recurso] = int(roundf(float(produce[recurso]) * horas_enteras))
@@ -277,6 +321,7 @@ func para_la_vista(estado: MissionState) -> Array[Dictionary]:
 			restante = maxf(float(edificio["seconds"]) - float(edificio["elapsed"]), 0.0)
 		lista.append({"id": edificio["id"], "type": edificio["type"], "tile": edificio["tile"], "level": edificio["level"],
 			"building": en_obra, "progress": progreso, "remaining_s": restante, "active": edificio["active"],
+			"waiting_rover": en_obra and bool(edificio.get("espera_rover", false)),
 			"hp": float(edificio["hp"]), "hp_max": vida_maxima(edificio), "modules": modulos_totales(str(edificio["type"])),
 			"next_module": siguiente_modulo(estado, edificio)})
 	return lista

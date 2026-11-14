@@ -1,6 +1,7 @@
 extends RefCounted
 ## Piezas procedurales del mundo: rocas low-poly de tres familias, materiales compartidos por color de vértice,
-## sombra de contacto y utilidades de malla con normales por faceta. Todo original y sin texturas externas.
+## sombra de contacto y utilidades de malla con normales por faceta. En Marte, el suelo y las rocas usan las texturas
+## del equipo de arte (assets/texturas/); si faltan, las generadas por código (world_textures.gd).
 
 const Tex := preload("res://scenes/b/world_textures.gd")
 
@@ -69,28 +70,102 @@ static func rock_material() -> StandardMaterial3D:
 	return _materials["rock"]
 
 
+## Texturas PBR de Marte y de la Luna hechas por el equipo de arte (assets/texturas/, ver ARTE_Y_LICENCIAS.md). La
+## «detalle» es el color dividido por su media (media 0,8, igual que las de world_textures.gd): el color de vértice sigue
+## dando el tono de cada zona y la textura solo añade grano, gravilla, cráteres, cantos y estratos. Si faltan, se usan
+## las generadas por código (world_textures.gd).
+const TEX_ARTE := "res://assets/texturas/%s_%s.jpg"
+## Texturas del equipo de arte por destino: suelo, roca (rocas sueltas) y lomas (paisaje lejano).
+const TEX_DESTINO := {
+	"marte": {"suelo": "marte_regolito", "roca": "marte_roca_estratos", "lomas": "marte_roca_estratos"},
+	"luna": {"suelo": "luna_regolito", "roca": "luna_roca", "lomas": "luna_roca"},
+}
+const ESCALA_SUELO_MARTE := 0.4  ## las UV del suelo repiten cada 5 m; con 0,4 la textura repite cada 12,5 m (menos repetición visible)
+const ESCALA_SUELO_LUNA := 0.25  ## Luna: repite cada 20 m; con los cráteres de todos los tamaños la repetición no se nota
+const ESCALA_ROCA_MARTE := 0.35  ## triplanar: estratos de unos 11 cm en lugar de 5 cm
+
+
+const ESCALA_LOMAS_MARTE := 0.06  ## lomas lejanas: la textura repite cada ~17 m (estratos de ~60 cm, visibles a 100 m)
+
+
+## Lomas del paisaje lejano: color de vértice y, con texturas, la roca del destino en triplanar a escala grande.
+static func mountain_material() -> StandardMaterial3D:
+	if not _materials.has("mountain"):
+		var m := StandardMaterial3D.new()
+		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
+		m.roughness = 1.0
+		m.metallic_specular = 0.04
+		m.disable_receive_shadows = true
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3(ESCALA_LOMAS_MARTE, ESCALA_LOMAS_MARTE, ESCALA_LOMAS_MARTE)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		_materials["mountain"] = m
+		apply_quality()
+	return _materials["mountain"]
+
+
+## {"albedo", "normal", "rugosidad"} de una textura de Marte, o {} si falta algún archivo (se usan las de código).
+static func _tex_arte(nombre: String) -> Dictionary:
+	var clave := "tex_" + nombre
+	if not _materials.has(clave):
+		var t := {}
+		var rutas := {"albedo": TEX_ARTE % [nombre, "detalle"], "normal": TEX_ARTE % [nombre, "normal"], "rugosidad": TEX_ARTE % [nombre, "rugosidad"]}
+		for k in rutas:
+			if not ResourceLoader.exists(rutas[k]):
+				t = {}
+				break
+			t[k] = load(rutas[k])
+		_materials[clave] = t
+	return _materials[clave]
+
+
+## Pone (o quita, con t vacío) la rugosidad por textura.
+static func _rugosidad(m: StandardMaterial3D, t: Dictionary) -> void:
+	m.roughness_texture = t.get("rugosidad")
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+
+
 ## Activa o quita las texturas de los materiales compartidos (opción «calidad alta» de los ajustes).
 static func apply_quality() -> void:
+	preload("res://scenes/b/material_edificio.gd").aplicar(quality)
+	var texs: Dictionary = TEX_DESTINO["luna" if Destino.es_luna() else "marte"]
 	var suelo: StandardMaterial3D = _materials.get("ground")
 	if suelo != null:
 		if quality:
-			var t := Tex.sand()
+			var tm := _tex_arte(texs["suelo"])
+			var t := tm if not tm.is_empty() else Tex.sand()
 			suelo.albedo_texture = t["albedo"]
 			suelo.normal_enabled = true
 			suelo.normal_texture = t["normal"]
 			suelo.albedo_color = Color(1.25, 1.25, 1.25)
+			_rugosidad(suelo, tm)
+			var e := (ESCALA_SUELO_LUNA if Destino.es_luna() else ESCALA_SUELO_MARTE) if not tm.is_empty() else 1.0
+			suelo.uv1_scale = Vector3(e, e, 1.0)
 		else:
 			suelo.albedo_texture = null
 			suelo.normal_enabled = false
 			suelo.albedo_color = Color.WHITE
+			_rugosidad(suelo, {})
+	var lomas: StandardMaterial3D = _materials.get("mountain")
+	if lomas != null:
+		var lm := _tex_arte(texs["lomas"]) if quality else {}
+		lomas.albedo_texture = lm.get("albedo")
+		lomas.normal_enabled = not lm.is_empty()
+		lomas.normal_texture = lm.get("normal")
+		lomas.albedo_color = Color(1.25, 1.25, 1.25) if not lm.is_empty() else Color.WHITE
 	var roca: StandardMaterial3D = _materials.get("rock")
 	if roca != null:
 		if quality:
-			var r := Tex.rock()
+			var rm := _tex_arte(texs["roca"])
+			var r := rm if not rm.is_empty() else Tex.rock()
 			roca.albedo_texture = r["albedo"]
 			roca.normal_enabled = true
 			roca.normal_texture = r["normal"]
 			roca.albedo_color = Color(1.25, 1.25, 1.25)
+			_rugosidad(roca, rm)
+			var er := ESCALA_ROCA_MARTE if not rm.is_empty() else 0.7
+			roca.uv1_scale = Vector3(er, er, er)
 			# Borde iluminado suave (contraluz del polvo): separa las rocas del suelo en vez de fundirse con él.
 			roca.rim_enabled = true
 			roca.rim = 0.35
@@ -100,6 +175,7 @@ static func apply_quality() -> void:
 			roca.normal_enabled = false
 			roca.albedo_color = Color.WHITE
 			roca.rim_enabled = false
+			_rugosidad(roca, {})
 
 
 ## Material sin iluminación (líneas, cursor, huellas). Con alpha si transparente.
@@ -202,10 +278,69 @@ static func _add_polyhedron(st: SurfaceTool, planos: Array[Plane], escala: Vecto
 
 
 ## Roca low-poly. familia: "fragment" (canto), "block" (bloque de techo plano), "outcrop" (afloramiento alargado).
+## Rocas esculpidas en Blender para las familias grandes (assets/texturas/_fuentes/rocas_esculpidas.py): no convexas y
+## erosionadas, unos 300 triángulos. Se ajustan a la caja de la roca procedural que sustituyen, así que el tamaño de cada
+## obstáculo no cambia. Si falta el archivo, se usan las procedurales.
+const ROCAS_ESCULPIDAS := "res://assets/modelos/rocas_esculpidas.glb"
+const FAMILIAS_ESCULPIDAS := ["block", "boulder", "outcrop", "cliff"]
+const VARIANTES_ESCULPIDAS := 4
+static var _esculpidas: Dictionary = {}  ## «familia_variante» -> Mesh del archivo (se lee una vez)
+
+
+static func _malla_esculpida(familia: String, variante: int) -> Mesh:
+	if _esculpidas.is_empty():
+		_esculpidas["_leido"] = true
+		if ResourceLoader.exists(ROCAS_ESCULPIDAS):
+			var raiz: Node = (load(ROCAS_ESCULPIDAS) as PackedScene).instantiate()
+			for m in raiz.find_children("*", "MeshInstance3D", true, false):
+				_esculpidas[str(m.name)] = (m as MeshInstance3D).mesh
+			raiz.free()
+	return _esculpidas.get("%s_%d" % [familia, posmod(variante, VARIANTES_ESCULPIDAS)])
+
+
+## Copia de la roca esculpida estirada a la caja «destino» (normales corregidas para el estirado desigual).
+static func _ajustar_a_caja(malla: Mesh, destino: AABB) -> ArrayMesh:
+	var datos := malla.surface_get_arrays(0)
+	var vertices: PackedVector3Array = datos[Mesh.ARRAY_VERTEX]
+	var normales: PackedVector3Array = datos[Mesh.ARRAY_NORMAL]
+	var caja := AABB(vertices[0], Vector3.ZERO)
+	for v in vertices:
+		caja = caja.expand(v)
+	var escala := destino.size / caja.size.max(Vector3.ONE * 0.0001)
+	for i in vertices.size():
+		vertices[i] = destino.position + (vertices[i] - caja.position) * escala
+		if i < normales.size():
+			normales[i] = (normales[i] / escala).normalized()
+	# Sin índices, como las rocas procedurales: tres vértices por triángulo (lo esperan la oclusión y las pruebas).
+	var indices: PackedInt32Array = datos[Mesh.ARRAY_INDEX]
+	var colores: Variant = datos[Mesh.ARRAY_COLOR]
+	var v2 := PackedVector3Array()
+	var n2 := PackedVector3Array()
+	var c2 := PackedColorArray()
+	for i in indices:
+		v2.append(vertices[i])
+		n2.append(normales[i] if i < normales.size() else Vector3.UP)
+		c2.append((colores as PackedColorArray)[i] if colores != null else Color.WHITE)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = v2
+	arrays[Mesh.ARRAY_NORMAL] = n2
+	arrays[Mesh.ARRAY_COLOR] = c2
+	var nueva := ArrayMesh.new()
+	nueva.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return nueva
+
+
 static func rock_mesh(familia: String, variante: int = 0) -> ArrayMesh:
 	var clave := "%s%d" % [familia, variante]
 	if _meshes.has(clave):
 		return _meshes[clave]
+	if FAMILIAS_ESCULPIDAS.has(familia) and STONE_PRESETS.has(familia):
+		var esculpida := _malla_esculpida(familia, variante)
+		if esculpida != null:
+			var roca := _con_oclusion(_ajustar_a_caja(esculpida, stone_mesh(familia, variante).get_aabb()))
+			_meshes[clave] = roca
+			return roca
 	if STONE_PRESETS.has(familia):
 		var piedra := _con_oclusion(stone_mesh(familia, variante))
 		_meshes[clave] = piedra

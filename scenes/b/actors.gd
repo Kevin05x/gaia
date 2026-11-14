@@ -26,8 +26,11 @@ var work_ring: MeshInstance3D
 var work_column: MeshInstance3D
 var arm_home=Vector3.ZERO
 var arm_trabajo=Vector3.ZERO  ## posición del brazo extendido sobre la roca
+var obra_tile: Variant=null  ## casilla de la obra que el rover construye ahora (null si no construye)
+var chispas: CPUParticles3D  ## chispas de soldadura en la obra
+var luz_soldadura: OmniLight3D  ## destello azulado del arco de soldadura
 const ESCALA_COMPANERO := 0.8  ## el compañero (robot de apoyo inventado) mide ≈ 1 m: la mitad del rover
-const ESCALA_ESTACION := 0.7  ## la estación mide 4,1 m de lado (cabe en su casilla de 4 m)
+const ESCALA_ESTACION := 1.8  ## la estación mide 10,6 m de lado: ocupa 3 × 3 casillas (estacion_radio del mapa) y triplica al rover
 var base_props: Node3D  ## escenografía de la base (modelos del equipo de diseño) detrás de la estación
 var base_tile=Vector2i(999,999)
 var tip_offset := .355  ## rad: la punta del brazo queda a la derecha del frente del rover (el rover de la NASA lo calcula de su modelo)
@@ -79,6 +82,7 @@ func _ready() -> void:
  work_column=MeshInstance3D.new();var col=CylinderMesh.new();col.top_radius=.08;col.bottom_radius=.7;col.height=4.0;col.radial_segments=10;work_column.mesh=col;work_column.material_override=_glow(Color(.95,.75,.44,.22));work_column.visible=false;add_child(work_column)
  drilling.direction=Vector3(0,1,0);drilling.spread=55;drilling.gravity=Vector3(0,-5,0);drilling.lifetime=.9;drilling.amount=48
  drilling.initial_velocity_min=1.4;drilling.initial_velocity_max=3.0;drilling.scale_amount_min=1.4;drilling.scale_amount_max=2.6
+ _crear_soldadura()
  crane=Node3D.new();crane.name="SkyCrane";add_child(crane)
  Art.box(crane,Vector3(3.4,.3,2.4),Vector3.ZERO,Art.DARK)
  for x in [-1.3,1.3]:
@@ -108,6 +112,47 @@ func apply_state(s: Dictionary) -> void:
  if (route.is_empty() or safe) and not landing_active:
   rover.position=at_tile(s.get("rover_tile",Vector2i.ZERO))
  if safe:route.clear();active_action.clear()
+ obra_tile=_obra_del_rover(s)
+## Obra con rover: la obra en curso (no un muro, que se imprime solo) junto a la que está el rover quieto, o null.
+func _obra_del_rover(s: Dictionary) -> Variant:
+ if s.get("moving",false) or safe:return null
+ var aqui: Vector2i=s.get("rover_tile",Vector2i.ZERO)
+ for b in s.get("buildings",[]):
+  if not b.get("building",false) or b.get("waiting_rover",false) or MurosView.es_muro(str(b.get("type",""))):continue
+  var d: Vector2i=Vector2i(b.get("tile",Vector2i.ZERO))-aqui
+  if maxi(absi(d.x),absi(d.y))<=1:return Vector2i(b.get("tile",Vector2i.ZERO))
+ return null
+## Chispas y destello de soldadura (ocultos hasta que el rover construye).
+func _crear_soldadura() -> void:
+ chispas=CPUParticles3D.new();chispas.name="Chispas";chispas.emitting=false;chispas.amount=40;chispas.lifetime=.55
+ chispas.explosiveness=.15;chispas.direction=Vector3(0,1,0);chispas.spread=70;chispas.gravity=Vector3(0,-6.0,0)
+ chispas.initial_velocity_min=1.6;chispas.initial_velocity_max=3.6;chispas.local_coords=false
+ chispas.scale_amount_min=.6;chispas.scale_amount_max=1.2
+ var gota=SphereMesh.new();gota.radius=.025;gota.height=.05;gota.radial_segments=4;gota.rings=2
+ var mat=StandardMaterial3D.new();mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mat.vertex_color_use_as_albedo=true
+ gota.material=mat;chispas.mesh=gota
+ var rampa=Gradient.new();rampa.set_color(0,Color(1,.97,.85));rampa.set_color(1,Color(1,.42,.08,0))
+ chispas.color_ramp=rampa
+ chispas.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+ add_child(chispas)
+ luz_soldadura=OmniLight3D.new();luz_soldadura.name="LuzSoldadura";luz_soldadura.light_color=Color(.72,.86,1.0)
+ luz_soldadura.omni_range=7.0;luz_soldadura.shadow_enabled=false;luz_soldadura.visible=false
+ add_child(luz_soldadura)
+## El rover se gira hacia la obra, extiende el brazo y suelda: chispas y un destello que parpadea en la pared de la obra.
+func _soldar(delta: float) -> void:
+ var centro=at_tile(obra_tile)
+ var to=centro-rover.position
+ var flat=Vector3(to.x,0,to.z)
+ if flat.length_squared()>.01:rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-flat.x,-flat.z)+tip_offset,minf(1,delta*4))
+ parts.arm.position=parts.arm.position.move_toward(arm_trabajo,delta*1.2)
+ parts.arm.rotation.x=-.12+sin(animation_clock*7)*.06
+ # Punto de soldadura: en la cara de la obra que mira al rover, a media altura, y se desplaza despacio.
+ var cara=centro-flat.normalized()*1.5 if flat.length_squared()>.01 else centro
+ var lado=Vector3(-flat.z,0,flat.x).normalized()*sin(animation_clock*.7)*.6 if flat.length_squared()>.01 else Vector3.ZERO
+ var punto=cara+lado+Vector3(0,.8+.35*sin(animation_clock*.45),0)
+ chispas.global_position=punto;chispas.emitting=true
+ luz_soldadura.visible=true;luz_soldadura.global_position=punto-flat.normalized()*.3
+ luz_soldadura.light_energy=1.4+randf()*2.2 if fmod(animation_clock,0.9)<0.75 else 0.2
 ## Dron: el helicóptero Ingenuity real de la NASA a escala 1:1 (1,2 m de rotor a rotor, 0,5 m de alto). Si falta el modelo,
 ## el dron de bloques del equipo (escala similar).
 func _crear_dron() -> void:
@@ -172,7 +217,8 @@ func _process(delta: float) -> void:
    parts.arm.rotation.x=sin(animation_clock*8)*.12 if aims else 0
   if active_action.elapsed>=float(active_action.get("seconds",2.0)):
    active_action.clear();drilling.emitting=false;_end_work()
- elif work_beam.visible or parts.visual.position!=Vector3.ZERO:_end_work()
+ elif obra_tile!=null and route.is_empty() and not safe:_soldar(delta)
+ elif work_beam.visible or parts.visual.position!=Vector3.ZERO or chispas.emitting:_end_work()
  var scanning=not active_action.is_empty() and active_action.get("action") in ["radar","panorama"]
  scanner.visible=scanning
  if scanning:
@@ -214,6 +260,7 @@ func _inclinar(delta: float) -> void:
 
 func _end_work() -> void:
  work_beam.visible=false;work_ring.visible=false;work_column.visible=false;drilling.emitting=false
+ chispas.emitting=false;luz_soldadura.visible=false
  parts.arm.rotation=Vector3.ZERO;parts.arm.position=arm_home;parts.visual.position=Vector3.ZERO
 ## El rover se gira hacia el mineral, adelanta un poco el cuerpo si hace falta y el brazo trabaja sobre la roca.
 func _work_on_target(action: String, delta: float) -> void:

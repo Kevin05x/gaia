@@ -15,11 +15,12 @@ const INNER := 40.0  ## mitad del lado de la malla detallada (después sigue el 
 const CELL := 2.0
 const OUTER := 80.0  ## mitad del lado de la malla de colinas lejanas (celdas de 4 m)
 const OUTER_CELL := 4.0
-const REGOLITH := Color("B97E64")
-const CLAY := Color("C79170")
-const SHADOW_ROCK := Color("90614D")
-const BASIN := Color("C99C78")
-const MOUNTAIN := Color("85655C")
+## Paleta acercada a la foto NASA PIA24542 (Jezero): a mitad de camino entre la anterior y la medida (ARTE_Y_LICENCIAS.md).
+const REGOLITH := Color("947058")
+const CLAY := Color("A38164")
+const SHADOW_ROCK := Color("745945")
+const BASIN := Color("B59372")
+const MOUNTAIN := Color("886D5A")
 const LAKE_CENTER := Vector2(-42.0, -48.0)
 const LAKE_ROT := -0.8
 const TARGET_LIGHT := Color("FBE0AC")
@@ -297,8 +298,15 @@ func _outer_vertex(st: SurfaceTool, x: float, z: float) -> void:
 		color = color * (0.9 + 0.1 * sin(v.y * 5.5))
 	st.set_color(Destino.color(color))
 	st.set_normal(n)
+	st.set_tangent(tangente_suelo(n))
 	st.set_uv(Vector2(x, z) / 5.0)
 	st.add_vertex(v)
+
+
+## Tangente del suelo (UV = xz / 5): el eje +X sobre la superficie, con w = +1, lo mismo que SurfaceTool.generate_tangents.
+## Sin tangentes Godot usa unas por defecto que invierten el mapa de normales: los cráteres se veían como bultos.
+static func tangente_suelo(n: Vector3) -> Plane:
+	return Plane((Vector3.RIGHT - n * n.x).normalized(), 1.0)
 
 
 ## Malla de colinas lejanas (la zona central la cubre la malla detallada).
@@ -403,6 +411,7 @@ func _emit_vertex(st: SurfaceTool, i: int, j: int) -> void:
 	var n := _smooth_normal(i, j)
 	st.set_color(Destino.color(_ground_color(v, n.y)))
 	st.set_normal(n)
+	st.set_tangent(tangente_suelo(n))
 	st.set_uv(Vector2(v.x, v.z) / 5.0)
 	st.add_vertex(v)
 
@@ -435,11 +444,13 @@ func _build_ground() -> void:
 			var pn := PackedVector3Array()
 			var pc := PackedColorArray()
 			var uv := PackedVector2Array()
+			var tg := PackedFloat32Array()
 			var idx := PackedInt32Array()
 			pv.resize(w * h)
 			pn.resize(w * h)
 			pc.resize(w * h)
 			uv.resize(w * h)
+			tg.resize(w * h * 4)
 			for j in range(h):
 				for i in range(w):
 					var k := (cj + j) * n + ci + i
@@ -447,6 +458,11 @@ func _build_ground() -> void:
 					pn[j * w + i] = normales[k]
 					pc[j * w + i] = colores[k]
 					uv[j * w + i] = Vector2(posiciones[k].x, posiciones[k].z) / 5.0
+					var t := tangente_suelo(normales[k])
+					tg[(j * w + i) * 4] = t.x
+					tg[(j * w + i) * 4 + 1] = t.y
+					tg[(j * w + i) * 4 + 2] = t.z
+					tg[(j * w + i) * 4 + 3] = t.d
 			for j in range(h - 1):
 				for i in range(w - 1):
 					var a0 := j * w + i
@@ -462,6 +478,7 @@ func _build_ground() -> void:
 			arrays[Mesh.ARRAY_NORMAL] = pn
 			arrays[Mesh.ARRAY_COLOR] = Destino.colores(pc)
 			arrays[Mesh.ARRAY_TEX_UV] = uv
+			arrays[Mesh.ARRAY_TANGENT] = tg
 			arrays[Mesh.ARRAY_INDEX] = idx
 			var malla := ArrayMesh.new()
 			malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -766,7 +783,7 @@ func _build_decor() -> void:
 		{"id": "mesa1", "mesh": "mesa1", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
 		{"id": "mesa_big", "mesh": "mesa0", "count": int(12 * fr), "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0, "vis": 0.0, "variants": 1},
 	]
-	var paleta := [Color("B98160"), Color("A56E52"), Color("B07A5C"), Color("C69770"), Color("96654C")]
+	var paleta := [Color("AD8666"), Color("987256"), Color("A47C5F"), Color("C69D78"), Color("8A6850")]
 	# Cada familia pequeña usa 3 variantes de forma para que no se repita el mismo canto.
 	var expandidas: Array = []
 	for d in familias:
@@ -782,7 +799,7 @@ func _build_decor() -> void:
 				copia["count"] = int(ceil(float(d["count"]) / nv))
 				expandidas.append(copia)
 	familias = expandidas
-	var paleta_mesa := [Color("C58C66"), Color("B67E5C"), Color("CE9A72"), Color("AE7154")]
+	var paleta_mesa := [Color("BC906D"), Color("AC8464"), Color("CA9E78"), Color("A2785B")]
 	for datos in familias:
 		var malla_id: String = datos["mesh"]
 		var malla: Mesh = W.mesa_mesh(int(malla_id.substr(4))) if malla_id.begins_with("mesa") else W.rock_mesh(malla_id, int(datos["variant"]))
@@ -1084,10 +1101,17 @@ func _strata(n: Node3D, rng: RandomNumberGenerator) -> void:
 	pieza.rotation.y = giro + 0.6
 
 
+const MINERALES_VISTA: Array[String] = ["mineral_cobre", "mineral_oro", "mineral_plata"]
+
+
 ## Mineral expuesto: fragmentos pálidos dentro de una fractura oscura.
 func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
-	# Modelo del equipo de diseño (roca con cristales); si falta el archivo se usa la pieza por código.
-	var modelo := Equipo.poner(n, "cristal5_brillo", 2.8, Vector3(0, -0.03, 0), rng.randf() * TAU)  # olivino: cristal verde del equipo de diseño
+	# Minerales realistas del equipo de arte (cobre nativo, oro en cuarzo, plata nativa), uno al azar por objetivo; si
+	# faltan, el cristal verde anterior y, si tampoco está, la pieza por código. El recurso que da sigue siendo el de
+	# content/economia.json (olivino): el modelo es solo el aspecto.
+	var opciones := MINERALES_VISTA.filter(func(m: String) -> bool: return Equipo.existe(m))
+	var nombre: String = opciones[rng.randi() % opciones.size()] if not opciones.is_empty() else "cristal5_brillo"
+	var modelo := Equipo.poner(n, nombre, 2.6, Vector3(0, -0.03, 0), rng.randf() * TAU)
 	if not modelo.is_empty():
 		return
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))

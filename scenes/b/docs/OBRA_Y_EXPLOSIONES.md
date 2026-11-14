@@ -17,3 +17,20 @@ Pedido de Kevin: que se note cómo se construye, que al destruirse algo explote 
 - Si desaparece el último módulo, la nave se destruye entera (`BUILDING_DESTROYED`). Evento nuevo: `MODULE_LOST:<tipo>:<módulos que quedan>`; aviso `NOTICE_MODULE_LOST`.
 - Con la nave a medias o dañada no se gana: la victoria exige los 4 módulos.
 - Medido con 2 torretas Nv1 y la nave completa a 5 casillas de la estación: sobrevive a todas las oleadas; con defensa más débil puede perder módulos.
+
+## El rover va a la obra (14 nov 2026 · rama `b/dias-y-realismo`, pedido de Arturo)
+
+Antes, la obra empezaba sola, «a distancia». Ahora es tu rover el que construye. **Es un cambio de reglas:** está en la simulación, no solo en la vista.
+
+- **Simulación** (`content/economia*.json › "obra_con_rover": true`):
+  - Al ordenar una obra (`build`, `build_module` o `upgrade`), el rover sale hacia una casilla contigua y la obra espera (`espera_rover`). No avanza hasta que el rover llega; entonces emite `BUILD_STARTED:<tipo>:<id>`.
+  - Al terminar, el rover vuelve a donde estaba, o sigue hacia donde iba si estaba en marcha (`ROVER_AUTO_MOVE:vuelta`).
+  - Si el jugador le da otra orden (mover, acercarse, parar, descargar o una acción), ya no vuelve solo. La obra ya empezada sigue aunque el rover se vaya.
+  - Si el rover está ocupado (por ejemplo, taladrando), va a la obra en cuanto termina (`ROVER_AUTO_MOVE:a_obra`).
+  - Si no puede llegar (sin ruta, poca energía o modo seguro), el jugador recibe el aviso `BUILD_ROVER_BLOCKED` y tiene que llevarlo él.
+  - Los muros y las compuertas se siguen imprimiendo solos y en paralelo.
+  - Pruebas: `tests/test_obra_con_rover.gd`. Las pruebas antiguas de costos y tiempos usan `Economy.para_pruebas()`, que apaga esta regla.
+- **Vista:**
+  - La obra muestra «Esperando al rover» hasta que el rover llega.
+  - Junto a la obra, el rover se gira, extiende el brazo y suelda, con chispas y un destello azulado que parpadea (`actors.gd`, `_soldar`).
+  - El runner presenta los caminos de ida y vuelta (`Simulation.ruta_en_curso()`).

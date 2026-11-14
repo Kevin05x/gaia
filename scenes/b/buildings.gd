@@ -22,7 +22,7 @@ var ground: Callable  ## altura del terreno (x, z)
 ## Luces nocturnas: tipo -> [alcance en m, energía, altura en m]. Pocas y sin sombras (en la web el límite de luces es bajo).
 const LUCES := {"luz": [16.0, 2.2, 4.2], "hangar": [9.0, 1.1, 3.0], "domo": [9.0, 1.1, 3.0], "antena": [8.0, 0.8, 3.2]}
 const MAX_LUCES := 6
-var _noche := 0.0  ## 0 de día … 1 de noche cerrada
+var _noche := -1.0  ## 0 de día … 1 de noche cerrada (-1: aún sin aplicar, para que el primer día ya se atenúen los emisivos)
 var _nodos: Dictionary = {}  ## id -> {"node", "model", "ring", "label", "off", "firma"}
 var _zona: MeshInstance3D
 var _por_casilla: Dictionary = {}  ## casilla -> id (para girar las torretas hacia su blanco)
@@ -208,7 +208,9 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		BuildFx.fijar_cartel(cartel, progreso, float(e.get("remaining_s", 0.0)))
 	var etiqueta: Label3D = datos["label"]
 	if en_obra:
-		etiqueta.text = ""
+		# Obra con rover: hasta que el rover llega, la obra espera (la simulación no la avanza).
+		etiqueta.text = tr("BUILD_ROVER_WAITING") if bool(e.get("waiting_rover", false)) else ""
+		etiqueta.modulate = Color("F0C079")
 	elif not bool(e.get("active", true)):
 		etiqueta.text = "OFF"
 		etiqueta.modulate = Color("FF8178")

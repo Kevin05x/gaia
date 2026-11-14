@@ -19,7 +19,7 @@ func _nueva(con_historia: bool = true) -> Simulation:
 
 
 func before_each() -> void:
-	economia = Economy.desde_archivo("res://content/economia.json")
+	economia = Economy.desde_archivo("res://content/economia.json").para_pruebas()
 	historia = StoryData.desde_archivo("res://content/historia.json")
 	sim = _nueva()
 

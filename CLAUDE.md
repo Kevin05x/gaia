@@ -1,7 +1,7 @@
 # GAIA · contexto del proyecto para Claude
 
 Lee este archivo antes de tocar nada. Resume qué es el proyecto, qué se decidió y las reglas de trabajo. Está en español porque el equipo trabaja en español; la entrega del reto va en inglés.
-Última actualización: sábado 14 de noviembre de 2026, 10:20 (Cajamarca).
+Última actualización: sábado 14 de noviembre de 2026, noche (Cajamarca), con el trabajo de `b/dias-y-realismo`.
 
 ## Qué es
 
@@ -31,7 +31,18 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - Las imágenes hechas con IA llevan la marca visible «Imagen generada con IA · AI-generated».
 - Marte y Luna comparten el mismo taller; cada destino tiene sus propios JSON (`*_luna.json`).
 - **Los monstruos NO se quitan** (decisión del 14 nov): al matarlos dan **bionutrientes**, un recurso nuevo que lo implementa el equipo de historia (`a/historia-sin-monstruos`). No borrar el combate. La Luna sigue sin fauna ni combate.
-- **Energía de la Luna:** hoy usa la misma curva solar que Marte. En la realidad, en el polo sur el Sol se queda a pocos grados del horizonte, las crestas reciben más de la mitad del tiempo luz y las zonas de sombra permanente (donde hay hielo) no reciben nada. Se va a rehacer esa lógica en `b/dias-y-realismo` (ver `docs/REPARTO_FINAL.md`).
+- **Energía de la Luna** (hecho en `b/dias-y-realismo`, commit 064a693; falta llegar a `develop`): en la Luna el panel solar rinde el 70 % (`balance_luna.json`), porque en el polo sur el Sol se queda bajo. Además, `mapa_luna.json` tiene dos zonas de sombra permanente con hielo enterrado, donde el panel y los edificios no generan nada.
+- **Estación de 3 × 3 casillas** (cambio de reglas, 14 nov): `estacion_radio: 1` en `content/mapa*.json`; se descarga a 2 casillas. Ver `docs/ESCALAS.md` y `tests/test_estacion_grande.gd`.
+- **El rover construye** (cambio de reglas, 14 nov, pedido de Arturo): `"obra_con_rover": true` en `content/economia*.json`.
+  - Al ordenar una obra (salvo muros y compuertas), el rover va hasta ella. La obra no avanza hasta que llega; mientras, el rover suelda. Al terminar, el rover vuelve a donde estaba.
+  - Detalle en `scenes/b/docs/OBRA_Y_EXPLOSIONES.md`; pruebas en `tests/test_obra_con_rover.gd`.
+  - Las pruebas viejas de costos usan `Economy.para_pruebas()`, que apaga esta regla.
+- **Arte realista** (`b/dias-y-realismo`, cuatro rondas del 14 nov):
+  - Texturas PBR de Marte y la Luna, y cráteres lunares hundidos.
+  - Rocas esculpidas, minerales y nido nuevos.
+  - Chapa con polvo en todos los edificios (`scenes/b/shaders/edificio.gdshader`).
+  - Filtrado anisótropo 16×.
+  - Uso de IA y orígenes en `scenes/b/docs/ARTE_Y_LICENCIAS.md`. Los scripts de las texturas están en `assets/texturas/_fuentes/`.
 
 ## Lo que sigue abierto
 
@@ -40,10 +51,12 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - Qué hacen los **bionutrientes** (para qué sirven) y cuántos da cada monstruo. Lo decide el equipo de historia.
 - `content/rules.json` pone la tormenta de polvo en el sol 3, pero el plan y la historia dicen sol 4–5. Unificar.
 - Comentario viejo en `scenes/b/sky_light.gd` ("casillas de 2 m"; ahora 4 m).
-- El README dice 466 pruebas; ahora son **473**.
+- Hay que volver a renderizar las fichas `assets/edificios/*.png` con `tools/renderizar_fichas.gd`: aún muestran los edificios sin la chapa nueva.
+- El ancho de la antena no coincide: 3,4 m en `scenes/b/buildings.gd` y 3,8 m en `scenes/b/actors.gd`. Unificar.
+- Los minerales se ven como cobre, oro o plata (solo es aspecto visual), pero el recurso se sigue llamando «olivino» en los textos.
 - **Aviso de reglas:** Space Apps dice que no se puede empezar a trabajar en el reto antes del hackathon, y este repositorio tiene commits desde el 22 de octubre. El equipo debe consultarlo con el organizador local y la Guía de entrega. No ocultar ni reescribir el historial.
 - Entrega pendiente (equipo): video de máximo 30 s con subtítulos en inglés o máximo 7 diapositivas; texto en inglés; declaración de IA; menores de 18 no deben salir con cara ni voz.
-- Sin medir en GPU real: todas las mediciones se hicieron por software. El equipo corre `Medir_rendimiento.bat` en Windows.
+- Mediciones en GPU real: solo hay una, en una Intel UHD (`docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`): Alta da unos 20 FPS y Baja 60. La chapa de los edificios y el filtrado anisótropo 16× aún no se han medido. El equipo corre `Medir_rendimiento.bat` en Windows.
 
 ## Arquitectura (no romperla)
 
@@ -65,7 +78,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests,res://sce
 godot --path . -- --medir --preset=alta     # medición de rendimiento (alta|media|baja)
 ```
 
-Las pruebas deben pasar todas (473) antes de abrir un PR.
+Las pruebas deben pasar todas (530 en `b/dias-y-realismo` el 14 nov por la noche) antes de abrir un PR.
 
 ## Flujo de Git (reglas)
 
