@@ -10,8 +10,9 @@ signal command(command: String, payload: Dictionary)
 signal placement_requested(building: String)
 signal menu_cambiado(abierto: bool)  ## el menú Construir se abrió o se cerró (la vista oculta lo que tapa)
 
-const RECURSOS: Array[String] = ["rocas", "olivino", "hielo", "xenolito"]
-const COLORES := {"rocas": Color("C9A27E"), "olivino": Color("8DB06A"), "hielo": Color("A8DCEB"), "xenolito": Color("B98AE0")}
+const RECURSOS: Array[String] = ["rocas", "olivino", "hielo", "xenolito", "bionutrientes"]
+const COLORES := {"rocas": Color("C9A27E"), "olivino": Color("8DB06A"), "hielo": Color("A8DCEB"), "xenolito": Color("B98AE0"),
+	"bionutrientes": UI.TEAL}
 
 var root: Control
 var snapshot: Dictionary = {}
@@ -245,6 +246,7 @@ func update_snapshot(s: Dictionary) -> void:
 	var tope := int(s.get("resource_capacity", 0))
 	for r in RECURSOS:
 		var chip: PanelContainer = _chips[r]
+		chip.visible = recursos.has(r)
 		var cantidad := int(recursos.get(r, 0))
 		var texto: Label = chip.get_meta("text")
 		if texto.text != str(cantidad) and texto.text != "0" and cantidad > int(texto.text):
@@ -252,6 +254,9 @@ func update_snapshot(s: Dictionary) -> void:
 		texto.text = str(cantidad)
 		texto.add_theme_color_override("font_color", UI.AMBER if cantidad >= tope else UI.CREAM)
 		chip.tooltip_text = "%s  %d / %d" % [tr("RES_" + r.to_upper()), cantidad, tope]
+		if r == "bionutrientes":
+			var bodega: Dictionary = s.get("cargo", {}).get("items", {})
+			chip.tooltip_text += "\n" + tr("BIO_CARGO") % int(bodega.get(r, 0))
 	var historia: Dictionary = s.get("story", {})
 	_ethics.get_parent().get_parent().visible = not historia.is_empty()
 	_ethics.text = str(roundi(float(historia.get("ethics", 50.0))))

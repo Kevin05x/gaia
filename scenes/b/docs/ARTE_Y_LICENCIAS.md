@@ -14,6 +14,12 @@ Todos los modelos, materiales, geometría del terreno, ilustración `jezero.svg`
 
 `wind.wav`: ambiente filtrado; `motor.wav`: motor suave; `radio.wav`: pulso de enlace; `confirm.wav`: confirmación de operación; `drill.wav`: perforación; `landing.wav`: descenso. Ambiente/motor/radio son bucles configurados por importador. Audio se desbloquea tras interacción. Hay volumen y silencio persistentes. No se usan sonidos extraídos de películas u otros juegos.
 
+Para la prueba local se sintetizaron voces masculinas en `assets/historia/radio/`. En español, Microsoft Raúl interpreta a Houston y Microsoft Pablo a Perseverance. En inglés se usaron [John](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/john/medium/MODEL_CARD) para Houston y [Joe](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/joe/medium/MODEL_CARD) para Perseverance, ambos con Piper. Sus fichas indican que los datos de entrenamiento de John proceden de LibriVox (dominio público) y los de Joe son CC0. Codex asistió con la mezcla y la integración. El efecto de walkie-talkie se generó por síntesis. Cada clip abre y cierra con una ráfaga de estática, con una apertura más marcada en los cambios de interlocutor. Durante la frase, la voz de banda estrecha lleva saturación suave y la estática baja de nivel para que se entiendan las palabras. Los nombres de archivo combinan el nodo, la línea y los primeros 12 caracteres del SHA-256 del hablante, un salto de línea y el texto que se muestra.
+
+Rocky usa Pablo en español y Joe en inglés, con el tono elevado y una modulación suave para distinguirlo de Perseverance. Los clips cubren las 21 intervenciones de personaje en cada idioma. Las tarjetas y las escenas de decisión usan el mismo sistema para elegir la toma según el texto visible.
+
+La expedición a la Falla y la estación auxiliar añaden 15 intervenciones por idioma con las mismas voces de Houston y Perseverance y el mismo tratamiento de walkie-talkie. Los marcadores del minimapa se dibujan en Godot y las tarjetas reutilizan ilustraciones existentes.
+
 ## Fotos y modelos NASA posteriores
 
 Si el equipo decide sustituir el rover original por el modelo NASA específico del plan, registre URL y condiciones de ese asset; no asuma licencia idéntica para todos los recursos. A entrega fotos/creditos mediante el informe; B ya admite Texture2D y metadatos. En ausencia de foto se muestra la ilustración original identificada.

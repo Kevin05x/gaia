@@ -891,7 +891,7 @@ func update_snapshot(s: Dictionary) -> void:
 			_title.add_theme_font_size_override("font_size", UI.FONT_TITLE)
 	var objetivo: Dictionary = s.get("story", {}).get("objective", {})
 	_objective.text = StoryPanel.text_of(objetivo) if not objetivo.is_empty() else tr("OBJECTIVE_SHORT")
-	_fill_goals(s.get("story", {}).get("goals", []))
+	_fill_goals(s.get("story", {}).get("goals", []), s.get("story", {}).get("field_sites", []))
 	var en_taller := fase == "workshop"
 	_title.visible = fase == "landing"
 	_mark.visible = not en_taller and fase != "landing"
@@ -1402,14 +1402,31 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 ## Metas del objetivo: círculo vacío o con visto, texto y avance. Solo guía: lo que abre cada evento lo decide la historia.
-func _fill_goals(metas: Array) -> void:
-	var firma := var_to_str([metas, TranslationServer.get_locale()])
+func _fill_goals(metas: Array, sitios: Array = []) -> void:
+	var firma := var_to_str([metas, sitios, TranslationServer.get_locale()])
 	if firma == _goals_sig:
 		return
 	_goals_sig = firma
 	for hijo in _goals.get_children():
 		_goals.remove_child(hijo)
 		hijo.queue_free()
+	for sitio in sitios:
+		var cerca := bool(sitio["near"])
+		var boton := Button.new()
+		boton.theme_type_variation = "RowButton"
+		boton.focus_mode = Control.FOCUS_NONE
+		boton.add_theme_font_size_override("font_size", 13)
+		boton.text = StoryPanel.text_of(sitio["action"] if cerca else sitio["travel"])
+		var costo := float(sitio.get("cost_wh", 0.0))
+		if not cerca and costo > 0.0:
+			boton.text += " · " + (tr("COST") % costo)
+		boton.add_theme_color_override("font_color", UI.TEAL if sitio["optional"] else UI.AMBER)
+		boton.pressed.connect(func():
+			if cerca:
+				emit_command("inspect_story_site", {"id": sitio["id"]})
+			else:
+				emit_command("move", {"tile": sitio["tile"]}))
+		_goals.add_child(boton)
 	if metas.is_empty():
 		return
 	var titulo := UI.label(_goals, tr("GOALS_TITLE"), 11, Color(UI.AMBER, 0.85))

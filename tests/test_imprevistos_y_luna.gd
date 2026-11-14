@@ -131,6 +131,7 @@ func test_una_mision_lunar_se_juega_sin_historia_ni_combate() -> void:
 	_operar(sim, DISENO_LUNA)
 	assert_eq(sim.estado.fase, "operations")
 	assert_false(sim.snapshot().has("combat"), "sin monstruos en la Luna")
+	assert_false(sim.snapshot()["resources"].has("bionutrientes"))
 	assert_false(sim.snapshot().has("story"), "sin historia en la Luna")
 	# Un día y medio de misión, resolviendo los imprevistos que aparezcan.
 	for i in range(int(1.5 * 300.0 / 0.25)):

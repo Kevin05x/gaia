@@ -81,14 +81,17 @@ func test_datos_invalidos_no_se_cargan_ni_cambian_la_simulacion() -> void:
 
 func test_sesion_escribe_lee_y_resume_la_partida() -> void:
 	_operar(sim)
+	var ruta_anterior: String = Sesion.ruta
+	Sesion.ruta = "user://prueba_guardado_%d.dat" % OS.get_process_id()
 	Sesion.borrar()
 	assert_false(Sesion.hay_guardado())
 	assert_true(Sesion.guardar(sim))
 	assert_true(Sesion.hay_guardado())
 	var resumen := Sesion.resumen()
-	assert_eq(resumen["sol"], 1)
-	assert_eq(resumen["meta"], 100)
+	assert_eq(resumen.get("sol"), 1)
+	assert_eq(resumen.get("meta"), 100)
 	var otra := _nueva()
 	assert_true(otra.cargar(Sesion.leer()))
 	Sesion.borrar()
 	assert_false(Sesion.hay_guardado())
+	Sesion.ruta = ruta_anterior

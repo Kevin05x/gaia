@@ -41,6 +41,8 @@ var _tutorial: TutorialSystem
 var _seleccion: String = ""
 var _potencia_nominal_w: float = 0.0  ## del panel o RTG elegido; hace falta para reconstruir los sistemas al cargar
 var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
+var _origen_costos_campo: Array = []
+var _costos_campo: Dictionary = {}
 
 
 ## «economia», «historia» y «combate» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
@@ -156,6 +158,12 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 			return _resultado_simple(_edificios.alternar(estado, str(carga.get("id", "")), bool(carga.get("on", true))))
+		"inspect_story_site":
+			if _historia == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			if _imprevistos != null and _imprevistos.esperando(estado):
+				return {"ok": false, "reason": "NO_DECISION"}
+			return _historia.inspeccionar_campo(estado, str(carga.get("id", "")))
 		"decide":
 			if _historia == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
@@ -444,7 +452,9 @@ func snapshot() -> Dictionary:
 			"antenna_tile": _edificios.casilla_antena(estado), "antenna_max": _economia.nivel_antena_max(),
 			"antenna_next_cost": _edificios.costo_siguiente_antena(estado)}
 	if _historia != null:
-		datos["story"] = _historia.para_la_vista(estado)
+		var historia := _historia.para_la_vista(estado)
+		_anotar_costos_de_campo(historia["field_sites"])
+		datos["story"] = historia
 	if _tutorial != null:
 		datos["tutorial"] = _tutorial.para_la_vista(estado)
 	if _hitos != null:
@@ -455,6 +465,24 @@ func snapshot() -> Dictionary:
 		datos["combat"] = _combate.para_la_vista(estado)
 		datos["nests"] = _mapa.nidos_para_la_vista()
 	return datos
+
+
+func _anotar_costos_de_campo(sitios: Array) -> void:
+	if sitios.is_empty():
+		return
+	# La casilla del rover cambia al terminar el recorrido. Evita recalcular la ruta en cada snapshot.
+	var origen := [_revision_mapa, estado.casilla_rover, _mapa.bloqueos_extra.hash(), _mapa.liberadas.hash()]
+	if origen != _origen_costos_campo:
+		_origen_costos_campo = origen
+		_costos_campo.clear()
+	for sitio in sitios:
+		if sitio["near"]:
+			continue
+		var casilla: Vector2i = sitio["tile"]
+		if not _costos_campo.has(casilla):
+			var pasos := _mapa.ruta(estado.casilla_rover, casilla).size()
+			_costos_campo[casilla] = pasos * _balance.numero("movimiento.costo_wh_por_casilla")
+		sitio["cost_wh"] = _costos_campo[casilla]
 
 
 ## Pantallas de introducción de la historia (vacío si no hay historia).
@@ -508,6 +536,8 @@ func cargar(datos: Dictionary) -> bool:
 	estado.transmitiendo = false
 	_potencia_nominal_w = float(datos.get("potencia_nominal_w", 0.0))
 	_construir_sistemas(_potencia_nominal_w)
+	if _economia != null and _economia.recursos.has(CombatSystem.RECURSO_BIONUTRIENTES):
+		estado.recursos.get_or_add(CombatSystem.RECURSO_BIONUTRIENTES, 0)
 	if _edificios != null:
 		_edificios.sincronizar_mapa(estado)
 	for objetivo in estado.objetivos:
@@ -545,7 +575,7 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 		_energia.edificios = _edificios
 		_ciencia.recursos = _recursos
 		if _datos_combate != null:
-			_combate = CombatSystem.new(_datos_combate, _economia, _edificios, _mapa)
+			_combate = CombatSystem.new(_datos_combate, _economia, _edificios, _mapa, _recursos)
 	if _datos_historia != null:
 		_historia = StorySystem.new(_datos_historia, _recursos)
 		_resultado.requiere_final = true

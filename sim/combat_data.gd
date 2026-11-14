@@ -80,6 +80,10 @@ func _leer_enemigos(valor: Variant) -> void:
 			if float(def.get(campo, 0.0)) <= 0.0:
 				errores.append("INVALID_FIELD:enemigos.%s.%s" % [id, campo])
 				bien = false
+		var cantidad: Variant = def.get("bionutrientes", 0)
+		if not (cantidad is int or cantidad is float) or float(cantidad) < 0.0 or floorf(float(cantidad)) != float(cantidad):
+			errores.append("INVALID_FIELD:enemigos.%s.bionutrientes" % id)
+			bien = false
 		if bien:
 			enemigos[str(id)] = def
 

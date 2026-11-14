@@ -22,6 +22,7 @@ var buildings: Node3D  ## para girar las torretas hacia su blanco
 var _nidos: Array[Node3D] = []
 var _nidos_firma := ""
 var _enemigos: Dictionary = {}  ## id -> {"node", "model", "bar", "target": Vector3, "yaw": float, "fase": float, "tipo", "size", "age"}
+var _bionutrientes: Dictionary = {}  ## id de depósito -> malla
 var _plantillas: Dictionary = {}  ## tipo -> Node3D sin añadir al árbol
 var _rayos: Array[MeshInstance3D] = []
 var _material_rayo: StandardMaterial3D
@@ -70,13 +71,34 @@ func update_state(s: Dictionary) -> void:
 	visible = jugando
 	if not jugando:
 		_limpiar_enemigos()
+		_sincronizar_bionutrientes({})
 		return
 	_construir_nidos(s.get("nests", []))
 	var onda: Dictionary = combate.get("wave", {})
 	_alerta = (not combate.get("enemies", []).is_empty()) or (not onda.is_empty() and float(onda.get("in_h", 99.0)) <= 3.0)
 	_sincronizar_enemigos(combate.get("enemies", []))
+	_sincronizar_bionutrientes(combate.get("bionutrients", {}))
 	_mostrar_rayos(combate.get("shots", []))
 	_mostrar_meteoritos(combate.get("impacts", []))
+
+
+func _sincronizar_bionutrientes(depositos: Dictionary) -> void:
+	for id in _bionutrientes.keys():
+		if not depositos.has(id):
+			_bionutrientes[id].queue_free()
+			_bionutrientes.erase(id)
+	for id in depositos:
+		if _bionutrientes.has(id):
+			continue
+		var marcador := Label3D.new()
+		marcador.text = "◆"
+		marcador.font_size = 52
+		marcador.pixel_size = 0.024
+		marcador.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marcador.modulate = Color("9AD7C6")
+		marcador.position = at_tile(depositos[id]["pos"]) + Vector3(0.0, 0.75, 0.0)
+		add_child(marcador)
+		_bionutrientes[id] = marcador
 
 
 func fogonazo(pos: Vector3, color: Color, tamano: float, duracion: float = 0.45) -> void:

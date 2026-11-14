@@ -69,7 +69,11 @@ func sumar(estado: MissionState, cantidades: Dictionary) -> Array[String]:
 ## Recursos al terminar una acción sobre un objetivo de ese tipo (o sin objetivo, como el compañero). Con bodega,
 ## van a la bodega del rover (lo que no cabe se pierde) y hay que descargarlos en la estación o en un domo.
 func recolectar(estado: MissionState, accion: String, tipo: String) -> Array[String]:
-	var cantidades := _economia.recoleccion_de(accion, tipo)
+	return cargar(estado, _economia.recoleccion_de(accion, tipo))
+
+
+## Agrega cantidades a la bodega, o al almacén en las economías sin bodega.
+func cargar(estado: MissionState, cantidades: Dictionary) -> Array[String]:
 	if _economia.bodega_rover <= 0:
 		return sumar(estado, cantidades)
 	var eventos: Array[String] = []

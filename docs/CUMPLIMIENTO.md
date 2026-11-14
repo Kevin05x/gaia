@@ -18,6 +18,14 @@ Cada fila dice dónde está la evidencia en el repositorio y si **falta algo**. 
 | O8 | La IA no puede haber «inventado la idea» | A confirmar por el equipo | La idea de partida (diseñar y operar una misión con masa, energía y enlace limitados) viene del documento de ideas del equipo (`IDEAS PARA JUEGO DE NASA SPACE.pdf`). La IA ayudó a desarrollar y documentar, no a elegir la idea | **El equipo debe poder afirmarlo con sus propias palabras en la entrega**; no lo puedo certificar yo |
 | O9 | Código y contenido propio o con licencia compatible | Cumple | Modelos NASA 3D Resources («free and without copyright»); fuentes Inter y Space Grotesk (SIL OFL); resto original. Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md` | Los modelos 3D del equipo de diseño (Arturo Valdivieso) están documentados allí |
 
+La implementación de los depósitos ficticios de bionutrientes y sus pruebas se hizo con asistencia de Codex. La idea de que las criaturas dejen el recurso fue una decisión del equipo.
+
+Codex asistió en la redacción bilingüe y la integración del guion del aterrizaje, el primer enlace y la primera noche, incluidas las dos respuestas de Houston. Tony revisó y autorizó la prueba local de este bloque.
+
+Los diálogos de los nueve nodos de historia usan síntesis local de Microsoft Windows en español y de Piper en inglés. Codex asistió en la mezcla con efecto de walkie-talkie y en la sincronización con las tarjetas y las escenas de decisión.
+
+Codex asistió en la integración de la expedición a la Falla, la estación opcional y sus pruebas. Los diálogos nuevos se sintetizaron en local con las mismas voces y el efecto de walkie-talkie.
+
 ## 2. Recomendado por la NASA (recursos oficiales)
 
 | # | Recurso / sugerencia | Estado | Evidencia | Límite |
