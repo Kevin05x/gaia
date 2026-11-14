@@ -20,6 +20,9 @@ const PUERTO := 9080
 const BUFFER := 4 * 1024 * 1024  ## un snapshot con enemigos y edificios pasa de los 64 KB por defecto
 const PERIODO_SNAPSHOT_S := 0.1  ## máximo 10 snapshots por segundo a cada jugador (el movimiento va en rutas, no aquí)
 const ESPERA_HOLA_S := 6.0
+## Un mensaje vacío cada tanto en cada sentido: proxies como el de Cloudflare cierran las conexiones sin tráfico (la sala de
+## espera puede pasar minutos callada).
+const LATIDO_S := 20.0
 enum Modo { NINGUNO, ANFITRION, SERVIDOR, CLIENTE }
 
 signal sala_cambiada
@@ -38,6 +41,7 @@ var _listos: Dictionary = {}  ## ids de los jugadores cuya vista ya está montad
 var _pendiente: Dictionary = {}
 var _hay_pendiente := false
 var _desde_envio := 0.0
+var _desde_latido := 0.0
 var _votos: Dictionary = {}
 var _nombre := ""
 
@@ -65,6 +69,14 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_desde_envio += delta
+	_desde_latido += delta
+	if _desde_latido >= LATIDO_S:
+		_desde_latido = 0.0
+		if multiplayer.multiplayer_peer != null and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
+			if es_autoridad():
+				_rpc_latido.rpc()
+			elif modo == Modo.CLIENTE:
+				_rpc_latido_cliente.rpc_id(1)
 	if _hay_pendiente and _desde_envio >= PERIODO_SNAPSHOT_S:
 		_enviar_snapshot_pendiente()
 
@@ -213,6 +225,16 @@ func _expulsar(id: int) -> void:
 func _rechazar(id: int, motivo: String) -> void:
 	_rpc_rechazo.rpc_id(id, motivo)
 	get_tree().create_timer(0.5).timeout.connect(func() -> void: _expulsar(id))
+
+
+@rpc("authority", "reliable")
+func _rpc_latido() -> void:
+	pass
+
+
+@rpc("any_peer", "reliable")
+func _rpc_latido_cliente() -> void:
+	pass
 
 
 # --------------------------------------------------------------------------------------------- la sala

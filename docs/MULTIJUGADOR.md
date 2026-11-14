@@ -29,8 +29,32 @@ misión en marcha, sus roles pasan al jefe de sala.
 | Forma | Quién puede unirse | Qué hace falta |
 | --- | --- | --- |
 | **Misma red Wi-Fi** (anfitrión de escritorio que también juega) | Escritorio | Nada más. El anfitrión abre el puerto 9080 (Windows pregunta por el cortafuegos la primera vez: *Permitir*). |
-| **Por internet con un túnel** | Escritorio y navegador | El anfitrión de escritorio ejecuta `cloudflared tunnel --url http://localhost:9080` y reparte la dirección `wss://….trycloudflare.com` que le da. |
+| **Por internet con un túnel** | Escritorio y navegador | El anfitrión de escritorio publica su sala con `cloudflared` (ver la sección de abajo). |
 | **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. |
+
+## Jugar entre redes distintas con Cloudflare (túnel)
+
+El anfitrión de escritorio abre la sala en su PC (puerto 9080) y un túnel de Cloudflare la publica en internet con `wss://` (el
+navegador exige TLS; Cloudflare lo pone). Nadie abre puertos en su router.
+
+**Rápido, sin dominio (sirve ya mismo):**
+
+1. Instalar `cloudflared` en la PC del anfitrión: `winget install --id Cloudflare.cloudflared` (PowerShell).
+2. Abrir el juego › *MULTIJUGADOR* › *Crear sala*.
+3. En PowerShell: `cloudflared tunnel --url http://localhost:9080`. Muestra una dirección como `https://nombre-al-azar.trycloudflare.com`.
+4. Los demás (escritorio o navegador) abren *MULTIJUGADOR*, escriben `nombre-al-azar.trycloudflare.com` en *Dirección de la sala* y pulsan *Entrar*
+   (el juego completa `wss://` solo). La dirección cambia cada vez que se reinicia el túnel.
+
+**Con tu cuenta de Cloudflare y una dirección fija** (hace falta un dominio añadido a esa cuenta):
+
+1. `cloudflared tunnel login` (se abre el navegador y eliges el dominio).
+2. `cloudflared tunnel create gaia`, y `cloudflared tunnel route dns gaia gaia.tudominio.com`.
+3. Un `config.yml` con `tunnel: gaia`, `credentials-file: <la ruta que mostró el paso 2>` y, en `ingress`, `hostname: gaia.tudominio.com` con
+   `service: http://localhost:9080` (más la regla final `service: http_status:404`).
+4. `cloudflared tunnel run gaia`. Todos escriben `gaia.tudominio.com`.
+   (También se puede crear desde el panel Zero Trust › Networks › Tunnels, con *Public hostname* apuntando a `http://localhost:9080`.)
+
+Sin dominio, lo normal es el modo rápido. El juego manda un latido cada 20 s para que Cloudflare no cierre una sala en espera por inactividad.
 
 > **Estado de la prueba.** Probado: servidor dedicado y anfitrión-jugador con 4 procesos distintos conectados por WebSocket en una
 > misma máquina (`tools/probar_red.sh`), y la pantalla real (menú, sala, carga, taller y revisión) con dos copias del juego.
