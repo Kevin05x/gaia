@@ -348,6 +348,7 @@ func cargar(datos: Dictionary) -> bool:
 	var diseno: Dictionary = datos["diseno"]
 	for categoria in Catalog.CATEGORIAS:
 		_diseno.seleccion[categoria] = Array(diseno.get(categoria, []))
+	_diseno.elegir_trayectoria_por_defecto()
 	for nombre in campos:
 		var actual = estado.get(nombre)
 		var valor = campos[nombre]
@@ -557,6 +558,8 @@ func _taller() -> Dictionary:
 			piezas.append({"id": id, "name_key": pieza["nombre_clave"], "capacity_kg": pieza.get("capacidad_kg"),
 				"mass_kg": pieza.get("masa_kg"), "cost_musd": pieza.get("costo_musd"),
 				"power_w": pieza.get("potencia_w", pieza.get("potencia_max_w")),
+				"capacity_factor": pieza.get("factor_capacidad"), "cruise_days": pieza.get("dias_crucero"),
+				"ref_key": pieza.get("ref_clave", ""),
 				"pending": pieza.get("pendiente", false) == true,
 				"available": disponible["enabled"], "reason": disponible["reason"]})
 		categorias.append({"id": categoria, "parts": piezas})
@@ -564,7 +567,8 @@ func _taller() -> Dictionary:
 	return {"categories": categorias, "selection": _diseno.seleccion.duplicate(true),
 		"totals": {"mass_kg": _diseno.masa_total_kg(), "cost_musd": _diseno.costo_total_musd(),
 			"capacity_kg": _diseno.capacidad_kg(), "power_w": _diseno.potencia_nominal_w(),
-			"budget_musd": _reglas.presupuesto_musd},
+			"budget_musd": _reglas.presupuesto_musd, "rocket_capacity_kg": _diseno._suma("capacidad_kg", ["cohetes"]),
+			"capacity_factor": _diseno.factor_trayectoria(), "cruise_days": _diseno.dias_crucero()},
 		"validation": Array(validacion), "notices": Array(_diseno.avisos()), "valid": validacion.is_empty()}
 
 

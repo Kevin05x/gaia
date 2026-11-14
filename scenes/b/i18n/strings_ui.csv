@@ -220,3 +220,27 @@ WS_PREVIEW_NOTE,Vista previa del rover con tus piezas,Rover preview with your pa
 REDESIGN_SHORT,Rediseñar,Redesign
 ENERGY_PILL,Energía %d %%,Energy %d %%
 SCIENCE_PILL,Ciencia %d/%d,Science %d/%d
+CAT_TRAYECTORIA,Trayectoria,Trajectory
+PIEZA_TRAY_HOHMANN,Transferencia de mínima energía,Minimum-energy transfer
+PIEZA_TRAY_RAPIDA,Transferencia rápida,Fast transfer
+WS_DAYS,%d días,%d days
+WS_FACTOR,Carga %d %%,Payload %d %%
+WS_TRAJ_LINE,Capacidad real: %d kg del cohete × %d %% por la trayectoria · crucero de %d días,Real capacity: %d kg from the rocket × %d %% for the trajectory · %d-day cruise
+WS_OVER_MASS_TRAJ,La nave pesa más de lo que el cohete puede llevar a Marte con esa trayectoria,The ship is heavier than the rocket can carry to Mars on that trajectory
+REF_COHETE_LIGERO,"Lanzador ligero: barato, poca capacidad. Valores de juego. Dato real: Perseverance (1.025 kg) viajó en un Atlas V 541 (NASA/JPL).","Light launcher: cheap, low capacity. Game values. Real fact: Perseverance (1,025 kg) flew on an Atlas V 541 (NASA/JPL)."
+REF_COHETE_PESADO,Lanzador pesado: más capacidad y más costo. Dato real: Perseverance usó un Atlas V 541 (NASA/JPL).,"Heavy launcher: more capacity, more cost. Real fact: Perseverance used an Atlas V 541 (NASA/JPL)."
+REF_TRAY_HOHMANN,"Ruta de mínima energía que aprovecha la ventana de lanzamiento (se abre cada 26 meses). Dato real: Perseverance tardó 203 días, del 30 jul 2020 al 18 feb 2021 (NASA/JPL).","Minimum-energy route using the launch window (it opens every 26 months). Real fact: Perseverance took 203 days, from 30 Jul 2020 to 18 Feb 2021 (NASA/JPL)."
+REF_TRAY_RAPIDA,"Llega antes y el crucero cuesta menos, pero el cohete gasta más energía y solo lleva el 80 % de la masa. Valores simplificados del juego.","Arrives sooner and the cruise costs less, but the rocket spends more energy and carries only 80 % of the mass. Simplified game values."
+REF_CHASIS_BASE,"Estructura, computadora, control térmico y ruedas. Dato real: Perseverance pesa 1.025 kg (NASA/JPL); el juego usa una escala reducida.","Structure, computer, thermal control and wheels. Real fact: Perseverance weighs 1,025 kg (NASA/JPL); the game uses a reduced scale."
+REF_PANEL_SOLAR,Hasta 140 W a mediodía; nada de noche y menos con polvo. Valores de juego.,Up to 140 W at noon; nothing at night and less with dust. Game values.
+REF_MMRTG,"Generador de radioisótopos: unos 110 W constantes de día y de noche, como el de Perseverance (NASA/JPL).","Radioisotope generator: about 110 W steady, day and night, like Perseverance's (NASA/JPL)."
+REF_ANTENA_DIRECTA,Habla directo con la Tierra cuando la Tierra está sobre el horizonte. Dato real: la señal tardaba unos 11 minutos el día del aterrizaje de Perseverance (NASA/JPL).,Talks straight to Earth while Earth is above the horizon. Real fact: the signal took about 11 minutes on Perseverance's landing day (NASA/JPL).
+REF_ANTENA_RELE,"Envía los datos a un orbitador que los retransmite: más rápido, pero solo durante sus pasadas, como hacen los orbitadores de relé con Perseverance.","Sends data to an orbiter that relays it: faster, but only during its passes, as relay orbiters do for Perseverance."
+REF_ESPECTROMETRO,"Inspirado en SuperCam de Perseverance: 10,6 kg y 17,9 W (NASA).",Inspired by Perseverance's SuperCam: 10.6 kg and 17.9 W (NASA).
+REF_TALADRO,Taladro de muestras. Dato real: Perseverance lleva 43 tubos de muestras (NASA/JPL). Masa y potencia: valores de juego.,Sampling drill. Real fact: Perseverance carries 43 sample tubes (NASA/JPL). Mass and power: game values.
+REF_CAMARA,"Inspirada en Mastcam-Z: unos 4 kg y 17,4 W (NASA).",Inspired by Mastcam-Z: about 4 kg and 17.4 W (NASA).
+REF_METEO,"Inspirada en MEDA: 5,5 kg y hasta 17 W; mide el clima y el polvo (NASA).",Inspired by MEDA: 5.5 kg and up to 17 W; measures weather and dust (NASA).
+REF_RADAR,Inspirado en RIMFAX: menos de 3 kg y de 5 a 10 W; ve capas bajo el suelo (NASA).,Inspired by RIMFAX: under 3 kg and 5 to 10 W; sees layers below the ground (NASA).
+REF_BATERIA,Más energía guardada para la noche y las tormentas. Valores de juego.,More stored energy for nights and storms. Game values.
+REF_DRON,"Inspirado en Ingenuity: 1,8 kg; construirlo costó unos 80 M USD (NASA/JPL). En el juego el costo está a escala.",Inspired by Ingenuity: 1.8 kg; it cost about 80 M USD to build (NASA/JPL). In the game the cost is scaled.
+REF_COMPANERO,"Compañero robótico ficticio, creado para el juego: no existe en la misión real.",Fictional robot companion created for the game: it does not exist in the real mission.

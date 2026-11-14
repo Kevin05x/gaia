@@ -50,10 +50,14 @@ func test_el_taller_muestra_las_piezas_por_categoria() -> void:
 	assert_eq(float(_pieza("panel_solar")["power_w"]), 140.0, "toma potencia_max_w si no hay potencia_w")
 	assert_eq(float(_pieza("mmrtg")["power_w"]), 110.0)
 	var radar := _pieza("radar")
-	assert_true(radar["pending"])
-	assert_null(radar["mass_kg"])
-	assert_null(radar["cost_musd"])
-	assert_null(radar["power_w"])
+	assert_false(radar["pending"], "los instrumentos ya tienen datos (inspirados en Perseverance)")
+	assert_eq(float(radar["mass_kg"]), 3.0)
+	assert_eq(float(radar["cost_musd"]), 25.0)
+	assert_eq(float(radar["power_w"]), 10.0)
+	assert_eq(radar["ref_key"], "REF_RADAR")
+	var rapida := _pieza("trayectoria_rapida")
+	assert_eq(float(rapida["capacity_factor"]), 0.8)
+	assert_eq(int(rapida["cruise_days"]), 150)
 
 
 func test_el_taller_solo_existe_en_la_fase_taller() -> void:
@@ -66,7 +70,10 @@ func test_el_taller_solo_existe_en_la_fase_taller() -> void:
 func test_empieza_sin_piezas_y_no_es_valido() -> void:
 	var taller := _taller()
 	for categoria in Catalog.CATEGORIAS:
-		assert_eq(taller["selection"][categoria], [])
+		if categoria == "trayectoria":
+			assert_eq(taller["selection"][categoria], ["trayectoria_hohmann"], "la trayectoria empieza en Hohmann")
+		else:
+			assert_eq(taller["selection"][categoria], [])
 	assert_false(taller["valid"])
 	for requerida in ["chasis", "cohetes", "energia", "comunicaciones"]:
 		assert_has(taller["validation"], "BELOW_MIN:%s" % requerida)
@@ -81,7 +88,7 @@ func test_agregar_y_quitar_actualiza_totales() -> void:
 	var taller := _taller()
 	assert_eq(taller["selection"]["cohetes"], ["cohete_ligero"])
 	assert_eq(float(taller["totals"]["mass_kg"]), 525.0)
-	assert_eq(float(taller["totals"]["cost_musd"]), 380.0)
+	assert_eq(float(taller["totals"]["cost_musd"]), 405.0, "incluye 25 M USD del crucero de Hohmann")
 	assert_eq(float(taller["totals"]["capacity_kg"]), 600.0)
 	assert_eq(float(taller["totals"]["power_w"]), 140.0)
 	assert_true(taller["valid"])
@@ -89,7 +96,7 @@ func test_agregar_y_quitar_actualiza_totales() -> void:
 	assert_true(sim.ejecutar("design_remove", {"part_id": "antena_rele"})["ok"])
 	assert_false(_taller()["valid"])
 	assert_has(_taller()["validation"], "BELOW_MIN:comunicaciones")
-	assert_eq(float(_taller()["totals"]["cost_musd"]), 350.0)
+	assert_eq(float(_taller()["totals"]["cost_musd"]), 375.0)
 
 
 func test_categoria_completa_y_piezas_desconocidas() -> void:
@@ -105,12 +112,25 @@ func test_categoria_completa_y_piezas_desconocidas() -> void:
 	assert_true(_pieza("cohete_pesado")["available"])
 
 
-func test_las_piezas_pendientes_avisan_y_cuentan_cero() -> void:
+func test_los_instrumentos_suman_masa_y_costo() -> void:
 	_agregar(["cohete_ligero", "chasis_base", "panel_solar", "antena_rele", "radar"])
 	var taller := _taller()
-	assert_has(taller["notices"], "PENDING_DATA:radar")
-	assert_true(taller["valid"], "una pieza pendiente no bloquea")
-	assert_eq(float(taller["totals"]["mass_kg"]), 525.0)
+	assert_eq(taller["notices"], [], "ya no quedan piezas con datos pendientes")
+	assert_true(taller["valid"])
+	assert_eq(float(taller["totals"]["mass_kg"]), 528.0)
+
+
+func test_la_trayectoria_rapida_reduce_la_capacidad_del_cohete() -> void:
+	_agregar(["cohete_ligero", "chasis_base", "panel_solar", "antena_rele"])
+	assert_true(sim.ejecutar("design_remove", {"part_id": "trayectoria_hohmann"})["ok"])
+	assert_true(sim.ejecutar("design_add", {"part_id": "trayectoria_rapida"})["ok"])
+	var taller := _taller()
+	assert_eq(float(taller["totals"]["capacity_kg"]), 480.0, "600 kg × 80 %")
+	assert_has(taller["validation"], "OVER_MASS", "525 kg no caben en 480 kg")
+	assert_eq(int(taller["totals"]["cruise_days"]), 150)
+	sim.ejecutar("design_remove", {"part_id": "cohete_ligero"})
+	sim.ejecutar("design_add", {"part_id": "cohete_pesado"})
+	assert_true(_taller()["valid"], "con el cohete pesado sí cabe (960 kg)")
 
 
 func test_las_piezas_se_pueden_repetir_en_extras() -> void:

@@ -11,10 +11,10 @@ const Icon := preload("res://scenes/b/hud_icon.gd")
 signal command(command: String, payload: Dictionary)
 signal options_requested
 
-const ORDER: Array[String] = ["cohetes", "chasis", "energia", "comunicaciones", "extras"]
-const CATEGORY_KEYS := {"cohetes": "CAT_COHETES", "chasis": "CAT_CHASIS", "energia": "CAT_ENERGIA",
+const ORDER: Array[String] = ["cohetes", "trayectoria", "chasis", "energia", "comunicaciones", "extras"]
+const CATEGORY_KEYS := {"cohetes": "CAT_COHETES", "trayectoria": "CAT_TRAYECTORIA", "chasis": "CAT_CHASIS", "energia": "CAT_ENERGIA",
 	"comunicaciones": "CAT_COMUNICACIONES", "extras": "CAT_EXTRAS"}
-const CATEGORY_ICONS := {"cohetes": "rocket", "chasis": "chassis", "energia": "bolt", "comunicaciones": "antenna", "extras": "flask"}
+const CATEGORY_ICONS := {"cohetes": "rocket", "trayectoria": "goal", "chasis": "chassis", "energia": "bolt", "comunicaciones": "antenna", "extras": "flask"}
 ## Icono de cada pieza (las que no aparecen usan el de su categoría).
 const PART_ICONS := {"cohete_ligero": "rocket", "cohete_pesado": "rocket", "chasis_base": "chassis", "panel_solar": "solar",
 	"mmrtg": "atom", "antena_directa": "antenna", "antena_rele": "link", "espectrometro": "spectrometer", "taladro": "drill",
@@ -295,12 +295,12 @@ func _build_stepper() -> void:
 		var id: String = ORDER[i]
 		if i > 0:
 			var puntos := DotLine.new()
-			puntos.custom_minimum_size = Vector2(36, 66)
+			puntos.custom_minimum_size = Vector2(22, 66)
 			puntos.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			fila.add_child(puntos)
 		var paso := VBoxContainer.new()
 		paso.add_theme_constant_override("separation", 6)
-		paso.custom_minimum_size = Vector2(112, 0)
+		paso.custom_minimum_size = Vector2(98, 0)
 		fila.add_child(paso)
 		var boton := Button.new()
 		boton.focus_mode = Control.FOCUS_ALL
@@ -337,7 +337,7 @@ func _build_stepper() -> void:
 		boton.add_child(marca)
 		marca.visible = false
 		_step_checks[id] = [fondo_marca, marca]
-		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 14, Color("F3E6D4"))
+		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 13, Color("F3E6D4"))
 		UI.display(nombre, 700, 0)
 		nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -958,10 +958,17 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	if part.get("pending", false):
 		chips.add_child(_chip(tr("WS_PENDING"), ORANGE))
 	else:
-		for par in [["cost_musd", "WS_COST"], ["mass_kg", "WS_MASS"], ["capacity_kg", "WS_CAPACITY"], ["power_w", "WS_POWER"]]:
+		for par in [["cost_musd", "WS_COST"], ["mass_kg", "WS_MASS"], ["capacity_kg", "WS_CAPACITY"], ["power_w", "WS_POWER"],
+				["cruise_days", "WS_DAYS"]]:
 			var valor = part.get(par[0])
 			if valor != null:
 				chips.add_child(_chip(tr(par[1]) % int(valor), Color("F3E6D4", 0.9)))
+		var factor = part.get("capacity_factor")
+		if factor != null:
+			chips.add_child(_chip(tr("WS_FACTOR") % int(round(float(factor) * 100.0)), Color("F3E6D4", 0.9)))
+	var referencia := str(part.get("ref_key", ""))
+	if not referencia.is_empty():
+		b.tooltip_text = tr(referencia)
 	if not puede and not elegida and not motivo.is_empty():
 		b.tooltip_text = tr(motivo)
 	b.pressed.connect(_on_card.bind(part, elegida))
@@ -1067,6 +1074,11 @@ func _rebuild_summary(taller: Dictionary) -> void:
 	var m2 := UI.label(marcas, str(int(capacidad)), 11, TEXT_DIM)
 	m2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	m2.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var dias := int(totales.get("cruise_days", 0))
+	if dias > 0:
+		var tray := UI.label(_summary_box, tr("WS_TRAJ_LINE") % [int(totales.get("rocket_capacity_kg", 0)),
+			int(round(float(totales.get("capacity_factor", 1.0)) * 100.0)), dias], 11, TEXT_DIM)
+		tray.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Potencia.
 	_section(tr("WS_POWER_LABEL"), "bolt")
 	var valor_potencia := UI.label(_summary_box, tr("WS_POWER") % int(totales.get("power_w", 0)), 26, ORANGE)
@@ -1149,7 +1161,7 @@ func _message(codigo: String) -> String:
 		"ABOVE_MAX":
 			return tr("WS_ABOVE_MAX") % tr(CATEGORY_KEYS.get(partes[1], partes[1]))
 		"OVER_MASS":
-			return tr("WS_OVER_MASS")
+			return tr("WS_OVER_MASS_TRAJ")
 		"OVER_BUDGET":
 			return tr("WS_OVER_BUDGET")
 		"PENDING_DATA":
