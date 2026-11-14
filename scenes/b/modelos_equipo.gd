@@ -11,7 +11,8 @@ static func existe(nombre: String) -> bool:
 
 ## Coloca el modelo `nombre` bajo `padre`. `ancho` es la mayor medida horizontal final. Devuelve las mallas creadas
 ## (vacío si el archivo no existe, para que quien llama use su pieza por código).
-static func poner(padre: Node3D, nombre: String, ancho: float, pos: Vector3 = Vector3.ZERO, giro: float = 0.0) -> Array[MeshInstance3D]:
+## `estira_y` alarga solo la altura (naves bajas y anchas que deben ser más altas que el rover sin ocupar más suelo).
+static func poner(padre: Node3D, nombre: String, ancho: float, pos: Vector3 = Vector3.ZERO, giro: float = 0.0, estira_y: float = 1.0) -> Array[MeshInstance3D]:
 	var creadas: Array[MeshInstance3D] = []
 	var datos := _datos(nombre)
 	if datos.is_empty():
@@ -22,7 +23,7 @@ static func poner(padre: Node3D, nombre: String, ancho: float, pos: Vector3 = Ve
 		return creadas
 	var escala := ancho / medida
 	var centro := caja.get_center()
-	var ajuste := Transform3D(Basis.from_euler(Vector3(0, giro, 0)).scaled(Vector3.ONE * escala), pos) \
+	var ajuste := Transform3D(Basis.from_euler(Vector3(0, giro, 0)).scaled(Vector3(escala, escala * estira_y, escala)), pos) \
 		* Transform3D(Basis.IDENTITY, Vector3(-centro.x, -caja.position.y, -centro.z))
 	# Rendimiento (WebGL no agrupa mallas): todas las piezas van fundidas en una sola malla con una superficie por
 	# material. Un cristal de 16 piezas pasa de 16 llamadas de dibujo a 2 o 3.

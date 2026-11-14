@@ -3,9 +3,9 @@ extends Node3D
 ## Orientación fija por defecto; Q/E giran por pasos de 45°; llevar el mouse al borde izquierdo o derecho gira la
 ## cámara de forma continua; la rueda acerca o aleja dentro de límites.
 const PITCH_DEG := 17.0
-const ZOOM_MIN := 9.0
-const ZOOM_MAX := 38.0
-const ZOOM_DEFAULT := 20.0
+const ZOOM_MIN := 11.0
+const ZOOM_MAX := 52.0
+const ZOOM_DEFAULT := 24.0
 const STEP := PI / 4.0
 const EDGE_PX := 22.0  ## franja del borde de la ventana que gira la cámara
 const EDGE_SPEED := deg_to_rad(95.0)  ## giro máximo en el borde, rad/s

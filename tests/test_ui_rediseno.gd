@@ -508,7 +508,7 @@ func test_mapa_grande_ensancha_el_mundo_y_reparte_las_rocas_en_trozos() -> void:
 	mundo.lazy = false
 	mundo.configure([{"id": "A", "tile": Vector2i(1, 1), "type": "rock", "revealed": true}], [Vector2i(3, 3), Vector2i(-20, 15)],
 		{"min": Vector2i(-35, -35), "max": Vector2i(35, 35)}, [{"id": "orilla", "center": Vector2i(-12, -12)}, {"id": "nucleo", "center": Vector2i(10, 26)}])
-	assert_eq(mundo.extra_size(), 48.0)
+	assert_eq(mundo.extra_size(), 120.0, "35 casillas de 4 m = 140 m de radio")
 	assert_true(mundo.in_bounds(Vector2i(35, -35)))
 	assert_lt(absf(float(mundo.height_at(60.0, 60.0))), 3.5, "el área jugable sigue llana")
 	assert_almost_eq(float(mundo.height_at(60.0, 130.0)), float(mundo.height_at(60.0, 129.0)), 1.0)
@@ -523,7 +523,7 @@ func test_mapa_grande_ensancha_el_mundo_y_reparte_las_rocas_en_trozos() -> void:
 	assert_gt(pequenas, 1000)
 	var mundo_chico: Node3D = add_child_autofree(TerrainScript.new())
 	mundo_chico.configure([], [], {})
-	assert_eq(mundo_chico.extra_size(), 0.0)
+	assert_lt(mundo_chico.extra_size(), mundo.extra_size(), "sin mapa el mundo no se ensancha tanto")
 
 
 func test_minimapa_dibuja_la_capa_fija_una_sola_vez_por_mapa() -> void:

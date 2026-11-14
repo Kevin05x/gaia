@@ -7,6 +7,7 @@ extends CanvasLayer
 ## encima, los pasos de categoría, el consejo de ingeniería, el catálogo en carrusel y la «Ficha de misión» a la derecha.
 const UI := preload("res://scenes/b/ui_style.gd")
 const Icon := preload("res://scenes/b/hud_icon.gd")
+const RoverNasa := preload("res://scenes/b/rover_nasa.gd")
 
 signal command(command: String, payload: Dictionary)
 signal options_requested
@@ -530,14 +531,22 @@ func _build_preview() -> void:
 	_camera.h_offset = 1.3
 	_turntable = Node3D.new()
 	vista.add_child(_turntable)
-	_rover = load("res://scenes/b/assets/models/rover.tscn").instantiate()
+	_rover = RoverNasa.crear()  # el Perseverance real de la NASA a escala 1:1 (o el rover de bloques si falta el modelo)
+	if _rover == null:
+		_rover = load("res://scenes/b/assets/models/rover.tscn").instantiate()
 	_turntable.add_child(_rover)
-	_drone = load("res://scenes/b/assets/models/drone.tscn").instantiate()
+	_drone = Node3D.new()  # Ingenuity real, 1:1 (0,5 m de alto): junto al rover se ve pequeño, como es
 	_turntable.add_child(_drone)
-	_drone.position = Vector3(-1.9, 1.5, 1.4)
+	if ResourceLoader.exists("res://assets/nasa/modelos/ingenuity.glb"):
+		_drone.add_child((load("res://assets/nasa/modelos/ingenuity.glb") as PackedScene).instantiate())
+	else:
+		_drone.add_child(load("res://scenes/b/assets/models/drone.tscn").instantiate())
+		_drone.scale = Vector3.ONE * 0.45
+	_drone.position = Vector3(-2.6, 1.0, 1.6)
 	_companion = load("res://scenes/b/assets/models/companion.tscn").instantiate()
 	_turntable.add_child(_companion)
-	_companion.position = Vector3(-2.3, 0, -0.9)
+	_companion.scale = Vector3.ONE * 0.8
+	_companion.position = Vector3(-3.2, 0, -1.2)
 	_hotspot_layer = Control.new()
 	_hotspot_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hotspot_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

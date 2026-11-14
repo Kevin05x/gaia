@@ -13,7 +13,7 @@ func _init() -> void:
 	preprocess = 9.0
 	local_coords = false
 	emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	emission_box_extents = Vector3(9.0, 4.0, 9.0)
+	emission_box_extents = Vector3(14.0, 5.0, 14.0)
 	direction = Vector3(1.0, 0.1, 0.4)
 	spread = 25.0
 	gravity = Vector3(0.0, -0.02, 0.0)
@@ -30,7 +30,7 @@ func _init() -> void:
 	rampa.add_point(0.8, Color(1, 0.92, 0.82, 0.7))
 	color_ramp = rampa
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.09, 0.09)
+	quad.size = Vector2(0.14, 0.14)
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -38,6 +38,18 @@ func _init() -> void:
 	m.vertex_color_use_as_albedo = true
 	m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 	m.albedo_color = Color("E9C9A6")
+	# Mota redonda y suave (antes era un cuadrado plano que se notaba cerca de la cámara).
+	var degradado := Gradient.new()
+	degradado.set_color(0, Color(1, 1, 1, 1))
+	degradado.set_color(1, Color(1, 1, 1, 0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = degradado
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	tex.width = 32
+	tex.height = 32
+	m.albedo_texture = tex
 	quad.material = m
 	mesh = quad
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

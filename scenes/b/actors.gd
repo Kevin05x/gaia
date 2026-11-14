@@ -1,6 +1,7 @@
 extends Node3D
 const Art=preload("res://scenes/b/art.gd")
 const Equipo=preload("res://scenes/b/modelos_equipo.gd")
+const RoverNasa=preload("res://scenes/b/rover_nasa.gd")
 var rover: Node3D
 var drone: Node3D
 var companion: Node3D
@@ -24,9 +25,15 @@ var work_beam: MeshInstance3D
 var work_ring: MeshInstance3D
 var work_column: MeshInstance3D
 var arm_home=Vector3.ZERO
+var arm_trabajo=Vector3.ZERO  ## posición del brazo extendido sobre la roca
+const ESCALA_COMPANERO := 0.8  ## el compañero (robot de apoyo inventado) mide ≈ 1 m: la mitad del rover
+const ESCALA_ESTACION := 0.7  ## la estación mide 4,1 m de lado (cabe en su casilla de 4 m)
 var base_props: Node3D  ## escenografía de la base (modelos del equipo de diseño) detrás de la estación
 var base_tile=Vector2i(999,999)
-const TIP_OFFSET := .355  ## rad: la punta del brazo queda a la derecha del frente del rover
+var tip_offset := .355  ## rad: la punta del brazo queda a la derecha del frente del rover (el rover de la NASA lo calcula de su modelo)
+var alcance := 1.73  ## m: del centro del rover a la punta del brazo
+var radio_rueda := .43  ## m
+var rover_real := false  ## true si el rover es el modelo oficial de la NASA (escala real 1:1)
 var animation_clock=0.0
 var flight=0.0
 var paused=false
@@ -42,40 +49,45 @@ var drone_enabled=true
 var dust_ground: Callable
 signal landing_finished
 func _ready() -> void:
- rover=preload("res://scenes/b/assets/models/rover.tscn").instantiate();Art.optimize_rover(rover);add_child(rover)
+ rover=RoverNasa.crear()
+ rover_real=rover!=null
+ if rover_real:
+  tip_offset=float(rover.get_meta("tip_offset"));alcance=float(rover.get_meta("alcance"));radio_rueda=float(rover.get_meta("radio_rueda"))
+ else:
+  rover=preload("res://scenes/b/assets/models/rover.tscn").instantiate();Art.optimize_rover(rover)
+ add_child(rover)
  parts={"visual":rover.get_node("RoverVisual"),"wheels":[]}
  for key in ["arm","solar","rtg","drill","radar","spectrometer","meteo","head"]:parts[key]=rover.find_child(key,true,false)
  for i in range(6):parts.wheels.append(rover.find_child("Wheel%d"%i,true,false))
- preload("res://scenes/b/world_art.gd").contact_shadow(rover,1.45)
- station=preload("res://scenes/b/assets/models/station.tscn").instantiate();Art.optimize_station(station);add_child(station);station.position=Vector3(7,0,6)
+ preload("res://scenes/b/world_art.gd").contact_shadow(rover,2.4 if rover_real else 1.45)
+ station=preload("res://scenes/b/assets/models/station.tscn").instantiate();Art.optimize_station(station);add_child(station);station.position=Vector3(7,0,6);station.scale=Vector3.ONE*ESCALA_ESTACION
  antenna_levels=[]
  for i in range(1,4):antenna_levels.append(station.get_node("AntennaLevel%d"%i))
  set_antenna(1)
  link=preload("res://scenes/b/transmission_fx.gd").new();link.rover=rover;add_child(link)
- scanner=Art.ring(rover,1.8,Vector3(0,.12,0),Color("97cbc2"));scanner.visible=false
- drone=preload("res://scenes/b/assets/models/drone.tscn").instantiate();Art.optimize_drone(drone);add_child(drone)
- rotor_parts={"rotors":[drone.get_node("Rotor0"),drone.get_node("Rotor1")]}
- companion=preload("res://scenes/b/assets/models/companion.tscn").instantiate();Art.optimize_companion(companion);add_child(companion)
+ scanner=Art.ring(rover,3.2 if rover_real else 1.8,Vector3(0,.12,0),Color("97cbc2"));scanner.visible=false
+ _crear_dron()
+ companion=preload("res://scenes/b/assets/models/companion.tscn").instantiate();Art.optimize_companion(companion);add_child(companion);companion.scale=Vector3.ONE*ESCALA_COMPANERO
  companion_parts={"body":companion.get_node("Body")}
  dust=Art.dust(self,130,Vector3(20,3,20));dust.position.y=2
- drilling=Art.dust(rover,30,Vector3(.12,.1,.12));drilling.position=Vector3(.6,.3,-1.5)
+ drilling=Art.dust(rover,30,Vector3(.2,.15,.2));drilling.position=Vector3(.6,.3,-1.5)
  drilling.lifetime=.4;drilling.initial_velocity_min=.4;drilling.initial_velocity_max=1.2;drilling.gravity=Vector3(0,-1,0)
- arm_home=parts.arm.position
+ arm_home=parts.arm.position;arm_trabajo=arm_home+(Vector3(0,-.12,-.55) if rover_real else Vector3.ZERO)
  var beam_mat=StandardMaterial3D.new();beam_mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;beam_mat.albedo_color=Color(.59,.8,.76,.8);beam_mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;beam_mat.no_depth_test=true
  work_beam=MeshInstance3D.new();var cyl=CylinderMesh.new();cyl.top_radius=.04;cyl.bottom_radius=.04;cyl.radial_segments=6;work_beam.mesh=cyl;work_beam.material_override=beam_mat;work_beam.visible=false;add_child(work_beam)
- work_ring=Art.ring(self,.8,Vector3.ZERO,Color("f2c070"));work_ring.visible=false;work_ring.material_override=_glow(Color(.95,.75,.44,.9))
- work_column=MeshInstance3D.new();var col=CylinderMesh.new();col.top_radius=.05;col.bottom_radius=.35;col.height=2.2;col.radial_segments=10;work_column.mesh=col;work_column.material_override=_glow(Color(.95,.75,.44,.22));work_column.visible=false;add_child(work_column)
+ work_ring=Art.ring(self,1.6,Vector3.ZERO,Color("f2c070"));work_ring.visible=false;work_ring.material_override=_glow(Color(.95,.75,.44,.9))
+ work_column=MeshInstance3D.new();var col=CylinderMesh.new();col.top_radius=.08;col.bottom_radius=.7;col.height=4.0;col.radial_segments=10;work_column.mesh=col;work_column.material_override=_glow(Color(.95,.75,.44,.22));work_column.visible=false;add_child(work_column)
  drilling.direction=Vector3(0,1,0);drilling.spread=55;drilling.gravity=Vector3(0,-5,0);drilling.lifetime=.9;drilling.amount=48
  drilling.initial_velocity_min=1.4;drilling.initial_velocity_max=3.0;drilling.scale_amount_min=1.4;drilling.scale_amount_max=2.6
  crane=Node3D.new();crane.name="SkyCrane";add_child(crane)
  Art.box(crane,Vector3(3.4,.3,2.4),Vector3.ZERO,Art.DARK)
  for x in [-1.3,1.3]:
   for z in [-.8,.8]:Art.cylinder(crane,.18,.4,Vector3(x,-.3,z),Art.ORANGE,.27)
- for x in [-.6,.6]:Art.rod(crane,Vector3(x,0,0),Vector3(x,-2.5,0),.015,Art.IVORY)
+ for x in [-.6,.6]:Art.rod(crane,Vector3(x,0,0),Vector3(x,-7.6,0),.02,Art.IVORY)  # el arnés real mide 7,6 m
  Art.merged(crane)
  crane.visible=false
 func at_tile(tile: Vector2i) -> Vector3:
- var p=Vector3(tile.x*2.0,0,tile.y*2.0)
+ var p=Vector3(tile.x*Escala.TILE,0,tile.y*Escala.TILE)
  if dust_ground.is_valid():p.y=dust_ground.call(p.x,p.z)
  return p
 func apply_state(s: Dictionary) -> void:
@@ -96,9 +108,27 @@ func apply_state(s: Dictionary) -> void:
  if (route.is_empty() or safe) and not landing_active:
   rover.position=at_tile(s.get("rover_tile",Vector2i.ZERO))
  if safe:route.clear();active_action.clear()
+## Dron: el helicóptero Ingenuity real de la NASA a escala 1:1 (1,2 m de rotor a rotor, 0,5 m de alto). Si falta el modelo,
+## el dron de bloques del equipo (escala similar).
+func _crear_dron() -> void:
+ var ruta="res://assets/nasa/modelos/ingenuity.glb"
+ var rotores: Array=[]
+ if ResourceLoader.exists(ruta):
+  drone=Node3D.new();drone.name="Ingenuity"
+  drone.add_child((load(ruta) as PackedScene).instantiate())
+  for nombre in ["rotors_01","rotors_02"]:
+   var r=drone.find_child(nombre,true,false)
+   if r!=null:rotores.append(r)
+ if rotores.size()<2:
+  if drone!=null:drone.queue_free()
+  drone=preload("res://scenes/b/assets/models/drone.tscn").instantiate();Art.optimize_drone(drone)
+  rotores=[drone.get_node("Rotor0"),drone.get_node("Rotor1")]
+  drone.scale=Vector3.ONE*.45
+ add_child(drone)
+ rotor_parts={"rotors":rotores}
 func set_antenna(level: int) -> void:
  for i in range(antenna_levels.size()):antenna_levels[i].visible=i==clampi(level-1,0,2)
- antenna_top=Vector3(0,[1.9,2.5,2.9][clampi(level-1,0,2)],0)
+ antenna_top=Vector3(0,[1.9,2.5,2.9][clampi(level-1,0,2)],0)*ESCALA_ESTACION
 func follow_path(tiles: Array, seconds: float) -> void:
  _ruta_nueva=route.is_empty()
  route=tiles.duplicate();seconds_per_tile=maxf(.01,seconds);segment_time=0;segment_start=rover.position
@@ -114,10 +144,10 @@ func _process(delta: float) -> void:
  if landing_active:
   landing_clock+=delta
   var p=clampf(landing_clock/4,0,1)
-  rover.position=at_tile(Vector2i.ZERO)+Vector3(0,(1-p)*10,0)
-  crane.position=rover.position+Vector3(0,2.5,0)
+  rover.position=at_tile(Vector2i.ZERO)+Vector3(0,(1-p)*22,0)
+  crane.position=rover.position+Vector3(0,7.6,0)
   if landing_clock>=4:
-   crane.position=Vector3((landing_clock-4)*8,2.5+(landing_clock-4)*8,0)
+   crane.position=at_tile(Vector2i.ZERO)+Vector3((landing_clock-4)*10,7.6+(landing_clock-4)*12,0)
   if landing_clock>=5.5:
    landing_active=false;landed=true;crane.visible=false;landing_finished.emit()
  if not route.is_empty() and not safe and not landing_active:
@@ -128,7 +158,7 @@ func _process(delta: float) -> void:
   if dust_ground.is_valid():rover.position.y=dust_ground.call(rover.position.x,rover.position.z)+absf(sin(animation_clock*11.0))*.025
   var dir=target-segment_start
   if dir.length_squared()>.01:rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-dir.x,-dir.z),minf(1,delta*8))
-  for wheel in parts.wheels:wheel.rotate_x(old.distance_to(rover.position)/.43)
+  for wheel in parts.wheels:wheel.rotate_x(old.distance_to(rover.position)/radio_rueda)
   if segment_time>=seconds_per_tile:
    route.pop_front();segment_start=target;segment_time=0;_ruta_nueva=false
  _inclinar(delta)
@@ -151,11 +181,11 @@ func _process(delta: float) -> void:
  else:parts.head.rotation.y=0
  var flying=not active_action.is_empty() and active_action.get("action")=="drone"
  flight=move_toward(flight,1.0 if flying else 0.0,delta*.5)
- drone.position=rover.position+Vector3(-1.7+sin(animation_clock)*flight*3,.65+flight*3,1.4+cos(animation_clock)*flight*3)
- for i in range(rotor_parts.rotors.size()):rotor_parts.rotors[i].rotate_y(delta*(5+flight*40)*(1 if i==0 else -1))
- var companion_target=rover.position+Vector3(1.8,0,1.4)
- if not active_action.is_empty() and active_action.get("action")=="companion":companion_target+=Vector3(sin(animation_clock)*2,0,cos(animation_clock)*2)
- companion.position=companion.position.move_toward(companion_target,delta*2)
+ drone.position=rover.position+Vector3(-3.4+sin(animation_clock)*flight*6,.9+flight*5,2.8+cos(animation_clock)*flight*6)
+ for i in range(rotor_parts.rotors.size()):rotor_parts.rotors[i].global_rotate(Vector3.UP,delta*(5+flight*40)*(1 if i==0 else -1))
+ var companion_target=rover.position+Vector3(3.4,0,2.6)
+ if not active_action.is_empty() and active_action.get("action")=="companion":companion_target+=Vector3(sin(animation_clock)*4,0,cos(animation_clock)*4)
+ companion.position=companion.position.move_toward(companion_target,delta*4)
  companion.position.y=(dust_ground.call(companion.position.x,companion.position.z) if dust_ground.is_valid() else 0)+absf(sin(animation_clock*3))*.05
  dust.position=Vector3(rover.position.x,2,rover.position.z)
  link.base=station.global_position+antenna_top
@@ -175,9 +205,9 @@ func _inclinar(delta: float) -> void:
  var y=rover.rotation.y;var p=rover.position
  var f=Vector3(-sin(y),0,-cos(y));var r=Vector3(cos(y),0,-sin(y))
  var h=func(q: Vector3) -> float: return dust_ground.call(q.x,q.z)
- var cabeceo=atan2(h.call(p+f*.9)-h.call(p-f*.9),1.8)
+ var cabeceo=atan2(h.call(p+f*1.5)-h.call(p-f*1.5),3.0)
  var giro=wrapf(y-_giro_antes,-PI,PI)/maxf(delta,.001);_giro_antes=y
- var alabeo=atan2(h.call(p+r*.7)-h.call(p-r*.7),1.4)-clampf(giro*.03,-.06,.06)
+ var alabeo=atan2(h.call(p+r*1.35)-h.call(p-r*1.35),2.7)-clampf(giro*.03,-.06,.06)
  var k=1.0-exp(-delta*8.0)
  rover.rotation.x=lerpf(rover.rotation.x,clampf(cabeceo,-.35,.35),k)
  rover.rotation.z=lerpf(rover.rotation.z,clampf(alabeo,-.3,.3),k)
@@ -193,19 +223,20 @@ func _work_on_target(action: String, delta: float) -> void:
  var to=work_target-rover.position
  var flat=Vector3(to.x,0,to.z)
  if flat.length_squared()>.01:
-  rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-flat.x,-flat.z)+TIP_OFFSET,minf(1,delta*5))
-  var reach=maxf(0.0,flat.length()-.8-1.73)
+  rover.rotation.y=lerp_angle(rover.rotation.y,atan2(-flat.x,-flat.z)+tip_offset,minf(1,delta*5))
+  var reach=maxf(0.0,flat.length()-(2.5 if rover_real else .8)-(alcance+(.55 if rover_real else 0.0)))
   var local_dir=(rover.global_transform.basis.inverse()*flat.normalized())
   parts.visual.position=parts.visual.position.move_toward(local_dir*reach,delta*.8)
- var hit=work_target+Vector3(0,.35,0)
+ var hit=work_target+Vector3(0,.35 if not rover_real else .5,0)
  var t=float(active_action.get("elapsed",0.0))
  parts.arm.rotation.x=-.15+sin(animation_clock*10)*.05
  if action=="drill":
-  parts.arm.position=arm_home+Vector3(0,-absf(sin(animation_clock*9))*.1,0)
+  parts.arm.position=parts.arm.position.move_toward(arm_trabajo+Vector3(0,-absf(sin(animation_clock*9))*.1,0),delta*1.2)
   drilling.global_position=hit;drilling.emitting=true
   work_beam.visible=false
  else:
   drilling.emitting=false
+  parts.arm.position=parts.arm.position.move_toward(arm_trabajo,delta*1.2)
   var a=parts.spectrometer.global_position
   var mid=(a+hit)*.5
   var len=a.distance_to(hit)
@@ -215,7 +246,7 @@ func _work_on_target(action: String, delta: float) -> void:
   work_beam.rotate_object_local(Vector3.RIGHT,PI*.5)
   work_beam.visible=true
  work_ring.visible=true;work_column.visible=true
- work_column.global_position=work_target+Vector3(0,1.1,0)
+ work_column.global_position=work_target+Vector3(0,2.0,0)
  work_ring.global_position=Vector3(work_target.x,work_target.y+.08,work_target.z)
  work_ring.scale=Vector3.ONE*(.9+.25*sin(animation_clock*6))
 
@@ -243,10 +274,10 @@ func _place_base_props(tile: Vector2i) -> void:
  var side=Vector2(-out.y,out.x)
  var origin=at_tile(tile)
  # [modelo, ancho en metros, distancia hacia fuera, desplazamiento lateral]
- for item in [["hangar_cuadrado",4.2,11.0,-7.5],["hangar_roundA",3.4,10.0,6.5],["foco",1.6,5.0,5.0],["anthena_juego",2.6,13.0,-0.5],["taladro",2.4,6.5,-9.0]]:
+ for item in [["hangar_cuadrado",3.9,22.0,-15.0,1.9],["hangar_roundA",3.9,20.0,13.0,1.6],["foco",3.2,10.0,10.0,1.0],["anthena_juego",3.8,26.0,-1.0,1.7],["taladro",3.6,13.0,-18.0,1.0]]:
   var p2=Vector2(origin.x,origin.z)+out*float(item[2])+side*float(item[3])
   var node=Node3D.new();base_props.add_child(node)
   var y=dust_ground.call(p2.x,p2.y) if dust_ground.is_valid() else 0.0
   node.position=Vector3(p2.x,y,p2.y)
   node.rotation.y=atan2(-out.x,-out.y)+PI  # de cara al centro del mapa
-  Equipo.poner(node,str(item[0]),float(item[1]))
+  Equipo.poner(node,str(item[0]),float(item[1]),Vector3.ZERO,0.0,float(item[4]))

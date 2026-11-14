@@ -371,6 +371,7 @@ func _comprobar_listo() -> void:
 
 func _exit_tree() -> void:
 	Equipo.vaciar()
+	preload("res://scenes/b/rover_nasa.gd").vaciar()
 
 
 func setup_locale() -> void:
@@ -649,7 +650,7 @@ func _update_hover() -> void:
 		if punto == null or hud.root.get_viewport().gui_get_hovered_control() != null:
 			terrain.hide_cursor()
 			return
-		var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+		var casilla := Vector2i(roundi(punto.x / Escala.TILE), roundi(punto.z / Escala.TILE))
 		var valida := _placement_valid(casilla)
 		terrain.show_cursor(casilla, valida)
 		terrain.show_range(casilla, _alcance_de(placing) if valida else 0.0)
@@ -667,7 +668,7 @@ func _update_hover() -> void:
 		terrain.hide_cursor()
 		hud.set_hover_hint("")
 		return
-	var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
+	var tile := Vector2i(roundi(point.x / Escala.TILE), roundi(point.z / Escala.TILE))
 	var dentro: bool = terrain.in_bounds(tile)
 	var libre: bool = dentro and not _blocked_set().has(tile) or dentro and target_at_tile(tile) != ""
 	if dentro or Vector2(point.x, point.z).length() < 34.0 + terrain.extra_size():
@@ -713,7 +714,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if e.button_index == MOUSE_BUTTON_LEFT:
 				var punto = ground_point(e.position)
 				if punto != null:
-					var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+					var casilla := Vector2i(roundi(punto.x / Escala.TILE), roundi(punto.z / Escala.TILE))
 					if MurosView.es_muro(placing):
 						if _placement_valid(casilla):
 							_poner_muro(casilla)
@@ -739,7 +740,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		var point = ground_point(e.position)
 		if point == null:
 			return
-		var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
+		var tile := Vector2i(roundi(point.x / Escala.TILE), roundi(point.z / Escala.TILE))
 		# Un clic en la casilla de un objetivo revelado lo selecciona y lleva al rover a la casilla libre más cercana.
 		var en_casilla := target_at_tile(tile)
 		if not en_casilla.is_empty():

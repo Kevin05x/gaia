@@ -7,7 +7,7 @@ const Art := preload("res://scenes/b/art.gd")
 const W := preload("res://scenes/b/world_art.gd")
 const Equipo := preload("res://scenes/b/modelos_equipo.gd")
 
-const TILE := 2.0
+const TILE := Escala.TILE
 const LIMIT := 11
 const PLAY_EDGE := 23.0
 const BASIN_Y := -0.55
@@ -744,12 +744,12 @@ func _build_decor() -> void:
 	for id in targets:
 		var tp: Vector3 = targets[id].position
 		_hash_poner(reservado, Vector2(tp.x, tp.z))
-		contactos.append([Vector3(tp.x, height_at(tp.x, tp.z) + 0.07, tp.z), 1.25, 0.6])
-		halos.append(Vector3(tp.x, 0.9, tp.z))
+		contactos.append([Vector3(tp.x, height_at(tp.x, tp.z) + 0.07, tp.z), 1.25 * Escala.TILE / 2.0, 0.6])
+		halos.append(Vector3(tp.x, 0.9 * Escala.TILE / 2.0, tp.z))
 	for t in obstacles:
 		_hash_poner(reservado, Vector2(t.x * TILE, t.y * TILE))
-		contactos.append([Vector3(t.x * TILE, height_at(t.x * TILE, t.y * TILE) + 0.07, t.y * TILE), 1.3, 0.6])
-		halos.append(Vector3(t.x * TILE, 1.0, t.y * TILE))
+		contactos.append([Vector3(t.x * TILE, height_at(t.x * TILE, t.y * TILE) + 0.07, t.y * TILE), 1.3 * Escala.TILE / 2.0, 0.6])
+		halos.append(Vector3(t.x * TILE, 1.0 * Escala.TILE / 2.0, t.y * TILE))
 	for o in _obstaculos_datos:
 		_add_inst("obst_%s%d" % [o["familia"], o["variante"]], W.rock_mesh(o["familia"], o["variante"]), o["pos"], o["base"], o["color"], {"sombra": true})
 	# zona: "inner" = dentro del área jugable (solo piezas pequeñas que no parecen objetivos ni obstáculos);
@@ -1040,7 +1040,7 @@ func configure(defs: Array, blocked: Array, limites: Dictionary = {}, zonas: Arr
 		var z := tile.y * TILE
 		var familia := "block" if rng.randf() < 0.6 else "outcrop"
 		var variante := rng.randi() % 2
-		var escala := Vector3(rng.randf_range(0.85, 1.0), rng.randf_range(0.9, 1.25), rng.randf_range(0.8, 0.95)) * (0.9 if familia == "outcrop" else 1.0)
+		var escala := Vector3(rng.randf_range(0.85, 1.0), rng.randf_range(0.9, 1.25), rng.randf_range(0.8, 0.95)) * (0.9 if familia == "outcrop" else 1.0) * Escala.TILE / 2.0  # el obstáculo llena su casilla de 4 m
 		var color: Color = [Color("A9714F"), Color("9C6648"), Color("B47B58")][rng.randi() % 3]
 		var giro := rng.randf() * TAU
 		color = _tinte_roca(color, Vector2(x, z))
@@ -1075,18 +1075,19 @@ func configure(defs: Array, blocked: Array, limites: Dictionary = {}, zonas: Arr
 ## Roca objetivo: peñasco facetado con capas sedimentarias (franjas de tono) y fragmentos alrededor.
 func _strata(n: Node3D, rng: RandomNumberGenerator) -> void:
 	var giro := rng.randf() * TAU
-	var cuerpo := W.rock(n, "boulder", 0, Vector3(0, 0.02, 0), Vector3(1.05, 1.0, 0.9), Color("B48260"))
+	var k := Escala.TILE / 2.0  # los objetivos eran de una casilla de 2 m; ahora la casilla mide 4 m
+	var cuerpo := W.rock(n, "boulder", 0, Vector3(0, 0.02, 0), Vector3(1.05, 1.0, 0.9) * k, Color("B48260"))
 	cuerpo.rotation.y = giro
-	var lateral := W.rock(n, "boulder", 0, Vector3(0.8, -0.02, 0.3), Vector3(0.5, 0.42, 0.45), Color("A47454"))
+	var lateral := W.rock(n, "boulder", 0, Vector3(0.8, -0.02, 0.3) * k, Vector3(0.5, 0.42, 0.45) * k, Color("A47454"))
 	lateral.rotation.y = giro + 1.7
-	var pieza := W.rock(n, "fragment", 1, Vector3(-0.75, 0.0, -0.35), Vector3(0.34, 0.26, 0.3), Color("9C6A4E"))
+	var pieza := W.rock(n, "fragment", 1, Vector3(-0.75, 0.0, -0.35) * k, Vector3(0.34, 0.26, 0.3) * k, Color("9C6A4E"))
 	pieza.rotation.y = giro + 0.6
 
 
 ## Mineral expuesto: fragmentos pálidos dentro de una fractura oscura.
 func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
 	# Modelo del equipo de diseño (roca con cristales); si falta el archivo se usa la pieza por código.
-	var modelo := Equipo.poner(n, "cristal5_brillo", 1.5, Vector3(0, -0.03, 0), rng.randf() * TAU)  # olivino: cristal verde del equipo de diseño
+	var modelo := Equipo.poner(n, "cristal5_brillo", 2.8, Vector3(0, -0.03, 0), rng.randf() * TAU)  # olivino: cristal verde del equipo de diseño
 	if not modelo.is_empty():
 		return
 	var base := W.rock(n, "fragment", 2, Vector3(0, 0.05, 0), Vector3(0.95, 0.55, 0.85), Color("5E3A30"))
@@ -1100,7 +1101,7 @@ func _mineral(n: Node3D, rng: RandomNumberGenerator) -> void:
 ## Capa enterrada ya revelada: montículo bajo con una franja pálida del antiguo lago.
 func _buried(n: Node3D, rng: RandomNumberGenerator) -> void:
 	# Hielo enterrado: roca con cristales de hielo del equipo de diseño (dos variantes); si faltan, la pieza por código.
-	var modelo := Equipo.poner(n, "hielo_2" if rng.randf() < 0.5 else "hielo_3", 1.6, Vector3(0, -0.03, 0), rng.randf() * TAU)
+	var modelo := Equipo.poner(n, "hielo_2" if rng.randf() < 0.5 else "hielo_3", 2.8, Vector3(0, -0.03, 0), rng.randf() * TAU)
 	if not modelo.is_empty():
 		return
 	W.rock(n, "fragment", 1, Vector3(0, -0.05, 0), Vector3(1.4, 0.35, 1.2), Color("A86A4E"))
