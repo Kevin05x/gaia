@@ -42,6 +42,7 @@ navegador exige TLS; Cloudflare lo pone). Nadie abre puertos en su router.
 1. Instalar `cloudflared` en la PC del anfitrión: `winget install --id Cloudflare.cloudflared` (PowerShell).
 2. Abrir el juego › *MULTIJUGADOR* › *Crear sala*.
 3. En PowerShell: `cloudflared tunnel --url http://localhost:9080`. Muestra una dirección como `https://nombre-al-azar.trycloudflare.com`.
+   (En Windows basta con ejecutar `tools/paquete_windows/Publicar_sala_en_internet.bat`: instala `cloudflared` si falta y abre el túnel.)
 4. Los demás (escritorio o navegador) abren *MULTIJUGADOR*, escriben `nombre-al-azar.trycloudflare.com` en *Dirección de la sala* y pulsan *Entrar*
    (el juego completa `wss://` solo). La dirección cambia cada vez que se reinicia el túnel.
 
