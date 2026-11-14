@@ -9,7 +9,7 @@ const Musica := preload("res://scenes/menu/musica.gd")
 const Logo := preload("res://scenes/menu/gaia_logo.gd")
 const FONDO := "res://assets/menu/menu_fondo.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
-const VERSION := "v0.1"
+const VERSION := "v0.2"
 
 var fondo: TextureRect
 var velo: ColorRect

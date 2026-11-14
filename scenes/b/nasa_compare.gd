@@ -24,7 +24,7 @@ func build() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var fondo := Panel.new()
-	fondo.add_theme_stylebox_override("panel", UI.box(0.96, UI.RADIUS_PANEL, 0.3, 1, 0, 0, UI.AMBER))
+	fondo.add_theme_stylebox_override("panel", UI.box(1.0, UI.RADIUS_PANEL, 0.3, 1, 0, 0, UI.AMBER))
 	fondo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(fondo)
 	var titulo := UI.label(self, tr("CMP_TITLE"), UI.FONT_TITLE, UI.CREAM)
