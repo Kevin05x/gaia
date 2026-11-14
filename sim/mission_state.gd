@@ -107,6 +107,8 @@ var disparos: Array[Dictionary] = []  ## efectos recientes para la vista: {"from
 var revision_mapa: int = 1
 var objetivos: Array[Dictionary] = []
 var obstaculos: Array[Vector2i] = []
+var sombras: Array[Dictionary] = []  ## zonas de sombra permanente {"id", "centro": Vector2i, "radio": float} (casillas); sin Sol
+
 
 var _balance: Balance
 
@@ -136,6 +138,14 @@ func configurar_diseno(nueva_energia: String, nuevo_enlace: String, nuevos_instr
 	return true
 
 
+## true si la casilla está dentro de una zona de sombra permanente (allí un panel solar no genera nada).
+func en_sombra(casilla: Vector2i) -> bool:
+	for zona in sombras:
+		if Vector2(casilla - Vector2i(zona["centro"])).length() <= float(zona["radio"]):
+			return true
+	return false
+
+
 func a_snapshot() -> Dictionary:
 	return {
 		"phase": fase,
@@ -146,6 +156,8 @@ func a_snapshot() -> Dictionary:
 		"hour": hora,
 		"is_night": es_noche,
 		"rover_tile": casilla_rover,
+		"in_shadow": en_sombra(casilla_rover),
+		"shadow_zones": sombras,
 		"station_tile": casilla_estacion,
 		"bounds": {"min": limite_min, "max": limite_max},
 		"battery": {"wh": bateria_wh, "capacity": bateria_capacidad_wh, "generation_w": generacion_w, "load_w": carga_w},

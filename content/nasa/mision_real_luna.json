@@ -46,6 +46,13 @@
    "url": "https://science.nasa.gov/moon/facts/"
   },
   {
+   "id": "sol_polo_sur",
+   "es": "En el polo sur de la Luna el Sol nunca sube más que unos pocos grados sobre el horizonte; las crestas reciben luz más de la mitad del tiempo, mientras que en las zonas de sombra permanente no llega nunca.",
+   "en": "At the Moon's south pole the Sun never rises more than a few degrees above the horizon; ridges get sunlight more than half the time, while permanently shadowed regions never see it.",
+   "fuente": "NASA, Why the Lunar South Polar Region (Artemis Contract Review 2022 white paper)",
+   "url": "https://www.nasa.gov/wp-content/uploads/2023/10/acr22-wp-why-lunar-south-polar-region.pdf"
+  },
+  {
    "id": "gravedad",
    "es": "La gravedad lunar es un sexto de la terrestre.",
    "en": "Lunar gravity is one sixth of Earth's.",

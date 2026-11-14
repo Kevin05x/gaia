@@ -20,6 +20,7 @@ var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (ed
 var muros: Dictionary = {}  ## casilla -> id del muro o compuerta: los monstruos los rodean o los rompen
 var liberadas: Dictionary = {}  ## casillas de objetivos ya agotados: el objetivo desaparece y la casilla queda libre
 var zonas: Array[Dictionary] = []  ## {"id", "centro"}: cada casilla pertenece a la zona de centro más cercano
+var sombras: Array[Dictionary] = []  ## {"id", "centro", "radio"}: zonas de sombra permanente (Luna); sin Sol no hay energía solar
 var nidos: Array[Dictionary] = []  ## {"id", "tile", "zone"}: de aquí salen los monstruos; el rover no los pisa
 var errores: PackedStringArray = PackedStringArray()
 var _fijas: Dictionary = {}  ## casilla -> true: estación, obstáculos, objetivos y nidos (búsqueda rápida para las rutas)
@@ -204,6 +205,9 @@ func aplicar_a(estado: MissionState) -> void:
 	estado.limite_max = limite_max
 	estado.casilla_rover = inicio_rover
 	estado.casilla_estacion = estacion
+	estado.sombras.clear()
+	for sombra in sombras:
+		estado.sombras.append(sombra.duplicate())
 	estado.obstaculos.clear()
 	for casilla in obstaculos:
 		estado.obstaculos.append(casilla)
@@ -248,6 +252,8 @@ func _cargar(texto: String) -> void:
 		errores.append("INVALID_FIELD:objetivos")
 	if datos.has("zonas"):
 		_leer_zonas(datos["zonas"])
+	if datos.has("sombras"):
+		_leer_sombras(datos["sombras"])
 	if datos.has("nidos"):
 		_leer_nidos(datos["nidos"])
 	if errores.is_empty():
@@ -297,6 +303,25 @@ func _comprobar_nidos() -> void:
 	for nido in nidos:
 		if pasos_a_la_estacion(nido["tile"]) < 0:
 			errores.append("UNREACHABLE_NEST:%s" % nido["id"])
+
+
+func _leer_sombras(valor: Variant) -> void:
+	if not (valor is Array):
+		errores.append("INVALID_FIELD:sombras")
+		return
+	for entrada in valor:
+		if not (entrada is Dictionary) or str(entrada.get("id", "")).is_empty():
+			errores.append("INVALID_FIELD:sombras")
+			continue
+		var id := str(entrada["id"])
+		var centro: Variant = _leer_casilla(entrada.get("centro"), "sombras.%s" % id)
+		var radio: Variant = entrada.get("radio")
+		if centro == null:
+			continue
+		if not (radio is float or radio is int) or float(radio) <= 0.0:
+			errores.append("INVALID_FIELD:sombras.%s.radio" % id)
+			continue
+		sombras.append({"id": id, "centro": centro, "radio": float(radio)})
 
 
 func _leer_zonas(valor: Variant) -> void:

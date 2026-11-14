@@ -25,22 +25,31 @@ func es_noche(hora: float) -> bool:
 ## Solar: potencia nominal por la curva del sol, el polvo y la tormenta. RTG: constante.
 ## Los edificios de la base suman lo suyo (los paneles de la base dependen del sol aunque el rover lleve RTG).
 func generacion_w(estado: MissionState) -> float:
-	var sol := factor_solar(estado)
-	var total := _potencia_nominal_w if estado.energia == "rtg" else _potencia_nominal_w * sol
+	var total := _potencia_nominal_w if estado.energia == "rtg" else _potencia_nominal_w * factor_solar(estado)
 	if edificios != null:
-		total += edificios.generacion_w(estado, sol)
+		# Los edificios usan el sol del lugar donde están (BuildSystem descarta los que quedan en sombra), no el del rover.
+		total += edificios.generacion_w(estado, factor_solar_base(estado))
 	return total
 
 
-## 0..1: curva del sol según la hora, con el polvo y la tormenta. 0 de noche.
+## 0..1 para el rover: como factor_solar_base, pero 0 si está en una zona de sombra permanente.
 func factor_solar(estado: MissionState) -> float:
+	if estado.en_sombra(estado.casilla_rover):
+		return 0.0
+	return factor_solar_base(estado)
+
+
+## 0..1: curva del sol según la hora, con el polvo, la tormenta y la irradiancia del destino. 0 de noche.
+## «energia.factor_solar_max» es opcional: en la Luna (polo sur) el Sol roza el horizonte y rinde menos que en Marte.
+func factor_solar_base(estado: MissionState) -> float:
 	var amanecer := _balance.numero("tiempo.amanecer")
 	var atardecer := _balance.numero("tiempo.atardecer")
 	if estado.hora < amanecer or estado.hora >= atardecer:
 		return 0.0
 	var curva := sin(PI * (estado.hora - amanecer) / (atardecer - amanecer))
 	var factor_tormenta := _balance.numero("energia.factor_solar_tormenta") if estado.tormenta else 1.0
-	return curva * (1.0 - estado.polvo) * factor_tormenta
+	var irradiancia := _balance.numero("energia.factor_solar_max") if _balance.tiene("energia.factor_solar_max") else 1.0
+	return curva * (1.0 - estado.polvo) * factor_tormenta * irradiancia
 
 
 ## Consumo continuo: base más calefacción de noche (según el tipo de energía).

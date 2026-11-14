@@ -45,6 +45,7 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 | La Luna está a 384.400 km de la Tierra en promedio. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |
 | Al sol la superficie llega a 127 °C y en la oscuridad baja a -173 °C. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |
 | En las regiones de sombra permanente de los polos hay altas concentraciones de hielo de agua. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |
+| En el polo sur de la Luna el Sol nunca sube más que unos pocos grados sobre el horizonte; las crestas reciben luz más de la mitad del tiempo y las zonas de sombra permanente nunca. (Base de la energía solar de la Luna del juego; los valores 0,7 y las dos zonas de sombra son de juego.) | NASA, Why the Lunar South Polar Region (white paper ACR22) | https://www.nasa.gov/wp-content/uploads/2023/10/acr22-wp-why-lunar-south-polar-region.pdf |
 | La gravedad lunar es un sexto de la terrestre. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |
 | La Luna no tiene aire respirable: solo una exosfera muy tenue. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |
 

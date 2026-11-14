@@ -89,6 +89,7 @@ INVALID_DESIGN,Diseño no válido: revisa los requisitos,Invalid design: check t
 UNKNOWN_PART,Pieza no disponible,Part not available
 WARN_SAFE_MODE,Modo seguro: recuperando energía,Safe mode: recovering energy
 WARN_LOW_BATTERY,Batería baja: %d %%,Low battery: %d %%
+WARN_IN_SHADOW,En sombra permanente: el panel solar no genera energía,In permanent shadow: the solar panel produces no power
 WARN_STORM_ACTIVE,Tormenta de polvo activa,Dust storm active
 WARN_STORM_SOON,Tormenta de polvo en %.1f soles,Dust storm in %.1f sols
 WARN_MEMORY_ALMOST_FULL,Memoria casi llena: %d %%,Memory almost full: %d %%

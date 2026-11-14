@@ -247,7 +247,8 @@ func generacion_w(estado: MissionState, factor_solar: float) -> float:
 		if int(edificio["level"]) < 1 or not edificio["active"]:
 			continue
 		var def := _economia.edificio(edificio["type"])
-		total += float(def.get("genera_w_solar", 0.0)) * factor_solar + float(def.get("genera_w", 0.0))
+		var solar := 0.0 if estado.en_sombra(Vector2i(edificio["tile"])) else factor_solar
+		total += float(def.get("genera_w_solar", 0.0)) * solar + float(def.get("genera_w", 0.0))
 	return total
 
 

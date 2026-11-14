@@ -688,6 +688,8 @@ func _avisos() -> Array[Dictionary]:
 		avisos.append(_aviso("LOW_BATTERY", "warning", [porcentaje_bateria]))
 	if estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max and estado.historia_final.is_empty():
 		avisos.append(_aviso("SIGNAL_CAPPED", "warning", []))
+	if estado.energia == "solar" and estado.en_sombra(estado.casilla_rover):
+		avisos.append(_aviso("IN_SHADOW", "warning", []))
 	if estado.tormenta:
 		avisos.append(_aviso("STORM_ACTIVE", "warning", []))
 	elif estado.tormenta_en > 0.0 and estado.tormenta_en <= _balance.numero("avisos.tormenta_pronto_soles"):
