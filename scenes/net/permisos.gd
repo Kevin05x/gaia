@@ -12,7 +12,7 @@ const LIBRES: Array[String] = ["select", "stop", "landing_finished", "tutorial_s
 const POR_ROL := {
 	"direccion": ["move", "approach", "unload", "pause", "decide", "event_choice", "redesign", "design_start"],
 	"ingenieria": ["build", "build_module", "toggle_building"],
-	"ciencia": ["approach", "unload", "act"],
+	"ciencia": ["approach", "unload", "act", "inspect_story_site"],
 	"comunicaciones": ["transmit", "upgrade"],
 }
 

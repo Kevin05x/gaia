@@ -302,7 +302,7 @@ func _salir_hacia_la_falla(eleccion: int) -> void:
 	sim.avanzar(0.2)
 	assert_eq(sim.estado.historia_radio, "falla_salida_pulso" if eleccion == 0 else "falla_salida_taladro")
 	assert_eq(sim.snapshot()["story"]["field_sites"].size(), 2)
-	sim.estado.casilla_rover = Vector2i(-8, -9)
+	sim.estado.casilla_rover = Vector2i(-7, -9)
 	sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh
 
 
@@ -319,7 +319,7 @@ func _ir_a_campo(casilla: Vector2i, sitio: String) -> Dictionary:
 
 func test_la_salida_directa_verifica_en_dos_sensores_y_conecta_con_los_nidos() -> void:
 	_salir_hacia_la_falla(0)
-	assert_eq(float(sim.snapshot()["story"]["field_sites"][0]["cost_wh"]), 310.0)
+	assert_eq(float(sim.snapshot()["story"]["field_sites"][0]["cost_wh"]), 300.0)
 	assert_eq(sim.ejecutar("inspect_story_site", {"id": StorySystem.SISMOGRAFO})["reason"], "TOO_FAR")
 	assert_true(_ir_a_campo(Vector2i(14, 0), StorySystem.SISMOGRAFO)["ok"])
 	var antes := sim.estado.bateria_wh
