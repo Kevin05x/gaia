@@ -1,0 +1,179 @@
+{
+ "version": 1,
+ "_nota": "Datos reales de la Luna y de misiones lunares de la NASA usados como referencia en el escenario lunar. Cada dato lleva su fuente.",
+ "mision": "Apollo 11 / CAPSTONE / Artemis",
+ "datos": [
+  {
+   "id": "lanzamiento",
+   "es": "Apolo 11 despegó el 16 de julio de 1969 en un cohete Saturn V.",
+   "en": "Apollo 11 lifted off on 16 July 1969 on a Saturn V rocket.",
+   "fuente": "NASA, Apollo 11 Mission Overview",
+   "url": "https://www.nasa.gov/missions/apollo/apollo-11-mission-overview/"
+  },
+  {
+   "id": "aterrizaje",
+   "es": "Apolo 11 aterrizó el 20 de julio de 1969 en el Mar de la Tranquilidad.",
+   "en": "Apollo 11 landed on 20 July 1969 in the Sea of Tranquility.",
+   "fuente": "NASA, Apollo 11 Mission Overview",
+   "url": "https://www.nasa.gov/missions/apollo/apollo-11-mission-overview/"
+  },
+  {
+   "id": "crucero",
+   "es": "Apolo 11 entró en órbita lunar a las 75 h 50 min de vuelo; CAPSTONE tardó unos 4 meses con una ruta balística que ahorra combustible.",
+   "en": "Apollo 11 entered lunar orbit 75 h 50 min into the flight; CAPSTONE took about 4 months on a fuel-saving ballistic route.",
+   "fuente": "NASA, CAPSTONE leaves Earth orbit, headed to the Moon",
+   "url": "https://www.nasa.gov/blogs/missions/2022/07/04/capstone-leaves-earth-orbit-headed-to-the-moon"
+  },
+  {
+   "id": "distancia",
+   "es": "La Luna está a 384.400 km de la Tierra en promedio.",
+   "en": "The Moon is 384,400 km from Earth on average.",
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "url": "https://science.nasa.gov/moon/facts/"
+  },
+  {
+   "id": "temperatura",
+   "es": "Al sol la superficie llega a 127 °C y en la oscuridad baja a -173 °C.",
+   "en": "In sunlight the surface reaches 127 °C and in darkness it drops to -173 °C.",
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "url": "https://science.nasa.gov/moon/facts/"
+  },
+  {
+   "id": "hielo",
+   "es": "En las regiones de sombra permanente de los polos hay altas concentraciones de hielo de agua.",
+   "en": "Permanently shadowed regions at the poles hold high concentrations of water ice.",
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "url": "https://science.nasa.gov/moon/facts/"
+  },
+  {
+   "id": "gravedad",
+   "es": "La gravedad lunar es un sexto de la terrestre.",
+   "en": "Lunar gravity is one sixth of Earth's.",
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "url": "https://science.nasa.gov/moon/facts/"
+  },
+  {
+   "id": "atmosfera",
+   "es": "La Luna no tiene aire respirable: solo una exosfera muy tenue.",
+   "en": "The Moon has no breathable air: only a very thin exosphere.",
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "url": "https://science.nasa.gov/moon/facts/"
+  }
+ ],
+ "comparacion": {
+  "cohete": "Saturn V (Apolo 11)",
+  "crucero_dias": 3,
+  "masa_kg": 0,
+  "potencia_w": 0,
+  "instrumentos": 0,
+  "mision_dias": 8,
+  "costo_musd": 0
+ },
+ "segmentos": {
+  "fuente": "NASA, Design and Develop Science Missions (recurso oficial del reto)",
+  "url": "https://www.nasa.gov/wp-content/uploads/2025/04/250323-design-and-develop-science-mission.pdf"
+ },
+ "imagenes": {
+  "lanzamiento": {
+   "archivo": "res://assets/nasa/luna_lanzamiento.jpg",
+   "nasa_id": "6900540",
+   "titulo": "Saturn Apollo Program",
+   "fecha": "1969-07-16",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/6900540",
+   "ilustracion": false
+  },
+  "polo_sur": {
+   "archivo": "res://assets/nasa/luna_polo_sur.jpg",
+   "nasa_id": "PIA00001",
+   "titulo": "South Pole Region of the Moon as Seen by Clementine",
+   "fecha": "1996-06-03",
+   "credito": "NASA/JPL/USGS",
+   "url": "https://images.nasa.gov/details/PIA00001",
+   "ilustracion": false
+  },
+  "tierra": {
+   "archivo": "res://assets/nasa/luna_tierra.jpg",
+   "nasa_id": "art002e021278",
+   "titulo": "A Breathtaking Earthset from Orion",
+   "fecha": "2026-04-06",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/art002e021278",
+   "ilustracion": false
+  },
+  "huella": {
+   "archivo": "res://assets/nasa/luna_huella.jpg",
+   "nasa_id": "as11-40-5903",
+   "titulo": "Astronaut Edwin Aldrin walks on lunar surface near leg of Lunar Module",
+   "fecha": "1969-07-20",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/as11-40-5903",
+   "ilustracion": false
+  },
+  "selfie": {
+   "archivo": "res://assets/nasa/luna_huella.jpg",
+   "nasa_id": "as11-40-5903",
+   "titulo": "Astronaut Edwin Aldrin walks on lunar surface near leg of Lunar Module",
+   "fecha": "1969-07-20",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/as11-40-5903",
+   "ilustracion": false
+  },
+  "jezero": {
+   "archivo": "res://assets/nasa/luna_polo_sur.jpg",
+   "nasa_id": "PIA00001",
+   "titulo": "South Pole Region of the Moon as Seen by Clementine",
+   "fecha": "1996-06-03",
+   "credito": "NASA/JPL/USGS",
+   "url": "https://images.nasa.gov/details/PIA00001",
+   "ilustracion": false
+  },
+  "lago": {
+   "archivo": "res://assets/nasa/luna_tierra.jpg",
+   "nasa_id": "art002e021278",
+   "titulo": "A Breathtaking Earthset from Orion",
+   "fecha": "2026-04-06",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/art002e021278",
+   "ilustracion": false
+  },
+  "aterrizaje": {
+   "archivo": "res://assets/nasa/luna_huella.jpg",
+   "nasa_id": "as11-40-5903",
+   "titulo": "Astronaut Edwin Aldrin walks on lunar surface near leg of Lunar Module",
+   "fecha": "1969-07-20",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/as11-40-5903",
+   "ilustracion": false
+  },
+  "muestras": {
+   "archivo": "res://assets/nasa/luna_tierra.jpg",
+   "nasa_id": "art002e021278",
+   "titulo": "A Breathtaking Earthset from Orion",
+   "fecha": "2026-04-06",
+   "credito": "NASA",
+   "url": "https://images.nasa.gov/details/art002e021278",
+   "ilustracion": false
+  }
+ },
+ "archivo_en_vivo": {
+  "api": "https://images-api.nasa.gov/search",
+  "consultas": [
+   "lunar south pole",
+   "apollo 11 moon",
+   "artemis moon",
+   "lunar reconnaissance orbiter"
+  ]
+ },
+ "modelos_3d": {
+  "archivos": [
+   "res://assets/nasa/modelos/modulo_lunar.glb",
+   "res://assets/nasa/modelos/saturn_v.glb"
+  ],
+  "credito": "Modelo 3D: NASA 3D Resources (módulo lunar Apolo, Saturn V; escalas de exposición)",
+  "tamanos": [
+   2.0,
+   2.4
+  ]
+ }
+}

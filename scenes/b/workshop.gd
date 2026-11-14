@@ -7,14 +7,15 @@ extends CanvasLayer
 ## encima, los pasos de categoría, el consejo de ingeniería, el catálogo en carrusel y la «Ficha de misión» a la derecha.
 const UI := preload("res://scenes/b/ui_style.gd")
 const Icon := preload("res://scenes/b/hud_icon.gd")
+const RoverNasa := preload("res://scenes/b/rover_nasa.gd")
 
 signal command(command: String, payload: Dictionary)
 signal options_requested
 
-const ORDER: Array[String] = ["cohetes", "chasis", "energia", "comunicaciones", "extras"]
-const CATEGORY_KEYS := {"cohetes": "CAT_COHETES", "chasis": "CAT_CHASIS", "energia": "CAT_ENERGIA",
+const ORDER: Array[String] = ["cohetes", "trayectoria", "chasis", "energia", "comunicaciones", "extras"]
+const CATEGORY_KEYS := {"cohetes": "CAT_COHETES", "trayectoria": "CAT_TRAYECTORIA", "chasis": "CAT_CHASIS", "energia": "CAT_ENERGIA",
 	"comunicaciones": "CAT_COMUNICACIONES", "extras": "CAT_EXTRAS"}
-const CATEGORY_ICONS := {"cohetes": "rocket", "chasis": "chassis", "energia": "bolt", "comunicaciones": "antenna", "extras": "flask"}
+const CATEGORY_ICONS := {"cohetes": "rocket", "trayectoria": "goal", "chasis": "chassis", "energia": "bolt", "comunicaciones": "antenna", "extras": "flask"}
 ## Icono de cada pieza (las que no aparecen usan el de su categoría).
 const PART_ICONS := {"cohete_ligero": "rocket", "cohete_pesado": "rocket", "chasis_base": "chassis", "panel_solar": "solar",
 	"mmrtg": "atom", "antena_directa": "antenna", "antena_rele": "link", "espectrometro": "spectrometer", "taladro": "drill",
@@ -22,7 +23,7 @@ const PART_ICONS := {"cohete_ligero": "rocket", "cohete_pesado": "rocket", "chas
 ## Nodo del rover sobre el que se marca cada pieza elegida.
 const PART_NODES := {"panel_solar": "solar", "mmrtg": "rtg", "taladro": "drill", "radar": "radar", "espectrometro": "spectrometer",
 	"meteo": "meteo", "camara": "head", "antena_directa": "HighGain", "antena_rele": "HighGain"}
-const CARD_SIZE := Vector2(117, 144)
+const CARD_SIZE := Vector2(150, 160)
 const CARD_GAP := 12.0
 const FICHA_ANCHO := 336.0
 const MARGEN := 20.0
@@ -258,7 +259,7 @@ func _build_options() -> void:
 	opciones.focus_mode = Control.FOCUS_NONE
 	opciones.tooltip_text = tr("OPTIONS")
 	opciones.text = "      " + tr("WS_HELP").to_upper()
-	opciones.add_theme_font_size_override("font_size", 11)
+	opciones.add_theme_font_size_override("font_size", 13)
 	opciones.add_theme_color_override("font_color", TEXT_DIM)
 	opciones.add_theme_color_override("font_hover_color", ORANGE)
 	opciones.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
@@ -274,6 +275,89 @@ func _build_options() -> void:
 	UI.place(opciones, "bl", 24, 10, 96, 28)
 	root.add_child(opciones)
 	opciones.pressed.connect(func(): options_requested.emit())
+	var codigo := Button.new()
+	codigo.focus_mode = Control.FOCUS_NONE
+	codigo.text = tr("WS_CODE").to_upper()
+	codigo.tooltip_text = tr("WS_CODE_TIP")
+	codigo.add_theme_font_size_override("font_size", 13)
+	codigo.add_theme_color_override("font_color", TEXT_DIM)
+	codigo.add_theme_color_override("font_hover_color", ORANGE)
+	codigo.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
+	codigo.add_theme_stylebox_override("hover", UI.button_box(Color("2A170B", 0.95), Color(ORANGE, 0.9), 1, 14, 12, 4, 0))
+	UI.place(codigo, "bl", 128, 10, 150, 28)
+	root.add_child(codigo)
+	codigo.pressed.connect(_abrir_codigo)
+
+
+## Compartir y comparar diseños: copia el código de este diseño o pega el de otro equipo.
+func _abrir_codigo() -> void:
+	var Registro := preload("res://scenes/menu/registro.gd")
+	var taller: Dictionary = snapshot.get("workshop", {})
+	var capa := Control.new()
+	capa.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	capa.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(capa)
+	var tapa := ColorRect.new()
+	tapa.color = Color(0.03, 0.02, 0.02, 0.7)
+	tapa.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	capa.add_child(tapa)
+	var caja := PanelContainer.new()
+	caja.add_theme_stylebox_override("panel", UI.box(0.97, 14, 0.35, 1, 26, 20, UI.AMBER))
+	UI.place(caja, "c", 0, 0, 560, 0)
+	capa.add_child(caja)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	caja.add_child(col)
+	var titulo := UI.label(col, tr("WS_CODE_TITLE"), 22, UI.CREAM)
+	UI.display(titulo, 700, 1)
+	var texto := UI.label(col, tr("WS_CODE_TEXT"), 13, Color(UI.CREAM, 0.8))
+	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	texto.custom_minimum_size.x = 500
+	var mio := Registro.codigo(taller.get("selection", {}), Destino.id)
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	col.add_child(fila)
+	var propio := UI.label(fila, tr("DESIGN_CODE") % mio, 15, UI.AMBER)
+	propio.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var copiar := Button.new()
+	copiar.text = tr("COPY")
+	copiar.pressed.connect(func() -> void:
+		DisplayServer.clipboard_set(mio)
+		copiar.text = tr("COPIED"))
+	fila.add_child(copiar)
+	var entrada := LineEdit.new()
+	entrada.placeholder_text = "GAIA-M-..."
+	entrada.custom_minimum_size = Vector2(500, 40)
+	col.add_child(entrada)
+	var aviso := UI.label(col, "", 12, UI.WARN)
+	var pie := HBoxContainer.new()
+	pie.alignment = BoxContainer.ALIGNMENT_END
+	pie.add_theme_constant_override("separation", 8)
+	col.add_child(pie)
+	var cerrar := Button.new()
+	cerrar.text = tr("GNG_BACK")
+	cerrar.pressed.connect(func() -> void: capa.queue_free())
+	pie.add_child(cerrar)
+	var aplicar := Button.new()
+	aplicar.theme_type_variation = "PrimaryButton"
+	aplicar.text = tr("WS_CODE_APPLY")
+	pie.add_child(aplicar)
+	aplicar.pressed.connect(func() -> void:
+		var leido := Registro.leer_codigo(entrada.text)
+		if leido.is_empty():
+			aviso.text = tr("WS_CODE_BAD")
+			return
+		if str(leido["destino"]) != Destino.id:
+			aviso.text = tr("WS_CODE_OTHER")
+			return
+		validated = false
+		for categoria in taller.get("selection", {}):
+			for id in (taller["selection"][categoria] as Array).duplicate():
+				command.emit("design_remove", {"part_id": id})
+		for id in leido["piezas"]:
+			command.emit("design_add", {"part_id": id})
+		capa.queue_free())
+	entrada.grab_focus.call_deferred()
 
 
 # ---------------------------------------------------------------- pasos de categoría
@@ -295,12 +379,12 @@ func _build_stepper() -> void:
 		var id: String = ORDER[i]
 		if i > 0:
 			var puntos := DotLine.new()
-			puntos.custom_minimum_size = Vector2(36, 66)
+			puntos.custom_minimum_size = Vector2(22, 66)
 			puntos.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			fila.add_child(puntos)
 		var paso := VBoxContainer.new()
 		paso.add_theme_constant_override("separation", 6)
-		paso.custom_minimum_size = Vector2(112, 0)
+		paso.custom_minimum_size = Vector2(98, 0)
 		fila.add_child(paso)
 		var boton := Button.new()
 		boton.focus_mode = Control.FOCUS_ALL
@@ -337,7 +421,7 @@ func _build_stepper() -> void:
 		boton.add_child(marca)
 		marca.visible = false
 		_step_checks[id] = [fondo_marca, marca]
-		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 14, Color("F3E6D4"))
+		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 13, Color("F3E6D4"))
 		UI.display(nombre, 700, 0)
 		nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -447,14 +531,22 @@ func _build_preview() -> void:
 	_camera.h_offset = 1.3
 	_turntable = Node3D.new()
 	vista.add_child(_turntable)
-	_rover = load("res://scenes/b/assets/models/rover.tscn").instantiate()
+	_rover = RoverNasa.crear()  # el Perseverance real de la NASA a escala 1:1 (o el rover de bloques si falta el modelo)
+	if _rover == null:
+		_rover = load("res://scenes/b/assets/models/rover.tscn").instantiate()
 	_turntable.add_child(_rover)
-	_drone = load("res://scenes/b/assets/models/drone.tscn").instantiate()
+	_drone = Node3D.new()  # Ingenuity real, 1:1 (0,5 m de alto): junto al rover se ve pequeño, como es
 	_turntable.add_child(_drone)
-	_drone.position = Vector3(-1.9, 1.5, 1.4)
+	if ResourceLoader.exists("res://assets/nasa/modelos/ingenuity.glb"):
+		_drone.add_child((load("res://assets/nasa/modelos/ingenuity.glb") as PackedScene).instantiate())
+	else:
+		_drone.add_child(load("res://scenes/b/assets/models/drone.tscn").instantiate())
+		_drone.scale = Vector3.ONE * 0.45
+	_drone.position = Vector3(-2.6, 1.0, 1.6)
 	_companion = load("res://scenes/b/assets/models/companion.tscn").instantiate()
 	_turntable.add_child(_companion)
-	_companion.position = Vector3(-2.3, 0, -0.9)
+	_companion.scale = Vector3.ONE * 0.8
+	_companion.position = Vector3(-3.2, 0, -1.2)
 	_hotspot_layer = Control.new()
 	_hotspot_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hotspot_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -610,7 +702,7 @@ func _build_tip() -> void:
 	estilo.bg_color = Color("120A06", 0.72)
 	consejo.add_theme_stylebox_override("panel", estilo)
 	consejo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.place(consejo, "tl", 24, 190, 172, 220)
+	UI.place(consejo, "tl", 24, 168, 196, 220)
 	root.add_child(consejo)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
@@ -623,10 +715,10 @@ func _build_tip() -> void:
 	titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_text = UI.label(col, "", 11, TEXT_DIM)
 	_tip_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_text.custom_minimum_size = Vector2(140, 0)
+	_tip_text.custom_minimum_size = Vector2(164, 0)
 	_tip_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var dibujo := Sketch.new()
-	dibujo.custom_minimum_size = Vector2(140, 64)
+	dibujo.custom_minimum_size = Vector2(164, 44)
 	dibujo.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dibujo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(dibujo)
@@ -648,7 +740,7 @@ func _build_catalog() -> void:
 	zona.anchor_right = 1.0
 	zona.offset_left = 24
 	zona.offset_right = -(FICHA_ANCHO + MARGEN * 2.0 + 10.0)
-	zona.offset_top = -244
+	zona.offset_top = -268
 	zona.offset_bottom = -52
 	root.add_child(zona)
 	var fondo := Panel.new()
@@ -958,10 +1050,17 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	if part.get("pending", false):
 		chips.add_child(_chip(tr("WS_PENDING"), ORANGE))
 	else:
-		for par in [["cost_musd", "WS_COST"], ["mass_kg", "WS_MASS"], ["capacity_kg", "WS_CAPACITY"], ["power_w", "WS_POWER"]]:
+		for par in [["cost_musd", "WS_COST"], ["mass_kg", "WS_MASS"], ["capacity_kg", "WS_CAPACITY"], ["power_w", "WS_POWER"],
+				["cruise_days", "WS_DAYS"]]:
 			var valor = part.get(par[0])
 			if valor != null:
 				chips.add_child(_chip(tr(par[1]) % int(valor), Color("F3E6D4", 0.9)))
+		var factor = part.get("capacity_factor")
+		if factor != null:
+			chips.add_child(_chip(tr("WS_FACTOR") % int(round(float(factor) * 100.0)), Color("F3E6D4", 0.9)))
+	var referencia := str(part.get("ref_key", ""))
+	if not referencia.is_empty():
+		b.tooltip_text = tr(referencia)
 	if not puede and not elegida and not motivo.is_empty():
 		b.tooltip_text = tr(motivo)
 	b.pressed.connect(_on_card.bind(part, elegida))
@@ -1067,6 +1166,11 @@ func _rebuild_summary(taller: Dictionary) -> void:
 	var m2 := UI.label(marcas, str(int(capacidad)), 11, TEXT_DIM)
 	m2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	m2.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var dias := int(totales.get("cruise_days", 0))
+	if dias > 0 and capacidad > 0.0:
+		var tray := UI.label(_summary_box, tr("WS_TRAJ_LINE") % [int(totales.get("rocket_capacity_kg", 0)),
+			int(round(float(totales.get("capacity_factor", 1.0)) * 100.0)), dias], 11, TEXT_DIM)
+		tray.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Potencia.
 	_section(tr("WS_POWER_LABEL"), "bolt")
 	var valor_potencia := UI.label(_summary_box, tr("WS_POWER") % int(totales.get("power_w", 0)), 26, ORANGE)
@@ -1149,7 +1253,7 @@ func _message(codigo: String) -> String:
 		"ABOVE_MAX":
 			return tr("WS_ABOVE_MAX") % tr(CATEGORY_KEYS.get(partes[1], partes[1]))
 		"OVER_MASS":
-			return tr("WS_OVER_MASS")
+			return tr("WS_OVER_MASS_TRAJ")
 		"OVER_BUDGET":
 			return tr("WS_OVER_BUDGET")
 		"PENDING_DATA":
@@ -1160,12 +1264,33 @@ func _message(codigo: String) -> String:
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		command.emit("design_start", {})
+		var jugadores := int(preload("res://scenes/menu/game_session.gd").jugadores)
+		if jugadores > 1:
+			_revision_de_equipo(taller, jugadores)
+		else:
+			command.emit("design_start", {})
 		return
 	command.emit("design_validate", {})
 	validated = bool(snapshot.get("workshop", {}).get("valid", false))
 	_signature = ""
 	update_snapshot(snapshot)
+
+
+## Modo equipo: antes de despegar, cada responsable vota GO / NO GO sobre su parte del diseño.
+func _revision_de_equipo(taller: Dictionary, jugadores: int) -> void:
+	var revision := preload("res://scenes/b/go_no_go.gd").new()
+	revision.taller = taller
+	revision.jugadores = jugadores
+	root.add_child(revision)
+	revision.build()
+	revision.launch_confirmed.connect(func() -> void:
+		revision.queue_free()
+		command.emit("design_start", {}))
+	revision.cancelled.connect(func() -> void:
+		revision.queue_free()
+		validated = false
+		_signature = ""
+		update_snapshot(snapshot))
 
 
 func _update_preview(seleccion: Dictionary) -> void:

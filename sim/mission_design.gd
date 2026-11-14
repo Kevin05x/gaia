@@ -25,6 +25,16 @@ func _init(catalogo: Catalog, reglas: Rules) -> void:
 	_reglas = reglas
 	for categoria in Catalog.CATEGORIAS:
 		seleccion[categoria] = []
+	elegir_trayectoria_por_defecto()
+
+
+## La trayectoria siempre tiene un valor: si no hay ninguna elegida se usa la primera del catálogo
+## (la transferencia de Hohmann), así los diseños antiguos y las pruebas siguen siendo válidos.
+func elegir_trayectoria_por_defecto() -> void:
+	if (seleccion.get("trayectoria", []) as Array).is_empty():
+		var ids := _catalogo.ids_de("trayectoria")
+		if not ids.is_empty():
+			seleccion["trayectoria"] = [ids[0]]
 
 
 ## Devuelve false si el id no existe en el catálogo.
@@ -61,9 +71,27 @@ func costo_total_musd() -> float:
 	return _suma("costo_musd", Catalog.CATEGORIAS)
 
 
-## Lo que puede subir el cohete elegido (0 si no hay cohete).
+## Lo que puede subir el cohete elegido (0 si no hay cohete), según la trayectoria: una transferencia rápida
+## pide más energía al cohete, así que lleva menos masa a Marte (factor_capacidad < 1).
 func capacidad_kg() -> float:
-	return _suma("capacidad_kg", ["cohetes"])
+	return _suma("capacidad_kg", ["cohetes"]) * factor_trayectoria()
+
+
+## Multiplicador de la capacidad del cohete por la trayectoria elegida (1 si no hay trayectoria).
+func factor_trayectoria() -> float:
+	var lista: Array = seleccion.get("trayectoria", [])
+	if lista.is_empty():
+		return 1.0
+	var valor: Variant = _catalogo.obtener(lista[0]).get("factor_capacidad", 1.0)
+	return float(valor) if (valor is float or valor is int) else 1.0
+
+
+## Días de crucero de la Tierra a Marte con la trayectoria elegida (0 si no hay).
+func dias_crucero() -> int:
+	var lista: Array = seleccion.get("trayectoria", [])
+	if lista.is_empty():
+		return 0
+	return int(_catalogo.obtener(lista[0]).get("dias_crucero", 0))
 
 
 ## Potencia nominal de las fuentes elegidas: "potencia_w" o, si no existe, "potencia_max_w".

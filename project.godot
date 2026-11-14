@@ -12,7 +12,7 @@ config_version=5
 
 config/name="GAIA"
 run/main_scene="res://scenes/menu/intro.tscn"
-config/features=PackedStringArray("4.7", "GL Compatibility")
+config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 boot_splash/bg_color=Color(0.07, 0.04, 0.03, 1)
 boot_splash/show_image=false
@@ -43,8 +43,11 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 [rendering]
 
 rendering_device/driver.windows="d3d12"
-renderer/rendering_method="gl_compatibility"
+renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="gl_compatibility"
+renderer/rendering_method.web="gl_compatibility"
+rendering_device/fallback_to_vulkan=true
+rendering_device/fallback_to_opengl3=true
 lights_and_shadows/directional_shadow/size=1024
 lights_and_shadows/directional_shadow/size.mobile=1024
 environment/defaults/default_clear_color=Color(0.07, 0.04, 0.03, 1)

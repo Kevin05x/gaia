@@ -89,6 +89,12 @@ var tutorial_contadores: Dictionary = {}  ## evento -> veces que ha ocurrido des
 
 ## Combate (content/combate.json). Todo son datos simples para poder guardarlos.
 var rover_hp: float = 100.0  ## vida del rover en %; a 0 la misión fracasa
+var imprevisto: Dictionary = {}  ## imprevisto que espera decisión {"id"} (la misión se detiene); vacío si ninguno
+var imprevistos_programa: Array = []  ## [{"id", "t"}] imprevistos que aún llegarán (t: hora absoluta de misión)
+var imprevistos_programados: bool = false
+var imprevistos_hechos: Array = []  ## [{"id", "choice"}] decisiones tomadas ante imprevistos
+var enlace_bloqueado_hasta: float = -1.0  ## hora absoluta hasta la que un imprevisto cierra el enlace
+var movimiento_bloqueado_hasta: float = -1.0  ## hora absoluta hasta la que un imprevisto impide moverse
 var enemigos: Array[Dictionary] = []  ## {"id", "type", "wave", "pos": Vector2, "dest": Vector2i, "hp", "cd", "atk"}
 var siguiente_enemigo: int = 1
 var siguiente_disparo: int = 1  ## número de serie de cada efecto de «disparos» (la vista lo usa para sonar una sola vez)
@@ -162,6 +168,9 @@ func a_snapshot() -> Dictionary:
 		"busy": ocupado,
 		"map_revision": revision_mapa,
 		"rover_hp": rover_hp,
+		"link_blocked_until": enlace_bloqueado_hasta,
+		"move_blocked_until": movimiento_bloqueado_hasta,
+		"mission_hour": (sol - 1) * 24.0 + hora,
 		"targets": objetivos.duplicate(true),
 		"obstacles": obstaculos.duplicate(),
 	}

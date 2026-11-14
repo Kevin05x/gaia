@@ -9,7 +9,7 @@ const Art := preload("res://scenes/b/art.gd")
 const MODULOS := 4
 ## Altura de la base de cada módulo sobre la plataforma (m).
 const BASES: Array[float] = [0.0, 0.9, 5.3, 8.05]
-const ESCALA := 0.8  ## el modelo se dibuja a esta escala para que quepa en pantalla
+const ESCALA := 0.65  ## plataforma de ≈ 4,5 m (cabe en su casilla de 4 m) y ≈ 6,4 m de altura
 const ALTURA_TOTAL := 9.9 * ESCALA
 const NARANJA := Color("D9772F")
 const NARANJA_OSC := Color("B35B20")

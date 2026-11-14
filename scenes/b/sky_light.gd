@@ -16,6 +16,19 @@ const KEYS := [
 	[19.0, -12.0, "FFB17D", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
 	[24.0, -12.0, "FFBE8F", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
 ]
+## Luna (polo sur): sin aire no hay cielo azul ni bruma; el Sol pasa bajo sobre el horizonte (sombras largas) y la
+## luz es blanca y dura. De noche, solo la luz de la Tierra. Amanecer 4:00 y ocaso 20:00 (content/balance_luna.json).
+const KEYS_LUNA := [
+	[0.0, -10.0, "FFFFFF", 0.0, "2E3442", 0.30, "000105", "07080D", "07080D", 600.0, 1400.0],
+	[3.0, -10.0, "FFFFFF", 0.0, "2E3442", 0.30, "000105", "07080D", "07080D", 600.0, 1400.0],
+	[4.0, 0.0, "FFF4E6", 0.45, "3A3F4C", 0.30, "000105", "0A0B12", "0A0B12", 600.0, 1400.0],
+	[5.5, 9.0, "FFF8F0", 1.05, "4A4E58", 0.32, "000105", "0B0C13", "0B0C13", 600.0, 1400.0],
+	[12.0, 16.0, "FFFFFF", 1.15, "4C505A", 0.34, "000105", "0B0C13", "0B0C13", 600.0, 1400.0],
+	[18.5, 9.0, "FFF8F0", 1.05, "4A4E58", 0.32, "000105", "0B0C13", "0B0C13", 600.0, 1400.0],
+	[20.0, 0.0, "FFF4E6", 0.45, "3A3F4C", 0.30, "000105", "0A0B12", "0A0B12", 600.0, 1400.0],
+	[21.0, -10.0, "FFFFFF", 0.0, "2E3442", 0.30, "000105", "07080D", "07080D", 600.0, 1400.0],
+	[24.0, -10.0, "FFFFFF", 0.0, "2E3442", 0.30, "000105", "07080D", "07080D", 600.0, 1400.0],
+]
 const FOG_CURVE := 1.6  ## exponente de la niebla sin tormenta (1 = lineal)
 const FOG_CURVE_STORM := 1.1  ## en plena tormenta la bruma sube antes, pero sin tapar el entorno del rover
 const MOON_ENERGY := 0.22  ## luz de luna de la noche (energía del sol equivalente)
@@ -32,6 +45,9 @@ var sky_material: ShaderMaterial  ## CieloMarte (cielo propio de Marte)
 var quality := true  ## compatibilidad: equivale a sombras > 0 y postproceso
 var sombras := 1  ## opción gráfica: 0 apagadas, 1 normales, 2 altas
 var post := true  ## opción gráfica: postproceso (reflejos del cielo, contraste, tonos)
+## Efectos del renderer Forward+ (solo escritorio): 0 ninguno, 1 oclusión ambiental (SSAO), niebla volumétrica y sombras
+## suaves, 2 además iluminación indirecta en pantalla (SSIL). En la web (Compatibility) no existen y se ignoran.
+var avanzados := 0
 var hour := 8.0
 var dust := 0.0  ## valor de la simulación (0..1)
 var _dust_visual := 0.0
@@ -99,11 +115,12 @@ func _process(delta: float) -> void:
 
 
 func _sample(h: float) -> Dictionary:
+	var tabla: Array = KEYS_LUNA if Destino.es_luna() else KEYS
 	var k := 0
-	while k < KEYS.size() - 2 and h >= KEYS[k + 1][0]:
+	while k < tabla.size() - 2 and h >= tabla[k + 1][0]:
 		k += 1
-	var a: Array = KEYS[k]
-	var b: Array = KEYS[k + 1]
+	var a: Array = tabla[k]
+	var b: Array = tabla[k + 1]
 	var t := smoothstep(0.0, 1.0, clampf((h - a[0]) / maxf(0.001, b[0] - a[0]), 0.0, 1.0))
 	return {
 		"elevation": lerpf(a[1], b[1], t),
@@ -140,9 +157,12 @@ func apply(inmediato := false) -> void:
 	_cielo("suelo_horizonte", horizonte.lerp(niebla, 0.5))
 	_cielo("suelo", niebla.darkened(0.55))
 	# Halo azul de Marte: solo con el Sol cerca del horizonte (elevación < ~14°).
-	_cielo("atardecer", snappedf(clampf(1.0 - absf(float(s["elevation"])) / 14.0, 0.0, 1.0) * (1.0 - p), 0.02))
+	var luna := Destino.es_luna()
+	_cielo("atardecer", 0.0 if luna else snappedf(clampf(1.0 - absf(float(s["elevation"])) / 14.0, 0.0, 1.0) * (1.0 - p), 0.02))
 	_cielo("polvo", snappedf(p, 0.02))
-	_cielo("noche", snappedf(clampf(1.0 - s["sun_energy"] / 0.12, 0.0, 1.0), 0.02))
+	# En la Luna el cielo es negro también de día: las estrellas se ven siempre (más tenues con sol).
+	var noche_cielo := clampf(1.0 - s["sun_energy"] / 0.12, 0.0, 1.0)
+	_cielo("noche", snappedf(maxf(noche_cielo, 0.55) if luna else noche_cielo, 0.02))
 	_poner(environment, "fog_light_color", niebla)
 	_poner(environment, "fog_depth_begin", snappedf(inicio, 0.5))
 	_poner(environment, "fog_depth_end", snappedf(fin, 0.5))
@@ -153,7 +173,8 @@ func apply(inmediato := false) -> void:
 	_poner(environment, "reflected_light_source", Environment.REFLECTION_SOURCE_SKY if post else Environment.REFLECTION_SOURCE_DISABLED)
 	_postproceso(s, p)
 	# Sol: elevación de la tabla y azimut del este (amanecer) al oeste (atardecer).
-	var azimut := lerpf(-75.0, 95.0, clampf((hour - 6.0) / 12.0, 0.0, 1.0))
+	var azimut := lerpf(-75.0, 95.0, clampf((hour - 4.0) / 16.0, 0.0, 1.0)) if Destino.es_luna() \
+		else lerpf(-75.0, 95.0, clampf((hour - 6.0) / 12.0, 0.0, 1.0))
 	var energia: float = s["sun_energy"] * lerpf(1.0, 0.30, p) * energy_scale
 	var giro := Vector3(-maxf(2.0, s["elevation"]), azimut, 0.0)
 	var color_sol: Color = s["sun_color"]
@@ -183,8 +204,8 @@ func _postproceso(s: Dictionary, p: float) -> void:
 	_poner(environment, "tonemap_exposure", 0.94 if post else exposure)
 	_poner(environment, "tonemap_white", 5.0)
 	_poner(environment, "adjustment_enabled", post)
-	_poner(environment, "adjustment_contrast", 1.08)
-	_poner(environment, "adjustment_saturation", 1.2)
+	_poner(environment, "adjustment_contrast", 1.14 if Destino.es_luna() else 1.08)
+	_poner(environment, "adjustment_saturation", 1.0 if Destino.es_luna() else 1.2)
 	_poner(environment, "glow_enabled", post)
 	_poner(environment, "glow_intensity", 0.4)
 	_poner(environment, "glow_strength", 1.0)
@@ -193,7 +214,38 @@ func _postproceso(s: Dictionary, p: float) -> void:
 	_poner(environment, "glow_blend_mode", Environment.GLOW_BLEND_MODE_SOFTLIGHT)
 	# Sin niebla de altura: en Compatibility se suma también cerca de la cámara y lo lavaba todo (probado).
 	_poner(environment, "fog_height_density", 0.0)
-	_poner(environment, "fog_sun_scatter", snappedf((0.2 if post else 0.0) * clampf(float(s["sun_energy"]), 0.0, 1.0) * (1.0 - p * 0.5), 0.01))
+	_efectos_avanzados(s, p)
+	_poner(environment, "fog_sun_scatter", 0.0 if Destino.es_luna() else snappedf((0.2 if post else 0.0) * clampf(float(s["sun_energy"]), 0.0, 1.0) * (1.0 - p * 0.5), 0.01))
+
+
+## Forward+ (escritorio): oclusión ambiental en los rincones de rocas y edificios, luz indirecta que rebota del suelo
+## rojizo, niebla volumétrica que el sol atraviesa (se espesa con la tormenta de polvo) y sombras de borde suave como
+## las de un sol de verdad (tamaño angular del disco). La Luna no tiene aire: sin niebla y sombras más duras.
+func _efectos_avanzados(s: Dictionary, p: float) -> void:
+	if not Destino.forward_plus():
+		return
+	var nivel := avanzados if post else 0
+	var luna := Destino.es_luna()
+	_poner(environment, "ssao_enabled", nivel >= 1)
+	_poner(environment, "ssao_radius", 1.6)
+	_poner(environment, "ssao_intensity", 2.2 if luna else 1.8)
+	_poner(environment, "ssao_power", 1.7)
+	_poner(environment, "ssao_detail", 0.7)
+	_poner(environment, "ssao_light_affect", 0.12)
+	_poner(environment, "ssil_enabled", nivel >= 2)
+	_poner(environment, "ssil_radius", 6.0)
+	_poner(environment, "ssil_intensity", 0.0 if luna else 0.85)
+	var niebla := nivel >= 2 and not luna  # la niebla volumétrica solo en Ultra: en Alta apagaba los colores
+	_poner(environment, "volumetric_fog_enabled", niebla)
+	if niebla:
+		_poner(environment, "volumetric_fog_density", snappedf(0.003 + 0.03 * p, 0.0005))
+		_poner(environment, "volumetric_fog_albedo", Color(s["fog"]).lerp(Color("D9A27E"), 0.4))
+		_poner(environment, "volumetric_fog_anisotropy", 0.55)
+		_poner(environment, "volumetric_fog_length", 140.0)
+		_poner(environment, "volumetric_fog_ambient_inject", 0.12)
+		_poner(environment, "volumetric_fog_sky_affect", 0.0)
+	_poner(sun, "light_angular_distance", (0.25 if luna else 0.7) if nivel >= 1 else 0.0)
+	_poner(sun, "shadow_blur", 1.0 if nivel >= 1 else (1.6 if sombras >= 2 else 1.2))
 
 
 ## Igual que _poner pero para un parámetro del sombreador del cielo (cambiarlo vuelve a pintar el mapa de reflejos).

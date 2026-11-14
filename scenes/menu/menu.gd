@@ -9,7 +9,7 @@ const Musica := preload("res://scenes/menu/musica.gd")
 const Logo := preload("res://scenes/menu/gaia_logo.gd")
 const FONDO := "res://assets/menu/menu_fondo.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
-const VERSION := "v0.1"
+const VERSION := "v0.2"
 
 var fondo: TextureRect
 var velo: ColorRect
@@ -84,7 +84,7 @@ func _construir_interfaz() -> void:
 	_capa.add_child(_crear_logotipo())
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 4)
-	UI.place(col, "tl", 92, 262, 380, 420)
+	UI.place(col, "tl", 92, 244, 380, 420)
 	_capa.add_child(col)
 	var guardado: Dictionary = Sesion.resumen()
 	var bloque := VBoxContainer.new()
@@ -105,6 +105,7 @@ func _construir_interfaz() -> void:
 	_item(tr("M_HOWTO"), func() -> void: _tutorial(false), col)
 	_item(tr("M_CONTROLS"), _abrir_controles, col)
 	_item(tr("M_SETTINGS"), _abrir_ajustes, col)
+	_item(tr("M_RECORDS"), _abrir_records, col)
 	_item(tr("M_CREDITS"), _abrir_creditos, col)
 	if not OS.has_feature("web"):
 		_item(tr("M_QUIT"), func() -> void: get_tree().quit(), col)
@@ -176,7 +177,7 @@ func _item(texto: String, accion: Callable, padre: Control) -> Button:
 	var b := Button.new()
 	b.text = texto
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.custom_minimum_size = Vector2(340, 46)
+	b.custom_minimum_size = Vector2(340, 43)
 	b.add_theme_font_override("font", UI.display_font(650, 3))
 	b.add_theme_font_size_override("font_size", 23)
 	b.add_theme_color_override("font_color", Color(UI.CREAM, 0.8))
@@ -231,13 +232,109 @@ func _nueva_partida() -> void:
 		si.custom_minimum_size = Vector2(190, 42)
 		si.pressed.connect(func() -> void:
 			_cerrar_panel()
-			_empezar_nueva())
+			_configurar_mision())
 		pie.add_child(si)
 		var no := pie.get_child(0) as Button
 		no.text = tr("M_NEW_CONFIRM_NO")
 		no.theme_type_variation = ""
 		return
-	_empezar_nueva()
+	_configurar_mision()
+
+
+## Antes de jugar: objetivo de la misión, dificultad y cuántas personas juegan (modo equipo, hasta 4).
+func _configurar_mision() -> void:
+	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 590)
+	_subtitulo(cuerpo, tr("M_SETUP_DEST"))
+	var fila_dest := HBoxContainer.new()
+	fila_dest.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_dest)
+	var objetivo := UI.label(cuerpo, "", 14, Color(UI.CREAM, 0.88))
+	objetivo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objetivo.custom_minimum_size.x = 680
+	var destinos: Variant = JSON.parse_string(FileAccess.get_file_as_string(Destino.DATOS))
+	var lista: Dictionary = destinos.get("destinos", {}) if destinos is Dictionary else {}
+	var idioma := "en" if TranslationServer.get_locale().begins_with("en") else "es"
+	var grupo_dest := ButtonGroup.new()
+	for id in (destinos.get("orden", ["marte"]) if destinos is Dictionary else ["marte"]):
+		var info: Dictionary = lista.get(id, {})
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_dest
+		b.text = str(info.get("nombre", {}).get(idioma, id))
+		b.custom_minimum_size = Vector2(250, 40)
+		b.button_pressed = Sesion.destino == id
+		b.pressed.connect(func() -> void:
+			Sesion.destino = str(id)
+			objetivo.text = str(info.get("descripcion", {}).get(idioma, "")))
+		fila_dest.add_child(b)
+	objetivo.text = str(lista.get(Sesion.destino, {}).get("descripcion", {}).get(idioma, ""))
+	_subtitulo(cuerpo, tr("M_SETUP_DIFF"))
+	var fila_dif := HBoxContainer.new()
+	fila_dif.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_dif)
+	var explicacion := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	explicacion.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	explicacion.custom_minimum_size.x = 640
+	var grupo_dif := ButtonGroup.new()
+	for id in ["exploracion", "estandar", "experta"]:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_dif
+		b.text = tr("DIFF_" + id.to_upper())
+		b.custom_minimum_size = Vector2(200, 40)
+		b.button_pressed = Sesion.dificultad == id
+		b.pressed.connect(func() -> void:
+			Sesion.dificultad = id
+			explicacion.text = tr("DIFF_" + id.to_upper() + "_D"))
+		fila_dif.add_child(b)
+	explicacion.text = tr("DIFF_" + Sesion.dificultad.to_upper() + "_D")
+	_subtitulo(cuerpo, tr("M_SETUP_TEAM"))
+	var fila_eq := HBoxContainer.new()
+	fila_eq.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_eq)
+	var roles := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	roles.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	roles.custom_minimum_size.x = 640
+	var grupo_eq := ButtonGroup.new()
+	for n in range(1, 5):
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_eq
+		b.text = tr("M_SETUP_PLAYERS") % n if n > 1 else tr("M_SETUP_SOLO")
+		b.custom_minimum_size = Vector2(150, 40)
+		b.button_pressed = Sesion.jugadores == n
+		b.pressed.connect(func() -> void:
+			Sesion.jugadores = n
+			roles.text = _texto_roles(n))
+		fila_eq.add_child(b)
+	roles.text = _texto_roles(Sesion.jugadores)
+	var pie := cuerpo.get_parent().get_child(cuerpo.get_parent().get_child_count() - 1) as HBoxContainer
+	var empezar := Button.new()
+	empezar.text = tr("M_SETUP_START")
+	empezar.theme_type_variation = "PrimaryButton"
+	empezar.custom_minimum_size = Vector2(200, 42)
+	empezar.pressed.connect(func() -> void:
+		Sesion.votos = []
+		_cerrar_panel()
+		_empezar_nueva())
+	pie.add_child(empezar)
+	var volver := pie.get_child(0) as Button
+	volver.theme_type_variation = ""
+	empezar.grab_focus.call_deferred()
+
+
+## «Persona 1: Dirección y Ciencia · Persona 2: ...» según cuántos juegan.
+func _texto_roles(n: int) -> String:
+	if n <= 1:
+		return tr("M_SETUP_SOLO_D")
+	var partes: Array[String] = []
+	var reparto := Sesion.roles_por_jugador(n)
+	for i in range(reparto.size()):
+		var nombres: Array[String] = []
+		for rol in reparto[i]:
+			nombres.append(tr("ROLE_" + str(rol).to_upper()))
+		partes.append(tr("GNG_PLAYER") % (i + 1) + ": " + " + ".join(nombres))
+	return tr("M_SETUP_TEAM_D") + "\n" + "  ·  ".join(partes)
 
 
 func _empezar_nueva() -> void:
@@ -454,3 +551,34 @@ func _abrir_creditos() -> void:
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var motor := UI.label(cuerpo, tr("M_CREDITS_ENGINE"), 14, Color(UI.CREAM, 0.55))
 	motor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+## Récords del equipo: las mejores misiones guardadas en este equipo, con su código de diseño para comparar.
+func _abrir_records() -> void:
+	var Registro := preload("res://scenes/menu/registro.gd")
+	var cuerpo := _abrir_panel(tr("M_RECORDS_TITLE"), 760, 560)
+	var lista := Registro.leer()
+	if lista.is_empty():
+		var vacio := UI.label(cuerpo, tr("M_RECORDS_EMPTY"), 15, Color(UI.CREAM, 0.8))
+		vacio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vacio.custom_minimum_size.x = 680
+		return
+	var tabla := GridContainer.new()
+	tabla.columns = 6
+	tabla.add_theme_constant_override("h_separation", 18)
+	tabla.add_theme_constant_override("v_separation", 6)
+	cuerpo.add_child(tabla)
+	for titulo in ["#", tr("M_REC_SCORE"), tr("M_SETUP_DEST"), tr("M_SETUP_DIFF"), tr("M_SETUP_TEAM"), tr("M_REC_CODE")]:
+		var c := UI.label(tabla, titulo, 12, UI.AMBER)
+		UI.display(c, 700, 1)
+	for i in range(mini(lista.size(), 10)):
+		var r: Dictionary = lista[i]
+		var destino := "Luna" if str(r.get("destination", "")) == "luna" else "Marte"
+		if TranslationServer.get_locale().begins_with("en"):
+			destino = "Moon" if destino == "Luna" else "Mars"
+		for valor in [str(i + 1), str(int(r.get("score", 0))), destino, tr("DIFF_" + str(r.get("difficulty", "estandar")).to_upper()),
+				str(int(r.get("players", 1))), str(r.get("code", ""))]:
+			UI.label(tabla, valor, 14, UI.CREAM)
+	var nota := UI.label(cuerpo, tr("M_RECORDS_NOTE"), 12, Color(UI.CREAM, 0.6))
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.custom_minimum_size.x = 680

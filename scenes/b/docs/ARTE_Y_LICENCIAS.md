@@ -76,3 +76,19 @@ Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro fin
 No integrados todavía: `25042_Perseverance.glb` (11 MB y unos 200 000 triángulos: hay que reducirlo a 15 000–25 000 para la web), `base.glb` (módulo lunar de unos 98 000 triángulos y 135 animaciones) y `panel_solar.glb` (1 MB, 26 materiales). Las texturas `foco_spacebits_texture.png` y `taladro_spacebits_texture.png` salen incrustadas en esos `.glb`; falta que el equipo confirme su origen y licencia.
 
 Ronda E (25 oct 2026): las escenas se exportaron de nuevo desde Canva a 1920 × 1080, porque las anteriores eran de 1280 × 720 con mucha compresión. Se importan como WebP con pérdida leve (calidad 0,9) para que la descarga web no crezca. `nave_fuga.jpg` no está en el storyboard: se reescaló con Lanczos. Las fotos de las fichas de edificios (`assets/edificios/*.png`) se renderizan con `tools/renderizar_fichas.gd` a partir de los mismos modelos del juego.
+
+## Imágenes y modelos de la NASA (14 nov 2026)
+
+| Carpeta | Contenido | Origen y condiciones |
+| --- | --- | --- |
+| `assets/nasa/*.jpg` | Fotos oficiales de Marte (lanzamiento, Jezero, aterrizaje, selfie, muestras) y de la Luna (lanzamiento Apolo, polo sur, Tierra desde Orión, huella lunar) | NASA Image and Video Library (images.nasa.gov); id y crédito de cada una en `content/nasa/*.json` y `docs/DATOS_NASA.md`. Uso educativo, con crédito, sin logo ni sugerencia de respaldo |
+| `assets/nasa/modelos/*.glb` | Perseverance, Ingenuity, módulo lunar Apolo, Saturn V | NASA 3D Resources (github.com/nasa/NASA-3D-Resources, «free and without copyright»). Se descomprimieron (Draco) y simplificaron con gltf-transform; **no son obra del equipo** y no se incluyen en la versión web |
+
+Estas fotos y modelos **no** llevan marca de agua de IA porque no son IA; las imágenes generadas con IA (logo, fondo del menú, carga e historia) sí la llevan. El código se desarrolló con asistencia de Claude (Anthropic) bajo la dirección del equipo; los créditos del menú lo declaran.
+
+## Escala 1:1, rover real y lanzamiento con fotos (14 nov 2026)
+
+- El rover de la partida (escritorio) es `assets/nasa/modelos/perseverance.glb` de NASA 3D Resources, simplificado con gltf-transform y animado por código (`scenes/b/rover_nasa.gd`). El modelo reproduce el rover real, **incluidas las insignias del vehículo**; se muestra como representación fiel de un recurso oficial, con crédito en el juego y en `docs/DATOS_NASA.md`. En la versión web se usa el rover propio del equipo.
+- El helicóptero es `ingenuity.glb` (mismo origen) a 1,2 m de rotor a rotor.
+- La escena de lanzamiento usa como fondo las fotos oficiales `lanzamiento.jpg` (Atlas V, Frank Michaux/NASA) y `luna_lanzamiento.jpg` (Saturn V, NASA), con un movimiento de cámara y texto de interfaz superpuestos; las fotos no se alteran más que el recorte y el zoom.
+- Las medidas de todos los objetos están en `docs/ESCALAS.md`.

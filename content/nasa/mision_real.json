@@ -1,0 +1,180 @@
+{
+ "version": 1,
+ "_nota": "Datos reales verificados de la misión Mars 2020 (Perseverance) usados como referencia en el juego. Cada dato lleva su fuente. Las imágenes vienen de la NASA Image and Video Library (images.nasa.gov) y se muestran con su crédito.",
+ "mision": "Mars 2020 / Perseverance",
+ "datos": [
+  {
+   "id": "lanzamiento",
+   "es": "Lanzamiento: 30 de julio de 2020, en un cohete Atlas V 541.",
+   "en": "Launch: 30 July 2020, on an Atlas V 541 rocket.",
+   "fuente": "NASA/JPL, Mars 2020 Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "aterrizaje",
+   "es": "Aterrizaje: 18 de febrero de 2021 en el cráter Jezero (unos 18° N, 77° E).",
+   "en": "Landing: 18 February 2021 in Jezero Crater (about 18° N, 77° E).",
+   "fuente": "NASA/JPL, Mars 2020 Landing Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts"
+  },
+  {
+   "id": "crucero",
+   "es": "Crucero: 203 días entre el lanzamiento y el aterrizaje (calculado de las fechas oficiales).",
+   "en": "Cruise: 203 days between launch and landing (computed from the official dates).",
+   "fuente": "Cálculo a partir de las fechas de NASA/JPL",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts"
+  },
+  {
+   "id": "masa",
+   "es": "Masa del rover: unos 1.025 kg en la Tierra (393 kg de peso en Marte).",
+   "en": "Rover mass: about 1,025 kg on Earth (393 kg weight on Mars).",
+   "fuente": "NASA/JPL, Landing Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts"
+  },
+  {
+   "id": "energia",
+   "es": "Energía: un generador MMRTG da unos 110 W constantes.",
+   "en": "Power: an MMRTG generator gives a steady ~110 W.",
+   "fuente": "NASA/JPL, Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "sol",
+   "es": "Un sol (día marciano) dura 24 h 39 min 35 s.",
+   "en": "A sol (Martian day) lasts 24 h 39 min 35 s.",
+   "fuente": "NASA/JPL, Landing Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts"
+  },
+  {
+   "id": "senal",
+   "es": "La señal Marte–Tierra tardaba unos 11 min 22 s el día del aterrizaje.",
+   "en": "The Mars–Earth signal took about 11 min 22 s on landing day.",
+   "fuente": "NASA/JPL, Landing Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts"
+  },
+  {
+   "id": "mision",
+   "es": "Misión principal: al menos un año marciano (unos 687 días terrestres).",
+   "en": "Prime mission: at least one Mars year (about 687 Earth days).",
+   "fuente": "NASA/JPL, Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "muestras",
+   "es": "Lleva 43 tubos para muestras de roca y suelo.",
+   "en": "It carries 43 tubes for rock and soil samples.",
+   "fuente": "NASA/JPL, Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "costo",
+   "es": "Construirla y lanzarla costó unos 2.400 M USD; aterrizar y operar la misión principal, unos 300 M USD.",
+   "en": "Building and launching it cost about 2.4 billion USD; landing and prime operations about 300 million USD.",
+   "fuente": "NASA/JPL, Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "ingenuity",
+   "es": "Ingenuity pesa 1,8 kg y construirlo costó unos 80 M USD.",
+   "en": "Ingenuity weighs 1.8 kg and cost about 80 million USD to build.",
+   "fuente": "NASA/JPL, Launch Press Kit — Quick Facts",
+   "url": "https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/"
+  },
+  {
+   "id": "instrumentos",
+   "es": "Instrumentos: Mastcam-Z ~4 kg/17,4 W · SuperCam 10,6 kg/17,9 W · MEDA 5,5 kg/≤17 W · RIMFAX <3 kg/5–10 W.",
+   "en": "Instruments: Mastcam-Z ~4 kg/17.4 W · SuperCam 10.6 kg/17.9 W · MEDA 5.5 kg/≤17 W · RIMFAX <3 kg/5–10 W.",
+   "fuente": "NASA Science, Perseverance Science Instruments",
+   "url": "https://science.nasa.gov/mission/mars-2020-perseverance/science-instruments/"
+  }
+ ],
+ "comparacion": {
+  "cohete": "Atlas V 541",
+  "crucero_dias": 203,
+  "masa_kg": 1025,
+  "potencia_w": 110,
+  "instrumentos": 7,
+  "mision_dias": 687,
+  "costo_musd": 2700
+ },
+ "segmentos": {
+  "fuente": "NASA, Design and Develop Science Missions (recurso oficial del reto)",
+  "url": "https://www.nasa.gov/wp-content/uploads/2025/04/250323-design-and-develop-science-mission.pdf"
+ },
+ "imagenes": {
+  "lanzamiento": {
+   "archivo": "res://assets/nasa/lanzamiento.jpg",
+   "nasa_id": "KSC-20200730-PH-FMX01_0042",
+   "titulo": "Mars 2020 Liftoff",
+   "fecha": "2020-07-30",
+   "credito": "NASA/Frank Michaux",
+   "url": "https://images.nasa.gov/details/KSC-20200730-PH-FMX01_0042",
+   "ilustracion": false
+  },
+  "lago": {
+   "archivo": "res://assets/nasa/lago.jpg",
+   "nasa_id": "PIA24172",
+   "titulo": "Ancient Jezero Crater (Illustration)",
+   "fecha": "2020-10-20",
+   "credito": "NASA/JPL-Caltech",
+   "url": "https://images.nasa.gov/details/PIA24172",
+   "ilustracion": true
+  },
+  "jezero": {
+   "archivo": "res://assets/nasa/jezero.jpg",
+   "nasa_id": "PIA23239",
+   "titulo": "Jezero Crater, Mars 2020's Landing Site",
+   "fecha": "2019-05-15",
+   "credito": "NASA/JPL-Caltech/MSSS/JHU-APL",
+   "url": "https://images.nasa.gov/details/PIA23239",
+   "ilustracion": false
+  },
+  "aterrizaje": {
+   "archivo": "res://assets/nasa/aterrizaje.jpg",
+   "nasa_id": "PIA24319",
+   "titulo": "Perseverance Touches Down on Mars (Illustration)",
+   "fecha": "2020-12-16",
+   "credito": "NASA/JPL-Caltech",
+   "url": "https://images.nasa.gov/details/PIA24319",
+   "ilustracion": true
+  },
+  "selfie": {
+   "archivo": "res://assets/nasa/selfie.jpg",
+   "nasa_id": "PIA24542",
+   "titulo": "Perseverance's Selfie with Ingenuity",
+   "fecha": "2021-04-07",
+   "credito": "NASA/JPL-Caltech/MSSS",
+   "url": "https://images.nasa.gov/details/PIA24542",
+   "ilustracion": false
+  },
+  "muestras": {
+   "archivo": "res://assets/nasa/muestras.jpg",
+   "nasa_id": "PIA25735",
+   "titulo": "Annotated Version of Perseverance Selfie With Sample Tubes",
+   "fecha": "2023-02-14",
+   "credito": "NASA/JPL-Caltech/MSSS",
+   "url": "https://images.nasa.gov/details/PIA25735",
+   "ilustracion": false
+  }
+ },
+ "archivo_en_vivo": {
+  "api": "https://images-api.nasa.gov/search",
+  "consultas": [
+   "jezero crater",
+   "perseverance rover",
+   "ingenuity mars helicopter",
+   "mars 2020 launch"
+  ]
+ },
+ "modelos_3d": {
+  "archivos": [
+   "res://assets/nasa/modelos/perseverance.glb",
+   "res://assets/nasa/modelos/ingenuity.glb"
+  ],
+  "credito": "Modelo 3D: NASA 3D Resources (Perseverance, Ingenuity; escala de exposición)",
+  "tamanos": [
+   2.6,
+   1.0
+  ]
+ }
+}

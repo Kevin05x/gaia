@@ -3,12 +3,13 @@ extends RefCounted
 ## Catálogo de piezas cargado desde content/parts.json.
 ## Simulación pura: sin nodos. Los errores se guardan como códigos "CODIGO:detalle".
 
-const CATEGORIAS: Array[String] = ["chasis", "cohetes", "energia", "comunicaciones", "extras"]
+const CATEGORIAS: Array[String] = ["chasis", "cohetes", "trayectoria", "energia", "comunicaciones", "extras"]
 
 ## Campos numéricos obligatorios por categoría (las piezas con "pendiente": true se saltan).
 const CAMPOS_REQUERIDOS := {
 	"chasis": ["masa_kg", "costo_musd"],
 	"cohetes": ["capacidad_kg", "costo_musd"],
+	"trayectoria": ["factor_capacidad", "costo_musd"],
 	"energia": ["masa_kg", "costo_musd"],
 	"comunicaciones": ["masa_kg", "costo_musd"],
 	"extras": ["masa_kg", "costo_musd"],

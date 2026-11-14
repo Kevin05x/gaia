@@ -34,6 +34,8 @@ const FONT_PANEL_TITLE := 18
 const FONT_FIGURE := 17
 const FONT_TEXT := 16
 const FONT_SECONDARY := 14
+## Tamaño mínimo legible en 1280×720: ningún texto de la interfaz baja de aquí.
+const FONT_MIN := 13
 
 ## Etiqueta OpenType del eje de grosor («wght») de las fuentes variables.
 const WGHT := 0x77676874
@@ -267,7 +269,7 @@ static func theme() -> Theme:
 static func label(parent: Node, text: String, size: int = FONT_TEXT, color: Color = CREAM) -> Label:
 	var n := Label.new()
 	n.text = text
-	n.add_theme_font_size_override("font_size", size)
+	n.add_theme_font_size_override("font_size", maxi(size, FONT_MIN))
 	n.add_theme_color_override("font_color", color)
 	parent.add_child(n)
 	return n
