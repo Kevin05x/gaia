@@ -72,7 +72,7 @@ Entregados por el equipo de diseño del proyecto (renders de Arturo Valdivieso y
 - **`foco_spacebits_texture.png` y `taladro_spacebits_texture.png`** son el atlas de color del kit KayKit «Space Base Bits» (`spacebits_texture`, 1024 × 1024 según la página del kit), incrustado en `foco.glb` y `taladro.glb`. Godot los extrae al importar. Mismo origen y licencia CC0.
 - Aunque CC0 no lo exige, conviene dar crédito a Kenney y a KayKit en los créditos del juego y en la entrega, para que nadie atribuya estos modelos al equipo ni a la NASA. *Pendiente: añadirlo a los créditos del menú (código: lo hace Kevin).*
 - Trabajo del equipo: Arturo Valdivieso hizo la selección, la colocación en Blender, la exportación y los renders. *Pendiente: Arturo y Evelyn deben confirmar qué hizo cada uno en estos archivos; no se rellena sin su confirmación.*
-- Los cristales, el hielo y los minerales (`cristal*.glb`, `hielo_*.glb`, `mineral_2.glb`) no se revisaron en esta pasada. Su origen queda **por confirmar**.
+- **Hielo** (`hielo_2.glb`, `hielo_3.glb`): sus nombres internos (`rock_crystalsLargeA`, `rock_crystalsLargeB`) son también del Kenney «Space Kit» (CC0). **Cristales y mineral** (`cristal*.glb`, `mineral_2.glb`): nombres genéricos de Blender (`Circle`, `Cube`, `Icosphere`); probablemente los hizo el equipo, pero su autoría queda **por confirmar**.
 
 | Archivo | Uso en el juego |
 | --- | --- |
@@ -122,7 +122,7 @@ Uso de IA: los scripts de Blender que generan las texturas y mejoran los modelos
 
 - Generadas con `_fuentes/texturas_marte.py` (numpy dentro de Blender: ruido periódico por FFT y Voronoi). Normales en convención OpenGL (Y+), la que usa Godot.
 - **Referencia NASA:** los colores se midieron en la foto *Perseverance's Selfie with Ingenuity* (PIA24542, NASA/JPL-Caltech/MSSS, `assets/nasa/selfie.jpg`; crédito en `docs/DATOS_NASA.md`). Solo se tomaron valores medios de color (suelo, sombras, rocas claras, colinas y cielo); **no se copió ni se reutilizó ningún píxel de la foto**.
-- El terreno del juego se sigue coloreando por vértice. Estas texturas están listas, pero hasta que el código las use (material del terreno y de las rocas, tarea de Kevin) no se ven en el juego. Color medio: regolito #78634D y roca #90755C, por si se usan como detalle multiplicado sobre el color de vértice.
+- **Conectadas en el juego** (`scenes/b/world_art.gd`, con autorización de Kevin): el suelo, las rocas y las lomas lejanas de Marte usan la versión «detalle» (`*_detalle.jpg`: el color dividido por su media, generado con `_fuentes/texturas_detalle.py`), más la normal y la rugosidad. El color de vértice sigue dando el tono de cada zona. Solo con «texturas» activado (Media, Alta y Ultra); Baja sigue lisa y la Luna conserva sus texturas generadas por código. Color medio original: regolito #78634D y roca #90755C.
 - Importación fijada en cada `.import`: VRAM comprimida (s3tc/bptc) con mipmaps, mapa de normales marcado y detección 3D desactivada, para que el editor no cambie los ajustes al abrirse.
 
 ### Edificios mejorados (`assets/modelos/`, mismos nombres de archivo)
@@ -143,9 +143,9 @@ Se generaron con `_fuentes/mejorar_edificios.py`. El script solo exporta si se c
 - Materiales emisivos con nombre fijo: `emisivo_ventana` (cálido), `emisivo_luz` (blanco frío) y `emisivo_baliza` (rojo). Como máximo hay dos por modelo, porque cada material es una llamada de dibujo. `scenes/b/buildings.gd` (`_brillo_emisivo`) ya los atenúa de día y los aviva de noche, sin cambios de código.
 - Sin logos ni marcas. Las piezas nuevas son geometría simple hecha por el script, sin recursos de terceros.
 
-### Paleta frente a las fotos de la NASA (propuesta para el código; no aplicada)
+### Paleta frente a las fotos de la NASA (aplicada)
 
-Medida en PIA24542. El suelo real de Jezero es más oscuro y pardo que el del juego, y el cielo es beige-caramelo pálido. La propuesta va a mitad de camino, para no oscurecer la escena de golpe. Cambiarla es tarea de Kevin (`scenes/b/terrain.gd`, `scenes/b/sky_light.gd`).
+Medida en PIA24542. El suelo real de Jezero es más oscuro y pardo que el del juego, y el cielo es beige-caramelo pálido. La paleta nueva va a mitad de camino, para no oscurecer la escena de golpe. Aplicada en `scenes/b/terrain.gd`, `scenes/b/sky_light.gd` (cielo de 7:00, 12:00 y 17:00) y `scenes/b/horizonte.gd` (paisaje lejano).
 
 | Constante | Actual | Medido NASA | Propuesta |
 | --- | --- | --- | --- |
@@ -161,3 +161,14 @@ Medida en PIA24542. El suelo real de Jezero es más oscuro y pardo que el del ju
 | `sky_light.gd` 12:00 niebla | #C99D7F | #C5AA8C (colinas con bruma) | #C7A486 |
 
 El terreno, el cielo y el polvo siguen siendo **estilizados** (decisión de diseño). Esta paleta los acerca a la foto real, pero no los convierte en una reproducción fiel.
+
+## Segunda ronda de arte (14 nov 2026, tarde · Arturo Valdivieso, con autorización de Kevin para el código)
+
+Igual que en la ronda anterior, los scripts los escribió Claude (Anthropic) a petición de Arturo, que los ejecutó y revisó con capturas del juego. No se usó ningún generador de imágenes ni de modelos con IA.
+
+- **Estación de 3 × 3 casillas.** Junto al Perseverance real (3 m), la base parecía de juguete (4,1 m de lado). Ahora mide 10,6 m y ocupa 3 × 3 casillas (`estacion_radio` en `content/mapa*.json`): el rover no la atraviesa, no se construye encima y la bodega se descarga a 2 casillas. Medidas en `docs/ESCALAS.md`; lo comprueba `tests/test_estacion_grande.gd`.
+- **Materiales coherentes con el entorno.** La estación, el compañero, el dron y el rover de bloques (`scenes/b/assets/models/*.tscn`) tienen polvo en las piezas claras y PBR por tipo de pieza: paneles solares brillantes, metal gris, goma mate y pantallas con un brillo suave (`_fuentes/materiales_entorno.py`; solo cambia propiedades de los materiales). Los edificios llevan más polvo, y la textura KayKit del foco y del taladro está teñida y un 20 % menos saturada (`_fuentes/mejorar_edificios.py`); por eso cambian `foco_spacebits_texture.png` y `taladro_spacebits_texture.png`, que Godot extrae de los `.glb`.
+- **Cristales, hielo y mineral reparados** (`_fuentes/reparar_minerales.py`). Tenían entre 56 y 350 caras con la normal al revés, que se veían negras: se recalcularon hacia fuera, con sombreado plano. El hielo pasa de roca naranja con cristales verdes a roca de la paleta del terreno con hielo blanco azulado. Los cristales conservan su color, que identifica cada mineral; ahora brillan más. Misma caja y mismos triángulos.
+- **Paisaje lejano más realista** (`scenes/b/horizonte.gd`). Tiene la paleta y la bruma de la foto NASA: el borde del cráter se ve claro y desvaído. Las lomas llevan la roca en estratos en triplanar (`mountain_material()` en `world_art.gd`, solo en Marte y con texturas).
+- **Pruebas de optimización** (`tests/test_optimizacion_arte.gd`): ≤ 2 500 triángulos y ≤ 8 materiales por modelo del equipo, 1 o 2 materiales emisivos por edificio, texturas de ≤ 1 024 px comprimidas en VRAM y con mipmaps, ≤ 6 MB de texturas, las de Marte solo en Marte y con texturas, Baja sin texturas, y el paisaje lejano con menos de 15 000 triángulos.
+- **Rendimiento medido en una GPU real** (Intel UHD Graphics, `docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`). Alta pasa de 19,3 a 20,1 FPS y Baja se queda en 60 FPS; las llamadas de dibujo bajan de 525 a 522 (Alta) y de 343 a 338 (Baja). Usa unos 32 MB más de VRAM en Alta.
