@@ -3,13 +3,14 @@
 Equipo Full Galácticos · NASA Space Apps Challenge 2026 · Sábado 14 de noviembre
 Entrega: domingo 15 de noviembre, 23:59 (Cajamarca). Meta interna: entregar con 2 h de margen.
 
-Este documento es una **propuesta**. Cambien los responsables si hace falta, pero no edite nadie este archivo dentro de las ramas de trabajo (lo tocarían las tres y habría conflictos). Los cambios al reparto se hacen en `develop`.
+Reparto acordado el 14 de noviembre. No edite nadie este archivo dentro de las ramas de trabajo (lo tocarían las tres y habría conflictos): los cambios al reparto se hacen en `develop`. La versión con requisitos del reto y guía de comandos está en `docs/GAIA_Reparto_de_ramas.pdf`.
 
 ## Estado de partida
 
 - `develop` ya contiene todo lo de `a/sustentacion-nasa` (PR #50): escala 1:1, Perseverance e Ingenuity reales, lanzamiento con fotos de la NASA, tipografía mínima de 13 px, mediciones antes/después, documentación y PDF.
 - 473 pruebas automáticas pasan.
-- Pendiente de decisión del equipo: historia nueva de Amner, quitar monstruos, telescopio, más cohetes, paso de los días.
+- Pendiente: historia nueva, quitar monstruos, telescopio, más cohetes, paso de los días.
+- Aviso: las reglas de Space Apps dicen que no se puede empezar a trabajar en el reto antes del hackathon, y este repositorio tiene commits desde el 22 de octubre. Consultar al organizador local y la Guía de entrega.
 
 ## Reglas de trabajo
 
@@ -25,7 +26,7 @@ Este documento es una **propuesta**. Cambien los responsables si hace falta, per
 
 ## Rama 1 · `a/historia-sin-monstruos`
 
-**Responsable propuesto:** Amner (con apoyo de Claude para código y pruebas).
+**Equipo:** Scarlett y Tony.
 **Por qué una sola rama:** la historia y los monstruos viven en los mismos archivos; separarlas causaría conflictos.
 
 ### Objetivo
@@ -40,7 +41,7 @@ Que Marte tenga la historia nueva de Amner y **sin monstruos**, con la partida j
 - Pruebas en `tests/` y `scenes/b/tests/` que dependan del combate.
 
 ### Tareas
-- [ ] Amner entrega su historia nueva (rama, archivo o documento) y se decide qué nodos reemplaza.
+- [ ] Se entrega la historia nueva (rama, archivo o documento) y se decide qué nodos reemplaza.
 - [ ] Fusionar la historia nueva en `content/historia.json` manteniendo el formato (nodos, decisiones, finales, medidor ético).
 - [ ] Quitar el combate de Marte en `content/destinos.json`. La Luna ya funciona sin combate, así que el camino existe.
 - [ ] Revisar `historia.json`, `hitos.json` y `tutorial.json`: quitar o reescribir todo texto que hable de arañas, mordedores, coloso, oleadas, muros o defensa de la base.
@@ -57,7 +58,7 @@ Que Marte tenga la historia nueva de Amner y **sin monstruos**, con la partida j
 
 ## Rama 2 · `b/cohetes-telescopio`
 
-**Responsable propuesto:** Kevin (datos y taller), con Arturo y Evelyn si se necesitan modelos 3D.
+**Equipo:** Amner y Evelyn (Evelyn, modelos 3D; Amner, datos y taller).
 
 ### Objetivo
 Ampliar el taller con más cohetes y añadir el telescopio, según lo que el equipo decida que es.
@@ -93,7 +94,7 @@ Ampliar el taller con más cohetes y añadir el telescopio, según lo que el equ
 
 ## Rama 3 · `b/dias-y-realismo`
 
-**Responsable propuesto:** Kevin supervisando a Claude; Amner revisa.
+**Equipo:** Kevin y Arturo (Arturo, arte y aspecto; Kevin, código y mediciones).
 
 ### Objetivo
 Que el paso de los días se note más y que el juego se vea lo más realista posible sin perder rendimiento.
