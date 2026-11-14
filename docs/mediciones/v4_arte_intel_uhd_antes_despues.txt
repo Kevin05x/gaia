@@ -11,6 +11,12 @@ La primera medición «antes, Alta» se repitió: tuvo un cuadro de 15,8 s por c
 
 Conclusión: Baja no empeora (60 FPS, limitado por la sincronización vertical; 343 -> 338 llamadas). Alta tampoco (19,3 -> 20,1 FPS); usa unos 32 MB más de VRAM por las texturas de 1024 px.
 
+Tercera ronda (14 nov 2026, tarde): texturas de la Luna, rocas esculpidas, minerales metálicos, nido-caverna y la Tierra real.
+Misma máquina y modo; la medición es de Marte (--medir arranca Marte).
+| alta | 20.6 FPS · 48.4 ms · 517 llamadas · 597 MB |
+| baja | 60.0 FPS · 16.7 ms · 330 llamadas · 495 MB |
+Frente al «antes» (19,3 / 60 FPS): Alta +1,3 FPS, Baja igual y con 13 llamadas menos. VRAM: unos 60–70 MB más (texturas de minerales y rocas).
+
 ---------------- antes_alta (salida completa de --medir)
 GAIA - medición de rendimiento
 Fecha: 2026-11-14T12:32:14
