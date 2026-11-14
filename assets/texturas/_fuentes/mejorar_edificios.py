@@ -33,9 +33,10 @@ def emisivos():
 
 
 # Tinte de polvo marciano (multiplica el color lineal) y PBR (metal, rugosidad) por familia de material
-PBR = {"metal": ((0.93, 0.86, 0.78), 0.0, 0.78), "metalDark": ((0.95, 0.90, 0.84), 0.35, 0.58),
-       "dark": ((1.0, 0.95, 0.90), 0.05, 0.8), "metalRed": ((0.95, 0.88, 0.80), 0.1, 0.65),
-       "spacebits_texture": (None, 0.1, 0.7)}
+PBR = {"metal": ((0.86, 0.76, 0.65), 0.0, 0.8), "metalDark": ((0.92, 0.84, 0.75), 0.35, 0.6),
+       "dark": ((1.0, 0.93, 0.86), 0.05, 0.82), "metalRed": ((0.86, 0.74, 0.62), 0.1, 0.68),
+       "spacebits_texture": ((0.86, 0.76, 0.66), 0.1, 0.72)}
+POLVO_SATURACION = 0.8  ## la textura KayKit (foco, taladro) pierde un 20 % de saturación: rojo de fábrica más apagado
 
 
 def pbr():
@@ -52,8 +53,31 @@ def pbr():
         if tinte and not b.inputs['Base Color'].is_linked:
             c = b.inputs['Base Color'].default_value
             b.inputs['Base Color'].default_value = (c[0] * tinte[0], c[1] * tinte[1], c[2] * tinte[2], 1)
+        elif tinte:
+            polvo_en_textura(b, tinte)
         b.inputs['Metallic'].default_value = met
         b.inputs['Roughness'].default_value = rou
+
+
+_TEÑIDAS = set()
+
+
+def polvo_en_textura(bsdf, tinte):
+    """Tiñe de polvo la imagen enlazada al color base (una sola vez por imagen) y la deja empaquetada en el GLB."""
+    import numpy as np
+    enlace = bsdf.inputs['Base Color'].links[0].from_node
+    img = getattr(enlace, 'image', None)
+    if img is None or img.name in _TEÑIDAS:
+        return
+    _TEÑIDAS.add(img.name)
+    w, h = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, 4)
+    gris = px[:, :3] @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    px[:, :3] = gris[:, None] + (px[:, :3] - gris[:, None]) * POLVO_SATURACION
+    px[:, :3] *= np.array(tinte, dtype=np.float32)
+    img.pixels.foreach_set(np.clip(px, 0, 1).ravel())
+    img.update()
+    img.pack()
 
 
 def mat_por_familia(fam):
@@ -248,6 +272,7 @@ def ajustar_emision(k):
 informe = []
 for n in pedidos:
     limpiar()
+    _TEÑIDAS.clear()  # cada modelo trae su propia copia de la imagen (el foco y el taladro la llaman igual)
     importar(os.path.join(MOD, n + ".glb"))
     if any(m.name.startswith('emisivo_') for m in bpy.data.materials):
         # Ya mejorado: el script se aplica sobre los originales de los kits (git show 505e2a0:assets/modelos/<nombre>.glb)
