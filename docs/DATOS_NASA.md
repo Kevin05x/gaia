@@ -57,6 +57,7 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 | `assets/nasa/luna_polo_sur.jpg` | South Pole Region of the Moon as Seen by Clementine | PIA00001 | NASA/JPL/USGS | https://images.nasa.gov/details/PIA00001 |
 | `assets/nasa/luna_tierra.jpg` | A Breathtaking Earthset from Orion | art002e021278 | NASA | https://images.nasa.gov/details/art002e021278 |
 | `assets/nasa/luna_huella.jpg` | Astronaut Edwin Aldrin walks on lunar surface near leg of Lunar Module | as11-40-5903 | NASA | https://images.nasa.gov/details/as11-40-5903 |
+| `assets/nasa/tierra_disco.webp` (la Tierra en el cielo lunar) | Earth (B), «Images and Textures» de NASA 3D Resources; recortado al disco, 1024 px, fondo transparente (`assets/texturas/_fuentes/tierra_disco.py`) | — | NASA | https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Earth%20(B) |
 
 **Modelos 3D:** `assets/nasa/modelos/modulo_lunar.glb`, `assets/nasa/modelos/saturn_v.glb`. Modelo 3D: NASA 3D Resources (módulo lunar Apolo, Saturn V; escalas de exposición).
 
@@ -73,6 +74,10 @@ Repositorio oficial: <https://github.com/nasa/NASA-3D-Resources>, descrito por l
 ## Consulta en vivo
 
 Si hay internet, «Tu misión frente a la real» consulta la API pública `images-api.nasa.gov` para mostrar imágenes del archivo (consultas definidas en `archivo_en_vivo`). Sin conexión, el juego usa las imágenes incluidas y lo indica.
+
+## Fotos usadas solo como referencia de color (14 nov 2026)
+
+Las texturas procedurales del suelo y de las rocas no copian píxeles de ninguna foto: solo se midieron colores medios. Marte: PIA24542 (suelo, sombras, rocas claras, colinas y cielo de Jezero). Luna: as11-40-5903 (regolito gris del Apolo 11). Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md`.
 
 ## Uso de las imágenes de la NASA
 

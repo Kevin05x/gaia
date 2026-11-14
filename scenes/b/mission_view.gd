@@ -857,7 +857,31 @@ func pick_target(screen: Vector2) -> String:
 
 ## Luna: la Tierra cuelga baja sobre el horizonte, como se ve desde el polo sur. Va con la cámara (como el cielo) y la
 ## ilumina el mismo sol del juego, así que muestra su fase.
+const FOTO_TIERRA := "res://assets/nasa/tierra_disco.webp"  ## foto real del disco terrestre (NASA 3D Resources, «Earth (B)»)
+
+
 func _crear_tierra_en_el_cielo() -> void:
+	if ResourceLoader.exists(FOTO_TIERRA):
+		# Desde la Luna, la Tierra está casi quieta en el cielo y siempre muestra el disco entero: una lámina con la
+		# foto, orientada a la cámara y sin sombreado, se ve más real que una esfera azul lisa.
+		var disco := MeshInstance3D.new()
+		disco.name = "TierraEnElCielo"
+		var lamina := QuadMesh.new()
+		lamina.size = Vector2(32.0, 32.0)
+		disco.mesh = lamina
+		var foto := StandardMaterial3D.new()
+		foto.albedo_texture = load(FOTO_TIERRA)
+		foto.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		foto.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		foto.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		foto.disable_fog = true
+		foto.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		disco.material_override = foto
+		disco.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(disco)
+		_tierra = disco
+		_seguir_tierra()
+		return
 	var tierra := MeshInstance3D.new()
 	tierra.name = "TierraEnElCielo"
 	var esfera := SphereMesh.new()
