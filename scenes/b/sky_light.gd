@@ -3,16 +3,18 @@ extends Node
 ## Solo cambia unos pocos parámetros compartidos; la energía del juego la decide siempre la simulación.
 
 ## hora, elevación°, color sol, energía, ambiente, energía ambiente, cielo arriba, horizonte, niebla, inicio, fin
-## La niebla de profundidad empieza lejos: el mapa jugable (71 × 71 casillas de 2 m, unos 200 m de diagonal) se ve nítido
+## La niebla de profundidad empieza lejos: el mapa jugable (71 × 71 casillas de 4 m, unos 284 m de lado) se ve nítido
 ## y solo queda una bruma leve en el horizonte, fuera del mapa (lomas lejanas). FOG_CURVE > 1 retrasa aún más la bruma.
 const KEYS := [
 	[0.0, -12.0, "FFBE8F", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
 	[5.0, -12.0, "FFBE8F", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
-	[6.0, 0.0, "FFB98A", 0.32, "8A6E7C", 0.40, "4E4B66", "E3A27A", "C08568", 160.0, 500.0],
-	[7.0, 18.0, "FFE2C2", 0.74, "A8877E", 0.44, "9E7A6E", "D8A786", "C79B7E", 170.0, 520.0],
+	[5.5, -6.0, "FF8A5A", 0.0, "5A4A6E", 0.40, "1E1B2E", "8A4E4A", "6A4044", 150.0, 470.0],
+	[6.0, 0.0, "FF9558", 0.55, "A07A82", 0.42, "5A4668", "F08A5A", "D0704F", 160.0, 500.0],
+	[7.0, 18.0, "FFD8AA", 0.80, "A8877E", 0.44, "9E7A6E", "D8A786", "C79B7E", 170.0, 520.0],
 	[12.0, 38.0, "FFE6C8", 1.00, "AC8A80", 0.44, "9E7A6E", "DAAA88", "C99D7F", 170.0, 520.0],
-	[17.0, 18.0, "FFDDB8", 0.74, "A8877E", 0.44, "9E7A6E", "D8A786", "C79B7E", 170.0, 520.0],
-	[18.0, 0.0, "FFAE78", 0.32, "886C78", 0.40, "4A4864", "DE9A72", "BE8466", 160.0, 500.0],
+	[17.0, 18.0, "FFD8AA", 0.80, "A8877E", 0.44, "9E7A6E", "D8A786", "C79B7E", 170.0, 520.0],
+	[18.0, 0.0, "FF8A52", 0.55, "9C747E", 0.42, "55425F", "F28552", "CC6A48", 160.0, 500.0],
+	[18.5, -6.0, "FF8A5A", 0.0, "5A4A6E", 0.40, "1E1B2E", "8A4E4A", "6A4044", 150.0, 470.0],
 	[19.0, -12.0, "FFB17D", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
 	[24.0, -12.0, "FFBE8F", 0.0, "4E4E6A", 0.40, "141623", "3C3346", "4A3A48", 150.0, 470.0],
 ]
@@ -134,6 +136,11 @@ func _sample(h: float) -> Dictionary:
 		"begin": lerpf(a[9], b[9], t),
 		"end": lerpf(a[10], b[10], t),
 	}
+
+
+## 0 de día … 1 de noche cerrada, según la energía del sol de la hora actual (para las luces de la base).
+func noche_factor() -> float:
+	return clampf(1.0 - float(_sample(hour)["sun_energy"]) / 0.8, 0.0, 1.0)
 
 
 func apply(inmediato := false) -> void:

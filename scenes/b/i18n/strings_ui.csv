@@ -151,8 +151,10 @@ SUMMARY_STORED,La ciencia guardada en el rover no cuenta hasta transmitirla.,Sci
 LANDING_TITLE,Aterrizaje en Jezero,Landing at Jezero
 LANDING_FIXED,Descenso en curso,Descent in progress
 SOL_SHORT,Sol %d · %02d:%02d,Sol %d · %02d:%02d
+SOL_OF,Sol %d de %d · %02d:%02d,Sol %d of %d · %02d:%02d
 NIGHT_LABEL,Noche,Night
 NIGHT_NOTICE,Anochece: los paneles solares dejan de producir.,Night falls: solar panels stop producing.
+DAWN_NOTICE,Amanece · Sol %d: los paneles vuelven a producir.,Dawn · Sol %d: solar panels produce again.
 INFO_TITLE,Telemetría,Telemetry
 INFO_STORED,Datos guardados,Stored data
 INFO_BATTERY,Batería,Battery

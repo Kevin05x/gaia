@@ -471,6 +471,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	actors.apply_state(s)
 	hud.update_snapshot(s)
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
+	buildings.set_night(snappedf(lighting.noche_factor(), 0.05))
 	motas.fijar_polvo(float(s.get("dust", 0.0)))
 	rig.enabled = not blocked()
 	if s.get("phase", "") == "workshop":

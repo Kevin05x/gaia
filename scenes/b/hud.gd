@@ -291,7 +291,7 @@ func _build_bottom() -> void:
 	sin_fondo.content_margin_left = 2.0
 	sin_fondo.content_margin_right = 2.0
 	_clock_pill.add_theme_stylebox_override("panel", sin_fondo)
-	UI.place(_clock_pill, "bl", 20, 20, 200, 38)
+	UI.place(_clock_pill, "bl", 20, 20, 270, 38)
 	root.add_child(_clock_pill)
 	var fila := HBoxContainer.new()
 	fila.add_theme_constant_override("separation", 8)
@@ -919,11 +919,13 @@ func update_snapshot(s: Dictionary) -> void:
 	# Sol y hora; la noche se anuncia una vez y luego queda con la luna.
 	var hora := float(s.get("hour", 8.0))
 	var noche := bool(s.get("is_night", hora < 6.0 or hora >= 18.0))
-	var texto_hora := tr("SOL_SHORT") % [int(s.get("sol", 1)), int(hora), int(fmod(hora, 1.0) * 60.0)]
+	var texto_hora := tr("SOL_OF") % [int(s.get("sol", 1)), int(s.get("sol_limit", 6)), int(hora), int(fmod(hora, 1.0) * 60.0)]
 	_clock_text.text = texto_hora + ("  ·  " + tr("NIGHT_LABEL") if noche else "")
 	_clock_icon.kind = "moon" if noche else "sun"
 	if _night_known and noche and not _was_night and en_operacion:
 		show_notice("NIGHT_NOTICE")
+	elif _night_known and not noche and _was_night and en_operacion:
+		show_notice("DAWN_NOTICE", [int(s.get("sol", 1))])
 	_was_night = noche
 	_night_known = true
 	_avisos.actualizar(s, en_operacion)
@@ -1152,11 +1154,11 @@ func _update_summary(s: Dictionary) -> void:
 
 # ---------------------------------------------------------------- avisos breves, acciones, ayuda
 
-func show_notice(key: String) -> void:
+func show_notice(key: String, valores: Array = []) -> void:
 	if not is_instance_valid(_toast_text):
 		return
 	_toast_key = key
-	_toast_text.text = tr(key)
+	_toast_text.text = tr(key) % valores if not valores.is_empty() else tr(key)
 	_toast_until = Time.get_ticks_msec() / 1000.0 + 3.5
 	_fade(_toast, true)
 
