@@ -35,7 +35,8 @@ def guardar(nombre, rgb, quality=92):
     px=np.ones((N,N,4),np.float32); px[...,:3]=np.clip(rgb if rgb.ndim==3 else rgb[...,None],0,1)
     img.pixels.foreach_set(px[::-1].ravel())
     sc=bpy.context.scene; s=sc.render.image_settings; s.file_format='JPEG'; s.quality=quality; s.color_mode='RGB'
-    path=os.path.join(OUT,nombre+'.jpg'); img.save_render(path,scene=sc); print('ok',path)
+    destino=os.path.dirname(os.path.abspath(__file__)) if nombre.endswith('_color') else OUT  # el color no va en el juego
+    path=os.path.join(destino,nombre+'.jpg'); img.save_render(path,scene=sc); print('ok',path)
     return path
 lerp=lambda a,b,t: a+(b-a)*t[...,None]
 

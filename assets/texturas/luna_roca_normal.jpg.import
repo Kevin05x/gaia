@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://btfq4s3sj6n0w"
-path.s3tc="res://.godot/imported/marte_roca_estratos_color.jpg-e94afc6ce1cb0af01934c74c0bd68ea1.s3tc.ctex"
+uid="uid://vm3g3lx0pqjk"
+path.s3tc="res://.godot/imported/luna_roca_normal.jpg-edbf30908b42bfa5b412f7327737ad78.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/texturas/marte_roca_estratos_color.jpg"
-dest_files=["res://.godot/imported/marte_roca_estratos_color.jpg-e94afc6ce1cb0af01934c74c0bd68ea1.s3tc.ctex"]
+source_file="res://assets/texturas/luna_roca_normal.jpg"
+dest_files=["res://.godot/imported/luna_roca_normal.jpg-edbf30908b42bfa5b412f7327737ad78.s3tc.ctex"]
 
 [params]
 
@@ -22,7 +22,7 @@ compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=1
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1

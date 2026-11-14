@@ -6,7 +6,7 @@ import bpy, numpy as np, os
 
 CARPETA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 for nombre in ("marte_regolito", "marte_roca_estratos"):
-    im = bpy.data.images.load(os.path.join(CARPETA, nombre + "_color.jpg"))
+    im = bpy.data.images.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), nombre + "_color.jpg"))  # el color vive en _fuentes
     im.colorspace_settings.name = 'Non-Color'
     w, h = im.size
     px = np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)
