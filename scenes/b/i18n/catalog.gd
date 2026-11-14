@@ -1,6 +1,9 @@
 extends RefCounted
 const TABLES = {
  "es": {
+  "CMP_VIEW_MODEL": "Modelo 3D",
+  "CMP_VIEW_PHOTO": "Foto",
+  "CMP_DRAG": "arrastra para girar",
   "SCORE_LINE": "Puntuación %d · récord n.º %d del equipo",
   "SCORE_ONLY": "Puntuación %d",
   "DESIGN_CODE": "Código de diseño: %s",
@@ -593,6 +596,9 @@ const TABLES = {
   "SCIENCE_PILL": "Ciencia %d/%d"
  },
  "en": {
+  "CMP_VIEW_MODEL": "3D model",
+  "CMP_VIEW_PHOTO": "Photo",
+  "CMP_DRAG": "drag to rotate",
   "SCORE_LINE": "Score %d · team record #%d",
   "SCORE_ONLY": "Score %d",
   "DESIGN_CODE": "Design code: %s",

@@ -44,6 +44,7 @@ func build() -> void:
 	_credito.size = Vector2(400, 16)
 	_credito.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mostrar_foto("selfie")
+	_visor_3d()
 	var segmentos := UI.label(self, tr("CMP_SEGMENTS"), UI.FONT_SECONDARY, UI.AMBER)
 	segmentos.position = Vector2(24, 356)
 	var lista := VBoxContainer.new()
@@ -104,6 +105,45 @@ func build() -> void:
 func _mostrar_foto(id: String) -> void:
 	_foto.texture = NasaData.imagen(id)
 	_credito.text = NasaData.credito(id)
+	if is_instance_valid(_visor):
+		_visor.visible = false
+		_foto.visible = true
+
+
+var _visor: Control
+var _credito_modelo := ""
+
+
+## Modelo 3D oficial de la NASA en lugar de la foto (solo en el escritorio: en la web no se incluyen los modelos
+## para que la descarga sea liviana). Botones para cambiar entre modelo y foto.
+func _visor_3d() -> void:
+	var info: Dictionary = NasaData.datos().get("modelos_3d", {})
+	var archivos: Array = info.get("archivos", [])
+	if archivos.is_empty() or not ResourceLoader.exists(str(archivos[0])):
+		return
+	_visor = preload("res://scenes/b/visor_3d.gd").new()
+	_visor.archivos = archivos
+	_visor.position = _foto.position
+	_visor.size = _foto.size
+	add_child(_visor)
+	_credito_modelo = str(info.get("credito", ""))
+	_foto.visible = false
+	_credito.text = _credito_modelo + " · " + tr("CMP_DRAG")
+	var fila := HBoxContainer.new()
+	fila.position = Vector2(24 + 400 - 190, 82)
+	fila.add_theme_constant_override("separation", 4)
+	add_child(fila)
+	for par in [["CMP_VIEW_MODEL", true], ["CMP_VIEW_PHOTO", false]]:
+		var b := Button.new()
+		b.text = tr(par[0])
+		b.custom_minimum_size = Vector2(90, 26)
+		b.add_theme_font_size_override("font_size", 11)
+		var modelo: bool = par[1]
+		b.pressed.connect(func() -> void:
+			_visor.visible = modelo
+			_foto.visible = not modelo
+			_credito.text = (_credito_modelo + " · " + tr("CMP_DRAG")) if modelo else NasaData.credito("selfie"))
+		fila.add_child(b)
 
 
 func _filas() -> Array:
@@ -201,7 +241,12 @@ func _sin_conexion() -> void:
 	for h in _archivo.get_children():
 		h.queue_free()
 	UI.label(_archivo, tr("CMP_ARCHIVE_OFFLINE"), 10, Color(UI.WARN, 0.9))
-	for id in ["selfie", "muestras", "jezero", "lago"]:
+	var vistos: Array = []
+	for id in ["selfie", "muestras", "jezero", "lago", "lanzamiento"]:
+		var archivo := str(NasaData.datos().get("imagenes", {}).get(id, {}).get("archivo", id))
+		if archivo in vistos or vistos.size() >= 4:
+			continue  # la Luna reutiliza fotos en varias claves: cada foto una sola vez
+		vistos.append(archivo)
 		var b := LinkButton.new()
 		b.text = str(NasaData.datos().get("imagenes", {}).get(id, {}).get("titulo", id))
 		b.add_theme_font_size_override("font_size", 12)

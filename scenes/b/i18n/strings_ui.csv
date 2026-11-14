@@ -365,3 +365,6 @@ WS_CODE_TEXT,Cada diseño tiene un código. Compártelo con otro equipo que teng
 WS_CODE_APPLY,Cargar este diseño,Load this design
 WS_CODE_BAD,Ese código no es válido.,That code is not valid.
 WS_CODE_OTHER,Ese código es de una misión a otro destino.,That code is for a mission to another destination.
+CMP_VIEW_MODEL,Modelo 3D,3D model
+CMP_VIEW_PHOTO,Foto,Photo
+CMP_DRAG,arrastra para girar,drag to rotate

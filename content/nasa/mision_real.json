@@ -165,5 +165,12 @@
    "ingenuity mars helicopter",
    "mars 2020 launch"
   ]
+ },
+ "modelos_3d": {
+  "archivos": [
+   "res://assets/nasa/modelos/perseverance.glb",
+   "res://assets/nasa/modelos/ingenuity.glb"
+  ],
+  "credito": "Modelo 3D: NASA 3D Resources (Mars 2020 Perseverance Rover, Ingenuity Mars Helicopter) · github.com/nasa/NASA-3D-Resources"
  }
 }
