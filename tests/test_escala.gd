@@ -91,3 +91,29 @@ func test_el_helicoptero_es_el_ingenuity_real() -> void:
 	var caja := _caja(heli)
 	assert_between(maxf(caja.size.x, caja.size.z), 1.0, 1.4, "rotor a rotor ≈ 1,2 m")
 	assert_between(caja.size.y, 0.4, 0.7, "alto ≈ 0,5 m")
+
+
+func _superficies(n: Node) -> int:
+	var total := 0
+	var pila := [n]
+	while not pila.is_empty():
+		var x: Node = pila.pop_back()
+		if x is MeshInstance3D and (x as MeshInstance3D).mesh != null:
+			total += (x as MeshInstance3D).mesh.get_surface_count()
+		pila.append_array(x.get_children())
+	return total
+
+
+func test_rover_compacto_reduce_llamadas_de_dibujo() -> void:
+	if not RoverNasa.disponible():
+		pending("sin modelo del Perseverance")
+		return
+	var completo := RoverNasa.crear(0)
+	var n_completo := _superficies(completo)
+	completo.free()
+	var compacto := RoverNasa.crear(1)
+	var n_compacto := _superficies(compacto)
+	compacto.free()
+	RoverNasa.crear(0).free()  # deja el nivel completo para otras pruebas
+	assert_lt(n_compacto, n_completo * 0.6, "el detalle reducido recorta al menos 40 %% de las superficies (%d -> %d)" % [n_completo, n_compacto])
+	assert_lt(n_compacto, 60)

@@ -23,7 +23,7 @@ const PART_ICONS := {"cohete_ligero": "rocket", "cohete_pesado": "rocket", "chas
 ## Nodo del rover sobre el que se marca cada pieza elegida.
 const PART_NODES := {"panel_solar": "solar", "mmrtg": "rtg", "taladro": "drill", "radar": "radar", "espectrometro": "spectrometer",
 	"meteo": "meteo", "camara": "head", "antena_directa": "HighGain", "antena_rele": "HighGain"}
-const CARD_SIZE := Vector2(117, 144)
+const CARD_SIZE := Vector2(150, 160)
 const CARD_GAP := 12.0
 const FICHA_ANCHO := 336.0
 const MARGEN := 20.0
@@ -259,7 +259,7 @@ func _build_options() -> void:
 	opciones.focus_mode = Control.FOCUS_NONE
 	opciones.tooltip_text = tr("OPTIONS")
 	opciones.text = "      " + tr("WS_HELP").to_upper()
-	opciones.add_theme_font_size_override("font_size", 11)
+	opciones.add_theme_font_size_override("font_size", 13)
 	opciones.add_theme_color_override("font_color", TEXT_DIM)
 	opciones.add_theme_color_override("font_hover_color", ORANGE)
 	opciones.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
@@ -279,7 +279,7 @@ func _build_options() -> void:
 	codigo.focus_mode = Control.FOCUS_NONE
 	codigo.text = tr("WS_CODE").to_upper()
 	codigo.tooltip_text = tr("WS_CODE_TIP")
-	codigo.add_theme_font_size_override("font_size", 11)
+	codigo.add_theme_font_size_override("font_size", 13)
 	codigo.add_theme_color_override("font_color", TEXT_DIM)
 	codigo.add_theme_color_override("font_hover_color", ORANGE)
 	codigo.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
@@ -702,7 +702,7 @@ func _build_tip() -> void:
 	estilo.bg_color = Color("120A06", 0.72)
 	consejo.add_theme_stylebox_override("panel", estilo)
 	consejo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.place(consejo, "tl", 24, 190, 172, 220)
+	UI.place(consejo, "tl", 24, 168, 196, 220)
 	root.add_child(consejo)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
@@ -715,10 +715,10 @@ func _build_tip() -> void:
 	titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_text = UI.label(col, "", 11, TEXT_DIM)
 	_tip_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_text.custom_minimum_size = Vector2(140, 0)
+	_tip_text.custom_minimum_size = Vector2(164, 0)
 	_tip_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var dibujo := Sketch.new()
-	dibujo.custom_minimum_size = Vector2(140, 64)
+	dibujo.custom_minimum_size = Vector2(164, 44)
 	dibujo.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dibujo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(dibujo)
@@ -740,7 +740,7 @@ func _build_catalog() -> void:
 	zona.anchor_right = 1.0
 	zona.offset_left = 24
 	zona.offset_right = -(FICHA_ANCHO + MARGEN * 2.0 + 10.0)
-	zona.offset_top = -244
+	zona.offset_top = -268
 	zona.offset_bottom = -52
 	root.add_child(zona)
 	var fondo := Panel.new()

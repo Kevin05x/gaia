@@ -30,6 +30,13 @@ static var _cache: Dictionary = {}
 static func vaciar() -> void:
 	_cache.clear()
 	_acabados.clear()
+	_promedios.clear()
+
+
+## Detalle reducido (ajuste gráfico sin «texturas», p. ej. Baja): todas las piezas con textura pasan a un acabado de
+## color liso (el promedio de su textura) y se funden por tipo de acabado, de ~100 superficies (llamadas de dibujo) a ~40.
+static var compacto := false
+static var _promedios: Dictionary = {}  ## textura -> color medio
 
 
 static func disponible() -> bool:
@@ -37,9 +44,13 @@ static func disponible() -> bool:
 
 
 ## Raíz «Rover» con hijo «RoverVisual» y las piezas con nombre. Vacío (null) si falta el modelo.
-static func crear() -> Node3D:
+static func crear(forzar_compacto: int = -1) -> Node3D:  ## forzar_compacto: -1 según el ajuste gráfico, 0 completo, 1 compacto
 	if not disponible():
 		return null
+	var detalle_nuevo := (forzar_compacto == 1) if forzar_compacto >= 0 else not bool(Graficos.cargar().get("texturas", true))
+	if detalle_nuevo != compacto:
+		compacto = detalle_nuevo
+		_cache.clear()  # las mallas fundidas dependen del nivel de detalle
 	var escena := load(RUTA) as PackedScene
 	if escena == null:
 		return null
@@ -216,6 +227,9 @@ static func _malla(padre: Node3D, piezas: Array, nombre: String) -> MeshInstance
 				# Sin textura: una sola superficie por tipo de acabado, con el color en el vértice (ahorra llamadas de dibujo).
 				mat = _acabado(original as BaseMaterial3D)
 				color_vertice = (original as BaseMaterial3D).albedo_color
+			elif compacto and original is BaseMaterial3D:
+				mat = _acabado(original as BaseMaterial3D)
+				color_vertice = (original as BaseMaterial3D).albedo_color * _promedio((original as BaseMaterial3D).albedo_texture)
 			if not grupos.has(mat):
 				grupos[mat] = {"v": PackedVector3Array(), "n": PackedVector3Array(), "u": PackedVector2Array(), "t": PackedFloat32Array(), "i": PackedInt32Array(), "c": PackedColorArray(), "tang": true, "vc": mat in _acabados.values()}
 				orden.append(mat)
@@ -276,6 +290,22 @@ static func _malla(padre: Node3D, piezas: Array, nombre: String) -> MeshInstance
 	mi.mesh = m
 	padre.add_child(mi)
 	return mi
+
+
+## Color medio de una textura (se calcula una vez).
+static func _promedio(tex: Texture2D) -> Color:
+	if _promedios.has(tex):
+		return _promedios[tex]
+	var c := Color(0.6, 0.6, 0.6)
+	var img := tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		img.resize(1, 1, Image.INTERPOLATE_LANCZOS)
+		c = img.get_pixel(0, 0)
+		c.a = 1.0
+	_promedios[tex] = c
+	return c
 
 
 static var _acabados: Dictionary = {}  ## clave -> material compartido con color de vértice

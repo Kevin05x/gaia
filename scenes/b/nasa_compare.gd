@@ -41,14 +41,14 @@ func build() -> void:
 	add_child(_foto)
 	_credito = UI.label(self, "", 10, Color(UI.CREAM, 0.6))
 	_credito.position = Vector2(24, 332)
-	_credito.size = Vector2(400, 16)
+	_credito.size = Vector2(400, 34)
 	_credito.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mostrar_foto("selfie")
 	_visor_3d()
 	var segmentos := UI.label(self, tr("CMP_SEGMENTS"), UI.FONT_SECONDARY, UI.AMBER)
-	segmentos.position = Vector2(24, 368)
+	segmentos.position = Vector2(24, 374)
 	var lista := VBoxContainer.new()
-	lista.position = Vector2(24, 392)
+	lista.position = Vector2(24, 398)
 	lista.size = Vector2(400, 150)
 	lista.add_theme_constant_override("separation", 4)
 	add_child(lista)
@@ -57,7 +57,7 @@ func build() -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size.x = 400
 	var fuente_seg := UI.label(self, tr("CMP_SEGMENTS_SRC"), 10, Color(UI.CREAM, 0.5))
-	fuente_seg.position = Vector2(24, 536)
+	fuente_seg.position = Vector2(24, 548)
 	# Columna derecha: tabla comparativa.
 	var tabla := GridContainer.new()
 	tabla.columns = 3
@@ -79,14 +79,15 @@ func build() -> void:
 		c.custom_minimum_size.x = 170
 		c.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var nota := UI.label(self, tr("CMP_SCALE_NOTE"), 10, Color(UI.CREAM, 0.55))
-	nota.position = Vector2(448, 356)
-	nota.size = Vector2(488, 30)
 	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.custom_minimum_size.x = 488
+	nota.position = Vector2(448, 358)
+	nota.size = Vector2(488, 20)
 	# Archivo NASA en vivo.
 	var cab := UI.label(self, tr("CMP_ARCHIVE"), UI.FONT_SECONDARY, UI.AMBER)
-	cab.position = Vector2(448, 392)
+	cab.position = Vector2(448, 424)
 	_archivo = VBoxContainer.new()
-	_archivo.position = Vector2(448, 416)
+	_archivo.position = Vector2(448, 448)
 	_archivo.size = Vector2(488, 110)
 	_archivo.add_theme_constant_override("separation", 2)
 	add_child(_archivo)
@@ -138,7 +139,7 @@ func _visor_3d() -> void:
 		var b := Button.new()
 		b.text = tr(par[0])
 		b.custom_minimum_size = Vector2(90, 26)
-		b.add_theme_font_size_override("font_size", 11)
+		b.add_theme_font_size_override("font_size", 13)
 		var modelo: bool = par[1]
 		b.pressed.connect(func() -> void:
 			_visor.visible = modelo
@@ -231,7 +232,7 @@ func _al_recibir(resultado: int, codigo: int, _cabeceras: PackedStringArray, cue
 		var id := str(meta.get("nasa_id", ""))
 		var enlace := LinkButton.new()
 		enlace.text = "%s · %s" % [str(meta.get("title", id)).left(60), str(meta.get("date_created", "")).left(10)]
-		enlace.add_theme_font_size_override("font_size", 12)
+		enlace.add_theme_font_size_override("font_size", 13)
 		enlace.add_theme_color_override("font_color", UI.CREAM)
 		_archivo.add_child(enlace)
 		enlace.pressed.connect(func() -> void: OS.shell_open("https://images.nasa.gov/details/" + id.uri_encode()))
@@ -250,7 +251,7 @@ func _sin_conexion() -> void:
 		vistos.append(archivo)
 		var b := LinkButton.new()
 		b.text = str(NasaData.datos().get("imagenes", {}).get(id, {}).get("titulo", id))
-		b.add_theme_font_size_override("font_size", 12)
+		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_color", UI.CREAM)
 		_archivo.add_child(b)
 		b.pressed.connect(_mostrar_foto.bind(id))

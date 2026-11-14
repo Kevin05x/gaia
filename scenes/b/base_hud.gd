@@ -145,7 +145,7 @@ func _construir_bodega() -> void:
 	descargar_button = Button.new()
 	descargar_button.theme_type_variation = "PillButton"
 	descargar_button.focus_mode = Control.FOCUS_NONE
-	descargar_button.add_theme_font_size_override("font_size", 12)
+	descargar_button.add_theme_font_size_override("font_size", 13)
 	descargar_button.custom_minimum_size = Vector2(110, 26)
 	descargar_button.pressed.connect(func() -> void: command.emit("unload", {}))
 	fila.add_child(descargar_button)

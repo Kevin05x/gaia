@@ -109,17 +109,17 @@ func _draw() -> void:
 	if zona != "":
 		var fz := UI.display_font(600)
 		var nombre := tr("ZONE_" + zona.to_upper())
-		var ancho_z := fz.get_string_size(nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var ancho_z := fz.get_string_size(nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 		var origen_z := Vector2(area.position.x + 5, area.position.y + 15)
-		draw_rect(Rect2(origen_z + Vector2(-3, -12), Vector2(ancho_z + 6, 15)), Color(UI.SURFACE, 0.72))
-		draw_string(fz, origen_z, nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UI.CREAM)
+		draw_rect(Rect2(origen_z + Vector2(-3, -12), Vector2(ancho_z + 6, 17)), Color(UI.SURFACE, 0.72))
+		draw_string(fz, origen_z, nombre, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UI.CREAM)
 	if _hover and _hover_tile != NONE and _inside(_hover_tile):
 		var f := UI.display_font(600)
 		var texto := "%d, %d" % [_hover_tile.x, _hover_tile.y]
-		var ancho := f.get_string_size(texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		var ancho := f.get_string_size(texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 		var origen := Vector2(area.position.x + 5, area.end.y - 5)
-		draw_rect(Rect2(origen + Vector2(-3, -13), Vector2(ancho + 6, 16)), Color(UI.SURFACE, 0.78))
-		draw_string(f, origen, texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UI.CREAM)
+		draw_rect(Rect2(origen + Vector2(-3, -13), Vector2(ancho + 6, 18)), Color(UI.SURFACE, 0.78))
+		draw_string(f, origen, texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UI.CREAM)
 
 
 ## Capa fija del mapa (zonas, cuadrícula y rocas) como imagen: con 200 rocas, dibujarlas una a una costaba cientos de llamadas por cuadro.

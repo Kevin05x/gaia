@@ -80,7 +80,7 @@ func rebuild() -> void:
 	var copiar := Button.new()
 	copiar.text = tr("COPY")
 	copiar.custom_minimum_size = Vector2(80, 28)
-	copiar.add_theme_font_size_override("font_size", 12)
+	copiar.add_theme_font_size_override("font_size", 13)
 	copiar.pressed.connect(func() -> void:
 		DisplayServer.clipboard_set(str(report.get("design_code", "")))
 		copiar.text = tr("COPIED"))
