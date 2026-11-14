@@ -9,7 +9,7 @@ Reparto acordado el 14 de noviembre. No edite nadie este archivo dentro de las r
 
 - `develop` ya contiene todo lo de `a/sustentacion-nasa` (PR #50): escala 1:1, Perseverance e Ingenuity reales, lanzamiento con fotos de la NASA, tipografía mínima de 13 px, mediciones antes/después, documentación y PDF.
 - 473 pruebas automáticas pasan.
-- Pendiente: historia nueva, quitar monstruos, telescopio, más cohetes, paso de los días.
+- Pendiente: historia nueva y bionutrientes, telescopio, más cohetes, energía de la Luna, paso de los días.
 - Aviso: las reglas de Space Apps dicen que no se puede empezar a trabajar en el reto antes del hackathon, y este repositorio tiene commits desde el 22 de octubre. Consultar al organizador local y la Guía de entrega.
 
 ## Reglas de trabajo
@@ -24,37 +24,37 @@ Reparto acordado el 14 de noviembre. No edite nadie este archivo dentro de las r
 5. El PR hacia `main` lo abre Kevin, al final y solo cuando `develop` esté estable.
 6. Todo uso de IA se declara en `docs/CUMPLIMIENTO.md`; si una rama usó IA para escribir código, se anota ahí en una línea.
 
-## Rama 1 · `a/historia-sin-monstruos`
+## Rama 1 · `a/historia-sin-monstruos` (el nombre quedó viejo)
 
 **Equipo:** Scarlett y Tony.
-**Por qué una sola rama:** la historia y los monstruos viven en los mismos archivos; separarlas causaría conflictos.
+**Decisión del 14 de noviembre:** los monstruos **se quedan**. Al matarlos dan **bionutrientes**.
 
 ### Objetivo
-Que Marte tenga la historia nueva y **sin monstruos**, con la partida jugable de principio a fin.
+Marte con la historia nueva y con el combate dando un recurso nuevo, los bionutrientes. La partida debe jugarse completa.
 
 ### Archivos principales
-- `content/historia.json` (hoy 9 nodos, 4 finales y personajes: Houston, Rocky, Perseverance).
-- `content/combate.json` (3 tipos de enemigos y 5 oleadas: ola_1, ola_2, ola_3, ola_coloso, ola_final).
-- `content/destinos.json` (cada destino declara si usa `historia` y `combate`).
-- `content/hitos.json`, `content/tutorial.json` (pueden mencionar defensa o enemigos).
-- `sim/systems/combat_system.gd`, `scenes/b/combat_view.gd` (solo se desconectan; no hace falta borrar el código).
-- Pruebas en `tests/` y `scenes/b/tests/` que dependan del combate.
+- `content/historia.json` (hoy 9 nodos, 4 finales; personajes Houston, Rocky, Perseverance).
+- `content/combate.json` (3 enemigos: araña, mordedor, coloso; 5 oleadas).
+- `content/economia.json` (recursos de Marte; los de la Luna están en `economia_luna.json` y no cambian).
+- `sim/systems/combat_system.gd`, `sim/economy.gd`, `sim/systems/build_system.gd`.
+- Textos en español e inglés y la barra de recursos del HUD.
+- Pruebas en `tests/` y `scenes/b/tests/`.
 
 ### Tareas
-- [ ] Se entrega la historia nueva (rama, archivo o documento) y se decide qué nodos reemplaza.
-- [ ] Fusionar la historia nueva en `content/historia.json` manteniendo el formato (nodos, decisiones, finales, medidor ético).
-- [ ] Quitar el combate de Marte en `content/destinos.json`. La Luna ya funciona sin combate, así que el camino existe.
-- [ ] Revisar `historia.json`, `hitos.json` y `tutorial.json`: quitar o reescribir todo texto que hable de arañas, mordedores, coloso, oleadas, muros o defensa de la base.
-- [ ] Revisar que la construcción (muros, torretas) no quede como un sistema sin sentido; si ya no aporta, ocultarla del menú de construcción de Marte.
-- [ ] Dar un nuevo conflicto a la historia en lugar de los monstruos (por ejemplo, el imprevisto, la tormenta, la decisión ética), para que siga habiendo tensión.
-- [ ] Actualizar o eliminar las pruebas que esperaban combate en Marte; añadir una prueba de que Marte corre sin combate.
-- [ ] Jugar una partida completa de Marte: briefing, taller, lanzamiento, 6 soles y los 4 finales.
-- [ ] Actualizar `docs/DATOS_NASA.md` o el doc de historia si cambian las afirmaciones.
+- [ ] Entregar la historia nueva y fusionarla en `historia.json` con el mismo formato.
+- [ ] Definir el recurso `bionutrientes` en `economia.json` (lista de recursos y valor inicial) con sus textos en español e inglés.
+- [ ] Hacer que cada enemigo suelte bionutrientes al morir, con cantidad por tipo en `combate.json`.
+- [ ] Decidir para qué sirven los bionutrientes y equilibrarlo (por ejemplo mejoras de la base o de la nave).
+- [ ] Mostrarlos en el HUD de recursos y en el informe.
+- [ ] Que la historia explique de dónde salen los bionutrientes.
+- [ ] Revisar el equilibrio de las oleadas con las dificultades (`factor_enemigos`).
+- [ ] Pruebas: matar un enemigo suma bionutrientes; la Luna no cambia.
+- [ ] Jugar una partida completa de Marte con los 4 finales.
 
 ### Terminado cuando
-- No aparece ningún monstruo ni texto de combate en Marte.
-- La historia nueva se juega completa y llega a los 4 finales.
-- Las 473 pruebas (o las que queden) pasan.
+- Matar monstruos da bionutrientes y se ven en pantalla.
+- La historia nueva se juega completa.
+- Las pruebas pasan.
 
 ## Rama 2 · `b/cohetes-telescopio`
 
@@ -97,31 +97,45 @@ Ampliar el taller con más cohetes y añadir el telescopio, según lo que el equ
 **Equipo:** Kevin y Arturo (Arturo, arte y aspecto; Kevin, código y mediciones).
 
 ### Objetivo
-Que el paso de los días se note más y que el juego se vea lo más realista posible sin perder rendimiento.
+Rehacer la energía de la Luna, hacer que el paso de los días se note y mejorar el realismo, sin perder rendimiento.
 
-### Archivos principales
-- `scenes/b/sky_light.gd` (luz y cielo según la hora).
-- `scenes/b/cielo_marte.gd`, `scenes/b/horizonte.gd`.
-- `scenes/b/hud.gd`, `scenes/b/hud_avisos.gd` (reloj "Sol N · hh:mm" y avisos).
-- `scenes/b/graficos.gd`, `scenes/b/calidad_dinamica.gd` (ajustes de calidad).
-- `content/balance.json` (sol = 300 s, inicio 8:00, amanecer 6:00, atardecer 18:00).
+### Lo que ya existe (no rehacer)
+El sol ya cambia de elevación y de azimut con la hora (las sombras se mueven), hay colores de amanecer y atardecer, estrellas de noche, luz de luna y un aviso de la noche. Lo que falta es que se note más y completar los avisos.
 
-### Tareas
-- [ ] Sol y sombras que se mueven según la hora del juego.
-- [ ] Colores de amanecer y atardecer.
-- [ ] Estrellas de noche.
-- [ ] Aviso en pantalla al cambiar de día ("Amanece · Sol 2").
-- [ ] HUD con "Sol N de 6".
-- [ ] Luces encendidas en la base de noche.
-- [ ] Corregir el comentario viejo en `sky_light.gd` ("casillas de 2 m": ahora son de 4 m).
-- [ ] Mejorar el realismo del terreno y los edificios donde el rendimiento lo permita; respetar los ajustes Alta, Media y Baja.
-- [ ] Medir rendimiento antes y después con `-- --medir --preset=alta|baja|media` y guardar el resultado en `docs/mediciones/`.
-- [ ] Revisar que la versión web (que usa el rover de bloques) no se rompa.
+### A. Energía de la Luna (Kevin)
+Hoy la Luna usa la misma curva solar que Marte (`sim/systems/energy_system.gd`, `content/balance_luna.json`). Según la NASA, en el polo sur el Sol se queda a pocos grados sobre el horizonte, las crestas reciben más del 50 % del tiempo luz y las zonas de sombra permanente, donde está el hielo, no reciben nada.
+- [ ] Añadir un factor de irradiancia polar para la Luna (por ejemplo `energia.factor_solar_max` en `balance_luna.json`; en Marte vale 1.0 y no cambia nada).
+- [ ] Marcar zonas de sombra permanente en `content/mapa_luna.json` (las zonas actuales son orilla, falla y núcleo) y que el panel solar rinda 0 mientras el rover o un edificio esté dentro.
+- [ ] Poner el hielo y los objetivos enterrados en esas zonas, para que haya que elegir entre ir con RTG o volver a cargar.
+- [ ] Que `EnergySystem` use la casilla del rover y las zonas de sombra para calcular la generación.
+- [ ] Ajustar la calefacción de noche y comprobar que se puede ganar tanto con paneles como con RTG.
+- [ ] Mostrar en el HUD y en el taller de la Luna un aviso claro: "en sombra", "sol bajo", "el RTG no depende del sol".
+- [ ] Añadir un dato real de la NASA con su fuente en `content/nasa/mision_real_luna.json` y en `docs/DATOS_NASA.md`.
+- [ ] Pruebas nuevas en `tests/test_energy_system.gd` y `tests/test_imprevistos_y_luna.gd`, y comprobar que Marte sigue igual.
+
+### B. Paso de los días (Kevin)
+- [ ] Aviso de amanecer ("Amanece · Sol N"), como el de la noche (`hud.gd`, `hud_avisos.gd`).
+- [ ] Reloj con "Sol N de 6", en español e inglés.
+- [ ] Más contraste de amanecer y atardecer: horizonte más cálido y sol más visible (`sky_light.gd`, `cielo_marte.gd`).
+- [ ] Luces nocturnas en la base: ventanas con brillo y pocas luces reales, limitadas en la web.
+- [ ] Corregir el comentario viejo de 2 m en `sky_light.gd` y unificar la tormenta (`rules.json` dice sol 3; el plan, sol 4 a 5).
+
+### C. Arte y realismo (Arturo, con Kevin)
+- [ ] Texturas más realistas del suelo y las rocas, con fotos reales de Jezero como referencia (Kevin las conecta al terreno).
+- [ ] Mejorar los modelos de los edificios sin cambiar su tamaño real.
+- [ ] Ventanas y luces con material emisivo en los modelos, para la noche.
+- [ ] Revisar la paleta contra fotos de la NASA.
+- [ ] Confirmar el origen y la licencia de las texturas `foco_spacebits` y `taladro_spacebits`, y corregir `ARTE_Y_LICENCIAS.md` con lo que realmente hizo cada persona.
+
+### D. Cierre (Kevin)
+- [ ] Medir rendimiento antes y después en Alta, Media y Baja y guardarlo en `docs/mediciones/`.
+- [ ] Comprobar que la versión web no se rompe.
+- [ ] Todas las pruebas pasan.
 
 ### Terminado cuando
-- El paso del día y la noche se nota a simple vista.
-- El rendimiento no empeora de forma medible en el ajuste Baja.
-- Las pruebas pasan.
+- En la Luna el panel solar rinde distinto según la sombra y el RTG tiene sentido.
+- El paso del día y de la noche se nota a simple vista.
+- El rendimiento no empeora de forma medible en Baja.
 
 ## Tareas que no son de código (todos)
 
@@ -139,7 +153,7 @@ Que el paso de los días se note más y que el juego se vea lo más realista pos
 | Cuándo | Qué |
 | --- | --- |
 | Sáb 14, mañana | Decisiones: qué es el telescopio, dónde está la historia nueva |
-| Sáb 14, tarde | Rama 1 (historia sin monstruos) y arranque de rama 3 |
+| Sáb 14, tarde | Rama 1 (historia y bionutrientes) y arranque de rama 3 |
 | Sáb 14, noche | PR de la rama 1 a `develop`; avance de la rama 2 |
 | Dom 15, mañana | Ramas 2 y 3 a `develop`; pruebas completas |
 | Dom 15, mediodía | Congelar el juego (solo errores graves) |
