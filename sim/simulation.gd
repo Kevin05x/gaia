@@ -702,7 +702,7 @@ func _taller() -> Dictionary:
 				"mass_kg": pieza.get("masa_kg"), "cost_musd": pieza.get("costo_musd"),
 				"power_w": pieza.get("potencia_w", pieza.get("potencia_max_w")),
 				"capacity_factor": pieza.get("factor_capacidad"), "cruise_days": pieza.get("dias_crucero"),
-				"ref_key": pieza.get("ref_clave", ""),
+				"ref_key": pieza.get("ref_clave", ""), "real_height_m": pieza.get("alto_real_m"),
 				"pending": pieza.get("pendiente", false) == true,
 				"available": disponible["enabled"], "reason": disponible["reason"]})
 		categorias.append({"id": categoria, "parts": piezas})

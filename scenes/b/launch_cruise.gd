@@ -1,6 +1,8 @@
 extends CanvasLayer
 ## Secuencia de lanzamiento y crucero entre el taller y el aterrizaje (se puede saltar con clic, Espacio o Esc).
-##  1. Lanzamiento: el cohete elegido (ligero o pesado, con o sin propulsores laterales) despega con su carga.
+##  1. Lanzamiento: el cohete elegido despega con su carga. Los de más capacidad se dibujan con propulsores
+##     laterales (umbral de aspecto, ver UMBRAL_PESADO_KG); cuando el equipo de arte entregue los .glb de los
+##     cohetes, este dibujo se reemplaza por el modelo.
 ##  2. Crucero: vista orbital Sol–Tierra–Marte con la trayectoria elegida. La nave sigue una cónica de transferencia
 ##     (mínima energía ≈ 180° alrededor del Sol; rápida ≈ 135°, más excéntrica) y Marte llega al punto de encuentro
 ##     a la vez. Contador de días, maniobras de corrección y llegada.
@@ -12,6 +14,9 @@ const NasaData := preload("res://scenes/b/nasa_data.gd")
 const DURACION_LANZAMIENTO := 4.6
 const DURACION_CRUCERO := 9.5
 const DURACION_LLEGADA := 1.6
+## Desde esta capacidad propia del cohete, el despegue se dibuja con propulsores laterales.
+## Es un umbral de aspecto, no una regla de la simulación.
+const UMBRAL_PESADO_KG := 900.0
 
 signal finished
 
@@ -42,6 +47,22 @@ func play(diseno: Dictionary) -> void:
 	_construir()
 
 
+## Capacidad propia del cohete elegido, en kg, sin el factor de la trayectoria (0 si no hay cohete).
+## Se lee del catálogo del taller, así que no hay ninguna lista de ids en la vista.
+func _capacidad_del_cohete() -> float:
+	var elegidos: Array = taller.get("selection", {}).get("cohetes", [])
+	if elegidos.is_empty():
+		return 0.0
+	for categoria in taller.get("categories", []):
+		if str(categoria.get("id", "")) != "cohetes":
+			continue
+		for pieza in categoria.get("parts", []):
+			if str(pieza.get("id", "")) == str(elegidos[0]):
+				var capacidad: Variant = pieza.get("capacity_kg")
+				return 0.0 if capacidad == null else float(capacidad)
+	return 0.0
+
+
 func _construir() -> void:
 	if is_instance_valid(_raiz):
 		_raiz.queue_free()
@@ -65,7 +86,9 @@ func _construir() -> void:
 		_lanzamiento = LaunchView.new()
 	_lanzamiento.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_lanzamiento.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_lanzamiento.pesado = (sel.get("cohetes", []) as Array).has("cohete_pesado")
+	# Sale del dato, no del id: así sirve para los cuatro cohetes y seguirá valiendo si cambian sus
+	# números o sus nombres (los modelos .glb de los cohetes los entrega el equipo de arte).
+	_lanzamiento.pesado = _capacidad_del_cohete() >= UMBRAL_PESADO_KG
 	_raiz.add_child(_lanzamiento)
 	_orbita = OrbitView.new()
 	_orbita.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
