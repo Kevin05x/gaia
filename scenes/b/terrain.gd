@@ -298,8 +298,15 @@ func _outer_vertex(st: SurfaceTool, x: float, z: float) -> void:
 		color = color * (0.9 + 0.1 * sin(v.y * 5.5))
 	st.set_color(Destino.color(color))
 	st.set_normal(n)
+	st.set_tangent(tangente_suelo(n))
 	st.set_uv(Vector2(x, z) / 5.0)
 	st.add_vertex(v)
+
+
+## Tangente del suelo (UV = xz / 5): el eje +X sobre la superficie, con w = +1, lo mismo que SurfaceTool.generate_tangents.
+## Sin tangentes Godot usa unas por defecto que invierten el mapa de normales: los cráteres se veían como bultos.
+static func tangente_suelo(n: Vector3) -> Plane:
+	return Plane((Vector3.RIGHT - n * n.x).normalized(), 1.0)
 
 
 ## Malla de colinas lejanas (la zona central la cubre la malla detallada).
@@ -404,6 +411,7 @@ func _emit_vertex(st: SurfaceTool, i: int, j: int) -> void:
 	var n := _smooth_normal(i, j)
 	st.set_color(Destino.color(_ground_color(v, n.y)))
 	st.set_normal(n)
+	st.set_tangent(tangente_suelo(n))
 	st.set_uv(Vector2(v.x, v.z) / 5.0)
 	st.add_vertex(v)
 
@@ -436,11 +444,13 @@ func _build_ground() -> void:
 			var pn := PackedVector3Array()
 			var pc := PackedColorArray()
 			var uv := PackedVector2Array()
+			var tg := PackedFloat32Array()
 			var idx := PackedInt32Array()
 			pv.resize(w * h)
 			pn.resize(w * h)
 			pc.resize(w * h)
 			uv.resize(w * h)
+			tg.resize(w * h * 4)
 			for j in range(h):
 				for i in range(w):
 					var k := (cj + j) * n + ci + i
@@ -448,6 +458,11 @@ func _build_ground() -> void:
 					pn[j * w + i] = normales[k]
 					pc[j * w + i] = colores[k]
 					uv[j * w + i] = Vector2(posiciones[k].x, posiciones[k].z) / 5.0
+					var t := tangente_suelo(normales[k])
+					tg[(j * w + i) * 4] = t.x
+					tg[(j * w + i) * 4 + 1] = t.y
+					tg[(j * w + i) * 4 + 2] = t.z
+					tg[(j * w + i) * 4 + 3] = t.d
 			for j in range(h - 1):
 				for i in range(w - 1):
 					var a0 := j * w + i
@@ -463,6 +478,7 @@ func _build_ground() -> void:
 			arrays[Mesh.ARRAY_NORMAL] = pn
 			arrays[Mesh.ARRAY_COLOR] = Destino.colores(pc)
 			arrays[Mesh.ARRAY_TEX_UV] = uv
+			arrays[Mesh.ARRAY_TANGENT] = tg
 			arrays[Mesh.ARRAY_INDEX] = idx
 			var malla := ArrayMesh.new()
 			malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)

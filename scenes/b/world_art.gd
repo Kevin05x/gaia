@@ -81,6 +81,7 @@ const TEX_DESTINO := {
 	"luna": {"suelo": "luna_regolito", "roca": "luna_roca", "lomas": "luna_roca"},
 }
 const ESCALA_SUELO_MARTE := 0.4  ## las UV del suelo repiten cada 5 m; con 0,4 la textura repite cada 12,5 m (menos repetición visible)
+const ESCALA_SUELO_LUNA := 0.25  ## Luna: repite cada 20 m; con los cráteres de todos los tamaños la repetición no se nota
 const ESCALA_ROCA_MARTE := 0.35  ## triplanar: estratos de unos 11 cm en lugar de 5 cm
 
 
@@ -138,7 +139,7 @@ static func apply_quality() -> void:
 			suelo.normal_texture = t["normal"]
 			suelo.albedo_color = Color(1.25, 1.25, 1.25)
 			_rugosidad(suelo, tm)
-			var e := ESCALA_SUELO_MARTE if not tm.is_empty() else 1.0
+			var e := (ESCALA_SUELO_LUNA if Destino.es_luna() else ESCALA_SUELO_MARTE) if not tm.is_empty() else 1.0
 			suelo.uv1_scale = Vector3(e, e, 1.0)
 		else:
 			suelo.albedo_texture = null
