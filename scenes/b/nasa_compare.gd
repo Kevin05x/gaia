@@ -113,11 +113,11 @@ func _filas() -> Array:
 	return [
 		[tr("CMP_ROCKET"), "%s · %s" % [_nombre("cohetes"), _nombre("trayectoria")], str(real.get("cohete", ""))],
 		[tr("CMP_CRUISE"), tr("WS_DAYS") % int(totales.get("cruise_days", 0)), tr("WS_DAYS") % int(real.get("crucero_dias", 0))],
-		[tr("CMP_MASS"), "%d kg" % int(totales.get("mass_kg", 0)), "%d kg" % int(real.get("masa_kg", 0))],
-		[tr("CMP_POWER"), "%s · %d W" % [_nombre("energia"), int(totales.get("power_w", 0))], "MMRTG · %d W" % int(real.get("potencia_w", 0))],
-		[tr("CMP_INSTRUMENTS"), str(extras.size()), str(int(real.get("instrumentos", 0)))],
+		[tr("CMP_MASS"), "%d kg" % int(totales.get("mass_kg", 0)), _o(real, "masa_kg", "%d kg")],
+		[tr("CMP_POWER"), "%s · %d W" % [_nombre("energia"), int(totales.get("power_w", 0))], _o(real, "potencia_w", "MMRTG · %d W")],
+		[tr("CMP_INSTRUMENTS"), str(extras.size()), _o(real, "instrumentos", "%d")],
 		[tr("CMP_COMMS"), _nombre("comunicaciones"), tr("CMP_COMMS_REAL")],
-		[tr("CMP_COST"), "%d M USD" % int(totales.get("cost_musd", 0)), "≈ %d M USD" % int(real.get("costo_musd", 0))],
+		[tr("CMP_COST"), "%d M USD" % int(totales.get("cost_musd", 0)), _o(real, "costo_musd", "≈ %d M USD")],
 		[tr("CMP_DURATION"), tr("CMP_SOLS") % int(report.get("sol", 1)), tr("WS_DAYS") % int(real.get("mision_dias", 0))],
 	]
 
@@ -129,6 +129,12 @@ func _cientificos() -> Array:
 		if not ["bateria", "companero"].has(str(id)):
 			lista.append(id)
 	return lista
+
+
+## Valor real con formato, o «—» si no aplica a ese destino (por ejemplo, la masa de un rover en Apolo 11).
+func _o(real: Dictionary, clave: String, formato: String) -> String:
+	var v := int(real.get(clave, 0))
+	return "—" if v <= 0 else formato % v
 
 
 func _segmentos() -> Array:

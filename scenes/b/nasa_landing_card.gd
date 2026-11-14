@@ -6,7 +6,7 @@ extends CanvasLayer
 const UI := preload("res://scenes/b/ui_style.gd")
 const NasaData := preload("res://scenes/b/nasa_data.gd")
 const ANCHO := 360.0
-const SEGUNDOS_POR_PAGINA := 5.5
+const SEGUNDOS_POR_PAGINA := 3.5
 
 var taller: Dictionary = {}  ## último snapshot del taller (lo pasa la vista de la misión)
 var _panel: PanelContainer
@@ -53,7 +53,7 @@ func update_snapshot(s: Dictionary) -> void:
 		taller = s["workshop"]
 	elif s.has("design_summary"):
 		taller = s["design_summary"]
-	var en_aterrizaje := str(s.get("phase", "")) == "landing"
+	var en_aterrizaje := str(s.get("phase", "")) == "landing" and not _secuencia_activa()
 	if en_aterrizaje and not _activa:
 		_activa = true
 		_pagina = 0
@@ -102,3 +102,9 @@ func _nombre(categoria: String) -> String:
 			if str(parte.get("id", "")) == str(elegidas[0]):
 				return tr(str(parte.get("name_key", "")))
 	return str(elegidas[0])
+
+
+## Mientras se ve la secuencia de lanzamiento y crucero, la tarjeta espera.
+func _secuencia_activa() -> bool:
+	var c := get_parent().get_node_or_null("LaunchCruise")
+	return c != null and c.visible

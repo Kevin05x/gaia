@@ -242,10 +242,31 @@ func _nueva_partida() -> void:
 
 ## Antes de jugar: objetivo de la misión, dificultad y cuántas personas juegan (modo equipo, hasta 4).
 func _configurar_mision() -> void:
-	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 720, 500)
-	var objetivo := UI.label(cuerpo, tr("M_SETUP_GOAL"), 15, Color(UI.CREAM, 0.88))
+	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 590)
+	_subtitulo(cuerpo, tr("M_SETUP_DEST"))
+	var fila_dest := HBoxContainer.new()
+	fila_dest.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_dest)
+	var objetivo := UI.label(cuerpo, "", 14, Color(UI.CREAM, 0.88))
 	objetivo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objetivo.custom_minimum_size.x = 640
+	objetivo.custom_minimum_size.x = 680
+	var destinos: Variant = JSON.parse_string(FileAccess.get_file_as_string(Destino.DATOS))
+	var lista: Dictionary = destinos.get("destinos", {}) if destinos is Dictionary else {}
+	var idioma := "en" if TranslationServer.get_locale().begins_with("en") else "es"
+	var grupo_dest := ButtonGroup.new()
+	for id in (destinos.get("orden", ["marte"]) if destinos is Dictionary else ["marte"]):
+		var info: Dictionary = lista.get(id, {})
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_dest
+		b.text = str(info.get("nombre", {}).get(idioma, id))
+		b.custom_minimum_size = Vector2(250, 40)
+		b.button_pressed = Sesion.destino == id
+		b.pressed.connect(func() -> void:
+			Sesion.destino = str(id)
+			objetivo.text = str(info.get("descripcion", {}).get(idioma, "")))
+		fila_dest.add_child(b)
+	objetivo.text = str(lista.get(Sesion.destino, {}).get("descripcion", {}).get(idioma, ""))
 	_subtitulo(cuerpo, tr("M_SETUP_DIFF"))
 	var fila_dif := HBoxContainer.new()
 	fila_dif.add_theme_constant_override("separation", 8)

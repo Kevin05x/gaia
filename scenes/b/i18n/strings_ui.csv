@@ -320,3 +320,36 @@ TEAM_ENG,Ingeniería: margen de masa del %d %%.,Engineering: %d %% mass margin.
 TEAM_SCI,Ciencia: %d de %d datos llegaron a la Tierra.,Science: %d of %d data units reached Earth.
 TEAM_COM,Comunicaciones: enlace por %s.,Communications: link via %s.
 TEAM_VOTES,Votación: %d de %d GO al primer intento de lanzamiento aprobado.,Vote: %d of %d GO on the approved launch.
+LC_TAG,MISIÓN EN VUELO,MISSION IN FLIGHT
+LC_SKIP,Saltar ›,Skip ›
+LC_LAUNCH_TITLE,Lanzamiento,Launch
+LC_LAUNCH_TEXT,%s rumbo a Marte con %d kg de carga (capacidad para esta trayectoria: %d kg).,%s bound for Mars with %d kg of payload (capacity for this trajectory: %d kg).
+LC_CRUISE_TITLE,Crucero a Marte,Cruise to Mars
+LC_CRUISE_HOHMANN,Ruta de mínima energía: la nave rodea medio Sol y alcanza a Marte justo donde estará al llegar. Por eso solo se puede salir en la ventana de lanzamiento. Duración: %d días.,Minimum-energy route: the spacecraft swings halfway around the Sun and meets Mars exactly where it will be on arrival. That is why it can only leave in the launch window. Duration: %d days.
+LC_CRUISE_RAPIDA,"Ruta rápida: un arco más corto y más «empinado». Ahorra tiempo de crucero, pero el cohete tuvo que llevar menos masa. Duración: %d días.","Fast route: a shorter, “steeper” arc. It saves cruise time, but the rocket had to carry less mass. Duration: %d days."
+LC_DISTANCE_FACT,"En su viaje, Perseverance recorrió unos 497 millones de km (NASA/JPL).","On its trip, Perseverance travelled about 497 million km (NASA/JPL)."
+LC_ARRIVAL_TITLE,Llegada,Arrival
+LC_ARRIVAL_TEXT,Entrada en la atmósfera de Marte. Empieza el descenso hacia el cráter Jezero.,Entry into the Martian atmosphere. The descent towards Jezero Crater begins.
+LC_EARTH,Tierra,Earth
+LC_MARS,Marte,Mars
+LC_SUN,Sol,Sun
+LC_DAY,Día %d,Day %d
+LC_EV_SEPARATION,Separación del cohete · despliegue de paneles de crucero,Rocket separation · cruise stage deployed
+LC_EV_TCM1,Maniobra de corrección de trayectoria,Trajectory correction manoeuvre
+LC_EV_CHECKOUT,Pruebas de instrumentos en ruta,Instrument checkout en route
+LC_EV_APPROACH,Aproximación final a Marte,Final approach to Mars
+LC_ALTITUDE,Altitud %.0f km,Altitude %.0f km
+LC_SCALE_MOON,Círculo gris: órbita de la Luna (384.400 km). Distancias a escala.,"Grey circle: the Moon's orbit (384,400 km). Distances to scale."
+M_SETUP_DEST,Destino,Destination
+EVT_TAG,IMPREVISTO · LA MISIÓN SE DETIENE,UNEXPECTED EVENT · MISSION ON HOLD
+EVT_SOURCE,Basado en: %s,Based on: %s
+EVT_TEAM,Modo equipo: discutan las opciones y decidan juntos.,Team mode: discuss the options and decide together.
+EVT_REPORT,Imprevistos y decisiones,Unexpected events and decisions
+LINK_BLOCKED_EVENT,Enlace cerrado por un imprevisto,Link closed by an unexpected event
+MOVE_BLOCKED_EVENT,Rover detenido por un imprevisto,Rover stopped by an unexpected event
+PIEZA_TRAY_DIRECTA_LUNA,Transferencia directa,Direct transfer
+PIEZA_TRAY_BALISTICA_LUNA,Transferencia balística,Ballistic transfer
+REF_TRAY_DIRECTA_LUNA,"Rápida, como Apolo 11: entró en órbita lunar a las 75 h 50 min de vuelo (NASA). Gasta más combustible, así que lleva menos carga.","Fast, like Apollo 11: it entered lunar orbit 75 h 50 min into the flight (NASA). It burns more fuel, so it carries less payload."
+REF_TRAY_BALISTICA_LUNA,"Lenta y eficiente, como CAPSTONE: unos 4 meses (28 jun → 13 nov 2022) usando la gravedad del Sol para ahorrar combustible (NASA). Lleva un 25 % más de carga.","Slow and efficient, like CAPSTONE: about 4 months (28 Jun → 13 Nov 2022) using the Sun's gravity to save fuel (NASA). It carries 25 % more payload."
+NO_EVENT,No hay ningún imprevisto pendiente,There is no pending unexpected event
+INVALID_CHOICE,Esa opción no existe,That option does not exist

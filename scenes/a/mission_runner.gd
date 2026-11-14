@@ -14,6 +14,7 @@ const RUTA_HISTORIA := "res://content/historia.json"
 const RUTA_COMBATE := "res://content/combate.json"
 const RUTA_TUTORIAL := "res://content/tutorial.json"
 const RUTA_HITOS := "res://content/hitos.json"
+const RUTA_IMPREVISTOS := "res://content/imprevistos.json"
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -44,6 +45,11 @@ const PERIODO_AUTOGUARDADO_S := 30.0  ## autoguardado ligero durante las operaci
 
 
 func _ready() -> void:
+	var Medidor := preload("res://scenes/a/medidor.gd")
+	if crear_vista and Medidor.pedido():
+		saltar_taller = true  # la medición usa siempre el mismo diseño inicial
+		Sesion.cargar_al_iniciar = false
+		add_child(Medidor.new())
 	_crear_simulacion()
 	if not errores.is_empty():
 		for error in errores:
@@ -53,11 +59,12 @@ func _ready() -> void:
 	if crear_vista and view == null:
 		view = load(ESCENA_VISTA).instantiate()
 		add_child(view)
+		Destino.aplicar_textos()
 		view.menu_requested.connect(func() -> void:
 			guardar_partida()  # «Salir al menú» guarda: «Continuar» vuelve con todo lo juntado
 			Sesion.volver_al_menu(get_tree()))
 		Musica.reproducir(get_tree(), "juego", 4.0)
-		if not Sesion.cargar_al_iniciar and not saltar_taller and view.get("story") != null:
+		if not Sesion.cargar_al_iniciar and not saltar_taller and view.get("story") != null and not sim.intro_historia().is_empty():
 			view.story.show_intro(sim.intro_historia())
 	if port == null and view != null:
 		port = view.get_node("Port")
@@ -114,6 +121,8 @@ func _process(delta: float) -> void:
 		_publicar()
 		var informe := sim.informe.duplicate(true)
 		informe["difficulty"] = Sesion.dificultad
+		informe["destination"] = Destino.id
+		informe["events"] = sim.estado.imprevistos_hechos.duplicate(true)
 		informe["team"] = {"players": Sesion.jugadores, "votes": Sesion.votos.duplicate(true)}
 		port.present_report(informe)
 		return
@@ -143,22 +152,52 @@ func _notification(que: int) -> void:
 
 
 func _crear_simulacion() -> void:
-	var balance := Balance.desde_archivo(RUTA_BALANCE)
-	var reglas := Rules.desde_archivo(RUTA_REGLAS)
-	var mapa := MapData.desde_archivo(RUTA_MAPA)
-	var catalogo := Catalog.desde_archivo(RUTA_PIEZAS)
-	var economia := Economy.desde_archivo(RUTA_ECONOMIA)
-	var historia := StoryData.desde_archivo(RUTA_HISTORIA)
-	var combate := CombatData.desde_archivo(RUTA_COMBATE)
-	var tutorial := TutorialData.desde_archivo(RUTA_TUTORIAL)
-	var hitos := HitosData.desde_archivo(RUTA_HITOS)
-	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores, tutorial.errores, hitos.errores]:
-		errores.append_array(lista)
 	if crear_vista and Sesion.cargar_al_iniciar:
 		Sesion.restaurar_configuracion()
+	# Destino (Marte o Luna): cada uno trae sus propios datos (content/destinos.json). Sin vista (pruebas) es Marte.
+	var destino := Sesion.destino if crear_vista else "marte"
+	var cfg := Destino.config(destino)
+	if cfg.is_empty():
+		destino = "marte"
+		cfg = Destino.config("marte")
+	if Destino.id != destino:
+		var arte := preload("res://scenes/b/world_art.gd")
+		arte._meshes.clear()  # las mallas y la textura de contacto guardadas llevan la paleta del otro destino
+		arte._contact_texture = null
+	Destino.id = destino
+	var balance := Balance.desde_archivo(str(cfg.get("balance", RUTA_BALANCE)))
+	var reglas := Rules.desde_archivo(str(cfg.get("reglas", RUTA_REGLAS)))
+	var mapa := MapData.desde_archivo(str(cfg.get("mapa", RUTA_MAPA)))
+	var catalogo := Catalog.desde_archivo(RUTA_PIEZAS)
+	adaptar_catalogo(catalogo, destino, float(cfg.get("factor_capacidad_cohete", 1.0)))
+	var economia := Economy.desde_archivo(str(cfg.get("economia", RUTA_ECONOMIA)))
+	var ruta_historia := str(cfg.get("historia", RUTA_HISTORIA))
+	var ruta_combate := str(cfg.get("combate", RUTA_COMBATE))
+	var historia: StoryData = StoryData.desde_archivo(ruta_historia) if not ruta_historia.is_empty() else null
+	var combate: CombatData = CombatData.desde_archivo(ruta_combate) if not ruta_combate.is_empty() else null
+	var tutorial := TutorialData.desde_archivo(str(cfg.get("tutorial", RUTA_TUTORIAL)))
+	var hitos := HitosData.desde_archivo(str(cfg.get("hitos", RUTA_HITOS)))
+	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, tutorial.errores, hitos.errores]:
+		errores.append_array(lista)
+	for opcional in [historia, combate]:
+		if opcional != null:
+			errores.append_array(opcional.errores)
 	aplicar_dificultad(reglas, combate, Sesion.dificultad)
 	if errores.is_empty():
 		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
+		var imprevistos := ImprevistosSystem.desde_archivo(RUTA_IMPREVISTOS, destino)
+		if crear_vista and imprevistos.errores.is_empty() and not saltar_taller:  # pruebas y medición: sin sorpresas
+			sim.usar_imprevistos(imprevistos, int(Time.get_unix_time_from_system()) % 100000)
+
+
+## Deja en el catálogo solo las trayectorias del destino y ajusta lo que lleva cada cohete hasta allí.
+static func adaptar_catalogo(catalogo: Catalog, destino: String, factor_cohete: float) -> void:
+	for id in catalogo.ids_de("trayectoria"):
+		if str(catalogo.piezas[id].get("destino", "marte")) != destino:
+			catalogo.piezas.erase(id)
+	if not is_equal_approx(factor_cohete, 1.0):
+		for id in catalogo.ids_de("cohetes"):
+			catalogo.piezas[id]["capacidad_kg"] = float(catalogo.piezas[id]["capacidad_kg"]) * factor_cohete
 
 
 ## Dificultad: cambia el presupuesto y cuántos monstruos trae cada oleada (content/rules.json › dificultades).

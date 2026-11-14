@@ -72,7 +72,8 @@ func _rebuild() -> void:
 				var q: Vector3 = esquinas[idx]
 				var y: float = ground.call(q.x, q.z) if ground.is_valid() else 0.0
 				verts.append(Vector3(q.x, y + 0.035, q.z))
-				cols.append(Color(COLOR.r, COLOR.g, COLOR.b, alfa_a if idx in [0, 1] else alfa_b))
+				var tono := Destino.color(COLOR)
+				cols.append(Color(tono.r * 0.8, tono.g * 0.8, tono.b * 0.8, alfa_a if idx in [0, 1] else alfa_b))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts

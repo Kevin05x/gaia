@@ -37,7 +37,7 @@ func avanzar(estado: MissionState, delta_s: float) -> Array[String]:
 		estado.transmitiendo = false
 		eventos.append(EVENTO_TRANSMISION_TERMINADA)
 		return eventos
-	if not estado.enlace_abierto:
+	if not estado.enlace_abierto or ImprevistosSystem.enlace_bloqueado(estado):
 		return eventos
 	var clave: String = MissionState.ENLACES[estado.enlace]
 	var unidades_por_s := _balance.numero("comunicaciones.%s.unidades_por_s" % clave)
@@ -63,6 +63,8 @@ func _motivo(estado: MissionState) -> String:
 		return "PAUSED"
 	if estado.modo_seguro:
 		return "SAFE"
+	if ImprevistosSystem.enlace_bloqueado(estado):
+		return "LINK_BLOCKED_EVENT"
 	if not estado.transmitiendo:
 		if estado.nivel_antena <= 0:
 			return "NO_ANTENNA"

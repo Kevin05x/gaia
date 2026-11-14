@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_fuentes": "Masas y potencias de instrumentos inspiradas en Perseverance (NASA, science.nasa.gov/mission/mars-2020-perseverance/science-instruments). Los costos en M USD son valores de juego a escala (el presupuesto real de Mars 2020 fue de unos 2.400 M USD). Trayectorias: valores simplificados; Perseverance tardó 203 días (lanzamiento 30 jul 2020, aterrizaje 18 feb 2021).",
+  "_fuentes": "Masas y potencias de instrumentos inspiradas en Perseverance (NASA, science.nasa.gov/mission/mars-2020-perseverance/science-instruments). Los costos en M USD son valores de juego a escala (el presupuesto real de Mars 2020 fue de unos 2.400 M USD). Trayectorias: valores simplificados; Perseverance tardó 203 días (lanzamiento 30 jul 2020, aterrizaje 18 feb 2021). Luna: Apolo 11 entró en órbita lunar a las ~75 h 50 min del lanzamiento (NASA); CAPSTONE usó una transferencia lunar balística de unos 4 meses (28 jun → 13 nov 2022) que reduce mucho el combustible (NASA).",
   "chasis": [
     {
       "id": "chasis_base",
@@ -33,7 +33,8 @@
       "factor_capacidad": 1.0,
       "costo_musd": 25,
       "dias_crucero": 203,
-      "ref_clave": "REF_TRAY_HOHMANN"
+      "ref_clave": "REF_TRAY_HOHMANN",
+      "destino": "marte"
     },
     {
       "id": "trayectoria_rapida",
@@ -41,7 +42,26 @@
       "factor_capacidad": 0.8,
       "costo_musd": 10,
       "dias_crucero": 150,
-      "ref_clave": "REF_TRAY_RAPIDA"
+      "ref_clave": "REF_TRAY_RAPIDA",
+      "destino": "marte"
+    },
+    {
+      "id": "trayectoria_directa_luna",
+      "nombre_clave": "PIEZA_TRAY_DIRECTA_LUNA",
+      "factor_capacidad": 1.0,
+      "costo_musd": 15,
+      "dias_crucero": 3,
+      "ref_clave": "REF_TRAY_DIRECTA_LUNA",
+      "destino": "luna"
+    },
+    {
+      "id": "trayectoria_balistica_luna",
+      "nombre_clave": "PIEZA_TRAY_BALISTICA_LUNA",
+      "factor_capacidad": 1.25,
+      "costo_musd": 30,
+      "dias_crucero": 138,
+      "ref_clave": "REF_TRAY_BALISTICA_LUNA",
+      "destino": "luna"
     }
   ],
   "energia": [

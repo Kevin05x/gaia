@@ -295,7 +295,7 @@ func _outer_vertex(st: SurfaceTool, x: float, z: float) -> void:
 	if n.y < 0.9:
 		# Capas de roca en las laderas: franjas de tono según la altura.
 		color = color * (0.9 + 0.1 * sin(v.y * 5.5))
-	st.set_color(color)
+	st.set_color(Destino.color(color))
 	st.set_normal(n)
 	st.set_uv(Vector2(x, z) / 5.0)
 	st.add_vertex(v)
@@ -401,7 +401,7 @@ func _smooth_normal(i: int, j: int) -> Vector3:
 func _emit_vertex(st: SurfaceTool, i: int, j: int) -> void:
 	var v := _vertex(i, j)
 	var n := _smooth_normal(i, j)
-	st.set_color(_ground_color(v, n.y))
+	st.set_color(Destino.color(_ground_color(v, n.y)))
 	st.set_normal(n)
 	st.set_uv(Vector2(v.x, v.z) / 5.0)
 	st.add_vertex(v)
@@ -460,7 +460,7 @@ func _build_ground() -> void:
 			arrays.resize(Mesh.ARRAY_MAX)
 			arrays[Mesh.ARRAY_VERTEX] = pv
 			arrays[Mesh.ARRAY_NORMAL] = pn
-			arrays[Mesh.ARRAY_COLOR] = pc
+			arrays[Mesh.ARRAY_COLOR] = Destino.colores(pc)
 			arrays[Mesh.ARRAY_TEX_UV] = uv
 			arrays[Mesh.ARRAY_INDEX] = idx
 			var malla := ArrayMesh.new()
@@ -536,7 +536,7 @@ func _build_lake() -> void:
 			var v11: Dictionary = rejilla[r + 1][k2]
 			for v in [v00, v10, v01, v10, v11, v01]:
 				st.set_normal(Vector3.UP)
-				st.set_color(v["c"])
+				st.set_color(Destino.color(v["c"]))
 				st.add_vertex(v["p"])
 	var lago := MeshInstance3D.new()
 	lago.name = "Lake"
@@ -857,7 +857,7 @@ func _add_inst(familia: String, malla: Mesh, pos: Vector3, base: Basis, color: C
 	if not _acc.has(clave):
 		_acc[clave] = {"mesh": malla, "t": [], "c": [], "opciones": opciones}
 	_acc[clave]["t"].append(Transform3D(base, pos))
-	_acc[clave]["c"].append(color)
+	_acc[clave]["c"].append(Destino.color(color))
 
 
 func _volcar_instancias() -> void:
@@ -986,7 +986,7 @@ func _build_cliffs(rng: RandomNumberGenerator, reservado: Dictionary) -> void:
 			mm.set_instance_transform(k, g["t"][k])
 			var col: Color = g["c"][k]
 			col.a = 1.0
-			mm.set_instance_color(k, col)
+			mm.set_instance_color(k, Destino.color(col))
 		var inst := MultiMeshInstance3D.new()
 		inst.name = "Cliffs_" + clave
 		inst.multimesh = mm

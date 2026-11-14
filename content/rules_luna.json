@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "presupuesto_musd": 700,
+  "victoria": {
+    "datos_requeridos": 100,
+    "sol_limite": 6
+  },
+  "eventos": [],
+  "limites_piezas": {
+    "chasis": {
+      "min": 1,
+      "max": 1
+    },
+    "cohetes": {
+      "min": 1,
+      "max": 1
+    },
+    "trayectoria": {
+      "min": 1,
+      "max": 1
+    },
+    "energia": {
+      "min": 1,
+      "max": 1
+    },
+    "comunicaciones": {
+      "min": 1,
+      "max": 1
+    },
+    "extras": {
+      "min": 0
+    }
+  },
+  "dificultades": {
+    "exploracion": {
+      "presupuesto_musd": 820,
+      "factor_enemigos": 0.5,
+      "nombre_clave": "DIFF_EXPLORACION"
+    },
+    "estandar": {
+      "presupuesto_musd": 700,
+      "factor_enemigos": 1.0,
+      "nombre_clave": "DIFF_ESTANDAR"
+    },
+    "experta": {
+      "presupuesto_musd": 620,
+      "factor_enemigos": 1.5,
+      "nombre_clave": "DIFF_EXPERTA"
+    }
+  },
+  "roles_equipo": {
+    "1": [
+      [
+        "direccion",
+        "ingenieria",
+        "ciencia",
+        "comunicaciones"
+      ]
+    ],
+    "2": [
+      [
+        "direccion",
+        "ciencia"
+      ],
+      [
+        "ingenieria",
+        "comunicaciones"
+      ]
+    ],
+    "3": [
+      [
+        "direccion"
+      ],
+      [
+        "ingenieria"
+      ],
+      [
+        "ciencia",
+        "comunicaciones"
+      ]
+    ],
+    "4": [
+      [
+        "direccion"
+      ],
+      [
+        "ingenieria"
+      ],
+      [
+        "ciencia"
+      ],
+      [
+        "comunicaciones"
+      ]
+    ]
+  }
+}

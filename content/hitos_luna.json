@@ -1,0 +1,193 @@
+{
+ "version": 1,
+ "estado": "Luna (polo sur): hitos inspirados en los objetivos de exploración del polo sur lunar (hielo de agua en regiones de sombra permanente, recursos para Artemis). Suman 88 datos como en Marte.",
+ "objetivos": [
+  {
+   "id": "geologia",
+   "nombre": {
+    "es": "Geología del polo sur",
+    "en": "South pole geology"
+   }
+  },
+  {
+   "id": "astrobiologia",
+   "nombre": {
+    "es": "Hielo de agua en sombra",
+    "en": "Water ice in shadow"
+   }
+  },
+  {
+   "id": "muestras",
+   "nombre": {
+    "es": "Muestras para la Tierra",
+    "en": "Samples for Earth"
+   }
+  },
+  {
+   "id": "humanos",
+   "nombre": {
+    "es": "Preparar la base lunar",
+    "en": "Prepare the lunar base"
+   }
+  }
+ ],
+ "hitos": [
+  {
+   "id": "primera_lectura",
+   "objetivo": "geologia",
+   "datos": 4,
+   "condicion": {
+    "rocas_analizadas": 1
+   },
+   "nombre": {
+    "es": "Primera lectura del espectrómetro",
+    "en": "First spectrometer reading"
+   }
+  },
+  {
+   "id": "estratos",
+   "objetivo": "geologia",
+   "datos": 8,
+   "condicion": {
+    "rocas_analizadas": 5
+   },
+   "nombre": {
+    "es": "Capas del borde del cráter (5 rocas)",
+    "en": "Crater rim layers (5 rocks)"
+   }
+  },
+  {
+   "id": "mapa_crater",
+   "objetivo": "geologia",
+   "datos": 8,
+   "condicion": {
+    "zonas": 3
+   },
+   "nombre": {
+    "es": "Mapa del polo sur (3 zonas)",
+    "en": "South pole map (3 zones)"
+   }
+  },
+  {
+   "id": "olivino",
+   "objetivo": "astrobiologia",
+   "datos": 6,
+   "condicion": {
+    "minerales": 1
+   },
+   "nombre": {
+    "es": "Primer mineral del regolito",
+    "en": "First regolith mineral"
+   }
+  },
+  {
+   "id": "hielo",
+   "objetivo": "astrobiologia",
+   "datos": 8,
+   "condicion": {
+    "enterrados": 1
+   },
+   "nombre": {
+    "es": "Hielo en un cráter en sombra",
+    "en": "Ice in a shadowed crater"
+   }
+  },
+  {
+   "id": "biofirmas",
+   "objetivo": "astrobiologia",
+   "datos": 10,
+   "condicion": {
+    "minerales": 4,
+    "enterrados": 3
+   },
+   "nombre": {
+    "es": "Reserva de agua utilizable",
+    "en": "Usable water reserve"
+   }
+  },
+  {
+   "id": "primer_nucleo",
+   "objetivo": "muestras",
+   "datos": 4,
+   "condicion": {
+    "muestras": 1
+   },
+   "nombre": {
+    "es": "Primer núcleo de regolito",
+    "en": "First regolith core"
+   }
+  },
+  {
+   "id": "coleccion",
+   "objetivo": "muestras",
+   "datos": 8,
+   "condicion": {
+    "muestras": 8
+   },
+   "nombre": {
+    "es": "Colección de muestras (8)",
+    "en": "Sample collection (8)"
+   }
+  },
+  {
+   "id": "enlace",
+   "objetivo": "humanos",
+   "datos": 6,
+   "condicion": {
+    "antena": 1
+   },
+   "nombre": {
+    "es": "Enlace con la Tierra (Antena Nv. 1)",
+    "en": "Link to Earth (Antenna Lv. 1)"
+   }
+  },
+  {
+   "id": "energia_base",
+   "objetivo": "humanos",
+   "datos": 4,
+   "condicion": {
+    "paneles": 2
+   },
+   "nombre": {
+    "es": "Base con energía (2 paneles)",
+    "en": "Powered base (2 panels)"
+   }
+  },
+  {
+   "id": "antena_2",
+   "objetivo": "humanos",
+   "datos": 8,
+   "condicion": {
+    "antena": 2
+   },
+   "nombre": {
+    "es": "Antena Nv. 2",
+    "en": "Antenna Lv. 2"
+   }
+  },
+  {
+   "id": "base_defendida",
+   "objetivo": "humanos",
+   "datos": 6,
+   "condicion": {
+    "paneles": 3
+   },
+   "nombre": {
+    "es": "Base ampliada (3 paneles)",
+    "en": "Expanded base (3 panels)"
+   }
+  },
+  {
+   "id": "antena_3",
+   "objetivo": "humanos",
+   "datos": 8,
+   "condicion": {
+    "antena": 3
+   },
+   "nombre": {
+    "es": "Antena Nv. 3",
+    "en": "Antenna Lv. 3"
+   }
+  }
+ ]
+}

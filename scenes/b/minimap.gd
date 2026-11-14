@@ -45,7 +45,7 @@ func _draw() -> void:
 	var area := Rect2(point(mn) - celda / 2.0, point(mx) - point(mn) + celda)
 	# Terreno, zonas, cuadrícula (una línea cada 5 casillas) y rocas: una textura que solo se rehace al cambiar el mapa.
 	var terreno := StyleBoxFlat.new()
-	terreno.bg_color = Color("9a5f43", 0.86)
+	terreno.bg_color = Destino.color(Color("9a5f43", 0.86))
 	terreno.set_corner_radius_all(6)
 	terreno.set_border_width_all(1)
 	terreno.border_color = Color(UI.CREAM, 0.22)
@@ -144,7 +144,7 @@ func _capa_estatica(mn: Vector2i, mx: Vector2i) -> void:
 					var d := tile.distance_squared_to(Vector2(z["center"]))
 					if d < mejor:
 						mejor = d
-						tono = ZONE_TONES.get(str(z["id"]), Color(0, 0, 0, 0))
+						tono = Destino.color(ZONE_TONES.get(str(z["id"]), Color(0, 0, 0, 0)))
 				if tono.a > 0.0:
 					tono.a = 0.3
 					img.fill_rect(Rect2i(tx * esc, ty * esc, esc, esc), tono)

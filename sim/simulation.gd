@@ -18,7 +18,9 @@ var _reglas: Rules
 var _mapa: MapData
 var _catalogo: Catalog
 var _diseno: MissionDesign  ## piezas elegidas en el taller; sobrevive a reiniciar()
-var _diseno_resumen: Dictionary = {}  ## taller ya calculado para mostrar fuera del taller (se rehace al volver)
+var _diseno_resumen: Dictionary = {}
+var _imprevistos: ImprevistosSystem  ## imprevistos de misión (opcional: sin ellos la misión es la de siempre)
+var _semilla_imprevistos: int = 1  ## taller ya calculado para mostrar fuera del taller (se rehace al volver)
 var _reloj: ClockSystem
 var _energia: EnergySystem
 var _ciencia: ScienceSystem
@@ -60,6 +62,12 @@ func _init(balance: Balance, reglas: Rules, mapa: MapData, catalogo: Catalog, ec
 
 ## Vuelve al taller con una misión limpia (mapa y objetivos como al principio). Conserva las piezas
 ## elegidas para poder ajustarlas al rediseñar.
+## Activa los imprevistos de misión con una semilla (la misma semilla repite los mismos imprevistos).
+func usar_imprevistos(sistema: ImprevistosSystem, semilla: int) -> void:
+	_imprevistos = sistema
+	_semilla_imprevistos = semilla
+
+
 func reiniciar() -> void:
 	estado = MissionState.new(_balance, _reglas)
 	_mapa.aplicar_a(estado)
@@ -152,6 +160,10 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 			if decision["ok"]:
 				_fijar_tope_envio()  # un clímax decidido sube el tope de envío al instante
 			return _resultado_simple(decision)
+		"event_choice":
+			if _imprevistos == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			return _resultado_simple(_imprevistos.decidir(estado, int(carga.get("choice", -1))))
 		"tutorial_skip":
 			if _tutorial == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
@@ -177,6 +189,12 @@ func avanzar(delta_s: float) -> Array[String]:
 		return eventos
 	if _historia != null and _historia.esperando_decision(estado):
 		return eventos  # la misión espera la decisión del jugador
+	if _imprevistos != null:
+		if not estado.imprevistos_programados:
+			estado.imprevistos_programados = true
+			_imprevistos.programar(estado, _semilla_imprevistos)
+		if _imprevistos.esperando(estado):
+			return eventos  # imprevisto: el equipo debe decidir antes de seguir
 	var horas := _reloj.horas_de_juego(delta_s)
 	_fijar_tope_envio()
 	eventos.append_array(_energia.avanzar(estado, horas))
@@ -207,6 +225,8 @@ func avanzar(delta_s: float) -> Array[String]:
 		eventos.append_array(_hitos.avanzar(estado))
 	if _tutorial != null:
 		eventos.append_array(_tutorial.avanzar(estado, delta_s, eventos))
+	if _imprevistos != null:
+		eventos.append_array(_imprevistos.avanzar(estado))
 	informe = _resultado.evaluar(estado, eventos)
 	if not informe.is_empty():
 		_completar_informe()
@@ -324,6 +344,8 @@ func snapshot() -> Dictionary:
 		datos["tutorial"] = _tutorial.para_la_vista(estado)
 	if _hitos != null:
 		datos["science_goals"] = _hitos.para_la_vista(estado)
+	if _imprevistos != null:
+		datos["unexpected"] = _imprevistos.para_la_vista(estado)
 	if _combate != null:
 		datos["combat"] = _combate.para_la_vista(estado)
 		datos["nests"] = _mapa.nidos_para_la_vista()

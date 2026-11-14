@@ -85,6 +85,7 @@ func rebuild() -> void:
 			var paso := UI.label(causas, "• " + StoryPanel.text_of(entrada), UI.FONT_SECONDARY, Color(UI.CREAM, 0.85))
 			paso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			paso.custom_minimum_size.x = 340
+	_imprevistos(causas)
 	_equipo(causas)
 	var creditos := UI.label(lienzo, tr("CREDITS"), 12, Color(UI.CREAM, 0.6))
 	creditos.position = Vector2(24, 548)
@@ -106,6 +107,28 @@ func rebuild() -> void:
 	boton_real.clip_text = true
 	lienzo.add_child(boton_real)
 	boton_real.pressed.connect(_comparar.bind(panel))
+
+
+## Imprevistos de la misión y lo que decidió el equipo en cada uno.
+func _imprevistos(causas: VBoxContainer) -> void:
+	var hechos: Array = report.get("events", [])
+	if hechos.is_empty():
+		return
+	var datos: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://content/imprevistos.json"))
+	var lista: Dictionary = {}
+	for item in (datos.get("imprevistos", []) if datos is Dictionary else []):
+		lista[str(item.get("id", ""))] = item
+	var idioma := "en" if TranslationServer.get_locale().begins_with("en") else "es"
+	var cabecera := UI.label(causas, tr("EVT_REPORT"), UI.FONT_SECONDARY, UI.AMBER)
+	cabecera.custom_minimum_size.y = 26
+	for h in hechos:
+		var item: Dictionary = lista.get(str(h.get("id", "")), {})
+		var opciones: Array = item.get("opciones", [])
+		var eleccion := int(h.get("choice", 0))
+		var opcion := str(opciones[eleccion].get("texto", {}).get(idioma, "")) if eleccion < opciones.size() else ""
+		var l := UI.label(causas, "• %s: %s" % [str(item.get("titulo", {}).get(idioma, h.get("id", ""))), opcion], UI.FONT_SECONDARY, Color(UI.CREAM, 0.85))
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = 340
 
 
 ## Evaluación por roles: qué aportó cada responsable (dirección, ingeniería, ciencia y comunicaciones).

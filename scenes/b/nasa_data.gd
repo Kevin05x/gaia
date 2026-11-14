@@ -5,15 +5,18 @@ extends RefCounted
 
 const RUTA := "res://content/nasa/mision_real.json"
 
-static var _cache: Dictionary = {}
+static var _cache: Dictionary = {}  ## destino -> datos
 
 
+## Datos reales del destino actual (Marte: Mars 2020; Luna: Apolo 11, CAPSTONE y datos lunares de la NASA).
 static func datos() -> Dictionary:
-	if _cache.is_empty():
-		var texto := FileAccess.get_file_as_string(RUTA)
+	var destino := Destino.id
+	if not _cache.has(destino):
+		var ruta := str(Destino.config(destino).get("datos_nasa", RUTA))
+		var texto := FileAccess.get_file_as_string(ruta)
 		var json: Variant = JSON.parse_string(texto) if not texto.is_empty() else null
-		_cache = json if json is Dictionary else {"datos": [], "imagenes": {}, "comparacion": {}}
-	return _cache
+		_cache[destino] = json if json is Dictionary else {"datos": [], "imagenes": {}, "comparacion": {}}
+	return _cache[destino]
 
 
 static func en_ingles() -> bool:

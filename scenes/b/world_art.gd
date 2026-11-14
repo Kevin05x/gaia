@@ -128,7 +128,7 @@ static func tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Colo
 		c = t
 	# Godot dibuja la cara frontal con vértices en sentido horario: se emite (a, c, b) respecto a la normal.
 	for p in [a, c, b]:
-		st.set_color(color)
+		st.set_color(Destino.color(color))
 		st.set_normal(n)
 		st.add_vertex(p)
 
@@ -296,7 +296,7 @@ static func _con_oclusion(malla: ArrayMesh) -> ArrayMesh:
 		var ao := lerpf(0.58, 1.0, smoothstep(0.0, 0.6, t))
 		var c := colores[i]
 		colores[i] = Color(c.r * ao, c.g * ao, c.b * ao, c.a)
-	datos[Mesh.ARRAY_COLOR] = colores
+	datos[Mesh.ARRAY_COLOR] = Destino.colores(colores)
 	var material := malla.surface_get_material(0)
 	var nueva := ArrayMesh.new()
 	nueva.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, datos)
@@ -320,7 +320,7 @@ static func _face(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Co
 	var luz := clampf(0.88 + n.y * 0.14, 0.75, 1.05)
 	var tono := Color(color.r * luz, color.g * luz, color.b * luz, 1.0)
 	for p in [a, c, b]:
-		st.set_color(tono)
+		st.set_color(Destino.color(tono))
 		st.set_normal(n)
 		st.add_vertex(p)
 
@@ -346,7 +346,7 @@ static func tinted(base: ArrayMesh, color: Color) -> ArrayMesh:
 	var colores: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
 	for i in range(colores.size()):
 		colores[i] = Color(colores[i].r * color.r, colores[i].g * color.g, colores[i].b * color.b, 1.0)
-	arrays[Mesh.ARRAY_COLOR] = colores
+	arrays[Mesh.ARRAY_COLOR] = Destino.colores(colores)
 	var malla := ArrayMesh.new()
 	malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	_meshes[clave] = malla
@@ -362,7 +362,7 @@ static func contact_texture() -> Texture2D:
 				var d := Vector2(x - 31.5, y - 31.5).length() / 31.5
 				# Núcleo más denso y borde muy suave: se lee como contacto, no como un disco.
 				var g := exp(-d * d * 3.0) * (1.0 - smoothstep(0.8, 1.0, d))  # campana suave que llega a 0 en el borde
-				img.set_pixel(x, y, Color(0.10, 0.05, 0.05, g * 0.9))
+				img.set_pixel(x, y, (Color(0.07, 0.068, 0.075, g * 0.9) if Destino.es_luna() else Color(0.10, 0.05, 0.05, g * 0.9)))
 		_contact_texture = ImageTexture.create_from_image(img)
 	return _contact_texture
 

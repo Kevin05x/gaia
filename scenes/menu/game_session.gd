@@ -11,6 +11,7 @@ const ESCENA_JUEGO := "res://scenes/a/game.tscn"
 static var cargar_al_iniciar := false
 ## Configuración de la misión elegida en el menú (Nueva partida): dificultad y modo equipo (1 a 4 personas).
 static var dificultad := "estandar"
+static var destino := "marte"  ## «marte» o «luna» (content/destinos.json)
 static var jugadores := 1
 ## Votos del último «Go / No-Go» del equipo en el taller: [{"rol", "jugador", "go"}].
 static var votos: Array = []
@@ -22,7 +23,7 @@ static func hay_guardado() -> bool:
 
 static func guardar(sim: Simulation) -> bool:
 	var datos := sim.guardar()
-	datos["sesion"] = {"dificultad": dificultad, "jugadores": jugadores, "votos": votos.duplicate(true)}
+	datos["sesion"] = {"dificultad": dificultad, "jugadores": jugadores, "votos": votos.duplicate(true), "destino": destino}
 	var archivo := FileAccess.open(ruta, FileAccess.WRITE)
 	if archivo == null:
 		return false
@@ -67,6 +68,7 @@ static func empezar(arbol: SceneTree, continuar: bool) -> void:
 static func restaurar_configuracion() -> void:
 	var sesion: Dictionary = leer().get("sesion", {})
 	dificultad = str(sesion.get("dificultad", dificultad))
+	destino = str(sesion.get("destino", "marte"))
 	jugadores = clampi(int(sesion.get("jugadores", jugadores)), 1, 4)
 	votos = Array(sesion.get("votos", votos))
 

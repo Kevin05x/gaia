@@ -189,6 +189,7 @@ static func install() -> void:
 			for clave in TABLES[idioma]:
 				traduccion.add_message(clave, TABLES[idioma][clave])
 			TranslationServer.add_translation(traduccion)
+			Destino.registrar(traduccion)
 		var catalogo = preload("res://scenes/b/i18n/catalog.gd").TABLES
 		for idioma in catalogo:
 			var traduccion := Translation.new()
@@ -196,6 +197,7 @@ static func install() -> void:
 			for clave in catalogo[idioma]:
 				traduccion.add_message(clave, catalogo[idioma][clave])
 			TranslationServer.add_translation(traduccion)
+			Destino.registrar(traduccion)
 		_instaladas = true
 	TranslationServer.set_locale(String(preferencias().get("language", "es")))
 	aplicar_audio()
