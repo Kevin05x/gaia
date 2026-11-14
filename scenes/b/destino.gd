@@ -14,6 +14,16 @@ static func es_luna() -> bool:
 	return id == "luna"
 
 
+static var _forward_plus := -1
+
+
+## true con el renderer Forward+ (escritorio): ilumina en espacio lineal y admite efectos avanzados.
+static func forward_plus() -> bool:
+	if _forward_plus < 0:
+		_forward_plus = 1 if RenderingServer.get_current_rendering_method() == "forward_plus" else 0
+	return _forward_plus == 1
+
+
 ## Lee la configuración de un destino (archivos de datos y parámetros) de content/destinos.json.
 static func config(destino: String = "") -> Dictionary:
 	var datos: Variant = JSON.parse_string(FileAccess.get_file_as_string(DATOS))

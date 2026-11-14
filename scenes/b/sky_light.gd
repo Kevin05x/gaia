@@ -45,6 +45,9 @@ var sky_material: ShaderMaterial  ## CieloMarte (cielo propio de Marte)
 var quality := true  ## compatibilidad: equivale a sombras > 0 y postproceso
 var sombras := 1  ## opción gráfica: 0 apagadas, 1 normales, 2 altas
 var post := true  ## opción gráfica: postproceso (reflejos del cielo, contraste, tonos)
+## Efectos del renderer Forward+ (solo escritorio): 0 ninguno, 1 oclusión ambiental (SSAO), niebla volumétrica y sombras
+## suaves, 2 además iluminación indirecta en pantalla (SSIL). En la web (Compatibility) no existen y se ignoran.
+var avanzados := 0
 var hour := 8.0
 var dust := 0.0  ## valor de la simulación (0..1)
 var _dust_visual := 0.0
@@ -211,7 +214,38 @@ func _postproceso(s: Dictionary, p: float) -> void:
 	_poner(environment, "glow_blend_mode", Environment.GLOW_BLEND_MODE_SOFTLIGHT)
 	# Sin niebla de altura: en Compatibility se suma también cerca de la cámara y lo lavaba todo (probado).
 	_poner(environment, "fog_height_density", 0.0)
+	_efectos_avanzados(s, p)
 	_poner(environment, "fog_sun_scatter", 0.0 if Destino.es_luna() else snappedf((0.2 if post else 0.0) * clampf(float(s["sun_energy"]), 0.0, 1.0) * (1.0 - p * 0.5), 0.01))
+
+
+## Forward+ (escritorio): oclusión ambiental en los rincones de rocas y edificios, luz indirecta que rebota del suelo
+## rojizo, niebla volumétrica que el sol atraviesa (se espesa con la tormenta de polvo) y sombras de borde suave como
+## las de un sol de verdad (tamaño angular del disco). La Luna no tiene aire: sin niebla y sombras más duras.
+func _efectos_avanzados(s: Dictionary, p: float) -> void:
+	if not Destino.forward_plus():
+		return
+	var nivel := avanzados if post else 0
+	var luna := Destino.es_luna()
+	_poner(environment, "ssao_enabled", nivel >= 1)
+	_poner(environment, "ssao_radius", 1.6)
+	_poner(environment, "ssao_intensity", 2.2 if luna else 1.8)
+	_poner(environment, "ssao_power", 1.7)
+	_poner(environment, "ssao_detail", 0.7)
+	_poner(environment, "ssao_light_affect", 0.12)
+	_poner(environment, "ssil_enabled", nivel >= 2)
+	_poner(environment, "ssil_radius", 6.0)
+	_poner(environment, "ssil_intensity", 0.0 if luna else 0.85)
+	var niebla := nivel >= 2 and not luna  # la niebla volumétrica solo en Ultra: en Alta apagaba los colores
+	_poner(environment, "volumetric_fog_enabled", niebla)
+	if niebla:
+		_poner(environment, "volumetric_fog_density", snappedf(0.003 + 0.03 * p, 0.0005))
+		_poner(environment, "volumetric_fog_albedo", Color(s["fog"]).lerp(Color("D9A27E"), 0.4))
+		_poner(environment, "volumetric_fog_anisotropy", 0.55)
+		_poner(environment, "volumetric_fog_length", 140.0)
+		_poner(environment, "volumetric_fog_ambient_inject", 0.12)
+		_poner(environment, "volumetric_fog_sky_affect", 0.0)
+	_poner(sun, "light_angular_distance", (0.25 if luna else 0.7) if nivel >= 1 else 0.0)
+	_poner(sun, "shadow_blur", 1.0 if nivel >= 1 else (1.6 if sombras >= 2 else 1.2))
 
 
 ## Igual que _poner pero para un parámetro del sombreador del cielo (cambiarlo vuelve a pintar el mapa de reflejos).

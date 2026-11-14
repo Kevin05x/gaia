@@ -265,6 +265,7 @@ func aplicar_graficos(nuevo: Dictionary, guardar: bool = true) -> void:
 	graficos = Graficos.normalizar(nuevo.duplicate())
 	quality = bool(graficos["texturas"])
 	lighting.post = bool(graficos["post"])
+	lighting.avanzados = 0 if not bool(graficos["post"]) else (2 if int(graficos["sombras"]) >= 2 else (1 if int(graficos["sombras"]) >= 1 and int(graficos["aa"]) >= 1 else 0))
 	lighting.quality = quality
 	lighting.fijar_sombras(int(graficos["sombras"]))
 	W.quality = quality

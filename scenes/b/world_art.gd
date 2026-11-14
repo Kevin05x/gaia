@@ -17,6 +17,7 @@ static func vertex_material(sombra_propia := true) -> StandardMaterial3D:
 	if not _materials.has(clave):
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		m.roughness = 1.0
 		m.metallic_specular = 0.04  # regolito: casi sin brillo (con el cielo claro, el reflejo lo lavaba)
 		if not sombra_propia:
@@ -30,6 +31,7 @@ static func water_material() -> StandardMaterial3D:
 	if not _materials.has("water"):
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		m.roughness = 0.22
 		m.metallic_specular = 0.9
 		m.disable_receive_shadows = true
@@ -42,6 +44,7 @@ static func ground_material() -> StandardMaterial3D:
 	if not _materials.has("ground"):
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		m.roughness = 1.0
 		m.metallic_specular = 0.04
 		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
@@ -55,6 +58,7 @@ static func rock_material() -> StandardMaterial3D:
 	if not _materials.has("rock"):
 		var m := StandardMaterial3D.new()
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		m.roughness = 0.92
 		m.metallic_specular = 0.12
 		m.uv1_triplanar = true
@@ -106,6 +110,7 @@ static func flat_material(color: Color, transparente := true, prioridad := 0) ->
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.albedo_color = color
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		if transparente:
 			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			m.render_priority = prioridad
@@ -375,6 +380,7 @@ static func ao_material() -> StandardMaterial3D:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 		m.albedo_texture = contact_texture()
 		m.render_priority = -1
 		_materials["ao"] = m

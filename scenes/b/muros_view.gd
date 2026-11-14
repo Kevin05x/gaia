@@ -261,6 +261,7 @@ static func _material(nombre: String) -> Material:
 		"solido":
 			var s := StandardMaterial3D.new()
 			s.vertex_color_use_as_albedo = true
+			s.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 			s.roughness = 0.88
 			m = s
 		"energia":

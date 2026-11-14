@@ -294,6 +294,7 @@ func show_zone(validas: Array, ocupadas: Array) -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.vertex_color_use_as_albedo = true
+	material.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	malla.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
 	for grupo in [[validas, Color(0.55, 0.9, 0.78, 0.34)], [ocupadas, Color(1.0, 0.45, 0.42, 0.26)]]:
