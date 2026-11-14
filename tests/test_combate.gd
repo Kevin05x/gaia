@@ -12,7 +12,7 @@ var sim: Simulation
 
 
 func before_each() -> void:
-	economia = Economy.desde_archivo("res://content/economia.json")
+	economia = Economy.desde_archivo("res://content/economia.json").para_pruebas()
 	combate = CombatData.desde_archivo("res://content/combate.json")
 	sim = _nueva()
 	_operar()

@@ -18,6 +18,8 @@ func iniciar(estado: MissionState) -> void:
 	estado.recursos = {}
 	for recurso in _economia.recursos:
 		estado.recursos[recurso] = int(_economia.recursos_iniciales.get(recurso, 0))
+		if _economia.recursos_ilimitados:
+			estado.recursos[recurso] = _economia.capacidad_base  # TEMPORAL (pruebas): almacén lleno
 	estado.recursos_vistos = []
 	for recurso in estado.recursos:
 		if int(estado.recursos[recurso]) > 0:
@@ -34,6 +36,8 @@ func capacidad(estado: MissionState) -> int:
 
 
 func alcanza(estado: MissionState, costo: Dictionary) -> bool:
+	if _economia.recursos_ilimitados:
+		return true  # TEMPORAL (pruebas de construcción): ver Economy.recursos_ilimitados
 	for recurso in costo:
 		if int(estado.recursos.get(recurso, 0)) < int(costo[recurso]):
 			return false
@@ -44,6 +48,8 @@ func alcanza(estado: MissionState, costo: Dictionary) -> bool:
 func pagar(estado: MissionState, costo: Dictionary) -> bool:
 	if not alcanza(estado, costo):
 		return false
+	if _economia.recursos_ilimitados:
+		return true  # TEMPORAL (pruebas de construcción): no se cobra
 	for recurso in costo:
 		estado.recursos[recurso] = int(estado.recursos.get(recurso, 0)) - int(costo[recurso])
 	return true

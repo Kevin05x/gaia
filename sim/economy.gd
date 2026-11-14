@@ -16,6 +16,11 @@ var antena_casilla_relativa: Vector2i = Vector2i.ZERO
 var antena_hp: float = 150.0  ## vida de la antena cuando tiene al menos un nivel
 var antena_niveles: Array = []  ## [{"costo", "tiempo_s", "consume_w", "requiere"?}]
 var edificios: Dictionary = {}  ## id -> definición
+## La obra (salvo los muros) espera a que el rover llegue junto a la casilla; al terminar, el rover vuelve a donde estaba.
+var obra_con_rover: bool = false
+## SOLO PARA PROBAR la construcción: los costos no se cobran y la base empieza con el almacén lleno.
+## TEMPORAL: poner «pruebas_recursos_ilimitados» en 0 en content/economia*.json antes del PR a develop.
+var recursos_ilimitados: bool = false
 var errores: PackedStringArray = PackedStringArray()
 
 
@@ -32,6 +37,14 @@ static func desde_texto(texto: String) -> Economy:
 	var economia := Economy.new()
 	economia._cargar(texto)
 	return economia
+
+
+## Para las pruebas de reglas: sin el modo temporal de recursos ilimitados y, salvo que se pida, sin obra con rover
+## (las pruebas de costos y tiempos de obra no mueven el rover; la obra con rover tiene sus propias pruebas).
+func para_pruebas(con_rover: bool = false) -> Economy:
+	recursos_ilimitados = false
+	obra_con_rover = con_rover
+	return self
 
 
 func tiene_edificio(id: String) -> bool:
@@ -100,6 +113,8 @@ func _cargar(texto: String) -> void:
 		for r in recursos:
 			recursos_iniciales[r] = int(iniciales.get(r, 0))
 	capacidad_base = int(datos.get("capacidad_base", 0))
+	obra_con_rover = bool(datos.get("obra_con_rover", false))
+	recursos_ilimitados = bool(datos.get("pruebas_recursos_ilimitados", false))
 	bodega_rover = maxi(int(datos.get("bodega_rover", 0)), 0)
 	if capacidad_base <= 0:
 		errores.append("INVALID_FIELD:capacidad_base")

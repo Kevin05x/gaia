@@ -36,7 +36,7 @@ func before_each() -> void:
 		Rules.desde_archivo("res://content/rules.json"),
 		MapData.desde_archivo("res://content/mapa.json"),
 		Catalog.desde_archivo("res://content/parts.json"),
-		Economy.desde_archivo("res://content/economia.json"))
+		Economy.desde_archivo("res://content/economia.json").para_pruebas())
 	for id in ["cohete_ligero", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro", "taladro", "radar"]:
 		sim.ejecutar("design_add", {"part_id": id})
 	sim.ejecutar("design_start")
@@ -52,7 +52,7 @@ func test_lo_juntado_se_conserva_al_guardar_y_continuar() -> void:
 	assert_true(Sesion.guardar(sim))
 	var otra := Simulation.new(Balance.desde_archivo("res://content/balance.json"),
 		Rules.desde_archivo("res://content/rules.json"), MapData.desde_archivo("res://content/mapa.json"),
-		Catalog.desde_archivo("res://content/parts.json"), Economy.desde_archivo("res://content/economia.json"))
+		Catalog.desde_archivo("res://content/parts.json"), Economy.desde_archivo("res://content/economia.json").para_pruebas())
 	assert_true(otra.cargar(Sesion.leer()))
 	var snap := otra.snapshot()
 	assert_eq(int(snap["resources"]["rocas"]), 67, "87 menos los 20 del panel")

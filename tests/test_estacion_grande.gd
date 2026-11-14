@@ -11,7 +11,7 @@ const DISENO: Array[String] = ["cohete_ligero", "chasis_base", "panel_solar", "a
 func _sim(mapa := "res://content/mapa.json") -> Simulation:
 	var s := Simulation.new(Balance.desde_archivo("res://content/balance.json"),
 		Rules.desde_archivo("res://content/rules.json"), MapData.desde_archivo(mapa),
-		Catalog.desde_archivo("res://content/parts.json"), Economy.desde_archivo("res://content/economia.json"),
+		Catalog.desde_archivo("res://content/parts.json"), Economy.desde_archivo("res://content/economia.json").para_pruebas(),
 		StoryData.desde_archivo("res://content/historia.json"))
 	for id in DISENO:
 		s.ejecutar("design_add", {"part_id": id})

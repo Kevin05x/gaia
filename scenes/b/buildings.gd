@@ -208,7 +208,9 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		BuildFx.fijar_cartel(cartel, progreso, float(e.get("remaining_s", 0.0)))
 	var etiqueta: Label3D = datos["label"]
 	if en_obra:
-		etiqueta.text = ""
+		# Obra con rover: hasta que el rover llega, la obra espera (la simulación no la avanza).
+		etiqueta.text = tr("BUILD_ROVER_WAITING") if bool(e.get("waiting_rover", false)) else ""
+		etiqueta.modulate = Color("F0C079")
 	elif not bool(e.get("active", true)):
 		etiqueta.text = "OFF"
 		etiqueta.modulate = Color("FF8178")

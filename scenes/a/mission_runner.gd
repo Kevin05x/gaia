@@ -113,6 +113,13 @@ func _process(delta: float) -> void:
 			_aviso("CARGO_FIRST")
 		elif evento.begins_with(Simulation.EVENTO_DESCARGA + ":"):
 			_aviso_descarga(int(evento.get_slice(":", 1)))
+		elif evento.begins_with(Simulation.EVENTO_ROVER_AUTOMATICO + ":"):
+			var ruta := sim.ruta_en_curso()
+			if not ruta.is_empty():
+				port.present_path(ruta["path"], ruta["seconds_per_tile"])
+			_aviso("BUILD_ROVER_BACK" if evento.ends_with(":vuelta") else "BUILD_ROVER_GOING")
+		elif evento.begins_with(Simulation.EVENTO_OBRA_SIN_ROVER + ":"):
+			_aviso_obra_sin_rover(evento.get_slice(":", 1))
 		elif evento.begins_with(HitosSystem.EVENTO_HITO + ":") and view != null:
 			view.celebrar_hito(evento.get_slice(":", 1))
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
@@ -248,7 +255,16 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				_aviso("MOVE_STOPPED")
 		"act":
 			port.present_action(resultado["action"])
-		"upgrade", "build", "build_module", "decide":
+		"upgrade", "build", "build_module":
+			if view != null:
+				view.audio.ping()
+			# Obra con rover: el rover sale hacia la obra (o irá en cuanto acabe lo que hace).
+			if not Array(resultado.get("path", [])).is_empty():
+				port.present_path(resultado["path"], resultado["seconds_per_tile"])
+				_aviso("BUILD_ROVER_GOING")
+			elif resultado.has("rover_reason") and not str(resultado["rover_reason"]) in ["BUSY", "MOVING", "PAUSED"]:
+				_aviso_obra_sin_rover(str(resultado["rover_reason"]))
+		"decide":
 			if view != null:
 				view.audio.ping()
 		"landing_finished":
@@ -272,6 +288,11 @@ func _aviso_descarga(unidades: int) -> void:
 	if view != null:
 		view.hud.show_notice(tr("CARGO_UNLOADED") % unidades)
 		view.al_descargar()
+
+
+func _aviso_obra_sin_rover(motivo: String) -> void:
+	if view != null:
+		view.hud.show_notice(tr("BUILD_ROVER_BLOCKED") % tr(motivo))
 
 
 func _aviso(clave: String) -> void:

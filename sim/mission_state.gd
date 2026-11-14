@@ -58,6 +58,11 @@ var companero_usos: int = 0  ## ayudas de Rocky hechas en ese sol
 var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
 var carga: Dictionary = {}  ## lo que lleva la bodega del rover hasta descargarlo en la estación o en un domo
 var descargar_al_llegar: bool = false
+## Obra con rover (economia.json › obra_con_rover). No se guardan: al continuar una partida el jugador lleva el rover.
+var ir_a_obra: bool = false  ## el rover debe ir a la obra en cuanto quede libre (estaba ocupado al ordenarla)
+var volver_tras_obra: bool = false  ## al terminar la obra, el rover vuelve a «casilla_vuelta»
+var casilla_vuelta: Vector2i = Vector2i.ZERO
+var obra_del_rover: String = ""  ## id del edificio que construye el rover
 var bodega_avisada: bool = false  ## ya se explicó que lo recogido va a la bodega  ## el rover va camino de un almacén para descargar
 var recursos_vistos: Array = []  ## recursos ya conseguidos alguna vez
 var edificios: Array[Dictionary] = []  ## ver BuildSystem
