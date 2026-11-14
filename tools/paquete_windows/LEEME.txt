@@ -1,0 +1,35 @@
+GAIA - Space Mission Design Game (NASA Space Apps Challenge 2026)
+Equipo Full Galacticos - Version de escritorio para Windows (x86_64)
+
+COMO ABRIRLO
+1. Descomprime toda la carpeta (no lo abras desde dentro del .zip).
+2. Doble clic en GAIA.exe.
+3. Si Windows muestra "Windows protegio su PC" (SmartScreen), pulsa
+   "Mas informacion" y luego "Ejecutar de todas formas". Aparece porque el
+   ejecutable no esta firmado con un certificado comercial; no es un virus.
+
+SI NO ABRE, SE VE MAL O VA LENTO
+- Usa "GAIA (modo compatible).bat": abre el juego con OpenGL, que funciona en
+  casi cualquier PC (se pierden sombras suaves, oclusion ambiental y niebla).
+- Configuracion > Graficos: Baja / Media / Alta / Ultra.
+
+REQUISITOS
+- Windows 10 u 11 de 64 bits. GAIA.exe usa Vulkan (Forward+); si el equipo no lo
+  soporta, el juego intenta abrir con OpenGL 3.3 por si solo.
+- No necesita instalar nada ni conexion a internet (con internet, el informe
+  final consulta en vivo el archivo de imagenes de la NASA).
+
+MEDIR EL RENDIMIENTO (para la sustentacion)
+- Doble clic en "Medir_rendimiento.bat". Tarda unos 2 minutos, no toques nada.
+  Deja medicion_forward_plus.txt y medicion_compatible.txt en esta carpeta.
+
+CONTROLES UTILES
+- P: muestra/oculta el contador de FPS (cuadros por segundo, RAM y VRAM).
+- Esc: pausa.
+
+La partida se guarda sola al salir y al empezar cada sol.
+
+GAIA es un proyecto independiente: no esta afiliado a la NASA ni cuenta con su
+respaldo. Las fotos y modelos 3D de la NASA se usan con su credito (ver
+docs/DATOS_NASA.md en el repositorio). Imagenes del menu e historia generadas
+con IA (marca de agua visible).
