@@ -19,7 +19,7 @@ var taller: Dictionary = {}
 var _t := 0.0
 var _activa := false
 var _raiz: Control
-var _lanzamiento: LaunchView
+var _lanzamiento: Control  ## LaunchPhoto (foto real de la NASA) o, si falta, LaunchView (dibujo)
 var _orbita: OrbitView
 var _titulo: Label
 var _texto: Label
@@ -55,7 +55,14 @@ func _construir() -> void:
 	add_child(_raiz)
 	var sel: Dictionary = taller.get("selection", {})
 	var totales: Dictionary = taller.get("totals", {})
-	_lanzamiento = LaunchView.new()
+	var ruta_foto := "res://assets/nasa/luna_lanzamiento.jpg" if Destino.es_luna() else "res://assets/nasa/lanzamiento.jpg"
+	if ResourceLoader.exists(ruta_foto):
+		var foto := LaunchPhoto.new()
+		foto.tex = load(ruta_foto) as Texture2D
+		foto.luna = Destino.es_luna()
+		_lanzamiento = foto
+	else:
+		_lanzamiento = LaunchView.new()
 	_lanzamiento.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_lanzamiento.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_lanzamiento.pesado = (sel.get("cohetes", []) as Array).has("cohete_pesado")
@@ -155,6 +162,60 @@ func _nombre(categoria: String) -> String:
 			if str(parte.get("id", "")) == str(elegidas[0]):
 				return tr(str(parte.get("name_key", "")))
 	return str(elegidas[0])
+
+
+## Despegue con la fotografía real de la NASA (Atlas V 541 con el Perseverance, 30 jul 2020; Saturn V del Apolo 11):
+## empuje de cámara que sigue al cohete, vibración al encender, resplandor de los motores y telemetría. Las cifras de
+## tiempo y altitud son una simulación didáctica, no telemetría oficial.
+class LaunchPhoto extends Control:
+	var t := 0.0
+	var pesado := false
+	var tex: Texture2D
+	var luna := false
+
+	func _draw() -> void:
+		var w := size.x
+		var h := size.y
+		draw_rect(Rect2(Vector2.ZERO, size), Color("05060c"))
+		if tex == null:
+			return
+		var u := clampf(t / DURACION_LANZAMIENTO, 0.0, 1.0)
+		var suave := u * u * (3.0 - 2.0 * u)
+		var ts := tex.get_size()
+		var cubre := maxf(w / ts.x, h / ts.y)
+		var zoom := lerpf(1.0, 1.18, suave) if luna else lerpf(1.06, 1.42, suave)
+		var escala := cubre * zoom
+		var dim := ts * escala
+		# Punto de la foto (0..1) que queda en el centro de la pantalla: la cámara sube con el cohete.
+		var foco := Vector2(0.52, lerpf(0.66, 0.2, suave)) if luna else Vector2(lerpf(0.47, 0.465, suave), lerpf(0.55, 0.34, suave))
+		var temblor := Vector2.ZERO
+		if t > 0.5 and u < 0.85:
+			temblor = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * 5.0 * (1.0 - u) * clampf((t - 0.5) / 0.6, 0.0, 1.0)
+		var pos := Vector2(w, h) * 0.5 - foco * dim + temblor
+		pos.x = clampf(pos.x, w - dim.x, 0.0)
+		pos.y = clampf(pos.y, h - dim.y, 0.0)
+		draw_texture_rect(tex, Rect2(pos, dim), false)
+		# Resplandor de los motores sobre la base del cohete (solo en la foto de Marte, donde se ve la plataforma).
+		if not luna:
+			var llama := pos + Vector2(0.475, 0.665) * dim
+			var fuerza := clampf((t - 0.4) / 0.8, 0.0, 1.0) * (0.85 + randf() * 0.15)
+			for k in range(5):
+				draw_circle(llama, (150.0 - k * 24.0) * zoom * fuerza, Color(1.0, 0.62 + k * 0.06, 0.25, 0.05 + k * 0.012))
+		# Oscurecimiento a la izquierda (detrás del texto) y abajo (detrás de la nota).
+		var oscuro := Color(0.02, 0.012, 0.01)
+		draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w * 0.62, 0), Vector2(w * 0.62, h), Vector2(0, h)]),
+			PackedColorArray([Color(oscuro, 0.82), Color(oscuro, 0.0), Color(oscuro, 0.0), Color(oscuro, 0.82)]))
+		draw_polygon(PackedVector2Array([Vector2(0, h * 0.72), Vector2(w, h * 0.72), Vector2(w, h), Vector2(0, h)]),
+			PackedColorArray([Color(oscuro, 0.0), Color(oscuro, 0.0), Color(oscuro, 0.78), Color(oscuro, 0.78)]))
+		# Destello al final: el cielo se aclara antes de pasar a la órbita.
+		if u > 0.82:
+			draw_rect(Rect2(Vector2.ZERO, size), Color(1, 0.96, 0.9, clampf((u - 0.82) / 0.18, 0.0, 1.0) * 0.55))
+		var fuente := get_theme_default_font()
+		var seg := t - 1.4
+		var cuenta := "T%+.0f s" % seg
+		draw_string(fuente, Vector2(w - 280, 76), cuenta, HORIZONTAL_ALIGNMENT_RIGHT, 240, 32, Color(1, 1, 1, 0.95))
+		var subida := clampf((t - 1.4) / 2.8, 0.0, 1.0)
+		draw_string(fuente, Vector2(w - 280, 106), tr("LC_ALTITUDE") % (pow(subida, 2.0) * 60.0), HORIZONTAL_ALIGNMENT_RIGHT, 240, 16, Color(1, 1, 1, 0.8))
 
 
 ## Despegue visto de lado: torre, cohete (con propulsores si es pesado), llama, humo y cielo que se oscurece.
