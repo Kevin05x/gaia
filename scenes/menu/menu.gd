@@ -231,13 +231,88 @@ func _nueva_partida() -> void:
 		si.custom_minimum_size = Vector2(190, 42)
 		si.pressed.connect(func() -> void:
 			_cerrar_panel()
-			_empezar_nueva())
+			_configurar_mision())
 		pie.add_child(si)
 		var no := pie.get_child(0) as Button
 		no.text = tr("M_NEW_CONFIRM_NO")
 		no.theme_type_variation = ""
 		return
-	_empezar_nueva()
+	_configurar_mision()
+
+
+## Antes de jugar: objetivo de la misión, dificultad y cuántas personas juegan (modo equipo, hasta 4).
+func _configurar_mision() -> void:
+	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 720, 500)
+	var objetivo := UI.label(cuerpo, tr("M_SETUP_GOAL"), 15, Color(UI.CREAM, 0.88))
+	objetivo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objetivo.custom_minimum_size.x = 640
+	_subtitulo(cuerpo, tr("M_SETUP_DIFF"))
+	var fila_dif := HBoxContainer.new()
+	fila_dif.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_dif)
+	var explicacion := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	explicacion.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	explicacion.custom_minimum_size.x = 640
+	var grupo_dif := ButtonGroup.new()
+	for id in ["exploracion", "estandar", "experta"]:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_dif
+		b.text = tr("DIFF_" + id.to_upper())
+		b.custom_minimum_size = Vector2(200, 40)
+		b.button_pressed = Sesion.dificultad == id
+		b.pressed.connect(func() -> void:
+			Sesion.dificultad = id
+			explicacion.text = tr("DIFF_" + id.to_upper() + "_D"))
+		fila_dif.add_child(b)
+	explicacion.text = tr("DIFF_" + Sesion.dificultad.to_upper() + "_D")
+	_subtitulo(cuerpo, tr("M_SETUP_TEAM"))
+	var fila_eq := HBoxContainer.new()
+	fila_eq.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila_eq)
+	var roles := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	roles.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	roles.custom_minimum_size.x = 640
+	var grupo_eq := ButtonGroup.new()
+	for n in range(1, 5):
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo_eq
+		b.text = tr("M_SETUP_PLAYERS") % n if n > 1 else tr("M_SETUP_SOLO")
+		b.custom_minimum_size = Vector2(150, 40)
+		b.button_pressed = Sesion.jugadores == n
+		b.pressed.connect(func() -> void:
+			Sesion.jugadores = n
+			roles.text = _texto_roles(n))
+		fila_eq.add_child(b)
+	roles.text = _texto_roles(Sesion.jugadores)
+	var pie := cuerpo.get_parent().get_child(cuerpo.get_parent().get_child_count() - 1) as HBoxContainer
+	var empezar := Button.new()
+	empezar.text = tr("M_SETUP_START")
+	empezar.theme_type_variation = "PrimaryButton"
+	empezar.custom_minimum_size = Vector2(200, 42)
+	empezar.pressed.connect(func() -> void:
+		Sesion.votos = []
+		_cerrar_panel()
+		_empezar_nueva())
+	pie.add_child(empezar)
+	var volver := pie.get_child(0) as Button
+	volver.theme_type_variation = ""
+	empezar.grab_focus.call_deferred()
+
+
+## «Persona 1: Dirección y Ciencia · Persona 2: ...» según cuántos juegan.
+func _texto_roles(n: int) -> String:
+	if n <= 1:
+		return tr("M_SETUP_SOLO_D")
+	var partes: Array[String] = []
+	var reparto := Sesion.roles_por_jugador(n)
+	for i in range(reparto.size()):
+		var nombres: Array[String] = []
+		for rol in reparto[i]:
+			nombres.append(tr("ROLE_" + str(rol).to_upper()))
+		partes.append(tr("GNG_PLAYER") % (i + 1) + ": " + " + ".join(nombres))
+	return tr("M_SETUP_TEAM_D") + "\n" + "  ·  ".join(partes)
 
 
 func _empezar_nueva() -> void:

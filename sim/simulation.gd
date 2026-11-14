@@ -18,6 +18,7 @@ var _reglas: Rules
 var _mapa: MapData
 var _catalogo: Catalog
 var _diseno: MissionDesign  ## piezas elegidas en el taller; sobrevive a reiniciar()
+var _diseno_resumen: Dictionary = {}  ## taller ya calculado para mostrar fuera del taller (se rehace al volver)
 var _reloj: ClockSystem
 var _energia: EnergySystem
 var _ciencia: ScienceSystem
@@ -292,6 +293,20 @@ func snapshot() -> Dictionary:
 	datos["rover_zone"] = _mapa.zona_de(estado.casilla_rover)
 	if estado.fase == "workshop":
 		datos["workshop"] = _taller()
+		_diseno_resumen = {}
+	else:
+		# Fuera del taller, el diseño elegido sigue disponible (tarjeta de la NASA, informe y comparación con la
+		# misión real, también al continuar una partida guardada). Se calcula una vez y se reutiliza.
+		if _diseno_resumen.is_empty():
+			var completo := _taller()
+			var nombres: Array[Dictionary] = []  # solo id y nombre de cada pieza: el resumen viaja en cada snapshot
+			for categoria in completo["categories"]:
+				var piezas: Array[Dictionary] = []
+				for pieza in categoria["parts"]:
+					piezas.append({"id": pieza["id"], "name_key": pieza["name_key"]})
+				nombres.append({"id": categoria["id"], "parts": piezas})
+			_diseno_resumen = {"selection": completo["selection"], "totals": completo["totals"], "categories": nombres}
+		datos["design_summary"] = _diseno_resumen
 	if _economia != null:
 		datos["resources"] = estado.recursos.duplicate()
 		datos["resource_capacity"] = _recursos.capacidad(estado)
@@ -349,6 +364,7 @@ func cargar(datos: Dictionary) -> bool:
 	for categoria in Catalog.CATEGORIAS:
 		_diseno.seleccion[categoria] = Array(diseno.get(categoria, []))
 	_diseno.elegir_trayectoria_por_defecto()
+	_diseno_resumen = {}
 	for nombre in campos:
 		var actual = estado.get(nombre)
 		var valor = campos[nombre]

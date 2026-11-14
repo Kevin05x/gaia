@@ -112,7 +112,10 @@ func _process(delta: float) -> void:
 		if crear_vista:
 			Sesion.borrar()  # misión terminada: ya no hay partida que continuar
 		_publicar()
-		port.present_report(sim.informe.duplicate(true))
+		var informe := sim.informe.duplicate(true)
+		informe["difficulty"] = Sesion.dificultad
+		informe["team"] = {"players": Sesion.jugadores, "votes": Sesion.votos.duplicate(true)}
+		port.present_report(informe)
 		return
 	_desde_ultimo_snapshot += delta
 	if crear_vista:
@@ -151,8 +154,24 @@ func _crear_simulacion() -> void:
 	var hitos := HitosData.desde_archivo(RUTA_HITOS)
 	for lista in [balance.errores, reglas.errores, mapa.errores, catalogo.errores, economia.errores, historia.errores, combate.errores, tutorial.errores, hitos.errores]:
 		errores.append_array(lista)
+	if crear_vista and Sesion.cargar_al_iniciar:
+		Sesion.restaurar_configuracion()
+	aplicar_dificultad(reglas, combate, Sesion.dificultad)
 	if errores.is_empty():
 		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
+
+
+## Dificultad: cambia el presupuesto y cuántos monstruos trae cada oleada (content/rules.json › dificultades).
+static func aplicar_dificultad(reglas: Rules, combate: CombatData, id: String) -> void:
+	var nivel := Sesion.datos_dificultad(id)
+	if nivel.is_empty():
+		return
+	reglas.presupuesto_musd = float(nivel.get("presupuesto_musd", reglas.presupuesto_musd))
+	var factor := float(nivel.get("factor_enemigos", 1.0))
+	if combate != null and not is_equal_approx(factor, 1.0):
+		for oleada in combate.oleadas:
+			for grupo in oleada["grupos"]:
+				grupo["cantidad"] = maxi(1, roundi(int(grupo["cantidad"]) * factor))
 
 
 ## "agregar_piezas" es false al rediseñar: el taller conserva las piezas ya elegidas.

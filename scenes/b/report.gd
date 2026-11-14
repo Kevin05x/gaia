@@ -6,6 +6,7 @@ const StoryPanel := preload("res://scenes/b/story_panel.gd")
 signal redesign_requested
 var root: Control
 var report: Dictionary = {}
+var taller: Dictionary = {}  ## último diseño del taller: lo usa la comparación con la misión real
 
 
 func _ready() -> void:
@@ -84,9 +85,10 @@ func rebuild() -> void:
 			var paso := UI.label(causas, "• " + StoryPanel.text_of(entrada), UI.FONT_SECONDARY, Color(UI.CREAM, 0.85))
 			paso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			paso.custom_minimum_size.x = 340
+	_equipo(causas)
 	var creditos := UI.label(lienzo, tr("CREDITS"), 12, Color(UI.CREAM, 0.6))
 	creditos.position = Vector2(24, 548)
-	creditos.size = Vector2(700, 30)
+	creditos.size = Vector2(440, 30)
 	creditos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var boton_rediseno := Button.new()
 	boton_rediseno.theme_type_variation = "PrimaryButton"
@@ -97,6 +99,54 @@ func rebuild() -> void:
 	lienzo.add_child(boton_rediseno)
 	boton_rediseno.pressed.connect(func(): redesign_requested.emit())
 	boton_rediseno.grab_focus.call_deferred()
+	var boton_real := Button.new()
+	boton_real.text = tr("CMP_OPEN")
+	boton_real.size = Vector2(250, 44)
+	boton_real.position = Vector2(960 - 24 - 180 - 12 - 250, 592 - 24 - 44)
+	boton_real.clip_text = true
+	lienzo.add_child(boton_real)
+	boton_real.pressed.connect(_comparar.bind(panel))
+
+
+## Evaluación por roles: qué aportó cada responsable (dirección, ingeniería, ciencia y comunicaciones).
+func _equipo(causas: VBoxContainer) -> void:
+	var t: Dictionary = taller.get("totals", {})
+	var cabecera := UI.label(causas, tr("TEAM_TITLE"), UI.FONT_SECONDARY, UI.AMBER)
+	cabecera.custom_minimum_size.y = 26
+	var equipo: Dictionary = report.get("team", {})
+	var jugadores := int(equipo.get("players", 1))
+	var dificultad := tr("DIFF_" + str(report.get("difficulty", "estandar")).to_upper())
+	var lineas: Array[String] = [tr("TEAM_SUMMARY") % [jugadores, dificultad] if jugadores > 1 else tr("TEAM_SOLO") % dificultad]
+	if not t.is_empty():
+		var cap := float(t.get("capacity_kg", 0))
+		var margen := 0 if cap <= 0.0 else int(round((cap - float(t.get("mass_kg", 0))) / cap * 100.0))
+		lineas.append(tr("TEAM_DIR") % int(float(t.get("budget_musd", 0)) - float(t.get("cost_musd", 0))))
+		lineas.append(tr("TEAM_ENG") % margen)
+	lineas.append(tr("TEAM_SCI") % [int(report.get("sent", 0)), int(report.get("goal", 100))])
+	var enlace: Array = taller.get("selection", {}).get("comunicaciones", [])
+	if not enlace.is_empty():
+		lineas.append(tr("TEAM_COM") % tr("PIEZA_ANTENA_RELE" if enlace.has("antena_rele") else "PIEZA_ANTENA_DIRECTA").to_lower())
+	var votos: Array = equipo.get("votes", [])
+	if jugadores > 1 and not votos.is_empty():
+		var a_favor := 0
+		for v in votos:
+			if bool(v.get("go", false)):
+				a_favor += 1
+		lineas.append(tr("TEAM_VOTES") % [a_favor, votos.size()])
+	for texto in lineas:
+		var l := UI.label(causas, "• " + texto, UI.FONT_SECONDARY, Color(UI.CREAM, 0.85))
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = 340
+
+
+## Abre «Tu misión frente a la real» encima del informe, en el mismo panel.
+func _comparar(panel: Control) -> void:
+	var comparar := preload("res://scenes/b/nasa_compare.gd").new()
+	comparar.report = report
+	comparar.taller = taller
+	panel.add_child(comparar)
+	comparar.build()
+	comparar.closed.connect(func() -> void: comparar.queue_free())
 
 
 func clear() -> void:
@@ -113,6 +163,12 @@ func _photo(lienzo: Control) -> void:
 	textura.size = Vector2(520, 292)
 	textura.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	textura.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var NasaData := preload("res://scenes/b/nasa_data.gd")
+	var real := NasaData.imagen("selfie")
+	if not (report.get("photo") is Texture2D) and real != null:
+		report["photo"] = real
+		report["photo_credit"] = NasaData.credito("selfie")
+		report["photo_url"] = NasaData.url_imagen("selfie")
 	textura.texture = report.get("photo") if report.get("photo") is Texture2D else preload("res://scenes/b/assets/jezero.svg")
 	lienzo.add_child(textura)
 	var credito := UI.label(lienzo, str(report.get("photo_credit", tr("PHOTO_FALLBACK"))), 13, Color(UI.CREAM, 0.75))

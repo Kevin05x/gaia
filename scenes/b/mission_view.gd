@@ -14,6 +14,7 @@ var actors: Node3D
 var rig: Node3D
 var hud: CanvasLayer
 var report_view: CanvasLayer
+var tarjeta_nasa: CanvasLayer  ## «Así lo hizo Perseverance» durante el aterrizaje (datos y fotos reales de la NASA)
 var explosions: Node3D
 var audio: Node
 var sun: DirectionalLight3D
@@ -120,6 +121,9 @@ func _ready() -> void:
 	report_view.name = "Report"
 	add_child(report_view)
 	report_view.redesign_requested.connect(func(): port.submit("redesign"))
+	tarjeta_nasa = preload("res://scenes/b/nasa_landing_card.gd").new()
+	tarjeta_nasa.name = "NasaCard"
+	add_child(tarjeta_nasa)
 	buildings = preload("res://scenes/b/buildings.gd").new()
 	buildings.name = "Buildings"
 	buildings.ground = terrain.height_at
@@ -432,6 +436,10 @@ func apply_snapshot(s: Dictionary) -> void:
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
+	if s.has("workshop") or s.has("design_summary"):
+		report_view.taller = s.get("workshop", s.get("design_summary"))
+	if is_instance_valid(tarjeta_nasa):
+		tarjeta_nasa.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)

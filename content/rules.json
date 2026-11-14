@@ -37,5 +37,68 @@
     "extras": {
       "min": 0
     }
+  },
+  "dificultades": {
+    "exploracion": {
+      "presupuesto_musd": 820,
+      "factor_enemigos": 0.5,
+      "nombre_clave": "DIFF_EXPLORACION"
+    },
+    "estandar": {
+      "presupuesto_musd": 700,
+      "factor_enemigos": 1.0,
+      "nombre_clave": "DIFF_ESTANDAR"
+    },
+    "experta": {
+      "presupuesto_musd": 620,
+      "factor_enemigos": 1.5,
+      "nombre_clave": "DIFF_EXPERTA"
+    }
+  },
+  "roles_equipo": {
+    "1": [
+      [
+        "direccion",
+        "ingenieria",
+        "ciencia",
+        "comunicaciones"
+      ]
+    ],
+    "2": [
+      [
+        "direccion",
+        "ciencia"
+      ],
+      [
+        "ingenieria",
+        "comunicaciones"
+      ]
+    ],
+    "3": [
+      [
+        "direccion"
+      ],
+      [
+        "ingenieria"
+      ],
+      [
+        "ciencia",
+        "comunicaciones"
+      ]
+    ],
+    "4": [
+      [
+        "direccion"
+      ],
+      [
+        "ingenieria"
+      ],
+      [
+        "ciencia"
+      ],
+      [
+        "comunicaciones"
+      ]
+    ]
   }
 }

@@ -1075,7 +1075,7 @@ func _rebuild_summary(taller: Dictionary) -> void:
 	m2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	m2.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var dias := int(totales.get("cruise_days", 0))
-	if dias > 0:
+	if dias > 0 and capacidad > 0.0:
 		var tray := UI.label(_summary_box, tr("WS_TRAJ_LINE") % [int(totales.get("rocket_capacity_kg", 0)),
 			int(round(float(totales.get("capacity_factor", 1.0)) * 100.0)), dias], 11, TEXT_DIM)
 		tray.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1172,12 +1172,33 @@ func _message(codigo: String) -> String:
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		command.emit("design_start", {})
+		var jugadores := int(preload("res://scenes/menu/game_session.gd").jugadores)
+		if jugadores > 1:
+			_revision_de_equipo(taller, jugadores)
+		else:
+			command.emit("design_start", {})
 		return
 	command.emit("design_validate", {})
 	validated = bool(snapshot.get("workshop", {}).get("valid", false))
 	_signature = ""
 	update_snapshot(snapshot)
+
+
+## Modo equipo: antes de despegar, cada responsable vota GO / NO GO sobre su parte del diseño.
+func _revision_de_equipo(taller: Dictionary, jugadores: int) -> void:
+	var revision := preload("res://scenes/b/go_no_go.gd").new()
+	revision.taller = taller
+	revision.jugadores = jugadores
+	root.add_child(revision)
+	revision.build()
+	revision.launch_confirmed.connect(func() -> void:
+		revision.queue_free()
+		command.emit("design_start", {}))
+	revision.cancelled.connect(func() -> void:
+		revision.queue_free()
+		validated = false
+		_signature = ""
+		update_snapshot(snapshot))
 
 
 func _update_preview(seleccion: Dictionary) -> void:
