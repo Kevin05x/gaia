@@ -6,14 +6,19 @@ extends Node3D
 ## Rendimiento: todos los tramos terminados se dibujan con MultiMesh (unas 7 llamadas de dibujo en total, haya 5 o 90
 ## muros) y solo se recolocan las instancias cuando cambia la barrera. Las obras las dibuja buildings.gd con pieza().
 ## Solo presenta: las reglas (vida, bloqueo, recarga del escudo) están en la simulación.
-const TILE := 2.0
+const TILE := Escala.TILE
 const TIPOS := ["barrera", "compuerta"]
 const CAPA := 0.16  ## alto de cada capa impresa
 const SUELO := -0.3  ## los muros nacen un poco enterrados (el terreno no es plano)
 const ALTO_PILAR := 1.3
 const ALTO_MURO := 0.94
 const ANCHO_MURO := 0.22  ## medio ancho
-const POSTE := 0.74  ## distancia del centro de la compuerta a cada poste
+const POSTE := 1.06  ## distancia del centro de la compuerta a cada poste (antes de escalar)
+## Escalas de cada pieza a metros reales (casilla de 4 m): pilar de ≈2 m, muro de ≈1,4 m y 0,6 m de grueso, y una compuerta
+## con 3,6 m de paso libre y 3 m de alto, por donde cabe el rover (2,7 m de ancho, 2,2 m de alto).
+const K_PILAR := 1.5
+const K_MURO := 1.5
+const K_PUERTA := 1.7
 const ALTO_PUERTA := 1.75
 const REGOLITO_A := Color("C9A685")
 const REGOLITO_B := Color("BD9877")
@@ -149,9 +154,9 @@ func _recolocar(tipos: Dictionary) -> void:
 		var c := _centro(casilla)
 		if tipos[casilla] == "compuerta":
 			var eje := eje_de(casilla, tipos)
-			listas["puerta"].append(Transform3D(Basis(eje, Vector3.UP, eje.cross(Vector3.UP)), c))
+			listas["puerta"].append(Transform3D(Basis(eje, Vector3.UP, eje.cross(Vector3.UP)).scaled_local(Vector3.ONE * K_PUERTA), c))
 		else:
-			listas["pilar"].append(Transform3D(Basis(), c))
+			listas["pilar"].append(Transform3D(Basis().scaled(Vector3.ONE * K_PILAR), c))
 		for d in VECINOS:
 			var otra: Vector2i = casilla + d
 			if not tipos.has(otra):
@@ -163,7 +168,7 @@ func _recolocar(tipos: Dictionary) -> void:
 			var x := b - a
 			var horizontal := Vector3(x.x, 0.0, x.z).normalized()
 			# Base inclinada: el tramo sigue la pendiente del suelo y sus capas quedan paralelas a él.
-			listas["tramo"].append(Transform3D(Basis(x, Vector3.UP, Vector3(-horizontal.z, 0.0, horizontal.x)), a))
+			listas["tramo"].append(Transform3D(Basis(x, Vector3.UP * K_MURO, Vector3(-horizontal.z, 0.0, horizontal.x) * K_MURO), a))
 	for parte in listas:
 		for capa in [parte, parte + "_e"]:
 			_fijar(capa, listas[parte])
@@ -178,7 +183,7 @@ func _extremo(desde: Vector2i, hacia: Vector2i, tipos: Dictionary) -> Vector3:
 	var eje := eje_de(desde, tipos)
 	var otro := _centro(hacia)
 	var lado := 1.0 if (otro - c).dot(eje) >= 0.0 else -1.0
-	var p := c + eje * POSTE * lado
+	var p := c + eje * POSTE * K_PUERTA * lado
 	p.y = c.y
 	return p
 
@@ -233,7 +238,11 @@ static func pieza(padre: Node3D, tipo: String, en_obra: bool) -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = _malla(parte)
 		if parte.begins_with("tramo"):
-			mi.transform = Transform3D(Basis().scaled(Vector3(2.0, 1.0, 1.0)), Vector3(-1.0, 0, 0))
+			mi.transform = Transform3D(Basis().scaled(Vector3(TILE, K_MURO, K_MURO)), Vector3(-TILE * 0.5, 0, 0))
+		if parte.begins_with("pilar"):
+			mi.scale = Vector3.ONE * K_PILAR
+		elif parte.begins_with("puerta") or parte == "cortina":
+			mi.scale = Vector3.ONE * K_PUERTA
 		if parte.ends_with("_e") or parte == "cortina":
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		padre.add_child(mi)
@@ -261,6 +270,7 @@ static func _material(nombre: String) -> Material:
 		"solido":
 			var s := StandardMaterial3D.new()
 			s.vertex_color_use_as_albedo = true
+			s.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 			s.roughness = 0.88
 			m = s
 		"energia":

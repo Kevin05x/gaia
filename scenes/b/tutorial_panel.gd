@@ -57,7 +57,7 @@ func _ready() -> void:
 	_skip.flat = true
 	_skip.focus_mode = Control.FOCUS_NONE
 	_skip.alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_skip.add_theme_font_size_override("font_size", 12)
+	_skip.add_theme_font_size_override("font_size", 13)
 	_skip.add_theme_color_override("font_color", Color(UI.CREAM, 0.7))
 	_skip.add_theme_color_override("font_hover_color", UI.AMBER)
 	_skip.pressed.connect(func() -> void: command.emit("tutorial_skip", {}))

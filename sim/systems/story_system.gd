@@ -187,7 +187,8 @@ func metas(estado: MissionState) -> Array[Dictionary]:
 func intro() -> Array:
 	var paginas: Array = []
 	for pagina in _datos.intro:
-		paginas.append({"image": str(pagina.get("imagen", "")), "es": pagina.get("es", ""), "en": pagina.get("en", "")})
+		paginas.append({"image": str(pagina.get("imagen", "")), "es": pagina.get("es", ""), "en": pagina.get("en", ""),
+			"nasa_credit": str(pagina.get("credito_nasa", ""))})
 	return paginas
 
 

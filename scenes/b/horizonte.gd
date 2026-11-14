@@ -123,7 +123,7 @@ static func _malla(puntos: Array, nombre: String, aire: float, fino: FastNoiseLi
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normales
-	arrays[Mesh.ARRAY_COLOR] = colores
+	arrays[Mesh.ARRAY_COLOR] = Destino.colores(colores)
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var malla := ArrayMesh.new()
 	malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)

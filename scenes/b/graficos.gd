@@ -38,6 +38,16 @@ static func de_preset(nombre: String) -> Dictionary:
 
 ## Lee la configuración guardada. Si es de una versión anterior (solo «visual/quality»), Alta o Baja según eso.
 static func cargar() -> Dictionary:
+	if preload("res://scenes/a/medidor.gd").pedido():
+		# Medición: siempre el mismo ajuste (el de fábrica de la plataforma, o --preset=X) y sin calidad automática,
+		# para que las cifras de equipos distintos se puedan comparar.
+		var nombre := defecto()
+		for a in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+			if a.begins_with("--preset="):
+				nombre = a.get_slice("=", 1)
+		var fijo := de_preset(nombre)
+		fijo["auto"] = false
+		return fijo
 	var config := ConfigFile.new()
 	if config.load(ARCHIVO) != OK:
 		return de_preset(defecto())

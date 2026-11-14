@@ -53,6 +53,9 @@ static func text_of(valor: Variant) -> String:
 static func image_of(id: String) -> Texture2D:
 	if id.is_empty():
 		return null
+	if id.begins_with("nasa/"):  # imagen oficial de la NASA (assets/nasa), con su crédito aparte
+		var oficial := "res://assets/" + id + ".jpg"
+		return load(oficial) as Texture2D if ResourceLoader.exists(oficial) else null
 	for extension in [".jpg", ".png"]:
 		var ruta: String = CARPETA_IMAGENES + id + extension
 		if ResourceLoader.exists(ruta):
@@ -426,6 +429,11 @@ func _build_intro() -> void:
 		var paso := UI.label(cuerpo, "GAIA  ·  %d / %d" % [intro_index + 1, intro_pages.size()], 13, UI.AMBER)
 		UI.display(paso, 700, 3)
 	_parrafo(cuerpo, text_of(pagina), 23, Color(UI.CREAM, 0.97))
+	var credito_nasa := str(pagina.get("nasa_credit", "")) if pagina is Dictionary else ""
+	if not credito_nasa.is_empty():
+		var credito := UI.label(cuerpo, preload("res://scenes/b/nasa_data.gd").credito(credito_nasa), 12, Color(UI.CREAM, 0.6))
+		credito.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		credito.custom_minimum_size.x = ANCHO
 	var pie := HBoxContainer.new()
 	pie.alignment = BoxContainer.ALIGNMENT_END
 	pie.add_theme_constant_override("separation", 10)

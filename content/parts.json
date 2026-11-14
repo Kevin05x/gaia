@@ -1,11 +1,13 @@
 {
-  "version": 1,
+  "version": 2,
+  "_fuentes": "Masas y potencias de instrumentos inspiradas en Perseverance (NASA, science.nasa.gov/mission/mars-2020-perseverance/science-instruments). Los costos en M USD son valores de juego a escala (el presupuesto real de Mars 2020 fue de unos 2.400 M USD). Trayectorias: valores simplificados; Perseverance tardó 203 días (lanzamiento 30 jul 2020, aterrizaje 18 feb 2021). Luna: Apolo 11 entró en órbita lunar a las ~75 h 50 min del lanzamiento (NASA); CAPSTONE usó una transferencia lunar balística de unos 4 meses (28 jun → 13 nov 2022) que reduce mucho el combustible (NASA).",
   "chasis": [
     {
       "id": "chasis_base",
       "nombre_clave": "PIEZA_CHASIS_BASE",
       "masa_kg": 500,
-      "costo_musd": 180
+      "costo_musd": 180,
+      "ref_clave": "REF_CHASIS_BASE"
     }
   ],
   "cohetes": [
@@ -13,13 +15,53 @@
       "id": "cohete_ligero",
       "nombre_clave": "PIEZA_COHETE_LIGERO",
       "capacidad_kg": 600,
-      "costo_musd": 150
+      "costo_musd": 150,
+      "ref_clave": "REF_COHETE_LIGERO"
     },
     {
       "id": "cohete_pesado",
       "nombre_clave": "PIEZA_COHETE_PESADO",
       "capacidad_kg": 1200,
-      "costo_musd": 300
+      "costo_musd": 300,
+      "ref_clave": "REF_COHETE_PESADO"
+    }
+  ],
+  "trayectoria": [
+    {
+      "id": "trayectoria_hohmann",
+      "nombre_clave": "PIEZA_TRAY_HOHMANN",
+      "factor_capacidad": 1.0,
+      "costo_musd": 25,
+      "dias_crucero": 203,
+      "ref_clave": "REF_TRAY_HOHMANN",
+      "destino": "marte"
+    },
+    {
+      "id": "trayectoria_rapida",
+      "nombre_clave": "PIEZA_TRAY_RAPIDA",
+      "factor_capacidad": 0.8,
+      "costo_musd": 10,
+      "dias_crucero": 150,
+      "ref_clave": "REF_TRAY_RAPIDA",
+      "destino": "marte"
+    },
+    {
+      "id": "trayectoria_directa_luna",
+      "nombre_clave": "PIEZA_TRAY_DIRECTA_LUNA",
+      "factor_capacidad": 1.0,
+      "costo_musd": 15,
+      "dias_crucero": 3,
+      "ref_clave": "REF_TRAY_DIRECTA_LUNA",
+      "destino": "luna"
+    },
+    {
+      "id": "trayectoria_balistica_luna",
+      "nombre_clave": "PIEZA_TRAY_BALISTICA_LUNA",
+      "factor_capacidad": 1.25,
+      "costo_musd": 30,
+      "dias_crucero": 138,
+      "ref_clave": "REF_TRAY_BALISTICA_LUNA",
+      "destino": "luna"
     }
   ],
   "energia": [
@@ -28,14 +70,16 @@
       "nombre_clave": "PIEZA_PANEL_SOLAR",
       "masa_kg": 20,
       "costo_musd": 20,
-      "potencia_max_w": 140
+      "potencia_max_w": 140,
+      "ref_clave": "REF_PANEL_SOLAR"
     },
     {
       "id": "mmrtg",
       "nombre_clave": "PIEZA_MMRTG",
       "masa_kg": 45,
       "costo_musd": 120,
-      "potencia_w": 110
+      "potencia_w": 110,
+      "ref_clave": "REF_MMRTG"
     }
   ],
   "comunicaciones": [
@@ -43,23 +87,79 @@
       "id": "antena_directa",
       "nombre_clave": "PIEZA_ANTENA_DIRECTA",
       "masa_kg": 10,
-      "costo_musd": 15
+      "costo_musd": 15,
+      "ref_clave": "REF_ANTENA_DIRECTA"
     },
     {
       "id": "antena_rele",
       "nombre_clave": "PIEZA_ANTENA_RELE",
       "masa_kg": 5,
-      "costo_musd": 30
+      "costo_musd": 30,
+      "ref_clave": "REF_ANTENA_RELE"
     }
   ],
   "extras": [
-    { "id": "espectrometro", "nombre_clave": "PIEZA_ESPECTROMETRO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "taladro", "nombre_clave": "PIEZA_TALADRO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "camara", "nombre_clave": "PIEZA_CAMARA", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "meteo", "nombre_clave": "PIEZA_METEO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "radar", "nombre_clave": "PIEZA_RADAR", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "bateria", "nombre_clave": "PIEZA_BATERIA", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "dron", "nombre_clave": "PIEZA_DRON", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true },
-    { "id": "companero", "nombre_clave": "PIEZA_COMPANERO", "masa_kg": null, "costo_musd": null, "potencia_w": null, "pendiente": true }
+    {
+      "id": "espectrometro",
+      "nombre_clave": "PIEZA_ESPECTROMETRO",
+      "masa_kg": 11,
+      "costo_musd": 35,
+      "potencia_w": 18,
+      "ref_clave": "REF_ESPECTROMETRO"
+    },
+    {
+      "id": "taladro",
+      "nombre_clave": "PIEZA_TALADRO",
+      "masa_kg": 30,
+      "costo_musd": 50,
+      "potencia_w": 60,
+      "ref_clave": "REF_TALADRO"
+    },
+    {
+      "id": "camara",
+      "nombre_clave": "PIEZA_CAMARA",
+      "masa_kg": 4,
+      "costo_musd": 20,
+      "potencia_w": 17,
+      "ref_clave": "REF_CAMARA"
+    },
+    {
+      "id": "meteo",
+      "nombre_clave": "PIEZA_METEO",
+      "masa_kg": 6,
+      "costo_musd": 15,
+      "potencia_w": 17,
+      "ref_clave": "REF_METEO"
+    },
+    {
+      "id": "radar",
+      "nombre_clave": "PIEZA_RADAR",
+      "masa_kg": 3,
+      "costo_musd": 25,
+      "potencia_w": 10,
+      "ref_clave": "REF_RADAR"
+    },
+    {
+      "id": "bateria",
+      "nombre_clave": "PIEZA_BATERIA",
+      "masa_kg": 25,
+      "costo_musd": 15,
+      "ref_clave": "REF_BATERIA"
+    },
+    {
+      "id": "dron",
+      "nombre_clave": "PIEZA_DRON",
+      "masa_kg": 2,
+      "costo_musd": 30,
+      "ref_clave": "REF_DRON"
+    },
+    {
+      "id": "companero",
+      "nombre_clave": "PIEZA_COMPANERO",
+      "masa_kg": 8,
+      "costo_musd": 20,
+      "potencia_w": 12,
+      "ref_clave": "REF_COMPANERO"
+    }
   ]
 }

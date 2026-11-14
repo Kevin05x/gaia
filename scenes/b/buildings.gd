@@ -10,11 +10,13 @@ signal building_lost(pos: Vector3, tipo: String)  ## un edificio desapareció de
 signal module_lost(pos: Vector3)  ## la nave perdió un módulo (lo destruyó un ataque): explosión en ese módulo
 signal building_started(pos: Vector3)  ## empezó una obra (o un módulo o mejora nuevos)
 signal building_done(pos: Vector3, tipo: String)  ## terminó una obra
-const TILE := 2.0
-## tipo -> [modelo del equipo, ancho en metros]
-const MODELOS := {"luz": ["foco", 1.3], "domo": ["hangar_roundA", 1.9], "extractor_hielo": ["taladro", 1.7],
-	"hangar": ["hangar_cuadrado", 1.95], "antena": ["anthena_juego", 1.5], "torreta": ["torreta_simple", 1.5],
-	"torreta_2": ["torreta_doble", 1.9]}
+const TILE := Escala.TILE
+## tipo -> [modelo del equipo, ancho en metros REALES, estiramiento en altura]. Una casilla mide 4 m: ningún edificio la
+## desborda (≤ 3,9 m de lado) y todos superan al rover (2,2 m): hangar y domo ≈ 2,6 m para poder guardarlo, torretas
+## ≈ 4 m, foco ≈ 4,7 m, extractor de hielo ≈ 4 m y antena de 3 a 5 m según su nivel. Ver Escala.
+const MODELOS := {"luz": ["foco", 3.2, 1.0], "domo": ["hangar_roundA", 3.9, 1.6], "extractor_hielo": ["taladro", 3.6, 1.0],
+	"hangar": ["hangar_cuadrado", 3.9, 1.9], "antena": ["anthena_juego", 3.4, 1.7], "torreta": ["torreta_simple", 3.4, 1.0],
+	"torreta_2": ["torreta_doble", 3.8, 1.2]}
 
 var ground: Callable  ## altura del terreno (x, z)
 var _nodos: Dictionary = {}  ## id -> {"node", "model", "ring", "label", "off", "firma"}
@@ -77,7 +79,7 @@ func _crear(e: Dictionary) -> Dictionary:
 	nodo.name = str(e.get("id", "edificio"))
 	add_child(nodo)
 	nodo.position = at_tile(e.get("tile", Vector2i.ZERO))
-	var anillo := Art.ring(nodo, 1.05, Vector3(0, 0.06, 0), Color("F0C079"))
+	var anillo := Art.ring(nodo, TILE * 0.52, Vector3(0, 0.06, 0), Color("F0C079"))
 	var etiqueta := Label3D.new()
 	etiqueta.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	etiqueta.no_depth_test = true
@@ -86,14 +88,14 @@ func _crear(e: Dictionary) -> Dictionary:
 	etiqueta.outline_size = 10
 	etiqueta.modulate = Color("FFF5E4")
 	etiqueta.outline_modulate = Color(0.12, 0.08, 0.06, 0.9)
-	etiqueta.position = Vector3(0, 2.6, 0)
+	etiqueta.position = Vector3(0, 5.2, 0)
 	nodo.add_child(etiqueta)
-	var barra := HpBar.crear(nodo, 3.1, 1.5)
-	var cartel := BuildFx.cartel(nodo, 2.2)
+	var barra := HpBar.crear(nodo, 5.4, 2.4)
+	var cartel := BuildFx.cartel(nodo, 3.6)
 	for c in cartel.values():
 		(c as Node3D).visible = false
 	return {"node": nodo, "model": null, "ring": anillo, "label": etiqueta, "firma": "", "bar": barra, "yaw": 0.0,
-		"fx": {}, "cartel": cartel, "mostrado": 0.0, "objetivo": 0.0, "alto": 1.2, "tipo": "", "en_obra": false, "nivel": -1,
+		"fx": {}, "cartel": cartel, "mostrado": 0.0, "objetivo": 0.0, "alto": 2.6, "tipo": "", "en_obra": false, "nivel": -1,
 		"anillo_obra": false}
 
 
@@ -119,7 +121,7 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		if not (MurosView.es_muro(tipo) and not en_obra):
 			_modelo(modelo, tipo, maxi(nivel, 1 if en_obra else 0), en_obra, nivel)
 		datos["fx"] = {}
-		datos["alto"] = EscapeShip.ALTURA_TOTAL if tipo == "nave_fuga" else 1.2
+		datos["alto"] = EscapeShip.ALTURA_TOTAL if tipo == "nave_fuga" else 2.6
 		if tipo != "nave_fuga":
 			var info := BuildFx.preparar(modelo, en_obra)
 			datos["alto"] = float(info["alto"])
@@ -138,9 +140,9 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 	else:
 		modelo_actual.scale = Vector3.ONE
 	if MurosView.es_muro(tipo):
-		(datos["bar"] as Node3D).position.y = 2.1
+		(datos["bar"] as Node3D).position.y = 3.6
 	var anillo: Node3D = datos["ring"]
-	anillo.scale = Vector3.ONE * (2.1 if tipo == "nave_fuga" else 1.0)
+	anillo.scale = Vector3.ONE * (1.6 if tipo == "nave_fuga" else 1.0)
 	anillo.visible = en_obra
 	datos["anillo_obra"] = en_obra
 	var vive := not en_obra and (tipo != "antena" or nivel >= 1)
@@ -207,12 +209,12 @@ func _centro_modulo(n: int) -> float:
 func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, nivel_real: int = 0) -> void:
 	if tipo == "antena" and nivel <= 0:
 		# Sitio de la antena aún sin construir: losa y anillo de marcado.
-		Art.cylinder(padre, 0.85, 0.12, Vector3(0, 0.06, 0), Color("6F625A"))
-		Art.ring(padre, 0.95, Vector3(0, 0.14, 0), Color("9AD7C6"))
+		Art.cylinder(padre, 1.7, 0.2, Vector3(0, 0.1, 0), Color("6F625A"))
+		Art.ring(padre, 1.9, Vector3(0, 0.22, 0), Color("9AD7C6"))
 		return
 	if tipo == "panel_solar":
-		Art.cylinder(padre, 0.08, 0.9, Vector3(0, 0.45, 0), Color("8C8F94"))
-		var panel := Art.panel(padre, Vector3(1.7, 0.06, 1.15), Vector3(0, 0.95, 0), 3, 5)
+		Art.cylinder(padre, 0.14, 1.6, Vector3(0, 0.8, 0), Color("8C8F94"))
+		var panel := Art.panel(padre, Vector3(3.4, 0.08, 2.3), Vector3(0, 1.75, 0), 5, 8)
 		panel.rotation.x = -0.45
 		return
 	if tipo == "nave_fuga":
@@ -225,8 +227,8 @@ func _modelo(padre: Node3D, tipo: String, nivel: int, en_obra: bool = false, niv
 		var info: Array = MODELOS[tipo]
 		var ancho := float(info[1])
 		if tipo == "antena":
-			ancho *= 0.75 + 0.15 * nivel
-		if not Equipo.poner(padre, str(info[0]), ancho).is_empty():
+			ancho *= 0.8 + 0.1 * nivel  # nivel 1 = 3,1 m … nivel 3 = 3,7 m
+		if not Equipo.poner(padre, str(info[0]), ancho, Vector3.ZERO, 0.0, float(info[2])).is_empty():
 			return
 	# Pieza por código si falta el modelo del equipo.
 	Art.rbox(padre, Vector3(1.6, 1.0, 1.6), Vector3(0, 0.5, 0), Color("B7A796"))
@@ -294,6 +296,7 @@ func show_zone(validas: Array, ocupadas: Array) -> void:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.vertex_color_use_as_albedo = true
+	material.vertex_color_is_srgb = Destino.forward_plus()  # Forward+ ilumina en lineal: los colores de vértice están en sRGB
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	malla.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
 	for grupo in [[validas, Color(0.55, 0.9, 0.78, 0.34)], [ocupadas, Color(1.0, 0.45, 0.42, 0.26)]]:

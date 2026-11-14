@@ -186,6 +186,8 @@ func _motivo_general(estado: MissionState) -> String:
 		return "PAUSED"
 	if estado.modo_seguro:
 		return "SAFE"
+	if ImprevistosSystem.movimiento_bloqueado(estado):
+		return "MOVE_BLOCKED_EVENT"
 	if estado.en_movimiento:
 		return "MOVING"
 	if estado.ocupado:

@@ -5,7 +5,7 @@ extends Node3D
 ## están en la simulación (sim/systems/combat_system.gd). Cuesta una malla por monstruo.
 const Art := preload("res://scenes/b/art.gd")
 const HpBar := preload("res://scenes/b/hp_bar.gd")
-const TILE := 2.0
+const TILE := Escala.TILE
 const MAX_RAYOS := 8
 const MAX_METEORITOS := 8
 const MAX_FOGONAZOS := 10

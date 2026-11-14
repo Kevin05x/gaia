@@ -9,6 +9,12 @@ const ESCENA_JUEGO := "res://scenes/a/game.tscn"
 
 ## true cuando el menú pidió «Continuar»: MissionRunner restaura la partida al arrancar y baja el indicador.
 static var cargar_al_iniciar := false
+## Configuración de la misión elegida en el menú (Nueva partida): dificultad y modo equipo (1 a 4 personas).
+static var dificultad := "estandar"
+static var destino := "marte"  ## «marte» o «luna» (content/destinos.json)
+static var jugadores := 1
+## Votos del último «Go / No-Go» del equipo en el taller: [{"rol", "jugador", "go"}].
+static var votos: Array = []
 
 
 static func hay_guardado() -> bool:
@@ -17,6 +23,7 @@ static func hay_guardado() -> bool:
 
 static func guardar(sim: Simulation) -> bool:
 	var datos := sim.guardar()
+	datos["sesion"] = {"dificultad": dificultad, "jugadores": jugadores, "votos": votos.duplicate(true), "destino": destino}
 	var archivo := FileAccess.open(ruta, FileAccess.WRITE)
 	if archivo == null:
 		return false
@@ -55,6 +62,31 @@ static func resumen() -> Dictionary:
 static func empezar(arbol: SceneTree, continuar: bool) -> void:
 	cargar_al_iniciar = continuar
 	arbol.change_scene_to_file(ESCENA_CARGA if ResourceLoader.exists(ESCENA_CARGA) else ESCENA_JUEGO)
+
+
+## Recupera la dificultad y el equipo de la partida guardada (si los tiene).
+static func restaurar_configuracion() -> void:
+	var sesion: Dictionary = leer().get("sesion", {})
+	dificultad = str(sesion.get("dificultad", dificultad))
+	destino = str(sesion.get("destino", "marte"))
+	jugadores = clampi(int(sesion.get("jugadores", jugadores)), 1, 4)
+	votos = Array(sesion.get("votos", votos))
+
+
+## {"presupuesto_musd", "factor_enemigos", "nombre_clave"} de una dificultad (de content/rules.json).
+static func datos_dificultad(id: String) -> Dictionary:
+	var reglas: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://content/rules.json"))
+	if not (reglas is Dictionary):
+		return {}
+	return reglas.get("dificultades", {}).get(id, {})
+
+
+## Roles de cada jugador según cuántos son: [["direccion", ...], ...] (de content/rules.json).
+static func roles_por_jugador(cuantos: int) -> Array:
+	var reglas: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://content/rules.json"))
+	if not (reglas is Dictionary):
+		return [["direccion", "ingenieria", "ciencia", "comunicaciones"]]
+	return reglas.get("roles_equipo", {}).get(str(clampi(cuantos, 1, 4)), [["direccion", "ingenieria", "ciencia", "comunicaciones"]])
 
 
 static func volver_al_menu(arbol: SceneTree) -> void:

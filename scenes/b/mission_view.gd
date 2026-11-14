@@ -14,6 +14,11 @@ var actors: Node3D
 var rig: Node3D
 var hud: CanvasLayer
 var report_view: CanvasLayer
+var crucero: CanvasLayer  ## lanzamiento y crucero orbital entre el taller y el aterrizaje
+var _crucero_visto := false
+var _vio_taller := false  ## solo hay secuencia de lanzamiento si el jugador pasó por el taller
+var imprevisto: CanvasLayer  ## imprevistos de misión (decisión con el tiempo detenido)
+var tarjeta_nasa: CanvasLayer  ## «Así lo hizo Perseverance» durante el aterrizaje (datos y fotos reales de la NASA)
 var explosions: Node3D
 var audio: Node
 var sun: DirectionalLight3D
@@ -94,6 +99,8 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.quality = quality
 	lighting.setup(environment, sun)
+	if Destino.es_luna():
+		_crear_tierra_en_el_cielo()
 	hud = preload("res://scenes/b/hud.gd").new()
 	hud.name = "HUD"
 	add_child(hud)
@@ -120,6 +127,24 @@ func _ready() -> void:
 	report_view.name = "Report"
 	add_child(report_view)
 	report_view.redesign_requested.connect(func(): port.submit("redesign"))
+	crucero = preload("res://scenes/b/launch_cruise.gd").new()
+	crucero.name = "LaunchCruise"
+	add_child(crucero)
+	crucero.finished.connect(func() -> void:
+		_crucero_visto = true
+		landing_in_progress = true
+		actors.start_landing()
+		tracks.clear())
+	imprevisto = preload("res://scenes/b/imprevisto_panel.gd").new()
+	imprevisto.name = "Imprevisto"
+	add_child(imprevisto)
+	imprevisto.command.connect(func(c: String, p: Dictionary) -> void: port.submit(c, p))
+	imprevisto.opened.connect(func() -> void:
+		if is_instance_valid(audio):
+			audio.sfx("alarm", 0.0))
+	tarjeta_nasa = preload("res://scenes/b/nasa_landing_card.gd").new()
+	tarjeta_nasa.name = "NasaCard"
+	add_child(tarjeta_nasa)
 	buildings = preload("res://scenes/b/buildings.gd").new()
 	buildings.name = "Buildings"
 	buildings.ground = terrain.height_at
@@ -240,6 +265,7 @@ func aplicar_graficos(nuevo: Dictionary, guardar: bool = true) -> void:
 	graficos = Graficos.normalizar(nuevo.duplicate())
 	quality = bool(graficos["texturas"])
 	lighting.post = bool(graficos["post"])
+	lighting.avanzados = 0 if not bool(graficos["post"]) else (2 if int(graficos["sombras"]) >= 2 else (1 if int(graficos["sombras"]) >= 1 and int(graficos["aa"]) >= 1 else 0))
 	lighting.quality = quality
 	lighting.fijar_sombras(int(graficos["sombras"]))
 	W.quality = quality
@@ -248,8 +274,8 @@ func aplicar_graficos(nuevo: Dictionary, guardar: bool = true) -> void:
 	terrain.factor_distancia = Graficos.FACTOR_DISTANCIA[int(graficos["distancia"])]
 	terrain.apply_quality()
 	actors.dust.amount = 130 if bool(graficos["polvo"]) else 36
-	motas.emitting = bool(graficos["polvo"])
-	motas.visible = bool(graficos["polvo"])
+	motas.emitting = bool(graficos["polvo"]) and not Destino.es_luna()  # en la Luna no hay polvo en el aire
+	motas.visible = motas.emitting
 	if is_instance_valid(calidad):
 		calidad.configurar(Graficos.msaa(graficos), float(graficos["resolucion"]), bool(graficos["auto"]),
 			bool(graficos["post"]), int(graficos["sombras"]) > 0)
@@ -345,6 +371,7 @@ func _comprobar_listo() -> void:
 
 func _exit_tree() -> void:
 	Equipo.vaciar()
+	preload("res://scenes/b/rover_nasa.gd").vaciar()
 
 
 func setup_locale() -> void:
@@ -355,6 +382,7 @@ func setup_locale() -> void:
 			translation.locale = locale
 			for key in tables[locale]:
 				translation.add_message(key, tables[locale][key])
+			Destino.registrar(translation)
 			TranslationServer.add_translation(translation)
 		translations_registered = true
 	var config := ConfigFile.new()
@@ -432,6 +460,12 @@ func apply_snapshot(s: Dictionary) -> void:
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
+	if s.has("workshop") or s.has("design_summary"):
+		report_view.taller = s.get("workshop", s.get("design_summary"))
+	if is_instance_valid(tarjeta_nasa):
+		tarjeta_nasa.update_snapshot(s)
+	if is_instance_valid(imprevisto):
+		imprevisto.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)
@@ -439,10 +473,17 @@ func apply_snapshot(s: Dictionary) -> void:
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
 	motas.fijar_polvo(float(s.get("dust", 0.0)))
 	rig.enabled = not blocked()
+	if s.get("phase", "") == "workshop":
+		_vio_taller = true
+		_crucero_visto = false
 	if s.get("phase", "") == "landing" and not landing_in_progress and not actors.landed:
-		landing_in_progress = true
-		actors.start_landing()
-		tracks.clear()
+		if _vio_taller and not _crucero_visto:
+			if not crucero.visible:
+				crucero.play(s.get("design_summary", {}))
+		else:
+			landing_in_progress = true
+			actors.start_landing()
+			tracks.clear()
 	var fase := str(s.get("phase", ""))
 	if fase == "operations" and actors.landed and not _tracks_seeded:
 		_tracks_seeded = true
@@ -456,7 +497,7 @@ func apply_snapshot(s: Dictionary) -> void:
 
 func blocked() -> bool:
 	return state.is_empty() or state.get("paused", false) or state.get("safe_mode", false) or state.get("phase", "") != "operations" \
-		or (story != null and story.is_open())
+		or (story != null and story.is_open()) or (imprevisto != null and imprevisto.is_open())
 
 
 ## Modo de colocación: se marca la zona de la base y el siguiente clic en una casilla libre pide la obra.
@@ -587,6 +628,7 @@ func _report(value: Dictionary) -> void:
 
 
 func _process(_delta: float) -> void:
+	_seguir_tierra()
 	if is_instance_valid(audio) and not state.is_empty():
 		audio.update_state(state, not actors.route.is_empty())
 	if not actors.landing_active:
@@ -608,7 +650,7 @@ func _update_hover() -> void:
 		if punto == null or hud.root.get_viewport().gui_get_hovered_control() != null:
 			terrain.hide_cursor()
 			return
-		var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+		var casilla := Vector2i(roundi(punto.x / Escala.TILE), roundi(punto.z / Escala.TILE))
 		var valida := _placement_valid(casilla)
 		terrain.show_cursor(casilla, valida)
 		terrain.show_range(casilla, _alcance_de(placing) if valida else 0.0)
@@ -626,7 +668,7 @@ func _update_hover() -> void:
 		terrain.hide_cursor()
 		hud.set_hover_hint("")
 		return
-	var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
+	var tile := Vector2i(roundi(point.x / Escala.TILE), roundi(point.z / Escala.TILE))
 	var dentro: bool = terrain.in_bounds(tile)
 	var libre: bool = dentro and not _blocked_set().has(tile) or dentro and target_at_tile(tile) != ""
 	if dentro or Vector2(point.x, point.z).length() < 34.0 + terrain.extra_size():
@@ -672,7 +714,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if e.button_index == MOUSE_BUTTON_LEFT:
 				var punto = ground_point(e.position)
 				if punto != null:
-					var casilla := Vector2i(roundi(punto.x / 2.0), roundi(punto.z / 2.0))
+					var casilla := Vector2i(roundi(punto.x / Escala.TILE), roundi(punto.z / Escala.TILE))
 					if MurosView.es_muro(placing):
 						if _placement_valid(casilla):
 							_poner_muro(casilla)
@@ -698,7 +740,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		var point = ground_point(e.position)
 		if point == null:
 			return
-		var tile := Vector2i(roundi(point.x / 2.0), roundi(point.z / 2.0))
+		var tile := Vector2i(roundi(point.x / Escala.TILE), roundi(point.z / Escala.TILE))
 		# Un clic en la casilla de un objetivo revelado lo selecciona y lleva al rover a la casilla libre más cercana.
 		var en_casilla := target_at_tile(tile)
 		if not en_casilla.is_empty():
@@ -810,3 +852,50 @@ func pick_target(screen: Vector2) -> String:
 			best = id
 			best_distance = d
 	return best
+
+
+## Luna: la Tierra cuelga baja sobre el horizonte, como se ve desde el polo sur. Va con la cámara (como el cielo) y la
+## ilumina el mismo sol del juego, así que muestra su fase.
+func _crear_tierra_en_el_cielo() -> void:
+	var tierra := MeshInstance3D.new()
+	tierra.name = "TierraEnElCielo"
+	var esfera := SphereMesh.new()
+	esfera.radius = 16.0
+	esfera.height = 32.0
+	esfera.radial_segments = 48
+	esfera.rings = 24
+	tierra.mesh = esfera
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("3d7fd1")
+	material.emission_enabled = true
+	material.emission = Color("1d3a66")
+	material.emission_energy_multiplier = 0.35
+	material.roughness = 0.6
+	material.disable_fog = true
+	tierra.material_override = material
+	tierra.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var nubes := MeshInstance3D.new()
+	var capa := SphereMesh.new()
+	capa.radius = 16.4
+	capa.height = 32.8
+	nubes.mesh = capa
+	var blanco := StandardMaterial3D.new()
+	blanco.albedo_color = Color(1, 1, 1, 0.35)
+	blanco.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	blanco.disable_fog = true
+	nubes.material_override = blanco
+	nubes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	tierra.add_child(nubes)
+	add_child(tierra)
+	_tierra = tierra
+	_seguir_tierra()
+
+
+const OFFSET_TIERRA := Vector3(-260.0, 70.0, -330.0)
+var _tierra: Node3D
+
+
+## La Tierra queda siempre a la misma distancia de la cámara: parece estar en el cielo, infinitamente lejos.
+func _seguir_tierra() -> void:
+	if is_instance_valid(_tierra) and is_instance_valid(rig) and rig.camera != null:
+		_tierra.global_position = rig.camera.global_position + OFFSET_TIERRA

@@ -1,0 +1,90 @@
+{
+ "version": 1,
+ "_nota": "Imprevistos de misión: aparecen por sorpresa (con semilla fija por partida) y piden una decisión. Mientras se decide, el tiempo se detiene. Cada uno se basa en algo que de verdad les pasó a misiones de la NASA; el dato real va en «real» y su fuente en «fuente». Efectos: energia_wh, datos (a bordo), enviados, recursos {id: n}, rover_hp, bloquear_enlace_h, bloquear_movimiento_h.",
+ "por_partida": 3,
+ "ventana_soles": [1.6, 5.4],
+ "separacion_min_h": 14,
+ "imprevistos": [
+  {"id": "conjuncion_solar", "destinos": ["marte"],
+   "titulo": {"es": "Conjunción solar", "en": "Solar conjunction"},
+   "texto": {"es": "El Sol se interpone entre la Tierra y Marte y su plasma corrompe las señales. ¿Qué hace el equipo?", "en": "The Sun moves between Earth and Mars and its plasma corrupts signals. What does the team do?"},
+   "real": {"es": "Real: cada unos 2 años la NASA deja de enviar órdenes a sus misiones en Marte durante la conjunción solar.", "en": "Real: about every 2 years NASA stops sending commands to its Mars missions during solar conjunction."},
+   "fuente": "NASA/JPL, What is Mars Solar Conjunction",
+   "opciones": [
+    {"texto": {"es": "Esperar en silencio (enlace cerrado 8 h)", "en": "Wait in silence (link closed for 8 h)"}, "efectos": {"bloquear_enlace_h": 8}},
+    {"texto": {"es": "Transmitir igual (se pierde 1/3 de los datos a bordo)", "en": "Transmit anyway (lose 1/3 of data on board)"}, "efectos": {"datos_pct": -0.33}}
+   ]},
+  {"id": "arena_blanda", "destinos": ["marte"],
+   "titulo": {"es": "Rueda atrapada en arena", "en": "Wheel stuck in sand"},
+   "texto": {"es": "Una rueda se hunde en arena blanda. Salir sin cuidado puede dañar el rover.", "en": "A wheel sinks into soft sand. Getting out carelessly can damage the rover."},
+   "real": {"es": "Real: el rover Spirit quedó atrapado en arena en 2009 y nunca pudo salir.", "en": "Real: the Spirit rover got stuck in sand in 2009 and never got out."},
+   "fuente": "NASA/JPL, Mars Exploration Rovers",
+   "opciones": [
+    {"texto": {"es": "Maniobrar despacio (-80 Wh, sin moverse 2 h)", "en": "Manoeuvre slowly (-80 Wh, no driving for 2 h)"}, "efectos": {"energia_wh": -80, "bloquear_movimiento_h": 2}},
+    {"texto": {"es": "Forzar los motores (-40 Wh, -20 % de vida del rover)", "en": "Force the motors (-40 Wh, -20 % rover health)"}, "efectos": {"energia_wh": -40, "rover_hp": -20}}
+   ]},
+  {"id": "remolino", "destinos": ["marte"],
+   "titulo": {"es": "Un remolino de polvo", "en": "A dust devil"},
+   "texto": {"es": "Un remolino pasa junto al rover. Puede limpiar los paneles… o llenarlos de polvo.", "en": "A dust devil passes by the rover. It may clean the panels… or cover them in dust."},
+   "real": {"es": "Real: los remolinos limpiaron varias veces los paneles de Spirit y Opportunity y alargaron sus misiones.", "en": "Real: dust devils cleaned the panels of Spirit and Opportunity several times and extended their missions."},
+   "fuente": "NASA/JPL, Mars Exploration Rovers",
+   "opciones": [
+    {"texto": {"es": "Dejarlo pasar (+200 Wh de energía)", "en": "Let it pass (+200 Wh of energy)"}, "efectos": {"energia_wh": 200}},
+    {"texto": {"es": "Estudiarlo con la cámara (+6 datos, -30 Wh)", "en": "Study it with the camera (+6 data, -30 Wh)"}, "efectos": {"datos": 6, "energia_wh": -30}}
+   ]},
+  {"id": "memoria_flash", "destinos": ["marte", "luna"],
+   "titulo": {"es": "Fallo en la memoria del rover", "en": "Rover memory fault"},
+   "texto": {"es": "La memoria flash da errores. Hay que decidir cómo proteger los datos.", "en": "The flash memory is throwing errors. You must decide how to protect the data."},
+   "real": {"es": "Real: en 2013 Curiosity tuvo un fallo de memoria y pasó a su computadora de respaldo.", "en": "Real: in 2013 Curiosity had a memory fault and switched to its backup computer."},
+   "fuente": "NASA/JPL, Curiosity mission updates",
+   "opciones": [
+    {"texto": {"es": "Cambiar a la computadora de respaldo (sin moverse ni transmitir 3 h)", "en": "Switch to the backup computer (no driving or transmitting for 3 h)"}, "efectos": {"bloquear_movimiento_h": 3, "bloquear_enlace_h": 3}},
+    {"texto": {"es": "Reiniciar ya (se pierden 10 datos a bordo)", "en": "Reboot now (lose 10 data on board)"}, "efectos": {"datos": -10}}
+   ]},
+  {"id": "actualizacion", "destinos": ["marte", "luna"],
+   "titulo": {"es": "Actualización de software", "en": "Software update"},
+   "texto": {"es": "Los ingenieros envían un programa que gestiona mejor la energía. Instalarlo detiene el rover un rato.", "en": "Engineers send software that manages power better. Installing it stops the rover for a while."},
+   "real": {"es": "Real: los rovers de la NASA reciben programas nuevos durante la misión, como el de conducción autónoma de Perseverance.", "en": "Real: NASA rovers receive new software during the mission, such as Perseverance's self-driving software."},
+   "fuente": "NASA/JPL, Mars 2020 Perseverance",
+   "opciones": [
+    {"texto": {"es": "Instalar ahora (sin moverse 3 h, +250 Wh)", "en": "Install now (no driving for 3 h, +250 Wh)"}, "efectos": {"bloquear_movimiento_h": 3, "energia_wh": 250}},
+    {"texto": {"es": "Seguir con el plan (sin cambios)", "en": "Stick to the plan (no change)"}, "efectos": {}}
+   ]},
+  {"id": "oportunidad", "destinos": ["marte", "luna"],
+   "titulo": {"es": "Oportunidad científica", "en": "Science opportunity"},
+   "texto": {"es": "El equipo científico ve algo inesperado en las fotos y pide desviarse para estudiarlo.", "en": "The science team spots something unexpected in the images and asks for a detour."},
+   "real": {"es": "Real: el plan de cada día de un rover se rehace según lo que los científicos ven en las imágenes del día anterior.", "en": "Real: a rover's daily plan is rebuilt from what scientists see in the previous day's images."},
+   "fuente": "NASA/JPL, A day in the life of a Mars rover team",
+   "opciones": [
+    {"texto": {"es": "Desviarse (-90 Wh, +10 datos)", "en": "Take the detour (-90 Wh, +10 data)"}, "efectos": {"energia_wh": -90, "datos": 10}},
+    {"texto": {"es": "Mantener el plan", "en": "Keep the plan"}, "efectos": {}}
+   ]},
+  {"id": "particulas_solares", "destinos": ["luna"],
+   "titulo": {"es": "Tormenta de partículas solares", "en": "Solar particle storm"},
+   "texto": {"es": "Una erupción en el Sol lanza partículas de alta energía. La Luna no tiene atmósfera ni campo magnético que la proteja.", "en": "A solar eruption sends high-energy particles. The Moon has no atmosphere or magnetic field to protect it."},
+   "real": {"es": "Real: la NASA vigila el clima espacial porque la radiación es uno de los mayores riesgos en la Luna.", "en": "Real: NASA monitors space weather because radiation is one of the biggest hazards on the Moon."},
+   "fuente": "NASA, Space Weather / Artemis",
+   "opciones": [
+    {"texto": {"es": "Modo protegido (sin moverse ni transmitir 4 h)", "en": "Protected mode (no driving or transmitting for 4 h)"}, "efectos": {"bloquear_movimiento_h": 4, "bloquear_enlace_h": 4}},
+    {"texto": {"es": "Seguir trabajando (-25 % de vida del rover)", "en": "Keep working (-25 % rover health)"}, "efectos": {"rover_hp": -25}}
+   ]},
+  {"id": "micrometeorito", "destinos": ["luna"],
+   "titulo": {"es": "Impacto de micrometeorito", "en": "Micrometeorite impact"},
+   "texto": {"es": "Un micrometeorito cae cerca y deja un cráter recién hecho, con regolito fresco al descubierto.", "en": "A micrometeorite lands nearby and leaves a fresh crater with exposed regolith."},
+   "real": {"es": "Real: la Luna no tiene aire que frene los meteoritos; el orbitador LRO ha visto aparecer cráteres nuevos.", "en": "Real: the Moon has no air to slow meteorites; the LRO orbiter has seen new craters appear."},
+   "fuente": "NASA, Lunar Reconnaissance Orbiter",
+   "opciones": [
+    {"texto": {"es": "Analizar el cráter nuevo (-60 Wh, +12 datos)", "en": "Analyse the new crater (-60 Wh, +12 data)"}, "efectos": {"energia_wh": -60, "datos": 12}},
+    {"texto": {"es": "Revisar daños y seguir (-30 Wh)", "en": "Check for damage and carry on (-30 Wh)"}, "efectos": {"energia_wh": -30}}
+   ]},
+  {"id": "frio_extremo", "destinos": ["luna"],
+   "titulo": {"es": "Frío extremo", "en": "Extreme cold"},
+   "texto": {"es": "Un calefactor falla y la electrónica se enfría peligrosamente.", "en": "A heater fails and the electronics are getting dangerously cold."},
+   "real": {"es": "Real: de noche la superficie lunar baja a unos -173 °C.", "en": "Real: at night the lunar surface drops to about -173 °C."},
+   "fuente": "NASA Science, Earth's Moon: Facts",
+   "opciones": [
+    {"texto": {"es": "Encender los calefactores de reserva (-150 Wh)", "en": "Turn on backup heaters (-150 Wh)"}, "efectos": {"energia_wh": -150}},
+    {"texto": {"es": "Arriesgarse (-15 % de vida del rover)", "en": "Take the risk (-15 % rover health)"}, "efectos": {"rover_hp": -15}}
+   ]}
+ ]
+}

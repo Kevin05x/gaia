@@ -24,6 +24,9 @@ var _tween: Tween
 
 func _ready() -> void:
 	Texto.install()
+	if preload("res://scenes/a/medidor.gd").pedido():  # modo medición: directo a la misión, sin menú
+		get_tree().change_scene_to_file.call_deferred("res://scenes/menu/loading.tscn")
+		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	theme = UI.theme()
 	var fondo := ColorRect.new()

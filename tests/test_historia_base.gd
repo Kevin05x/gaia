@@ -91,7 +91,7 @@ func _subir_antena() -> void:
 func test_los_datos_cargan_sin_errores() -> void:
 	assert_eq(economia.errores.size(), 0, "economía: %s" % [economia.errores])
 	assert_eq(historia.errores.size(), 0, "historia: %s" % [historia.errores])
-	assert_eq(historia.intro.size(), 4, "cuatro pantallas de introducción")
+	assert_eq(historia.intro.size(), 5, "cinco pantallas de introducción (una con un dato real de la NASA)")
 	assert_eq(historia.finales.size(), 4, "cuatro finales")
 
 
