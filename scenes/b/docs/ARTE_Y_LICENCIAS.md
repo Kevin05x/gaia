@@ -92,3 +92,116 @@ Estas fotos y modelos **no** llevan marca de agua de IA porque no son IA; las im
 - El helicóptero es `ingenuity.glb` (mismo origen) a 1,2 m de rotor a rotor.
 - La escena de lanzamiento usa como fondo las fotos oficiales `lanzamiento.jpg` (Atlas V, Frank Michaux/NASA) y `luna_lanzamiento.jpg` (Saturn V, NASA), con un movimiento de cámara y texto de interfaz superpuestos; las fotos no se alteran más que el recorte y el zoom.
 - Las medidas de todos los objetos están en `docs/ESCALAS.md`.
+
+## Plataforma de lanzamiento de la Tierra (14 nov 2026)
+
+Pantalla de elección de cohete (`scenes/b/launch_pad.gd`), rama `b/cohetes-telescopio`.
+
+- **Fondo ilustrado `assets/menu/plataforma_tierra.jpg`: imagen generada con IA (Canva), con el mismo criterio que el fondo del menú, el logo y las escenas de la historia.** Lleva la marca visible «Imagen generada con IA · AI-generated» en pantalla (clave `AI_MARK`), abajo a la izquierda. Se pidió deliberadamente con el centro vacío para componer encima el cohete y el rover en 3D.
+- Sobre la ilustración, **todo lo que se mueve es 3D del juego**: el rover es el Perseverance real de NASA 3D Resources (`RoverNasa.crear()`, el mismo de la partida), el cohete se monta por tramos y las dos torres de servicio con brazo articulado y las chispas de soldadura están hechas por código.
+- Si el archivo del fondo no está, el panorama se dibuja con un cielo por código y la pantalla sigue siendo jugable: la ilustración es opcional, no un requisito para correr el juego.
+
+## Modelos de los cuatro cohetes — entregados (14 nov 2026)
+
+Rama `b/cohetes-telescopio`. Los datos de los cuatro cohetes ya están en `content/parts.json`; **los modelos los entrega Evelyn** y sustituirán al cohete dibujado por código de `scenes/b/launch_cruise.gd`.
+
+Para que los archivos entren sin tocar código, el nombre del `.glb` debe ser el id de la pieza:
+
+| Archivo | Pieza | Lanzador real | Altura real | Capacidad (juego) |
+| --- | --- | --- | --- | --- |
+| `assets/modelos/cohete_ligero.glb` | `cohete_ligero` | Delta II | 39,0 m | 600 kg |
+| `assets/modelos/cohete_medio.glb` | `cohete_medio` | Titan IIIE-Centaur | 48,8 m | 900 kg |
+| `assets/modelos/cohete_pesado.glb` | `cohete_pesado` | Atlas V 541 | 58,3 m | 1.200 kg |
+| `assets/modelos/cohete_super.glb` | `cohete_super` | Saturno V | 110,6 m | 1.800 kg |
+
+Reglas de entrega:
+
+- `.glb` a escala real en metros (escala 1:1 del proyecto, ver `docs/ESCALAS.md`), base apoyada en `y = 0`.
+- Subir también el `.import` y el `.uid`; los `.glb` van con Git LFS.
+- Anotar en este documento la autoría y la licencia de cada modelo.
+- Mientras un archivo no exista, `ModelosEquipo.existe()` devuelve `false` y el juego sigue usando el dibujo por código: **se puede entregar de uno en uno sin romper nada**.
+- Para el superpesado ya existe `assets/nasa/modelos/saturn_v.glb` (NASA 3D Resources, «free and without copyright»). Si se usa ese, **no es obra del equipo** y va con su crédito, nunca como modelo propio.
+
+### Entregados el 14 de noviembre (Evelyn)
+
+- `cohete_medio.glb` — **Atlas V 541**. Llegó ya en metros y de pie, con la base en `y = 0`: 5,4 × 58,3 m, que es su tamaño real. Cumple el contrato tal cual.
+- `cohete_super.glb` — **Saturn V**. Llegó **tumbado sobre Z y en otras unidades**. No se tocó el archivo: `launch_pad.gd` lo endereza, lo centra y lo apoya en `y = 0` al cargarlo.
+- Ambos se escalan a la altura real del lanzador que representan, declarada en `content/parts.json` (`alto_real_m`: 58,3 y 110,6 m), para respetar la escala 1:1 de `docs/ESCALAS.md`. `tests/test_cohetes.gd` lo comprueba.
+- Autoría y licencia de estos dos modelos: **pendiente de anotar por Evelyn**.
+
+Qué es de cada quien: la **capacidad, el costo y el `ref_clave`** de cada cohete son datos del taller (`content/parts.json`); el **modelo y su aspecto** son del equipo de arte. Si al llegar los modelos cambian las capacidades o los costos, `tests/test_cohetes.gd` avisa en el momento si el balance se rompe.
+
+### Entregados el 14 de noviembre · segunda tanda (Evelyn)
+
+Llegaron el **Delta II** y el **Titan IIIE-Centaur**. Con ellos están los cuatro, así que se revisó a qué
+pieza corresponde cada uno en vez de dejarlos en el hueco que quedaba libre: el orden del manifiesto
+(ligero → superpesado) ahora coincide con el orden real de los cuatro lanzadores, tanto en altura como en
+lo que cada uno podía mandar a Marte.
+
+| Antes | Ahora | Por qué |
+| --- | --- | --- |
+| `cohete_medio` = Atlas V 541 | `cohete_pesado` = Atlas V 541 | Es el más capaz de los tres primeros: llevó Curiosity y Perseverance. |
+| `cohete_medio` sin modelo | `cohete_medio` = Titan IIIE-Centaur | 48,8 m: queda entre el Delta II y el Atlas V, igual que de verdad (Viking y Voyager). |
+| `cohete_ligero` sin modelo | `cohete_ligero` = Delta II | El más pequeño de los cuatro (39 m) y el que llevó Spirit y Opportunity. |
+
+Cómo llegaron, y qué hace `scenes/b/launch_pad.gd` con cada uno al cargarlo (**no se tocó ningún archivo
+de arte**):
+
+- `cohete_ligero.glb` — un solo nodo `Delta_II`, de pie y en metros, pero con **escala no uniforme**
+  (0,6 × 0,5 × 0,6) y desplazado del origen. Se iguala la escala a su componente mayor, se centra y se
+  apoya en `y = 0`.
+- `cohete_medio.glb` — con **esqueleto y animación propia, «Armado»** (8,3 s): la cofia, el Centaur, el
+  núcleo y los dos aceleradores laterales entran volando hasta su sitio. Su «rig» viene con una
+  escala rara (0,6 × 0,4 × 0,6), pero al tener esqueleto esa escala **se cancela sola** en la pose
+  de reposo y el cohete se ve a su tamaño de malla. Lo que hubo que arreglar fue *medirlo*: la
+  medida corriente arrastraba esa escala y lo dejaba a la mitad, así que al estirarlo a 48,8 m se
+  salía por arriba de la pantalla. Si entregas un modelo con esqueleto no hace falta que quites esa
+  escala: `scenes/b/launch_pad.gd` ya lo tiene en cuenta.
+- `cohete_pesado.glb` — Atlas V 541, de pie y a escala uniforme; solo se centra y se apoya.
+- `cohete_super.glb` — Saturno V, llegó en otras unidades y descentrado; se normaliza igual.
+
+Los cuatro se escalan a la **altura real** del lanzador que representan, declarada en
+`content/parts.json` (`alto_real_m`), para respetar la escala 1:1 de `docs/ESCALAS.md`.
+`tests/test_cohetes.gd` lo comprueba uno por uno.
+
+**Animaciones de armado.** Si el `.glb` trae una animación, la plataforma la reproduce en lugar
+del montaje por grúas que dibuja el juego, y la lleva al ritmo del propio archivo (con un tope de
+9 s). Si no la trae, el cohete se monta por tramos como antes. Dicho de otro modo: **una animación
+nueva entra sin tocar código**, igual que el modelo.
+
+**Los cuatro llegaron ya con la suya** (14 nov): 8,3 s cada una, con las etapas, la cofia y los
+aceleradores entrando volando hasta su sitio. Todas se llaman `Armado`; Blender exporta además
+copias numeradas (`Armado.001`…) que son la misma, y el juego se queda con la del nombre limpio.
+Si al reexportar se renombra, el cohete vuelve a montarse por grúas sin avisar: hay una prueba que
+lo fija cohete por cohete (`tests/test_cohetes.gd`).
+
+Autoría y licencia de los cuatro modelos: **pendiente de anotar por Evelyn**.
+
+## Edificio de montaje — entregado el 14 de noviembre
+
+`assets/modelos/hangar_gaia.glb` (9,2 MB). Es el escenario de la plataforma: el rover espera dentro
+y el cohete elegido se monta en su bancada. Al importarlo, Godot saca las 15 texturas incrustadas a
+`assets/modelos/hangar_gaia_*.png`; **van al repositorio con el modelo**, o el edificio se ve gris.
+
+El modelo trae de serie más de lo que aquí se usa, y `scenes/b/launch_pad.gd` lo esconde al
+cargarlo (constante `HANGAR_FUERA`), sin tocar el archivo de arte:
+
+- **su cohete** (y sus propulsores, motores, toberas, anclajes y brazos): el cohete es el que elige
+  el jugador, de los cuatro del manifiesto;
+- **sus dos rovers y su personal**: el rover es el Perseverance del juego;
+- **su base de lanzamiento**: la pone el juego a la medida del cohete y con la escotilla por la que
+  entra el rover;
+- **su cielo exterior**: se ve el del panorama cuando el techo se abre.
+
+Dos cosas que conviene saber si se vuelve a exportar:
+
+- El edificio mide 28 m de alto y los lanzadores, de 39 a 110,6 m: **no caben**. Se escala al cohete
+  elegido, como se haría de verdad. La cámara ya encuadra cada lanzador igual, así que el edificio
+  se ve siempre del mismo tamaño en pantalla; la comparación entre cohetes la da la silueta del
+  manifiesto, no el edificio.
+- **El techo se abre en dos hojas para el despegue.** El modelo lo trae como una sola malla por
+  material, así que el juego lo parte por triángulos al cargarlo. Los grupos que se parten son
+  `Cerchas del techo`, `Ventanales techo` y `Reflectores techo`: si se renombran, el techo deja de
+  abrirse (y no lo nota ninguna prueba, solo se ve en una captura).
+
+Autoría y licencia del edificio: **pendiente de anotar**.

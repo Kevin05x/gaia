@@ -13,6 +13,8 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 | Aterrizaje: 18 de febrero de 2021 en el cráter Jezero (unos 18° N, 77° E). | NASA/JPL, Mars 2020 Landing Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts |
 | Crucero: 203 días entre el lanzamiento y el aterrizaje (calculado de las fechas oficiales). | Cálculo a partir de las fechas de NASA/JPL | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts |
 | Masa del rover: unos 1.025 kg en la Tierra (393 kg de peso en Marte). | NASA/JPL, Landing Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts |
+| El Atlas V 541 medía 58,3 m de alto. Es la altura a la que se muestra el modelo del «cohete pesado» (Atlas V 541). | NASA/JPL, Mars 2020 Launch Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/ |
+| Masa total enviada a Marte: unos 3.650 kg (etapa de crucero, escudo, etapa de descenso y rover). Respalda el «cohete pesado» del taller. | NASA/JPL, Mars 2020 Launch Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/ |
 | Energía: un generador MMRTG da unos 110 W constantes. | NASA/JPL, Launch Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/ |
 | Un sol (día marciano) dura 24 h 39 min 35 s. | NASA/JPL, Landing Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts |
 | La señal Marte–Tierra tardaba unos 11 min 22 s el día del aterrizaje. | NASA/JPL, Landing Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/landing/quick_facts |
@@ -35,11 +37,33 @@ No se inventó ningún dato: si una cifra no tiene fuente en esta lista, es del 
 
 **Modelos 3D:** `assets/nasa/modelos/perseverance.glb`, `assets/nasa/modelos/ingenuity.glb`. Modelo 3D: NASA 3D Resources (Perseverance, Ingenuity; escala de exposición).
 
+## Lanzadores del manifiesto de la plataforma
+
+Los cuatro cohetes que se eligen en la Tierra (`content/parts.json`, categoría `cohetes`) representan
+lanzadores reales y se muestran **a su altura real** (`alto_real_m`, escala 1:1 de `docs/ESCALAS.md`).
+**Las capacidades y los costos del juego no son los reales**: son valores a escala para que las cuatro
+opciones se diferencien. Lo real es qué lanzador es cada uno, cuánto medía y qué llevó.
+
+| Pieza | Lanzador | Altura real usada | Dato | Fuente | URL |
+|-------|----------|-------------------|------|--------|-----|
+| `cohete_ligero` | Delta II | 39,0 m | La NASA describe el Delta II como un cohete de unos 128 pies (≈ 39 m) de alto. | NASA Science, «Delta II to Give OCO-2 a Lift to Orbit» | https://science.nasa.gov/blogs/oco-2/2014/07/01/delta-ii-to-give-oco-2-a-lift-to-orbit/ |
+| `cohete_ligero` | Delta II | — | El Delta II lanzó los rovers Spirit y Opportunity (2003) y fue el caballo de batalla de muchas misiones de la NASA. | NASA Science, «Delta II an Industry Workhorse» | https://science.nasa.gov/blogs/oco-2/2014/07/02/delta-ii-an-industry-workhorse/ |
+| `cohete_medio` | Titan IIIE-Centaur | 48,8 m | Longitud total del Titan/Centaur: 48,8 m (160 pies). | NASA, Technical Memorandum TM X-68249, «Titan/Centaur — NASA's newest launch vehicle» | https://ntrs.nasa.gov/api/citations/19730016150/downloads/19730016150.pdf |
+| `cohete_medio` | Titan IIIE-Centaur | — | Las dos Voyager se lanzaron en 1977 en un Titan III E/Centaur, que la NASA describe como de casi 50 m (164 pies) de alto; las Viking se lanzaron en Titan IIIE en 1975. | NASA Science, Voyager — Frequently Asked Questions; Viking — Spacecraft and Science | https://science.nasa.gov/mission/voyager/frequently-asked-questions/ |
+| `cohete_pesado` | Atlas V 541 | 58,3 m | 58,3 m de alto; puso en ruta a Marte unos 3.650 kg, de los que 1.025 kg eran Perseverance. | NASA/JPL, Mars 2020 Launch Press Kit — Quick Facts | https://www.jpl.nasa.gov/news/press_kits/mars_2020/launch/quick_facts/ |
+| `cohete_super` | Saturno V | 110,6 m | 110,6 m de alto (363 pies); podía enviar unos 48.600 kg hacia la Luna. | NASA, «What Was the Saturn V?» | https://www.nasa.gov/learning-resources/for-kids-and-students/what-was-the-saturn-v-grades-5-8/ |
+
+Nota sobre la altura del Delta II: las páginas de la NASA dan ≈ 128 pies (39 m) y otras fichas hablan de
+132 pies (40,2 m) según la versión y la cofia. Se usa **39,0 m**, la cifra de la página de la NASA citada,
+y se deja constancia aquí de la diferencia en vez de elegirla en silencio.
+
 ## Luna · Apolo 11 / CAPSTONE / Artemis
 
 | Dato | Fuente | URL |
 |------|--------|-----|
 | Apolo 11 despegó el 16 de julio de 1969 en un cohete Saturn V. | NASA, Apollo 11 Mission Overview | https://www.nasa.gov/missions/apollo/apollo-11-mission-overview/ |
+| El Saturn V medía 110,6 m de alto (363 pies). Es la altura a la que se muestra el modelo del «cohete superpesado» (Saturno V). | NASA, What Was the Saturn V? | https://www.nasa.gov/learning-resources/for-kids-and-students/what-was-the-saturn-v-grades-5-8/ |
+| El Saturn V podía enviar unos 48.600 kg hacia la Luna (107.100 lb en inyección translunar). Respalda el «cohete superpesado» del taller. | NASA, What Was the Saturn V? | https://www.nasa.gov/learning-resources/for-kids-and-students/what-was-the-saturn-v-grades-5-8/ |
 | Apolo 11 aterrizó el 20 de julio de 1969 en el Mar de la Tranquilidad. | NASA, Apollo 11 Mission Overview | https://www.nasa.gov/missions/apollo/apollo-11-mission-overview/ |
 | Apolo 11 entró en órbita lunar a las 75 h 50 min de vuelo; CAPSTONE tardó unos 4 meses con una ruta balística que ahorra combustible. | NASA, CAPSTONE leaves Earth orbit, headed to the Moon | https://www.nasa.gov/blogs/missions/2022/07/04/capstone-leaves-earth-orbit-headed-to-the-moon |
 | La Luna está a 384.400 km de la Tierra en promedio. | NASA Science, Earth's Moon: Facts | https://science.nasa.gov/moon/facts/ |

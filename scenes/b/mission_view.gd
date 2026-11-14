@@ -27,6 +27,7 @@ var lighting: Node
 var tracks: MeshInstance3D
 var _tracks_seeded := false
 var workshop: CanvasLayer
+var launch_pad: CanvasLayer  ## plataforma de lanzamiento en la Tierra (elección del cohete)
 var story: CanvasLayer  ## introducción y ventana de decisión de la historia
 var tutorial: CanvasLayer  ## cartel del tutorial del Sol 1
 var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
@@ -123,6 +124,15 @@ func _ready() -> void:
 	add_child(workshop)
 	workshop.command.connect(_command)
 	workshop.options_requested.connect(func(): hud.open_options())
+	# Primer panorama: la plataforma de lanzamiento en la Tierra, donde se elige el cohete.
+	# Se reparte la fase "workshop" con el hangar: este se ve mientras no haya cohete elegido.
+	launch_pad = preload("res://scenes/b/launch_pad.gd").new()
+	launch_pad.name = "LaunchPad"
+	add_child(launch_pad)
+	launch_pad.command.connect(_command)
+	launch_pad.options_requested.connect(func(): hud.open_options())
+	launch_pad.despegue_terminado.connect(func(diseno: Dictionary) -> void:
+		crucero.play(diseno))
 	report_view = preload("res://scenes/b/report.gd").new()
 	report_view.name = "Report"
 	add_child(report_view)
@@ -401,6 +411,7 @@ func change_locale(locale: String) -> void:
 	TranslationServer.set_locale(locale)
 	hud.build()
 	workshop.build()
+	launch_pad.build()
 	base_hud.build()
 	story.rebuild()
 	if not report_view.report.is_empty():
@@ -460,6 +471,10 @@ func apply_snapshot(s: Dictionary) -> void:
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
+	launch_pad.update_snapshot(s)
+	# El hangar y la plataforma se reparten la fase "workshop": nunca se ven los dos a la vez.
+	if launch_pad.visible:
+		workshop.visible = false
 	if s.has("workshop") or s.has("design_summary"):
 		report_view.taller = s.get("workshop", s.get("design_summary"))
 	if is_instance_valid(tarjeta_nasa):
@@ -478,8 +493,14 @@ func apply_snapshot(s: Dictionary) -> void:
 		_crucero_visto = false
 	if s.get("phase", "") == "landing" and not landing_in_progress and not actors.landed:
 		if _vio_taller and not _crucero_visto:
-			if not crucero.visible:
-				crucero.play(s.get("design_summary", {}))
+			if not crucero.visible and not launch_pad.despegando():
+				# Antes de la secuencia de lanzamiento: en el edificio de montaje se aparta el
+				# techo y el cohete sale por el hueco. Si falta el modelo del edificio, la
+				# plataforma dice que no puede y se va directo a la secuencia, como antes.
+				if launch_pad.puede_despegar():
+					launch_pad.despegar(s.get("design_summary", {}))
+				else:
+					crucero.play(s.get("design_summary", {}))
 		else:
 			landing_in_progress = true
 			actors.start_landing()

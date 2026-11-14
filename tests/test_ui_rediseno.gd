@@ -251,6 +251,9 @@ func test_taller_cambia_la_pieza_unica_de_la_categoria() -> void:
 	taller.command.connect(func(orden: String, _carga: Dictionary) -> void: ordenes.append(orden))
 	sim.ejecutar("design_add", {"part_id": "cohete_ligero"})
 	taller.update_snapshot(sim.snapshot())
+	# Al llegar al hangar, el taller pide por su cuenta las herramientas básicas; aquí se mira otra
+	# cosa, así que esas órdenes no cuentan.
+	ordenes.clear()
 	taller.category = "cohetes"
 	var otra := {"id": "cohete_pesado", "available": true, "reason": "CATEGORY_FULL"}
 	taller._on_card(otra, false)
