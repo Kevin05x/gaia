@@ -41,6 +41,7 @@ const CARD_BG := Color("1A100A", 0.92)
 const TEXT_DIM := Color("D8C3AC", 0.62)
 
 var root: Control
+var consejo_panel: Control  ## el cuadro «Consejo de ingeniería» (en red se oculta para dejar sitio al panel de rol)
 var snapshot: Dictionary = {}
 var category := "trayectoria"
 var validated := false
@@ -726,6 +727,7 @@ func _build_tip() -> void:
 	# A la derecha de la barra lateral: antes estaba arriba a la izquierda, donde ahora va el catálogo.
 	UI.place(consejo, "bl", SIDEBAR_ANCHO + MARGEN * 2.0, 24, 236, 196)
 	root.add_child(consejo)
+	consejo_panel = consejo
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	consejo.add_child(col)
@@ -1221,8 +1223,11 @@ func _message(codigo: String) -> String:
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		var jugadores := int(preload("res://scenes/menu/game_session.gd").jugadores)
-		if jugadores > 1:
+		var sesion := preload("res://scenes/menu/game_session.gd")
+		var jugadores := int(sesion.jugadores)
+		if jugadores > 1 and sesion.en_red:
+			command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
+		elif jugadores > 1:
 			_revision_de_equipo(taller, jugadores)
 		else:
 			command.emit("design_start", {})

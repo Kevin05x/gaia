@@ -33,6 +33,9 @@ const DISENO_INICIAL: Array[String] = ["cohete_ligero", "chasis_base", "panel_so
 
 @export var crear_vista: bool = true  ## false en las pruebas: se usa el "port" que se le asigne
 @export var saltar_taller: bool = false  ## true: empieza directo con DISENO_INICIAL, sin pasar por el taller (pruebas y atajos)
+## true: este es el anfitrión de una partida en red (scenes/net/red.gd). Lleva la simulación sin dibujar nada: las órdenes
+## llegan de los jugadores por el "port" que se le asigne (RedPort) y lo que pasa se reparte a todos. No guarda partida.
+var modo_red: bool = false
 
 var sim: Simulation
 var port: Node
@@ -120,8 +123,8 @@ func _process(delta: float) -> void:
 			_aviso("BUILD_ROVER_BACK" if evento.ends_with(":vuelta") else "BUILD_ROVER_GOING")
 		elif evento.begins_with(Simulation.EVENTO_OBRA_SIN_ROVER + ":"):
 			_aviso_obra_sin_rover(evento.get_slice(":", 1))
-		elif evento.begins_with(HitosSystem.EVENTO_HITO + ":") and view != null:
-			view.celebrar_hito(evento.get_slice(":", 1))
+		elif evento.begins_with(HitosSystem.EVENTO_HITO + ":"):
+			_ui("hito", [evento.get_slice(":", 1)])
 	if eventos.has(Simulation.EVENTO_MISION_TERMINADA):
 		if crear_vista:
 			Sesion.borrar()  # misión terminada: ya no hay partida que continuar
@@ -162,16 +165,12 @@ func _crear_simulacion() -> void:
 	if crear_vista and Sesion.cargar_al_iniciar:
 		Sesion.restaurar_configuracion()
 	# Destino (Marte o Luna): cada uno trae sus propios datos (content/destinos.json). Sin vista (pruebas) es Marte.
-	var destino := Sesion.destino if crear_vista else "marte"
+	var destino := Sesion.destino if (crear_vista or modo_red) else "marte"
 	var cfg := Destino.config(destino)
 	if cfg.is_empty():
 		destino = "marte"
 		cfg = Destino.config("marte")
-	if Destino.id != destino:
-		var arte := preload("res://scenes/b/world_art.gd")
-		arte._meshes.clear()  # las mallas y la textura de contacto guardadas llevan la paleta del otro destino
-		arte._contact_texture = null
-	Destino.id = destino
+	aplicar_destino(destino)
 	var balance := Balance.desde_archivo(str(cfg.get("balance", RUTA_BALANCE)))
 	var reglas := Rules.desde_archivo(str(cfg.get("reglas", RUTA_REGLAS)))
 	var mapa := MapData.desde_archivo(str(cfg.get("mapa", RUTA_MAPA)))
@@ -193,8 +192,17 @@ func _crear_simulacion() -> void:
 	if errores.is_empty():
 		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
 		var imprevistos := ImprevistosSystem.desde_archivo(RUTA_IMPREVISTOS, destino)
-		if crear_vista and imprevistos.errores.is_empty() and not saltar_taller:  # pruebas y medición: sin sorpresas
+		if (crear_vista or modo_red) and imprevistos.errores.is_empty() and not saltar_taller:  # pruebas y medición: sin sorpresas
 			sim.usar_imprevistos(imprevistos, int(Time.get_unix_time_from_system()) % 100000)
+
+
+## Fija el destino en curso. Lo usan el anfitrión (aquí) y la vista de cada jugador en red (scenes/net/cliente_juego.gd).
+static func aplicar_destino(destino: String) -> void:
+	if Destino.id != destino:
+		var arte := preload("res://scenes/b/world_art.gd")
+		arte._meshes.clear()  # las mallas y la textura de contacto guardadas llevan la paleta del otro destino
+		arte._contact_texture = null
+	Destino.id = destino
 
 
 ## Deja en el catálogo solo las trayectorias del destino y ajusta lo que lleva cada cohete hasta allí.
@@ -256,8 +264,7 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 		"act":
 			port.present_action(resultado["action"])
 		"upgrade", "build", "build_module":
-			if view != null:
-				view.audio.ping()
+			_ui("ping")
 			# Obra con rover: el rover sale hacia la obra (o irá en cuanto acabe lo que hace).
 			if not Array(resultado.get("path", [])).is_empty():
 				port.present_path(resultado["path"], resultado["seconds_per_tile"])
@@ -265,15 +272,14 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 			elif resultado.has("rover_reason") and not str(resultado["rover_reason"]) in ["BUSY", "MOVING", "PAUSED"]:
 				_aviso_obra_sin_rover(str(resultado["rover_reason"]))
 		"decide":
-			if view != null:
-				view.audio.ping()
+			_ui("ping")
 		"landing_finished":
 			_aviso("READY")
 			if crear_vista:
 				guardar_partida()  # primer punto de guardado: recién aterrizado
 		"redesign":
 			port.cancel_presentation()
-			_reiniciar_vista()
+			_ui("reiniciar")
 			if saltar_taller:
 				_empezar_con_diseno_inicial(false)
 	_publicar()
@@ -285,25 +291,56 @@ func _publicar() -> void:
 
 
 func _aviso_descarga(unidades: int) -> void:
-	if view != null:
-		view.hud.show_notice(tr("CARGO_UNLOADED") % unidades)
-		view.al_descargar()
+	_ui("aviso_descarga", [unidades])
 
 
 func _aviso_obra_sin_rover(motivo: String) -> void:
-	if view != null:
-		view.hud.show_notice(tr("BUILD_ROVER_BLOCKED") % tr(motivo))
+	_ui("aviso_obra_sin_rover", [motivo])
 
 
 func _aviso(clave: String) -> void:
+	_ui("aviso", [clave])
+
+
+## Lo que la simulación le pide a la pantalla (avisos, hitos, sonido). Con vista propia se hace aquí mismo; en una partida
+## en red el anfitrión no dibuja nada y se lo manda a cada jugador (RedPort.ui), cuya vista lo ejecuta con ui_en_vista.
+func _ui(metodo: String, args: Array = []) -> void:
 	if view != null:
-		view.hud.show_notice(clave)
+		ui_en_vista(view, metodo, args)
+	elif port != null and port.has_method("ui"):
+		port.ui(metodo, args)
+
+
+static func ui_en_vista(vista: Node, metodo: String, args: Array) -> void:
+	if vista == null or not is_instance_valid(vista):
+		return
+	match metodo:
+		"aviso":
+			vista.hud.show_notice(str(args[0]))
+		"aviso_obra_sin_rover":
+			vista.hud.show_notice(TranslationServer.translate("BUILD_ROVER_BLOCKED") % TranslationServer.translate(str(args[0])))
+		"aviso_descarga":
+			vista.hud.show_notice(TranslationServer.translate("CARGO_UNLOADED") % int(args[0]))
+			vista.al_descargar()
+		"hito":
+			vista.celebrar_hito(str(args[0]))
+		"ping":
+			vista.audio.ping()
+		"reiniciar":
+			reiniciar_vista(vista)
+		"intro":
+			if vista.get("story") != null:
+				vista.story.show_intro(args[0])
 
 
 ## Deja la vista como recién creada (lo mismo que hace el host de revisión de B al reiniciar).
 func _reiniciar_vista() -> void:
 	if view == null:
 		return
+	reiniciar_vista(view)
+
+
+static func reiniciar_vista(view: Node) -> void:
 	view.actors.cancel_actions()
 	view.actors.landed = false
 	view.actors.landing_active = false

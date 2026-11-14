@@ -20,6 +20,7 @@ boot_splash/show_image=false
 [autoload]
 
 EventBus="*res://autoload/event_bus.gd"
+Red="*res://scenes/net/red.gd"
 
 [display]
 

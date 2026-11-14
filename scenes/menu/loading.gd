@@ -19,7 +19,7 @@ const RECURSOS := ["res://scenes/b/ui_style.gd", "res://scenes/b/terrain.gd", "r
 	"res://scenes/b/buildings.gd", "res://scenes/b/combat_view.gd", "res://scenes/b/audio.gd",
 	"res://scenes/b/assets/models/rover.tscn", "res://scenes/b/assets/models/station.tscn",
 	"res://scenes/b/assets/models/drone.tscn", "res://scenes/b/assets/models/companion.tscn",
-	"res://scenes/b/mission.tscn", "res://scenes/a/mission_runner.gd", "res://scenes/a/game.tscn"]
+	"res://scenes/b/mission.tscn", "res://scenes/a/mission_runner.gd", "res://scenes/a/game.tscn", "res://scenes/net/cliente.tscn"]
 const MODELOS := ["anthena_juego", "mineral_cobre", "mineral_oro", "mineral_plata", "hielo_2", "hielo_3", "foco", "hangar_cuadrado",
 	"hangar_roundA", "taladro", "torreta_doble", "torreta_simple", "nido_caverna"]
 const Equipo := preload("res://scenes/b/modelos_equipo.gd")
@@ -140,9 +140,9 @@ func _cargar() -> void:
 		await arbol.process_frame
 	while _t < TIEMPO_MINIMO * 0.5:
 		await arbol.process_frame
-	var escena = load(Sesion.ESCENA_JUEGO)
+	var escena = load(Sesion.escena_juego())
 	if not (escena is PackedScene):
-		arbol.change_scene_to_file(Sesion.ESCENA_JUEGO)
+		arbol.change_scene_to_file(Sesion.escena_juego())
 		return
 	_fijar(0.65)
 	await arbol.process_frame
