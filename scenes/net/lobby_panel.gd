@@ -124,7 +124,7 @@ func _vista_inicio() -> void:
 
 func _nombre_elegido() -> String:
 	nombre_guardado = _nombre.text.strip_edges() if is_instance_valid(_nombre) else nombre_guardado
-	return nombre_guardado if not nombre_guardado.is_empty() else tr("NET_NAME_DEFAULT")
+	return nombre_guardado  # vacío: la sala le pone «Jugador N»
 
 
 func _crear_sala() -> void:

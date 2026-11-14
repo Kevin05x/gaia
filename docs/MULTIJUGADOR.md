@@ -1,0 +1,61 @@
+# Multijugador en red (hasta 4 personas, cada una en su dispositivo)
+
+Rama `b/multijugador`. Todos juegan **la misma misión a la vez**: un solo rover y una sola simulación. Cada persona lleva un rol
+(Dirección, Ingeniería, Ciencia, Comunicaciones) y solo puede dar las órdenes de su rol. El reparto de roles es el mismo del equipo
+de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, uno por rol; con 2, dos roles cada uno; con 1, todos.
+
+## Cómo se juega
+
+1. **Quien crea la sala** (versión de escritorio): *Menú › MULTIJUGADOR › Crear sala*. Le aparecen sus direcciones IP.
+2. **Los demás**: *MULTIJUGADOR*, escriben la IP (o la dirección `wss://…` del servidor) y pulsan *Entrar*.
+3. El **jefe de sala** (el primero en entrar) elige destino y dificultad y pulsa *Empezar misión*. Después de empezar ya no entra nadie más.
+4. En el taller todos ven el diseño en vivo; Dirección e Ingeniería pueden cambiarlo. Dirección pulsa *Iniciar aterrizaje* y se abre el
+   **Go / No-Go en todos los dispositivos**: cada persona vota los roles que le tocan; Dirección lanza cuando todos dicen GO.
+5. En operaciones cada rol hace lo suyo a la vez:
+
+| Rol | Órdenes |
+| --- | --- |
+| Dirección | mover el rover, descargar, pausar, decisiones de historia e imprevistos, rediseñar, lanzar |
+| Ingeniería | construir, módulos, encender/apagar edificios, diseñar en el taller |
+| Ciencia | acercarse a un objetivo, perforar/analizar, descargar |
+| Comunicaciones | transmitir, mejorar la antena |
+| Todos | seleccionar, detener, terminar el aterrizaje, saltar el tutorial |
+
+Si alguien da una orden que no es de su rol, ve el aviso «Esa orden le toca a otro rol del equipo». Si alguien se desconecta con la
+misión en marcha, sus roles pasan al jefe de sala.
+
+## Tres formas de conectarse
+
+| Forma | Quién puede unirse | Qué hace falta |
+| --- | --- | --- |
+| **Misma red Wi-Fi** (anfitrión de escritorio que también juega) | Escritorio | Nada más. El anfitrión abre el puerto 9080 (Windows pregunta por el cortafuegos la primera vez: *Permitir*). |
+| **Por internet con un túnel** | Escritorio y navegador | El anfitrión de escritorio ejecuta `cloudflared tunnel --url http://localhost:9080` y reparte la dirección `wss://….trycloudflare.com` que le da. |
+| **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. |
+
+> **Estado de la prueba.** Probado: servidor dedicado y anfitrión-jugador con 4 procesos distintos conectados por WebSocket en una
+> misma máquina (`tools/probar_red.sh`), y la pantalla real (menú, sala, carga, taller y revisión) con dos copias del juego.
+> **No probado:** otra computadora de verdad en la misma Wi-Fi, el túnel de Cloudflare, `Dockerfile.servidor` en un servicio real
+> ni la versión web conectada a un servidor. Un navegador **no puede crear** una sala (no puede escuchar conexiones); solo unirse,
+> y desde una página `https://` (GitHub Pages) el navegador solo acepta direcciones `wss://`, no `ws://192.168…`.
+
+## Cómo está hecho (para quien toque el código)
+
+- `scenes/net/red.gd` (autoload `Red`): conexión WebSocket, sala, y todos los RPC. **El anfitrión manda**: lleva el `MissionRunner`
+  sin vista (`modo_red`), comprueba los permisos y reparte snapshots (máximo 10 por segundo), rutas, avisos y votos.
+- `scenes/net/red_port.gd`: hace de «Port» del anfitrión (misma interfaz que `scenes/b/port.gd`), así `MissionRunner` no sabe que hay red.
+- `scenes/net/cliente_juego.gd`: la vista de cada jugador; sus órdenes salen por `Red.enviar_orden` y lo que llega se entrega a su Port.
+- `scenes/net/sala.gd` y `permisos.gd`: lógica pura de sala (orden de llegada, roles, jefe) y de permisos por rol; con pruebas GUT.
+- `scenes/net/lobby_panel.gd`: la pantalla de sala. Textos en `scenes/net/net_text.gd` (español e inglés).
+- `sim/` **no se tocó**: la simulación sigue sin saber nada de la red. `EventBus` tampoco.
+- El anfitrión no se fía del cliente: solo acepta órdenes con datos simples (`Red.sanear`) y de un rol que las tenga.
+- Pruebas: `tools/probar_red.sh [godot] [puerto] [servidor|lan]` (servidor dedicado o anfitrión + 3 jugadores automáticos, con
+  `tools/bot_red.gd`) y `tests/test_red_sala.gd`.
+
+## Límites conocidos
+
+- Sin reconexión: si alguien se cae, no puede volver a la misma misión (sus roles pasan al jefe).
+- Sin guardado en red: la partida en red no se guarda ni se continúa.
+- No hay salas con código ni búsqueda automática de partidas en la red local: se escribe la IP.
+- Todos ven el mismo rover pero cada dispositivo anima por su cuenta: el movimiento puede diferir una fracción de segundo.
+- El aterrizaje lo termina el primer dispositivo que acaba su animación; el resto lo ve ya en operaciones.
+- El rendimiento de varios jugadores en un servidor real y la latencia por internet no se midieron.

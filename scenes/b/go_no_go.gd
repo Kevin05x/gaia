@@ -158,7 +158,15 @@ func aplicar_voto_remoto(rol: String, valor: Variant) -> void:
 	if _botones.has(rol):
 		_botones[rol][0].set_pressed_no_signal(valor != null and bool(valor))
 		_botones[rol][1].set_pressed_no_signal(valor != null and not bool(valor))
+		_pintar_voto(rol)
 	_actualizar()
+
+
+## El voto de otro jugador se ve con el color del botón (los botones de roles ajenos están desactivados y no se «hunden»).
+func _pintar_voto(rol: String) -> void:
+	var par: Array = _botones[rol]
+	par[0].add_theme_color_override("font_disabled_color", UI.AMBER if par[0].button_pressed else Color(UI.CREAM, 0.35))
+	par[1].add_theme_color_override("font_disabled_color", UI.WARN if par[1].button_pressed else Color(UI.CREAM, 0.35))
 
 
 func _roles() -> Array:

@@ -199,7 +199,7 @@ func _al_desconectar_par(id: int) -> void:
 	if not sala.orden.has(id):
 		return
 	sala.quitar(id)
-	if sala.cuantos() == 0 or (sala.jugando and modo == Modo.SERVIDOR and sala.cuantos() == 0):
+	if sala.cuantos() == 0:  # el servidor dedicado se queda sin jugadores: vuelve a abrirse una sala nueva
 		_terminar_partida()
 		sala = Sala.new()
 	_enviar_sala()

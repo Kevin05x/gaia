@@ -84,7 +84,7 @@ func _construir_interfaz() -> void:
 	_capa.add_child(_crear_logotipo())
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 4)
-	UI.place(col, "tl", 92, 244, 380, 420)
+	UI.place(col, "tl", 92, 226, 380, 440)
 	_capa.add_child(col)
 	var guardado: Dictionary = Sesion.resumen()
 	var bloque := VBoxContainer.new()

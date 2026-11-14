@@ -136,3 +136,34 @@ func test_todas_las_ordenes_de_la_simulacion_tienen_dueno() -> void:
 			if Permisos.POR_ROL[rol].has(orden):
 				de_rol = true
 		assert_true(libre or de_rol, "la orden «%s» no tiene rol en scenes/net/permisos.gd" % orden)
+
+
+const RedScript := preload("res://scenes/net/red.gd")
+
+
+func test_sanear_deja_pasar_datos_simples() -> void:
+	var ok = RedScript.sanear({"tile": Vector2i(3, 4), "target_id": "roca_1", "on": true, "choice": 2})
+	assert_not_null(ok)
+	assert_eq(ok["tile"], Vector2i(3, 4))
+
+
+func test_sanear_rechaza_lo_que_podria_romper_al_anfitrion() -> void:
+	assert_null(RedScript.sanear({"tile": "no soy una casilla"}), "tile debe ser Vector2i")
+	assert_null(RedScript.sanear({"tile": Vector2i(999999, 0)}), "casilla absurda")
+	assert_null(RedScript.sanear({"x": [1, 2, 3]}), "listas no")
+	assert_null(RedScript.sanear({"x": {"a": 1}}), "diccionarios no")
+	assert_null(RedScript.sanear({"x": "a".repeat(200)}), "textos larguísimos no")
+	assert_null(RedScript.sanear({5: 1}), "claves que no son texto no")
+	var muchos := {}
+	for i in range(20):
+		muchos["k%d" % i] = i
+	assert_null(RedScript.sanear(muchos), "demasiadas claves")
+
+
+func test_direccion_del_anfitrion() -> void:
+	assert_eq(RedScript.normalizar_direccion("192.168.1.20"), "ws://192.168.1.20:9080")
+	assert_eq(RedScript.normalizar_direccion("192.168.1.20:9090"), "ws://192.168.1.20:9090")
+	assert_eq(RedScript.normalizar_direccion("localhost"), "ws://localhost:9080")
+	assert_eq(RedScript.normalizar_direccion("gaia-sala.onrender.com"), "wss://gaia-sala.onrender.com")
+	assert_eq(RedScript.normalizar_direccion("wss://x.trycloudflare.com"), "wss://x.trycloudflare.com")
+	assert_eq(RedScript.normalizar_direccion("  "), "")

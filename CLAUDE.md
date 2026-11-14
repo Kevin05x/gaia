@@ -33,6 +33,8 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - **Los monstruos NO se quitan** (decisión del 14 nov): al matarlos dan **bionutrientes**, un recurso nuevo que lo implementa el equipo de historia (`a/historia-sin-monstruos`). No borrar el combate. La Luna sigue sin fauna ni combate.
 - **Energía de la Luna:** hoy usa la misma curva solar que Marte. En la realidad, en el polo sur el Sol se queda a pocos grados del horizonte, las crestas reciben más de la mitad del tiempo luz y las zonas de sombra permanente (donde hay hielo) no reciben nada. Se va a rehacer esa lógica en `b/dias-y-realismo` (ver `docs/REPARTO_FINAL.md`).
 
+- **Multijugador en red** (rama `b/multijugador`, 15 nov): hasta 4 personas, cada una en su dispositivo y todas a la vez en la misma misión, cada una con su rol. El anfitrión lleva la simulación y valida las órdenes por rol; todo por WebSocket (sala en la misma Wi-Fi, o servidor dedicado / túnel para internet y navegador). Ver `docs/MULTIJUGADOR.md`. `sim/` y `EventBus` no cambiaron.
+
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
@@ -53,6 +55,7 @@ Tres capas, que se conectan solo por órdenes y snapshots:
 2. `sim/`: simulación pura en código, **sin dibujar nada** (`simulation.gd`, `systems/*`: reloj, energía, comunicaciones, movimiento, resultado, combate, imprevistos...). Es lo que se prueba con GUT.
 3. `scenes/`: lo que se ve (`scenes/b/` es el mundo 3D e interfaz; `scenes/a/mission_runner.gd` conecta vista y simulación; `scenes/menu/` el menú). La vista le pide cosas a la simulación y muestra el resultado; **nunca modifica el estado de la simulación directamente**.
 
+- El autoload de red es `scenes/net/red.gd` (`Red`): solo conecta la vista con el anfitrión; la simulación no sabe que existe.
 - `autoload/event_bus.gd` es el contrato de señales: cambiarlo solo con PR aprobado por dos personas.
 - Cada destino declara en `content/destinos.json` qué datos usa; `historia` y `combate` son opcionales.
 - Escribir una cadena de texto nueva implica español **e** inglés (`scenes/b/i18n/`, `i18n/`).
