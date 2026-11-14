@@ -169,6 +169,8 @@ func _vista_sala() -> void:
 	roles.custom_minimum_size.x = 720
 	_selector_destino(sala, jefe)
 	_selector_dificultad(sala, jefe)
+	if jefe:
+		UI.label(_cuerpo, tr("NET_START_HINT"), 13, Color(UI.AMBER, 0.9))
 	var pie := HBoxContainer.new()
 	pie.add_theme_constant_override("separation", 10)
 	_cuerpo.add_child(pie)
