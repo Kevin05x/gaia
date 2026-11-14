@@ -30,7 +30,7 @@ Reparto acordado el 14 de noviembre. No edite nadie este archivo dentro de las r
 **Por qué una sola rama:** la historia y los monstruos viven en los mismos archivos; separarlas causaría conflictos.
 
 ### Objetivo
-Que Marte tenga la historia nueva de Amner y **sin monstruos**, con la partida jugable de principio a fin.
+Que Marte tenga la historia nueva y **sin monstruos**, con la partida jugable de principio a fin.
 
 ### Archivos principales
 - `content/historia.json` (hoy 9 nodos, 4 finales y personajes: Houston, Rocky, Perseverance).
@@ -138,7 +138,7 @@ Que el paso de los días se note más y que el juego se vea lo más realista pos
 
 | Cuándo | Qué |
 | --- | --- |
-| Sáb 14, mañana | Decisiones: qué es el telescopio, dónde está la historia de Amner |
+| Sáb 14, mañana | Decisiones: qué es el telescopio, dónde está la historia nueva |
 | Sáb 14, tarde | Rama 1 (historia sin monstruos) y arranque de rama 3 |
 | Sáb 14, noche | PR de la rama 1 a `develop`; avance de la rama 2 |
 | Dom 15, mañana | Ramas 2 y 3 a `develop`; pruebas completas |
