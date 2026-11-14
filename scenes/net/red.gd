@@ -461,7 +461,7 @@ func _procesar_orden(id: int, orden: String, carga: Dictionary) -> void:
 		_orden_de_equipo(id, roles, orden, limpia)
 		return
 	if not Permisos.permite(roles, orden):
-		enviar_a(id, "reject", Permisos.RAZON)
+		enviar_a(id, "reject", Permisos.razon_para(orden))
 		return
 	_port.emisor = id
 	_port.orden_actual = orden
@@ -475,7 +475,7 @@ func _orden_de_equipo(id: int, roles: Array, orden: String, carga: Dictionary) -
 	match orden:
 		"net_review_open", "net_review_close":
 			if not Permisos.permite(roles, "design_start"):
-				enviar_a(id, "reject", Permisos.RAZON)
+				enviar_a(id, "reject", Permisos.razon_para("design_start"))
 				return
 			_votos.clear()
 			repartir("revision", {"abrir": orden == "net_review_open"})

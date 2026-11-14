@@ -122,6 +122,22 @@ func test_permisos_por_rol() -> void:
 	assert_true(Permisos.permite(["ciencia", "comunicaciones"], "transmit"), "con dos roles se suman")
 
 
+func test_el_taller_es_de_todo_el_equipo_pero_lanzar_es_de_direccion() -> void:
+	for rol in ["direccion", "ingenieria", "ciencia", "comunicaciones"]:
+		assert_true(Permisos.permite([rol], "design_add"), "%s puede elegir piezas" % rol)
+		assert_true(Permisos.permite([rol], "design_remove"))
+	assert_true(Permisos.permite(["direccion"], "design_start"))
+	assert_false(Permisos.permite(["ciencia", "comunicaciones"], "design_start"), "lanzar es de Dirección")
+
+
+func test_el_aviso_dice_de_quien_es_la_orden() -> void:
+	assert_eq(Permisos.razon_para("move"), "NET_ONLY_DIRECCION")
+	assert_eq(Permisos.razon_para("act"), "NET_ONLY_CIENCIA")
+	assert_eq(Permisos.razon_para("transmit"), "NET_ONLY_COMUNICACIONES")
+	assert_eq(Permisos.razon_para("build"), "NET_ONLY_INGENIERIA")
+	assert_eq(Permisos.razon_para("approach"), Permisos.RAZON, "si la orden es de varios roles, aviso genérico")
+
+
 func test_una_persona_sola_puede_todo() -> void:
 	var s = _sala(1)
 	s.empezar(100)

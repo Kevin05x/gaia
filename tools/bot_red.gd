@@ -123,6 +123,13 @@ func _correr() -> void:
 	await _terminar()
 
 
+func _hay_rechazo() -> bool:
+	for r in rechazos:
+		if r.begins_with("NET_ONLY_") or r == "NET_NOT_YOUR_ROLE":
+			return true
+	return false
+
+
 func _probar_rol() -> void:
 	var roles: Array = red.mis_roles()
 	var casilla: Vector2i = ultimo.get("rover_tile", Vector2i.ZERO)
@@ -131,14 +138,14 @@ func _probar_rol() -> void:
 		res["mover_ok"] = await _esperar(func() -> bool: return rutas > 0, 5.0)
 	elif roles.has("ciencia"):
 		red.enviar_orden("move", {"tile": casilla + Vector2i(2, 0)})
-		res["mover_negado"] = await _esperar(func() -> bool: return rechazos.has("NET_NOT_YOUR_ROLE"), 5.0)
+		res["mover_negado"] = await _esperar(func() -> bool: return _hay_rechazo(), 5.0)
 	elif roles.has("ingenieria"):
 		red.enviar_orden("transmit", {"on": true})
-		res["transmitir_negado"] = await _esperar(func() -> bool: return rechazos.has("NET_NOT_YOUR_ROLE"), 5.0)
+		res["transmitir_negado"] = await _esperar(func() -> bool: return _hay_rechazo(), 5.0)
 	elif roles.has("comunicaciones"):
 		red.enviar_orden("transmit", {"on": true})
 		await create_timer(1.5).timeout
-		res["transmitir_ok"] = not rechazos.has("NET_NOT_YOUR_ROLE")
+		res["transmitir_ok"] = not _hay_rechazo()
 	# Todos ven el movimiento del rover que dio Dirección.
 	await create_timer(1.0).timeout
 	res["vio_ruta"] = rutas > 0
