@@ -15,11 +15,12 @@ const INNER := 40.0  ## mitad del lado de la malla detallada (después sigue el 
 const CELL := 2.0
 const OUTER := 80.0  ## mitad del lado de la malla de colinas lejanas (celdas de 4 m)
 const OUTER_CELL := 4.0
-const REGOLITH := Color("B97E64")
-const CLAY := Color("C79170")
-const SHADOW_ROCK := Color("90614D")
-const BASIN := Color("C99C78")
-const MOUNTAIN := Color("85655C")
+## Paleta acercada a la foto NASA PIA24542 (Jezero): a mitad de camino entre la anterior y la medida (ARTE_Y_LICENCIAS.md).
+const REGOLITH := Color("947058")
+const CLAY := Color("A38164")
+const SHADOW_ROCK := Color("745945")
+const BASIN := Color("B59372")
+const MOUNTAIN := Color("886D5A")
 const LAKE_CENTER := Vector2(-42.0, -48.0)
 const LAKE_ROT := -0.8
 const TARGET_LIGHT := Color("FBE0AC")
@@ -766,7 +767,7 @@ func _build_decor() -> void:
 		{"id": "mesa1", "mesh": "mesa1", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
 		{"id": "mesa_big", "mesh": "mesa0", "count": int(12 * fr), "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0, "vis": 0.0, "variants": 1},
 	]
-	var paleta := [Color("B98160"), Color("A56E52"), Color("B07A5C"), Color("C69770"), Color("96654C")]
+	var paleta := [Color("AD8666"), Color("987256"), Color("A47C5F"), Color("C69D78"), Color("8A6850")]
 	# Cada familia pequeña usa 3 variantes de forma para que no se repita el mismo canto.
 	var expandidas: Array = []
 	for d in familias:
@@ -782,7 +783,7 @@ func _build_decor() -> void:
 				copia["count"] = int(ceil(float(d["count"]) / nv))
 				expandidas.append(copia)
 	familias = expandidas
-	var paleta_mesa := [Color("C58C66"), Color("B67E5C"), Color("CE9A72"), Color("AE7154")]
+	var paleta_mesa := [Color("BC906D"), Color("AC8464"), Color("CA9E78"), Color("A2785B")]
 	for datos in familias:
 		var malla_id: String = datos["mesh"]
 		var malla: Mesh = W.mesa_mesh(int(malla_id.substr(4))) if malla_id.begins_with("mesa") else W.rock_mesh(malla_id, int(datos["variant"]))

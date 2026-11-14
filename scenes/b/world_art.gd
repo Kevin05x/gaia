@@ -1,6 +1,7 @@
 extends RefCounted
 ## Piezas procedurales del mundo: rocas low-poly de tres familias, materiales compartidos por color de vértice,
-## sombra de contacto y utilidades de malla con normales por faceta. Todo original y sin texturas externas.
+## sombra de contacto y utilidades de malla con normales por faceta. En Marte, el suelo y las rocas usan las texturas
+## del equipo de arte (assets/texturas/); si faltan, las generadas por código (world_textures.gd).
 
 const Tex := preload("res://scenes/b/world_textures.gd")
 
@@ -69,28 +70,67 @@ static func rock_material() -> StandardMaterial3D:
 	return _materials["rock"]
 
 
+## Texturas PBR de Marte hechas por el equipo de arte (assets/texturas/, ver ARTE_Y_LICENCIAS.md). La «detalle» es el
+## color dividido por su media (media 0,8, igual que las de world_textures.gd): el color de vértice sigue dando el tono
+## de cada zona y la textura solo añade grano, gravilla, cantos y estratos. Solo en Marte: la Luna conserva las suyas.
+const TEX_MARTE := "res://assets/texturas/marte_%s_%s.jpg"
+const ESCALA_SUELO_MARTE := 0.4  ## las UV del suelo repiten cada 5 m; con 0,4 la textura repite cada 12,5 m (menos repetición visible)
+const ESCALA_ROCA_MARTE := 0.35  ## triplanar: estratos de unos 11 cm en lugar de 5 cm
+
+
+## {"albedo", "normal", "rugosidad"} de una textura de Marte, o {} si falta algún archivo (se usan las de código).
+static func _tex_marte(nombre: String) -> Dictionary:
+	var clave := "tex_" + nombre
+	if not _materials.has(clave):
+		var t := {}
+		var rutas := {"albedo": TEX_MARTE % [nombre, "detalle"], "normal": TEX_MARTE % [nombre, "normal"], "rugosidad": TEX_MARTE % [nombre, "rugosidad"]}
+		for k in rutas:
+			if not ResourceLoader.exists(rutas[k]):
+				t = {}
+				break
+			t[k] = load(rutas[k])
+		_materials[clave] = t
+	return _materials[clave]
+
+
+## Pone (o quita, con t vacío) la rugosidad por textura.
+static func _rugosidad(m: StandardMaterial3D, t: Dictionary) -> void:
+	m.roughness_texture = t.get("rugosidad")
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+
+
 ## Activa o quita las texturas de los materiales compartidos (opción «calidad alta» de los ajustes).
 static func apply_quality() -> void:
+	var marte := not Destino.es_luna()
 	var suelo: StandardMaterial3D = _materials.get("ground")
 	if suelo != null:
 		if quality:
-			var t := Tex.sand()
+			var tm := _tex_marte("regolito") if marte else {}
+			var t := tm if not tm.is_empty() else Tex.sand()
 			suelo.albedo_texture = t["albedo"]
 			suelo.normal_enabled = true
 			suelo.normal_texture = t["normal"]
 			suelo.albedo_color = Color(1.25, 1.25, 1.25)
+			_rugosidad(suelo, tm)
+			var e := ESCALA_SUELO_MARTE if not tm.is_empty() else 1.0
+			suelo.uv1_scale = Vector3(e, e, 1.0)
 		else:
 			suelo.albedo_texture = null
 			suelo.normal_enabled = false
 			suelo.albedo_color = Color.WHITE
+			_rugosidad(suelo, {})
 	var roca: StandardMaterial3D = _materials.get("rock")
 	if roca != null:
 		if quality:
-			var r := Tex.rock()
+			var rm := _tex_marte("roca_estratos") if marte else {}
+			var r := rm if not rm.is_empty() else Tex.rock()
 			roca.albedo_texture = r["albedo"]
 			roca.normal_enabled = true
 			roca.normal_texture = r["normal"]
 			roca.albedo_color = Color(1.25, 1.25, 1.25)
+			_rugosidad(roca, rm)
+			var er := ESCALA_ROCA_MARTE if not rm.is_empty() else 0.7
+			roca.uv1_scale = Vector3(er, er, er)
 			# Borde iluminado suave (contraluz del polvo): separa las rocas del suelo en vez de fundirse con él.
 			roca.rim_enabled = true
 			roca.rim = 0.35
@@ -100,6 +140,7 @@ static func apply_quality() -> void:
 			roca.normal_enabled = false
 			roca.albedo_color = Color.WHITE
 			roca.rim_enabled = false
+			_rugosidad(roca, {})
 
 
 ## Material sin iluminación (líneas, cursor, huellas). Con alpha si transparente.

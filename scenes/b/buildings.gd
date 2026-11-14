@@ -22,7 +22,7 @@ var ground: Callable  ## altura del terreno (x, z)
 ## Luces nocturnas: tipo -> [alcance en m, energía, altura en m]. Pocas y sin sombras (en la web el límite de luces es bajo).
 const LUCES := {"luz": [16.0, 2.2, 4.2], "hangar": [9.0, 1.1, 3.0], "domo": [9.0, 1.1, 3.0], "antena": [8.0, 0.8, 3.2]}
 const MAX_LUCES := 6
-var _noche := 0.0  ## 0 de día … 1 de noche cerrada
+var _noche := -1.0  ## 0 de día … 1 de noche cerrada (-1: aún sin aplicar, para que el primer día ya se atenúen los emisivos)
 var _nodos: Dictionary = {}  ## id -> {"node", "model", "ring", "label", "off", "firma"}
 var _zona: MeshInstance3D
 var _por_casilla: Dictionary = {}  ## casilla -> id (para girar las torretas hacia su blanco)
