@@ -232,7 +232,8 @@ func avanzar(estado: MissionState, delta_s: float, horas: float) -> Array[String
 				edificio["produced"] = float(edificio["produced"]) + horas
 				var horas_enteras := floorf(float(edificio["produced"]))
 				if horas_enteras >= 1.0:
-					edificio["produced"] = float(edificio["produced"]) - horas_enteras
+					# sin restos de coma flotante (4e-15 en vez de 0): el guardado escribe menos decimales y no coincidiría
+					edificio["produced"] = snappedf(float(edificio["produced"]) - horas_enteras, 1e-9)
 					var cantidades := {}
 					for recurso in produce:
 						cantidades[recurso] = int(roundf(float(produce[recurso]) * horas_enteras))
