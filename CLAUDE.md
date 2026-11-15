@@ -49,7 +49,7 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
-- Dónde está la **historia nueva** (aún no está en el repositorio).
+- La **historia nueva** de Tony ya está (commit 37abbb9, en `integracion`): 72 voces en `assets/historia/radio/`. Las voces de «mover el rover» y «despegue» no están en ninguna rama de GitHub.
 - Qué hacen los **bionutrientes** (para qué sirven) y cuántos da cada monstruo. Lo decide el equipo de historia.
 - `content/rules.json` pone la tormenta de polvo en el sol 3, pero el plan y la historia dicen sol 4–5. Unificar.
 - Comentario viejo en `scenes/b/sky_light.gd` ("casillas de 2 m"; ahora 4 m).
@@ -103,6 +103,8 @@ Las pruebas deben pasar todas (587 en la rama `integracion`, 14 nov) antes de ab
 - No afirmar que algo se midió o probó si no se hizo.
 
 ## Dónde mirar
+
+- **`docs/PLAN_MEJORAS.md`: plan de trabajo del 15 nov (errores, tutorial, interfaz, lógica, rendimiento, servidor y entrega). Empezar por aquí.**
 
 - `docs/CUMPLIMIENTO.md`: requisitos del reto, con estado y evidencia.
 - `docs/DATOS_NASA.md`, `docs/ESCALAS.md`, `docs/PLATAFORMA.md`, `docs/mediciones/`.
