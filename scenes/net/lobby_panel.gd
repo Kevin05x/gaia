@@ -7,6 +7,7 @@ const Texto := preload("res://scenes/menu/menu_text.gd")
 const RolesVentana := preload("res://scenes/net/roles_ventana.gd")
 ## Servidor de GAIA en internet (VPS de Full Galácticos). Es lo que se propone por defecto: nadie tiene que saber la dirección.
 const SERVIDOR_GAIA := "sala.gaianasa.tech"
+const SALAS_GAIA := 4  ## salas del servidor: sala.gaianasa.tech/1 a /4 (deploy/servidor/nativo)
 
 signal cerrado
 signal partida_lista
@@ -125,9 +126,14 @@ func _vista_inicio() -> void:
 	_direccion.text_submitted.connect(func(_t: String) -> void: _unirse())
 	_cuerpo.add_child(_direccion)
 	_cuerpo.add_child(_boton(tr("NET_CONNECT"), _unirse, web))
-	_cuerpo.add_child(_boton(tr("NET_OFFICIAL") % SERVIDOR_GAIA, func() -> void:
-		_direccion.text = SERVIDOR_GAIA
-		_unirse(), false, 360))
+	UI.label(_cuerpo, tr("NET_OFFICIAL") % SERVIDOR_GAIA, 14, UI.AMBER)
+	var salas := HBoxContainer.new()
+	salas.add_theme_constant_override("separation", 8)
+	_cuerpo.add_child(salas)
+	for numero in range(1, SALAS_GAIA + 1):  # una sala por número: dos grupos no se mezclan
+		salas.add_child(_boton(tr("NET_ROOM_N") % numero, func() -> void:
+			_direccion.text = "%s/%d" % [SERVIDOR_GAIA, numero]
+			_unirse(), false, 150))
 	_cuerpo.add_child(_boton(tr("NET_RW_BUTTON"), func() -> void: RolesVentana.abrir(self), false, 260))
 	_cuerpo.add_child(_boton(tr("NET_BACK"), func() -> void: cerrado.emit(), false, 150))
 
