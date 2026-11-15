@@ -385,6 +385,16 @@ EVT_TAG,IMPREVISTO · LA MISIÓN SE DETIENE,UNEXPECTED EVENT · MISSION ON HOLD
 EVT_SOURCE,Basado en: %s,Based on: %s
 EVT_TEAM,Modo equipo: discutan las opciones y decidan juntos.,Team mode: discuss the options and decide together.
 EVT_REPORT,Imprevistos y decisiones,Unexpected events and decisions
+OBJ_TAG,TU MISIÓN,YOUR MISSION
+OBJ_GOAL,Envía %d datos de ciencia a la Tierra antes de que acabe el sol %d,Send %d science data to Earth before the end of sol %d
+OBJ_INTRO,Solo cuenta lo que llega a la Tierra. Tres cosas lo hacen posible:,Only what reaches Earth counts. Three things make it possible:
+OBJ_STEP1_T,Energía,Power
+OBJ_STEP1,Los paneles cargan la batería de día; de noche no hay sol. Sin batería el rover se detiene: planifica antes de que oscurezca.,Solar panels charge the battery by day; there is no sunlight at night. With an empty battery the rover stops: plan before dark.
+OBJ_STEP2_T,Instrumentos,Instruments
+OBJ_STEP2,Acércate a las rocas marcadas y analízalas con el espectrómetro: cada análisis guarda datos en la memoria del rover. El taladro saca muestras y recursos para construir.,Drive up to the marked rocks and analyse them with the spectrometer: each analysis stores data in the rover's memory. The drill takes samples and resources to build with.
+OBJ_STEP3_T,Antena y ventana de enlace,Antenna and link window
+OBJ_STEP3,Transmite la memoria cuando el enlace con la Tierra esté abierto. Subir de nivel la antena envía más datos y abre más ventanas.,Transmit your memory while the link with Earth is open. Upgrading the antenna sends more data and opens more windows.
+OBJ_OK,Entendido,Got it
 UNEXP_RESULT,Decisión aplicada: %s,Decision applied: %s
 UNEXP_ENERGY,%+d Wh de batería,%+d Wh battery
 UNEXP_DATA_IN,+%d datos en memoria: transmítelos en la próxima ventana,+%d data in memory: send them in the next link window

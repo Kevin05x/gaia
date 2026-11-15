@@ -159,3 +159,89 @@ func test_2_5_con_todos_los_instrumentos_despega_sin_preguntar() -> void:
 	hangar._on_action()
 	assert_true(ordenes.has("design_start"))
 	assert_false(is_instance_valid(hangar._confirmacion))
+
+
+# --- 2.1 Tarjeta de objetivo al empezar la misión ------------------------------------------------------------------------
+
+const ObjetivoScript := preload("res://scenes/b/objetivo_panel.gd")
+
+
+func _foto(extra: Dictionary = {}) -> Dictionary:
+	var s := {"phase": "operations", "sol": 1, "sent": 0.0, "data": 0.0, "goal": 100, "sol_limit": 6}
+	s.merge(extra, true)
+	return s
+
+
+func _texto_de(nodo: Node) -> String:
+	var t := ""
+	for l in nodo.find_children("*", "Label", true, false):
+		t += (l as Label).text + "\n"
+	return t
+
+
+func test_2_1_la_tarjeta_sale_una_vez_con_la_meta_y_los_tres_pasos() -> void:
+	var panel: CanvasLayer = add_child_autofree(ObjetivoScript.new())
+	panel.update_snapshot({"phase": "landing", "sol": 1})
+	assert_false(panel.is_open(), "no durante el aterrizaje")
+	panel.update_snapshot(_foto())
+	assert_true(panel.is_open(), "sale al empezar las operaciones")
+	var texto := _texto_de(panel)
+	assert_string_contains(texto, "Envía 100 datos de ciencia a la Tierra antes de que acabe el sol 6")
+	for clave in ["OBJ_STEP1_T", "OBJ_STEP2_T", "OBJ_STEP3_T"]:
+		assert_string_contains(texto, tr(clave))
+	var boton: Button = panel.find_children("*", "Button", true, false)[0]
+	assert_eq(boton.text, "Entendido")
+	boton.pressed.emit()
+	assert_false(panel.is_open())
+	panel.update_snapshot(_foto())
+	assert_false(panel.is_open(), "una sola vez")
+
+
+func test_2_1_no_sale_al_continuar_una_partida_empezada() -> void:
+	var panel: CanvasLayer = add_child_autofree(ObjetivoScript.new())
+	panel.update_snapshot(_foto({"sent": 12.0}))
+	assert_false(panel.is_open())
+	panel.update_snapshot(_foto())
+	assert_false(panel.is_open(), "ni después")
+
+
+func test_2_1_espera_a_que_cierre_la_escena_o_el_imprevisto() -> void:
+	var panel: CanvasLayer = add_child_autofree(ObjetivoScript.new())
+	var ocupada := [true]
+	panel.tapada = func() -> bool: return ocupada[0]
+	panel.update_snapshot(_foto())
+	assert_false(panel.is_open(), "espera")
+	ocupada[0] = false
+	panel.update_snapshot(_foto())
+	assert_true(panel.is_open(), "y sale después")
+
+
+func test_2_1_en_la_luna_habla_de_dias_y_de_la_energia_lunar() -> void:
+	Destino.id = "luna"
+	Destino.aplicar_textos()
+	var panel: CanvasLayer = add_child_autofree(ObjetivoScript.new())
+	panel.update_snapshot(_foto())
+	var texto := _texto_de(panel)
+	Destino.id = "marte"
+	Destino.aplicar_textos()
+	assert_string_contains(texto, "antes de que acabe el día 6")
+	assert_string_contains(texto, "70 %")
+
+
+func test_2_1_la_mision_muestra_la_tarjeta_tras_el_aterrizaje() -> void:
+	var juego: Node = load("res://scenes/a/game.tscn").instantiate()
+	juego.saltar_taller = true
+	add_child_autofree(juego)
+	await get_tree().process_frame
+	assert_false(juego.view.objetivo.is_open(), "durante el aterrizaje no")
+	juego.port.submit("landing_finished")
+	for i in range(5):
+		await get_tree().process_frame
+	if juego.view.story.is_open():
+		juego.view.story.pulsar()
+		juego.view.story.pulsar()
+		juego.port.submit("pause", {"paused": false})
+	for i in range(5):
+		await get_tree().process_frame
+	juego.view.apply_snapshot(juego.sim.snapshot())
+	assert_true(juego.view.objetivo.is_open() or juego.view.story.is_open(), "la tarjeta sale (o espera a la escena)")

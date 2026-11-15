@@ -18,6 +18,7 @@ var crucero: CanvasLayer  ## lanzamiento y crucero orbital entre el taller y el 
 var _crucero_visto := false
 var _vio_taller := false  ## solo hay secuencia de lanzamiento si el jugador pasó por el taller
 var imprevisto: CanvasLayer  ## imprevistos de misión (decisión con el tiempo detenido)
+var objetivo: CanvasLayer  ## tarjeta de objetivo al empezar la misión (plan 2.1)
 var tarjeta_nasa: CanvasLayer  ## «Así lo hizo Perseverance» durante el aterrizaje (datos y fotos reales de la NASA)
 var explosions: Node3D
 var audio: Node
@@ -152,6 +153,9 @@ func _ready() -> void:
 	imprevisto.opened.connect(func() -> void:
 		if is_instance_valid(audio):
 			audio.sfx("alarm", 0.0))
+	objetivo = preload("res://scenes/b/objetivo_panel.gd").new()
+	objetivo.name = "Objetivo"
+	add_child(objetivo)
 	tarjeta_nasa = preload("res://scenes/b/nasa_landing_card.gd").new()
 	tarjeta_nasa.name = "NasaCard"
 	add_child(tarjeta_nasa)
@@ -223,7 +227,8 @@ func _ready() -> void:
 	tutorial.command.connect(_command)
 	tutorial.step_changed.connect(func() -> void: audio.ping())
 	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
-	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta()
+	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta() or objetivo.is_open()
+	objetivo.tapada = func() -> bool: return story.is_open() or story.intro_index >= 0 or imprevisto.is_open()
 	hud.metas_tapadas = func() -> bool: return base_hud.menu.visible
 	base_hud.menu_cambiado.connect(func(_abierto: bool) -> void:
 		if not state.is_empty():
@@ -485,6 +490,8 @@ func apply_snapshot(s: Dictionary) -> void:
 		tarjeta_nasa.update_snapshot(s)
 	if is_instance_valid(imprevisto):
 		imprevisto.update_snapshot(s)
+	if is_instance_valid(objetivo):
+		objetivo.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)
