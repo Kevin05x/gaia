@@ -51,7 +51,7 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
 - La **historia nueva** de Tony ya está (commit 37abbb9, en `integracion`): 72 voces en `assets/historia/radio/`. Las voces de «mover el rover» y «despegue» no están en ninguna rama de GitHub.
 - Qué hacen los **bionutrientes** (para qué sirven) y cuántos da cada monstruo. Lo decide el equipo de historia.
-- `content/rules.json` pone la tormenta de polvo en el sol 3, pero el plan y la historia dicen sol 4–5. Unificar.
+- ~~Tormenta de polvo: sol 3 en `rules.json` frente a sol 4–5 en la historia.~~ Resuelto el 15 nov (plan 3.4): sol 4.
 - Comentario viejo en `scenes/b/sky_light.gd` ("casillas de 2 m"; ahora 4 m).
 - Hay que volver a renderizar las fichas `assets/edificios/*.png` con `tools/renderizar_fichas.gd`: aún muestran los edificios sin la chapa nueva.
 - El ancho de la antena no coincide: 3,4 m en `scenes/b/buildings.gd` y 3,8 m en `scenes/b/actors.gd`. Unificar.

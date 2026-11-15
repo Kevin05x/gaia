@@ -129,7 +129,7 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 - [ ] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
   y volver a correr el bot de balance (`tools/`) para que la partida siga siendo ganable pero no trivial.
 - [ ] **3.3 Coherencia de ritmos**: con sol más largo, revisar ventanas de relé, carga solar, construcción y oleadas.
-- [ ] **3.4 Tormenta de polvo**: `content/rules.json` la pone en el sol 3 y la historia dice 4–5. Unificar.
+- [x] **3.4 Tormenta de polvo**: `content/rules.json` la pone en el sol 3 y la historia dice 4–5. Unificar.
 - [ ] **3.5 Marte y Luna con objetivos distintos** (hoy comparten meta). Propuesta:
   Marte = «100 datos de ciencia antes del sol 6» (historia y combate);
   Luna = «encontrar hielo en las zonas de sombra permanente y enviar 3 muestras» (sin combate; energía lunar del 70 % y crestas iluminadas).

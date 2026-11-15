@@ -243,7 +243,7 @@ func test_avisos_de_bateria_memoria_y_tormenta() -> void:
 	var bateria: Dictionary = sim.snapshot()["warnings"][0]
 	assert_eq(bateria["key"], "WARN_LOW_BATTERY")
 	assert_eq(bateria["values"], [15])
-	sim.estado.sol = 3
+	sim.estado.sol = 4  # tormenta del sol 4 (plan de mejoras 3.4)
 	sim.avanzar(0.01)
 	ids.clear()
 	for aviso in sim.snapshot()["warnings"]:
@@ -253,14 +253,14 @@ func test_avisos_de_bateria_memoria_y_tormenta() -> void:
 
 func test_aviso_de_tormenta_cercana_y_de_enlace() -> void:
 	_operar()
-	sim.estado.sol = 2
+	sim.estado.sol = 3
 	sim.estado.hora = 17.5
 	sim.estado.bateria_wh = 900.0
 	sim.avanzar(0.01)
 	var ids: Array[String] = []
 	for aviso in sim.snapshot()["warnings"]:
 		ids.append(aviso["id"])
-	assert_has(ids, "STORM_SOON", "faltan menos de 1 sol para la tormenta del sol 3")
+	assert_has(ids, "STORM_SOON", "faltan menos de 1 sol para la tormenta del sol 4")
 	sim.estado.sol = 1
 	sim.estado.hora = 7.5
 	sim.avanzar(0.01)
