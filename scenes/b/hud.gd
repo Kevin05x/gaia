@@ -24,8 +24,12 @@ signal menu_requested  ## «Salir al menú» del menú de pausa
 const TARGET_ACTIONS: Array[String] = ["approach", "spectrometer", "drill"]
 ## Acciones sin objetivo: fila inferior central, solo las instaladas.
 const GLOBAL_ACTIONS: Array[String] = ["panorama", "radar", "drone", "companion", "upgrade"]
-const HOTKEYS := {KEY_C: "panorama", KEY_V: "radar", KEY_X: "companion", KEY_T: "transmit"}
-const HOTKEY_TEXT := {"panorama": "C", "radar": "V", "companion": "X", "transmit": "T"}
+const HOTKEYS := {KEY_C: "panorama", KEY_V: "radar", KEY_Z: "drone", KEY_X: "companion", KEY_U: "upgrade", KEY_T: "transmit"}
+const HOTKEY_TEXT := {"panorama": "C", "radar": "V", "drone": "Z", "companion": "X", "upgrade": "U", "transmit": "T"}
+const ACTION_ICONS := {"panorama": "camera", "radar": "radar", "drone": "drone", "companion": "companion", "upgrade": "antenna"}
+## Motivos por los que una acción no se podrá usar en un buen rato: entonces se oculta (plan 4.2). Los pasajeros (rover
+## en marcha, ocupado, de noche, poca energía…) la dejan visible y apagada, para que la barra no salte.
+const OCULTAR_SI: Array[String] = ["NO_INSTRUMENT", "FLIGHT_USED", "HELP_USED", "ROCKY_DOWN", "MAX_LEVEL", "NOT_APPLICABLE"]
 const LABEL_SIZE := Vector2(176, 34)
 const ROW_HEIGHT := 40.0
 
@@ -75,7 +79,8 @@ var _comms_hover := false
 var _comms_expanded := false
 var _comms_wants := false
 var _comms_tween: Tween
-var _actions_row: HBoxContainer
+var _actions_row: PanelContainer  ## un solo bloque con las acciones sin objetivo (plan 4.2)
+var _actions_fila: HBoxContainer
 var _progress: ProgressBar
 var _active_seconds := 0.0
 var _active_total := 0.0
@@ -354,20 +359,36 @@ func _build_bottom() -> void:
 	transmitir.pressed.connect(func(): emit_command("transmit", {"on": not snapshot.get("transmitting", false)}))
 	buttons["transmit"] = transmitir
 	_ops.append(_comms)
-	# Acciones sin objetivo (decisión de A: fila discreta abajo al centro, solo instrumentos instalados).
-	_actions_row = HBoxContainer.new()
-	_actions_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_actions_row.add_theme_constant_override("separation", 6)
-	UI.place(_actions_row, "bl", 190, 20, 660, 36)
+	# Acciones sin objetivo: un solo bloque abajo al centro, cada una con su icono y su tecla (plan 4.2). Solo se ven
+	# las que se pueden usar (o lo podrán en un momento).
+	_actions_row = PanelContainer.new()
+	_actions_row.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.35, 1, 4, 3))
+	UI.place(_actions_row, "bl", 190, 20, 660, 40)
 	root.add_child(_actions_row)
+	_actions_fila = HBoxContainer.new()
+	_actions_fila.add_theme_constant_override("separation", 2)
+	_actions_row.add_child(_actions_fila)
+	var vacio := UI.button_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, UI.RADIUS_BUTTON, 7, 4, 0)
+	var encima := UI.button_box(Color(UI.AMBER, 0.16), Color(UI.AMBER, 0.6), 1, UI.RADIUS_BUTTON, 7, 4, 0)
 	for accion in GLOBAL_ACTIONS:
 		var b := Button.new()
-		b.theme_type_variation = "PillButton"
 		b.focus_mode = Control.FOCUS_NONE
-		b.text = tr(accion.to_upper())
-		b.custom_minimum_size = Vector2(0, 36)
+		b.text = "     " + tr(accion.to_upper())  # sitio para el icono; la tecla va en la ayuda emergente
+		b.custom_minimum_size = Vector2(0, 34)
 		b.add_theme_font_size_override("font_size", 13)
-		_actions_row.add_child(b)
+		for estado in ["normal", "disabled"]:
+			b.add_theme_stylebox_override(estado, vacio)
+		for estado in ["hover", "pressed"]:
+			b.add_theme_stylebox_override(estado, encima)
+		var icono := Icon.make(str(ACTION_ICONS.get(accion, "info")), 16, UI.AMBER)
+		icono.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+		icono.offset_left = 7
+		icono.offset_right = 23
+		icono.offset_top = -8
+		icono.offset_bottom = 8
+		icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(icono)
+		_actions_fila.add_child(b)
 		if accion == "upgrade":
 			b.pressed.connect(func(): emit_command("upgrade"))
 		else:
@@ -381,13 +402,9 @@ func _build_bottom() -> void:
 	_progress.visible = false
 	root.add_child(_progress)
 	_debug = UI.label(root, "", 13, Color(UI.CREAM, 0.95))
-	# Arriba al centro: es el único hueco libre (abajo están la bodega, las acciones y la radio).
-	_debug.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_debug.offset_left = -180
-	_debug.offset_right = 180
-	_debug.offset_top = 8
-	_debug.offset_bottom = 74
-	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Arriba a la derecha, bajo los recursos (plan 4.2: fuera del centro). Solo con «Mostrar FPS» (o F3 / P).
+	UI.place(_debug, "tr", 20, 96, 330, 66)
+	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var fondo_fps := StyleBoxFlat.new()
 	fondo_fps.bg_color = Color(0.05, 0.04, 0.04, 0.72)
 	fondo_fps.set_corner_radius_all(6)
@@ -955,19 +972,23 @@ func update_snapshot(s: Dictionary) -> void:
 		var b: Button = buttons[accion]
 		var d: Dictionary = disponibles.get(accion, {"enabled": false, "reason": "WAIT"})
 		var motivo := str(d.get("reason", ""))
-		b.visible = accion == "upgrade" or motivo != "NO_INSTRUMENT"
+		b.visible = bool(d.get("enabled", false)) or not OCULTAR_SI.has(motivo)
 		b.disabled = bloqueado or not bool(d.get("enabled", false))
 		b.tooltip_text = _ayuda(accion, tr(motivo) if b.disabled and not motivo.is_empty() else _hotkey_hint(accion))
 		if accion == "upgrade" and s.has("base"):
 			var nivel := int(s.get("antenna_level", 0))
 			var base: Dictionary = s["base"]
 			if nivel >= int(base.get("antenna_max", 3)):
-				b.text = tr("ANTENNA_MAX")
+				b.text = "     " + tr("ANTENNA_MAX")
 			else:
-				b.text = tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1)
+				b.text = "     " + (tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1))
 			var costo := BaseHud.cost_text(base.get("antenna_next_cost", {}))
 			if not costo.is_empty():
 				b.tooltip_text = (b.tooltip_text + "\n" if not b.tooltip_text.is_empty() else "") + tr("COST_LABEL") + ": " + costo
+	var alguna := false
+	for b in _actions_fila.get_children():
+		alguna = alguna or (b as Control).visible
+	_actions_row.self_modulate.a = 1.0 if alguna else 0.0  # sin acciones a la vista, ni el marco del bloque
 	var dt: Dictionary = disponibles.get("transmit", {"enabled": false, "reason": "WAIT"})
 	buttons.transmit.disabled = bloqueado or not bool(dt.get("enabled", false))
 	buttons.transmit.text = tr("STOP_SHORT") if s.get("transmitting", false) else tr("TRANSMIT_SHORT")

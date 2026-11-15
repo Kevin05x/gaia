@@ -566,3 +566,45 @@ func test_3_1_el_menu_y_la_sala_ofrecen_la_duracion() -> void:
 	assert_eq(int(copia.config["duracion_sol_min"]), 8, "el jefe la fija y la ven todos")
 	assert_true(sala.configurar(1, "luna", "experta"))
 	assert_eq(int(sala.config["duracion_sol_min"]), 8, "cambiar destino no la pierde")
+
+
+# --- 4.2 Menos ruido: acciones en un bloque con iconos y atajos, ocultas si no se pueden usar, FPS aparte -------------
+
+const HudScript := preload("res://scenes/b/hud.gd")
+
+
+func _hud_con(disponibles: Dictionary) -> CanvasLayer:
+	var hud: CanvasLayer = add_child_autofree(HudScript.new())
+	var sim := _sim_operando(300.0)
+	var s := sim.snapshot()
+	s["available_actions"] = disponibles
+	hud.update_snapshot(s)
+	return hud
+
+
+func test_4_2_las_acciones_van_en_un_bloque_con_icono_y_tecla() -> void:
+	var hud := _hud_con({})
+	assert_true(hud._actions_row is PanelContainer, "un solo bloque")
+	for accion in HudScript.GLOBAL_ACTIONS:
+		var b: Button = hud.buttons[accion]
+		assert_eq(b.get_parent(), hud._actions_fila)
+		assert_eq(b.get_child_count(), 1, "%s con icono" % accion)
+		assert_true(HudScript.HOTKEY_TEXT.has(accion), "%s con atajo" % accion)
+
+
+func test_4_2_se_ocultan_las_que_no_se_podran_usar_y_no_las_pasajeras() -> void:
+	var hud := _hud_con({"panorama": {"enabled": true, "reason": ""}, "radar": {"enabled": false, "reason": "NO_INSTRUMENT"},
+		"drone": {"enabled": false, "reason": "FLIGHT_USED"}, "companion": {"enabled": false, "reason": "MOVING"},
+		"upgrade": {"enabled": false, "reason": "LOW_ENERGY"}})
+	assert_true(hud.buttons["panorama"].visible)
+	assert_false(hud.buttons["radar"].visible, "sin instrumento: fuera")
+	assert_false(hud.buttons["drone"].visible, "el dron ya voló este sol: fuera")
+	assert_true(hud.buttons["companion"].visible, "rover en marcha: visible y apagada, la barra no salta")
+	assert_true(hud.buttons["companion"].disabled)
+	assert_true(hud.buttons["upgrade"].visible)
+
+
+func test_4_2_el_contador_de_fps_va_arriba_a_la_derecha() -> void:
+	var hud := _hud_con({})
+	assert_eq(hud._debug.anchor_left, 1.0, "anclado a la derecha, fuera del centro")
+	assert_eq(hud._debug.anchor_top, 0.0)

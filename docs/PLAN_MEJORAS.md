@@ -147,7 +147,7 @@ Referencia buena dentro del propio juego: la **consola de la plataforma** de Amn
 
 - [x] **4.1 Un solo estilo** en `scenes/b/ui_style.gd`: esquinas cortadas (chaflán) en vez de redondeadas, borde fino ámbar, fondo oscuro
   translúcido, tipografía del logo GAIA en títulos. Aplicarlo a botones, tarjetas, avisos, tutorial e imprevistos.
-- [ ] **4.2 Menos ruido en pantalla**: barra inferior de acciones (Panorámica, Radar, Dron, Minerales, Antena) agrupada en un solo bloque
+- [x] **4.2 Menos ruido en pantalla**: barra inferior de acciones (Panorámica, Radar, Dron, Minerales, Antena) agrupada en un solo bloque
   con iconos y atajos; ocultar acciones que no se pueden usar en vez de mostrarlas apagadas; mover el contador de FPS fuera
   (solo con la opción «Mostrar FPS»).
 - [ ] **4.3 Tutorial e imprevistos** como ventanas diseñadas (bloque 2), no el cuadro marrón.
