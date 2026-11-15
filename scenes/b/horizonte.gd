@@ -91,8 +91,23 @@ static func cordillera(s: float, fino: FastNoiseLite) -> MeshInstance3D:
 	var nodo := MeshInstance3D.new()
 	nodo.name = "Cordillera"
 	nodo.mesh = malla
-	nodo.material_override = W.vertex_material(false)
+	nodo.material_override = W.cordillera_material()
 	nodo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Faldón: un suelo enorme y plano justo debajo de todo, del color de la lejanía. Tapa la franja donde el suelo de las colinas
+	# termina y la cordillera aún no empieza (por ahí se veía el cielo negro como una línea).
+	var faldon := MeshInstance3D.new()
+	faldon.name = "Faldon"
+	var plano := PlaneMesh.new()
+	plano.size = Vector2(1700.0, 1700.0)
+	faldon.mesh = plano
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Destino.color(BASIN.lerp(CIELO, 0.25))
+	mat.roughness = 1.0
+	mat.metallic_specular = 0.04
+	faldon.material_override = mat
+	faldon.position = Vector3(0.0, BASIN_Y - 0.45, 0.0)
+	faldon.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	nodo.add_child(faldon)
 	return nodo
 
 
