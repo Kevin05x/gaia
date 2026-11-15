@@ -81,7 +81,7 @@ func _terminar(estado: MissionState, exito: bool, causa_principal: String) -> Di
 	causas.append(CAUSA_RELE if estado.enlace == "relay" else CAUSA_DIRECTA)
 	if estado.entradas_modo_seguro > 0 and causa_principal != CAUSA_FALLO_MODO_SEGURO:
 		causas.append(CAUSA_MODO_SEGURO)
-	return {
+	var informe := {
 		"success": exito,
 		"stars": estrellas_ganadas,
 		"sent": int(estado.enviados),
@@ -89,3 +89,6 @@ func _terminar(estado: MissionState, exito: bool, causa_principal: String) -> Di
 		"sol": mini(estado.sol, _sol_limite),
 		"causes": causas,
 	}
+	if estado.recursos.has(CombatSystem.RECURSO_BIONUTRIENTES):
+		informe["bionutrients_collected"] = estado.bionutrientes_recogidos
+	return informe

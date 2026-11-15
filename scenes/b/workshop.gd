@@ -12,19 +12,24 @@ const RoverNasa := preload("res://scenes/b/rover_nasa.gd")
 signal command(command: String, payload: Dictionary)
 signal options_requested
 
-const ORDER: Array[String] = ["cohetes", "trayectoria", "chasis", "energia", "comunicaciones", "extras"]
+## El cohete NO se elige aquí: se elige antes, en la plataforma de lanzamiento de la Tierra
+## (scenes/b/launch_pad.gd). El hangar solo monta lo que va dentro del cohete ya elegido.
+const ORDER: Array[String] = ["trayectoria", "chasis", "energia", "comunicaciones", "extras"]
 const CATEGORY_KEYS := {"cohetes": "CAT_COHETES", "trayectoria": "CAT_TRAYECTORIA", "chasis": "CAT_CHASIS", "energia": "CAT_ENERGIA",
 	"comunicaciones": "CAT_COMUNICACIONES", "extras": "CAT_EXTRAS"}
 const CATEGORY_ICONS := {"cohetes": "rocket", "trayectoria": "goal", "chasis": "chassis", "energia": "bolt", "comunicaciones": "antenna", "extras": "flask"}
 ## Icono de cada pieza (las que no aparecen usan el de su categoría).
-const PART_ICONS := {"cohete_ligero": "rocket", "cohete_pesado": "rocket", "chasis_base": "chassis", "panel_solar": "solar",
+const PART_ICONS := {"cohete_ligero": "rocket", "cohete_medio": "rocket", "cohete_pesado": "rocket",
+	"cohete_super": "rocket", "chasis_base": "chassis", "panel_solar": "solar",
 	"mmrtg": "atom", "antena_directa": "antenna", "antena_rele": "link", "espectrometro": "spectrometer", "taladro": "drill",
 	"camara": "camera", "meteo": "meteo", "radar": "radar", "bateria": "battery", "dron": "drone", "companero": "companion"}
 ## Nodo del rover sobre el que se marca cada pieza elegida.
 const PART_NODES := {"panel_solar": "solar", "mmrtg": "rtg", "taladro": "drill", "radar": "radar", "espectrometro": "spectrometer",
 	"meteo": "meteo", "camara": "head", "antena_directa": "HighGain", "antena_rele": "HighGain"}
-const CARD_SIZE := Vector2(150, 160)
-const CARD_GAP := 12.0
+## Catálogo en barra lateral: una fila por pieza, para que la lista se lea de un vistazo.
+const SIDEBAR_ANCHO := 312.0
+const CARD_SIZE := Vector2(0, 68)
+const CARD_GAP := 8.0
 const FICHA_ANCHO := 336.0
 const MARGEN := 20.0
 ## Paleta del taller: naranja de hangar sobre marrones muy oscuros.
@@ -36,24 +41,24 @@ const CARD_BG := Color("1A100A", 0.92)
 const TEXT_DIM := Color("D8C3AC", 0.62)
 
 var root: Control
+var consejo_panel: Control  ## el cuadro «Consejo de ingeniería» (en red se oculta para dejar sitio al panel de rol)
 var snapshot: Dictionary = {}
-var category := "cohetes"
+var category := "trayectoria"
 var validated := false
+var _basicas_puestas := false  ## ya se pidieron las herramientas básicas de este cohete
 
 var _signature := ""
 var _category_buttons: Dictionary = {}
 var _step_names: Dictionary = {}
 var _step_checks: Dictionary = {}
 var _step_labels: Dictionary = {}
-var _cards: HBoxContainer
+var _cards: VBoxContainer
 var _strip: ScrollContainer
-var _arrow_left: Button
-var _arrow_right: Button
-var _dots: HBoxContainer
 var _summary_box: VBoxContainer
 var _action: Button
 var _hint: Label
 var _tip_text: Label
+var _cambiar_cohete: Button
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_until := 0.0
@@ -247,10 +252,18 @@ func _build_header() -> void:
 	centro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	centro.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame(centro, 170, 26, FICHA_ANCHO + MARGEN * 2.0 + 10.0, 0)
+	_frame(centro, SIDEBAR_ANCHO + MARGEN * 2.0, 26, FICHA_ANCHO + MARGEN * 2.0 + 10.0, 0)
 	centro.anchor_bottom = 0.0
 	centro.offset_bottom = 54
 	root.add_child(centro)
+	# Volver a la plataforma de la Tierra: quita el cohete y la elección se vuelve a mostrar.
+	_cambiar_cohete = Button.new()
+	_cambiar_cohete.focus_mode = Control.FOCUS_NONE
+	_cambiar_cohete.text = tr("WS_CHANGE_ROCKET")
+	_cambiar_cohete.add_theme_font_size_override("font_size", UI.FONT_MIN)
+	_cambiar_cohete.pressed.connect(_on_cambiar_cohete)
+	UI.place(_cambiar_cohete, "tl", 76, 70, 196, 32)
+	root.add_child(_cambiar_cohete)
 
 
 ## Se crea al final para quedar por encima de todo lo demás.
@@ -365,7 +378,7 @@ func _abrir_codigo() -> void:
 func _build_stepper() -> void:
 	var zona := Control.new()
 	zona.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame(zona, 170, 62, FICHA_ANCHO + MARGEN * 2.0 + 10.0, 0)
+	_frame(zona, SIDEBAR_ANCHO + MARGEN * 2.0, 62, FICHA_ANCHO + MARGEN * 2.0 + 10.0, 0)
 	zona.anchor_bottom = 0.0
 	zona.offset_bottom = 170
 	root.add_child(zona)
@@ -379,12 +392,12 @@ func _build_stepper() -> void:
 		var id: String = ORDER[i]
 		if i > 0:
 			var puntos := DotLine.new()
-			puntos.custom_minimum_size = Vector2(22, 66)
+			puntos.custom_minimum_size = Vector2(16, 66)
 			puntos.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			fila.add_child(puntos)
 		var paso := VBoxContainer.new()
 		paso.add_theme_constant_override("separation", 6)
-		paso.custom_minimum_size = Vector2(98, 0)
+		paso.custom_minimum_size = Vector2(88, 0)
 		fila.add_child(paso)
 		var boton := Button.new()
 		boton.focus_mode = Control.FOCUS_ALL
@@ -424,6 +437,7 @@ func _build_stepper() -> void:
 		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 13, Color("F3E6D4"))
 		UI.display(nombre, 700, 0)
 		nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nombre.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # COMUNICACIONES cabe en dos líneas
 		nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_step_names[id] = nombre
 		boton.pressed.connect(func(): _choose_category(id))
@@ -447,6 +461,14 @@ func _style_steps() -> void:
 		boton.add_theme_stylebox_override("focus", UI.button_box(Color(0, 0, 0, 0), Color("FFF5E4", 0.9), 2, 33, 0, 0, 0))
 		(_step_labels[id] as Control).set("color", ORANGE if activo else Color("F3E6D4"))
 		(_step_names[id] as Label).add_theme_color_override("font_color", ORANGE if activo else Color("F3E6D4"))
+
+
+## Quita el cohete elegido. Al quedarse la categoría vacía, la plataforma de la Tierra vuelve a
+## tomar el relevo (ver mission_view.gd) y se puede elegir otro.
+func _on_cambiar_cohete() -> void:
+	validated = false
+	for id in (snapshot.get("workshop", {}).get("selection", {}).get("cohetes", []) as Array).duplicate():
+		command.emit("design_remove", {"part_id": str(id)})
 
 
 func _choose_category(id: String) -> void:
@@ -702,8 +724,10 @@ func _build_tip() -> void:
 	estilo.bg_color = Color("120A06", 0.72)
 	consejo.add_theme_stylebox_override("panel", estilo)
 	consejo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.place(consejo, "tl", 24, 168, 196, 220)
+	# A la derecha de la barra lateral: antes estaba arriba a la izquierda, donde ahora va el catálogo.
+	UI.place(consejo, "bl", SIDEBAR_ANCHO + MARGEN * 2.0, 24, 236, 196)
 	root.add_child(consejo)
+	consejo_panel = consejo
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	consejo.add_child(col)
@@ -734,13 +758,13 @@ func _refresh_tip() -> void:
 
 func _build_catalog() -> void:
 	var zona := Control.new()
-	zona.anchor_top = 1.0
+	zona.anchor_top = 0.0
 	zona.anchor_bottom = 1.0
 	zona.anchor_left = 0.0
-	zona.anchor_right = 1.0
-	zona.offset_left = 24
-	zona.offset_right = -(FICHA_ANCHO + MARGEN * 2.0 + 10.0)
-	zona.offset_top = -268
+	zona.anchor_right = 0.0
+	zona.offset_left = MARGEN
+	zona.offset_right = MARGEN + SIDEBAR_ANCHO
+	zona.offset_top = 112
 	zona.offset_bottom = -52
 	root.add_child(zona)
 	var fondo := Panel.new()
@@ -758,121 +782,19 @@ func _build_catalog() -> void:
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_strip = ScrollContainer.new()
-	_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	_strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_strip.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_strip.offset_left = 54
-	_strip.offset_right = -54
+	_strip.offset_left = 10
+	_strip.offset_right = -10
 	_strip.offset_top = 30
-	_strip.offset_bottom = -22
-	_strip.gui_input.connect(_on_strip_input)
-	_strip.get_h_scroll_bar().value_changed.connect(func(_v: float): _update_dots())
+	_strip.offset_bottom = -12
 	zona.add_child(_strip)
-	_cards = HBoxContainer.new()
+	_cards = VBoxContainer.new()
 	_cards.add_theme_constant_override("separation", int(CARD_GAP))
-	_cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_strip.add_child(_cards)
-	_arrow_left = _arrow_button("‹", true)
-	zona.add_child(_arrow_left)
-	_arrow_right = _arrow_button("›", false)
-	zona.add_child(_arrow_right)
-	_dots = HBoxContainer.new()
-	_dots.add_theme_constant_override("separation", 10)
-	_dots.alignment = BoxContainer.ALIGNMENT_CENTER
-	_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_dots.anchor_left = 0.0
-	_dots.anchor_right = 1.0
-	_dots.anchor_top = 1.0
-	_dots.anchor_bottom = 1.0
-	_dots.offset_top = -18
-	_dots.offset_bottom = -6
-	zona.add_child(_dots)
 
-
-func _arrow_button(texto: String, izquierda: bool) -> Button:
-	var b := Button.new()
-	b.text = texto
-	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 26)
-	b.add_theme_color_override("font_color", Color("F3E6D4"))
-	b.add_theme_stylebox_override("normal", UI.button_box(Color("1A100A", 0.9), Color("B8742A", 0.5), 1, 8, 0, 0, 0))
-	b.add_theme_stylebox_override("hover", UI.button_box(Color("2E1A0C", 0.95), Color(ORANGE, 0.9), 1, 8, 0, 0, 0))
-	b.add_theme_stylebox_override("pressed", UI.button_box(Color("0A0604", 0.95), ORANGE, 1, 8, 0, 0, 0))
-	b.add_theme_stylebox_override("disabled", UI.button_box(Color("1A100A", 0.4), Color("B8742A", 0.15), 1, 8, 0, 0, 0))
-	b.anchor_top = 0.5
-	b.anchor_bottom = 0.5
-	b.offset_top = -22
-	b.offset_bottom = 28
-	if izquierda:
-		b.anchor_left = 0.0
-		b.anchor_right = 0.0
-		b.offset_left = 6
-		b.offset_right = 42
-	else:
-		b.anchor_left = 1.0
-		b.anchor_right = 1.0
-		b.offset_left = -42
-		b.offset_right = -6
-	b.pressed.connect(func(): _scroll_strip(-1 if izquierda else 1))
-	return b
-
-
-func _scroll_strip(sentido: int) -> void:
-	var paso := int((CARD_SIZE.x + CARD_GAP) * 3.0)
-	var destino := clampi(_strip.scroll_horizontal + sentido * paso, 0, _max_scroll())
-	create_tween().tween_property(_strip, "scroll_horizontal", destino, 0.22).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-
-
-func _max_scroll() -> int:
-	return maxi(0, int(_cards.get_combined_minimum_size().x - _strip.size.x))
-
-
-func _on_strip_input(e: InputEvent) -> void:
-	if e is InputEventMouseButton and e.pressed:
-		if e.button_index == MOUSE_BUTTON_WHEEL_DOWN or e.button_index == MOUSE_BUTTON_WHEEL_RIGHT:
-			_strip.scroll_horizontal = clampi(_strip.scroll_horizontal + 120, 0, _max_scroll())
-			_strip.accept_event()
-		elif e.button_index == MOUSE_BUTTON_WHEEL_UP or e.button_index == MOUSE_BUTTON_WHEEL_LEFT:
-			_strip.scroll_horizontal = clampi(_strip.scroll_horizontal - 120, 0, _max_scroll())
-			_strip.accept_event()
-
-
-func _update_arrows() -> void:
-	if not is_instance_valid(_strip):
-		return
-	var cabe := _cards.get_combined_minimum_size().x <= _strip.size.x + 1.0
-	_arrow_left.visible = not cabe
-	_arrow_right.visible = not cabe
-	if not cabe:
-		_arrow_left.disabled = _strip.scroll_horizontal <= 0
-		_arrow_right.disabled = _strip.scroll_horizontal >= _max_scroll() - 1
-	_update_dots()
-
-
-## Puntos de paginación: uno por «página» de tarjetas; el activo va en naranja.
-func _update_dots() -> void:
-	if not is_instance_valid(_dots):
-		return
-	var ancho := maxf(_strip.size.x, 1.0)
-	var total := _cards.get_combined_minimum_size().x
-	var paginas := maxi(1, int(ceil(total / ancho)))
-	var actual := 0
-	if paginas > 1 and _max_scroll() > 0:
-		actual = clampi(int(round(float(_strip.scroll_horizontal) / float(_max_scroll()) * (paginas - 1))), 0, paginas - 1)
-	if _dots.get_child_count() != paginas:
-		for hijo in _dots.get_children():
-			_dots.remove_child(hijo)
-			hijo.queue_free()
-		for i in range(paginas):
-			var p := Panel.new()
-			p.custom_minimum_size = Vector2(7, 7)
-			p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_dots.add_child(p)
-	for i in range(_dots.get_child_count()):
-		var punto := UI.box(1.0, 4, 0.0, 0, 0, 0)
-		punto.bg_color = ORANGE if i == actual else Color("D8C3AC", 0.35)
-		(_dots.get_child(i) as Panel).add_theme_stylebox_override("panel", punto)
-	_dots.visible = paginas > 1
 
 
 # ---------------------------------------------------------------- ficha de misión
@@ -953,6 +875,7 @@ func update_snapshot(s: Dictionary) -> void:
 	for cat in taller.get("categories", []):
 		for part in cat.get("parts", []):
 			_names[str(part["id"])] = str(part.get("name_key", ""))
+	_equipar_basicas(taller)
 	var firma := "%s|%s|%s|%s|%s" % [category, str(taller.get("selection")), str(taller.get("totals")), str(taller.get("validation")), TranslationServer.get_locale()]
 	if firma == _signature:
 		return
@@ -966,7 +889,38 @@ func update_snapshot(s: Dictionary) -> void:
 	var listo: bool = validated and taller.get("valid", false)
 	_action.text = "      " + (tr("WS_START") if listo else tr("WS_VALIDATE")).to_upper()
 	_hint.text = tr("WS_HINT_READY") if listo else tr("WS_HINT")
-	call_deferred("_update_arrows")
+
+
+## El rover entra al hangar con las herramientas básicas ya puestas (taladro y cámara): abrir la
+## lista en blanco dejaba al jugador sin saber por dónde empezar. Se piden una sola vez por cohete
+## y solo si no hay ningún instrumento elegido, así que quitarlas es decisión del jugador y no se
+## vuelven a poner solas; si faltan, la ficha de misión avisa (MISSING_BASIC, sin bloquear).
+##
+## Se hace aquí y no en la simulación a propósito: la simulación la usan las pruebas de balance con
+## diseños fijados a mano, y meterles piezas por detrás les cambiaba las cuentas.
+## Herramientas básicas que el jugador se ha quitado. Vacío mientras no haya cohete: sin cohete
+## todavía no hay misión de la que avisar.
+func basicas_que_faltan(taller: Dictionary) -> Array:
+	var seleccion: Dictionary = taller.get("selection", {})
+	if (seleccion.get("cohetes", []) as Array).is_empty():
+		return []
+	var faltan: Array = []
+	for id in MissionDesign.HERRAMIENTAS_BASICAS:
+		if not (seleccion.get("extras", []) as Array).has(str(id)):
+			faltan.append(str(id))
+	return faltan
+
+
+func _equipar_basicas(taller: Dictionary) -> void:
+	var seleccion: Dictionary = taller.get("selection", {})
+	if (seleccion.get("cohetes", []) as Array).is_empty():
+		_basicas_puestas = false  # sin cohete no hay misión; al elegir otro se vuelven a poner
+		return
+	if _basicas_puestas or not (seleccion.get("extras", []) as Array).is_empty():
+		return
+	_basicas_puestas = true
+	for id in MissionDesign.HERRAMIENTAS_BASICAS:
+		command.emit("design_add", {"part_id": str(id)})
 
 
 func _selected_ids(taller: Dictionary) -> Array:
@@ -998,7 +952,7 @@ func _rebuild_cards(taller: Dictionary) -> void:
 			continue
 		for part in cat["parts"]:
 			_cards.add_child(_card(part, elegidas.has(part["id"])))
-	_strip.scroll_horizontal = 0
+	_strip.scroll_vertical = 0
 
 
 func _card(part: Dictionary, elegida: bool) -> Button:
@@ -1020,29 +974,32 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	b.add_theme_stylebox_override("pressed", UI.button_box(Color("0A0604", 0.96), ORANGE, 2, 12, 8, 8, 0))
 	b.add_theme_stylebox_override("disabled", UI.button_box(Color("120A06", 0.6), Color("B8742A", 0.15), 1, 12, 8, 8, 0))
 	b.clip_contents = false
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Fila: icono a la izquierda, nombre y datos a la derecha.
+	var fila := HBoxContainer.new()
+	fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.add_theme_constant_override("separation", 10)
+	fila.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fila.offset_left = 10
+	fila.offset_top = 6
+	fila.offset_right = -10
+	fila.offset_bottom = -6
+	b.add_child(fila)
+	var marco_icono := CenterContainer.new()
+	marco_icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marco_icono.custom_minimum_size = Vector2(38, 0)
+	fila.add_child(marco_icono)
+	marco_icono.add_child(Icon.make(PART_ICONS.get(str(part.get("id", "")), CATEGORY_ICONS[category]), 30, ORANGE if elegida else Color("D8C3AC", 0.8)))
 	var col := VBoxContainer.new()
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_theme_constant_override("separation", 3)
-	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	col.offset_left = 6
-	col.offset_top = 8
-	col.offset_right = -6
-	col.offset_bottom = -8
-	b.add_child(col)
-	var nombre := UI.label(col, tr(str(part.get("name_key", ""))), 12, Color("F3E6D4") if puede or elegida else TEXT_DIM)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	fila.add_child(col)
+	var nombre := UI.label(col, tr(str(part.get("name_key", ""))), UI.FONT_MIN, Color("F3E6D4") if puede or elegida else TEXT_DIM)
 	nombre.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nombre.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	nombre.custom_minimum_size = Vector2(0, 32)
 	nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var centro := CenterContainer.new()
-	centro.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	centro.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(centro)
-	var icono := Icon.make(PART_ICONS.get(str(part.get("id", "")), CATEGORY_ICONS[category]), 40, ORANGE if elegida else Color("D8C3AC", 0.8))
-	centro.add_child(icono)
 	var chips := HFlowContainer.new()
-	chips.alignment = FlowContainer.ALIGNMENT_CENTER
 	chips.add_theme_constant_override("h_separation", 4)
 	chips.add_theme_constant_override("v_separation", 3)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1198,6 +1155,8 @@ func _rebuild_summary(taller: Dictionary) -> void:
 			nombres.append(tr(str(_names.get(str(codigo).split(":")[1], str(codigo).split(":")[1]))))
 		var linea := _check_line(tr("WS_PENDING_MANY") % pendientes.size(), "warning", ORANGE)
 		linea.tooltip_text = ", ".join(nombres)
+	for id in basicas_que_faltan(taller):
+		_check_line(tr("WS_MISSING_BASIC") % tr(str(_names.get(id, id))), "warning", ORANGE)
 	if taller.get("valid", false):
 		_check_line(tr("WS_VALID_OK"), "check_circle", UI.TEAL)
 
@@ -1264,8 +1223,11 @@ func _message(codigo: String) -> String:
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		var jugadores := int(preload("res://scenes/menu/game_session.gd").jugadores)
-		if jugadores > 1:
+		var sesion := preload("res://scenes/menu/game_session.gd")
+		var jugadores := int(sesion.jugadores)
+		if jugadores > 1 and sesion.en_red:
+			command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
+		elif jugadores > 1:
 			_revision_de_equipo(taller, jugadores)
 		else:
 			command.emit("design_start", {})

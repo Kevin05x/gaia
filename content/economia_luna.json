@@ -14,6 +14,7 @@
   "xenolito": 0
  },
  "capacidad_base": 300,
+ "obra_con_rover": true,
  "bodega_rover": 90,
  "recoleccion": {
   "spectrometer": {

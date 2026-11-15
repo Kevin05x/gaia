@@ -1,8 +1,10 @@
 [gd_scene format=4]
+; materiales_entorno: polvo y PBR aplicados
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iqcc3"]
-albedo_color = Color(0.52156866, 0.4627451, 0.42352942, 1)
-roughness = 0.86
+albedo_color = Color(0.49549, 0.411843, 0.343059, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_5as3q"]
 top_radius = 2.5
@@ -12,8 +14,9 @@ radial_segments = 12
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5auit"]
-albedo_color = Color(0.5803922, 0.5176471, 0.47843137, 1)
-roughness = 0.86
+albedo_color = Color(0.551373, 0.460706, 0.387529, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_o3hk8"]
 top_radius = 2.2
@@ -23,8 +26,9 @@ radial_segments = 12
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_skm1l"]
-albedo_color = Color(0.87058824, 0.8392157, 0.75686276, 1)
-roughness = 0.86
+albedo_color = Color(0.827059, 0.746902, 0.613059, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="BoxMesh" id="BoxMesh_2pl02"]
 size = Vector3(0.12, 0.5, 0.12)
@@ -33,8 +37,9 @@ size = Vector3(0.12, 0.5, 0.12)
 size = Vector3(0.12, 0.5, 0.12)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_56f8j"]
-albedo_color = Color(0.9098039, 0.8901961, 0.84705883, 1)
-roughness = 0.86
+albedo_color = Color(0.864314, 0.792275, 0.686118, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_4gjly"]
 _surfaces = [{
@@ -59,8 +64,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d0q3b"]
-albedo_color = Color(0.92941177, 0.6039216, 0.32941177, 1)
-roughness = 0.86
+albedo_color = Color(0.882941, 0.543529, 0.283294, 1)
+metallic = 0.10
+roughness = 0.60
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_gt4pd"]
 _surfaces = [{
@@ -74,8 +80,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6y3nt"]
-albedo_color = Color(0.16078432, 0.20392157, 0.23137255, 1)
-roughness = 0.86
+albedo_color = Color(0.160784, 0.197804, 0.215176, 1)
+metallic = 0.05
+roughness = 0.72
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_4e48b"]
 _surfaces = [{
@@ -89,8 +96,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_n17ee"]
-albedo_color = Color(0.17254902, 0.2901961, 0.4, 1)
-roughness = 0.86
+albedo_color = Color(0.172549, 0.290196, 0.4, 1)
+metallic = 0.35
+roughness = 0.22
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_phgld"]
 _surfaces = [{
@@ -104,8 +112,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cdsya"]
-albedo_color = Color(0.78431374, 0.7607843, 0.7058824, 1)
-roughness = 0.86
+albedo_color = Color(0.745098, 0.677098, 0.571765, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="BoxMesh" id="BoxMesh_oco7b"]
 size = Vector3(0.06, 0.26, 0.05)
@@ -142,8 +151,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s58k3"]
-albedo_color = Color(0.72156864, 0.69803923, 0.6431373, 1)
-roughness = 0.86
+albedo_color = Color(0.68549, 0.621255, 0.520941, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_elnyt"]
 top_radius = 0.22
@@ -159,8 +169,9 @@ radial_segments = 12
 rings = 6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wuae7"]
-albedo_color = Color(0.14901961, 0.23529412, 0.31764707, 1)
-roughness = 0.86
+albedo_color = Color(0.14902, 0.235294, 0.317647, 1)
+metallic = 0.35
+roughness = 0.22
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_hd387"]
 _surfaces = [{
@@ -174,8 +185,9 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ua7lf"]
-albedo_color = Color(0.7647059, 0.74509805, 0.69803923, 1)
-roughness = 0.86
+albedo_color = Color(0.726471, 0.663137, 0.565412, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_sx348"]
 top_radius = 0.27
@@ -192,8 +204,9 @@ radial_segments = 12
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a0lyj"]
-albedo_color = Color(0.65882355, 0.6392157, 0.5882353, 1)
-roughness = 0.86
+albedo_color = Color(0.625882, 0.568902, 0.476471, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_714ew"]
 _surfaces = [{
@@ -207,22 +220,25 @@ _surfaces = [{
 }]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vjnqb"]
-albedo_color = Color(0.8117647, 0.78431374, 0.72156864, 1)
-roughness = 0.86
+albedo_color = Color(0.771176, 0.698039, 0.584471, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="BoxMesh" id="BoxMesh_xclac"]
 size = Vector3(1.4599999, 0.07, 1.56)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rgjfi"]
-albedo_color = Color(0.15294118, 0.27058825, 0.43529412, 1)
-roughness = 0.86
+albedo_color = Color(0.152941, 0.270588, 0.435294, 1)
+metallic = 0.35
+roughness = 0.22
 
 [sub_resource type="BoxMesh" id="BoxMesh_dgiso"]
 size = Vector3(1.4, 0.082, 1.5)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6qi2p"]
-albedo_color = Color(0.5529412, 0.5882353, 0.627451, 1)
-roughness = 0.86
+albedo_color = Color(0.525294, 0.523529, 0.508235, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="BoxMesh" id="BoxMesh_m4fe6"]
 size = Vector3(0.012, 0.09, 1.5)
@@ -407,8 +423,9 @@ radial_segments = 12
 rings = 6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_asimj"]
-albedo_color = Color(0.35686275, 0.38039216, 0.4, 1)
-roughness = 0.86
+albedo_color = Color(0.33902, 0.338549, 0.324, 1)
+metallic = 0.45
+roughness = 0.50
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_lvyr6"]
 top_radius = 0.19
@@ -486,8 +503,9 @@ radial_segments = 12
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_syq7f"]
-albedo_color = Color(0.6039216, 0.6313726, 0.654902, 1)
-roughness = 0.86
+albedo_color = Color(0.573726, 0.561922, 0.530471, 1)
+metallic = 0.45
+roughness = 0.50
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_oxil5"]
 _surfaces = [{
@@ -603,8 +621,9 @@ radial_segments = 12
 rings = 6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cb5a8"]
-albedo_color = Color(0.7254902, 0.7058824, 0.6509804, 1)
-roughness = 0.86
+albedo_color = Color(0.689216, 0.628235, 0.527294, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_6l4it"]
 _surfaces = [{
@@ -630,8 +649,12 @@ size = Vector3(0.5, 0.03, 0.02)
 size = Vector3(0.5, 0.03, 0.02)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_frng0"]
-albedo_color = Color(0.6039216, 0.84313726, 0.7764706, 1)
-roughness = 0.86
+albedo_color = Color(0.362353, 0.505882, 0.465882, 1)
+metallic = 0.00
+roughness = 0.15
+emission_enabled = true
+emission = Color(0.603922, 0.843137, 0.776471, 1)
+emission_energy_multiplier = 0.60
 
 [sub_resource type="SphereMesh" id="SphereMesh_70lto"]
 radius = 0.035
@@ -886,8 +909,9 @@ radial_segments = 6
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3xjvp"]
-albedo_color = Color(0.89411765, 0.8745098, 0.8235294, 1)
-roughness = 0.86
+albedo_color = Color(0.849412, 0.778314, 0.667059, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="SphereMesh" id="SphereMesh_qj0a0"]
 radius = 0.104
@@ -957,8 +981,9 @@ radial_segments = 6
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ufejr"]
-albedo_color = Color(0.7882353, 0.76862746, 0.7137255, 1)
-roughness = 0.86
+albedo_color = Color(0.748824, 0.684078, 0.578118, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_aehii"]
 _surfaces = [{
@@ -1065,8 +1090,9 @@ radial_segments = 12
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pdo0e"]
-albedo_color = Color(0.94509804, 0.92941177, 0.8862745, 1)
-roughness = 0.86
+albedo_color = Color(0.897843, 0.827176, 0.717882, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="SphereMesh" id="SphereMesh_neu38"]
 radial_segments = 12
@@ -1080,8 +1106,9 @@ radial_segments = 16
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_aon8k"]
-albedo_color = Color(1, 0.41960785, 0.30980393, 1)
-roughness = 0.86
+albedo_color = Color(0.95, 0.377647, 0.266431, 1)
+metallic = 0.10
+roughness = 0.60
 
 [sub_resource type="SphereMesh" id="SphereMesh_v0dnr"]
 radius = 0.045
@@ -1097,8 +1124,9 @@ radial_segments = 6
 rings = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fj25i"]
-albedo_color = Color(0.84313726, 0.8235294, 0.76862746, 1)
-roughness = 0.86
+albedo_color = Color(0.80098, 0.732941, 0.622588, 1)
+metallic = 0.00
+roughness = 0.80
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_pxl6q"]
 _surfaces = [{

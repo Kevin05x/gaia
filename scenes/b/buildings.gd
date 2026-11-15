@@ -19,9 +19,48 @@ const MODELOS := {"luz": ["foco", 3.2, 1.0], "domo": ["hangar_roundA", 3.9, 1.6]
 	"torreta_2": ["torreta_doble", 3.8, 1.2]}
 
 var ground: Callable  ## altura del terreno (x, z)
+## Luces nocturnas: tipo -> [alcance en m, energía, altura en m]. Pocas y sin sombras (en la web el límite de luces es bajo).
+const LUCES := {"luz": [16.0, 2.2, 4.2], "hangar": [9.0, 1.1, 3.0], "domo": [9.0, 1.1, 3.0], "antena": [8.0, 0.8, 3.2]}
+const MAX_LUCES := 6
+var _noche := -1.0  ## 0 de día … 1 de noche cerrada (-1: aún sin aplicar, para que el primer día ya se atenúen los emisivos)
 var _nodos: Dictionary = {}  ## id -> {"node", "model", "ring", "label", "off", "firma"}
 var _zona: MeshInstance3D
 var _por_casilla: Dictionary = {}  ## casilla -> id (para girar las torretas hacia su blanco)
+
+
+## Noche (0..1): enciende las luces de los edificios y sube el brillo de sus materiales emisivos (ventanas, focos).
+## Solo se enciende un número limitado de luces. El factor lo calcula el cielo según la hora.
+func set_night(noche: float) -> void:
+	if is_equal_approx(noche, _noche):
+		return
+	_noche = noche
+	var encendidas := 0
+	for id in _nodos:
+		var modelo: Node3D = _nodos[id]["model"]
+		if modelo == null or not is_instance_valid(modelo):
+			continue
+		var luz := modelo.get_node_or_null("LuzNoche") as OmniLight3D
+		if luz != null:
+			var prende := noche > 0.05 and encendidas < MAX_LUCES
+			luz.visible = prende
+			luz.light_energy = float(luz.get_meta("energia", 1.0)) * noche
+			if prende:
+				encendidas += 1
+		_brillo_emisivo(modelo, noche)
+
+
+## Los materiales con emisión (ventanas, luces de los modelos del equipo) brillan más de noche.
+func _brillo_emisivo(nodo: Node, noche: float) -> void:
+	if nodo is MeshInstance3D:
+		var malla := nodo as MeshInstance3D
+		for i in malla.get_surface_override_material_count():
+			var mat := malla.get_active_material(i) as StandardMaterial3D
+			if mat != null and mat.emission_enabled:
+				if not mat.has_meta("emision_base"):
+					mat.set_meta("emision_base", mat.emission_energy_multiplier)
+				mat.emission_energy_multiplier = float(mat.get_meta("emision_base")) * (0.25 + 1.5 * noche)
+	for hijo in nodo.get_children():
+		_brillo_emisivo(hijo, noche)
 
 
 func at_tile(tile: Vector2i) -> Vector3:
@@ -125,6 +164,17 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		if tipo != "nave_fuga":
 			var info := BuildFx.preparar(modelo, en_obra)
 			datos["alto"] = float(info["alto"])
+			if not en_obra and nivel >= 1 and LUCES.has(tipo):
+				var cfg: Array = LUCES[tipo]
+				var luz := OmniLight3D.new()
+				luz.name = "LuzNoche"
+				luz.omni_range = float(cfg[0])
+				luz.light_color = Color("FFC98A")
+				luz.shadow_enabled = false
+				luz.position = Vector3(0, float(cfg[2]), 0)
+				luz.set_meta("energia", float(cfg[1]))
+				luz.visible = false
+				modelo.add_child(luz)
 			if en_obra and not (info["mats"] as Array).is_empty():
 				datos["fx"] = info
 				datos["mostrado"] = progreso
@@ -158,7 +208,9 @@ func _actualizar(datos: Dictionary, e: Dictionary) -> void:
 		BuildFx.fijar_cartel(cartel, progreso, float(e.get("remaining_s", 0.0)))
 	var etiqueta: Label3D = datos["label"]
 	if en_obra:
-		etiqueta.text = ""
+		# Obra con rover: hasta que el rover llega, la obra espera (la simulación no la avanza).
+		etiqueta.text = tr("BUILD_ROVER_WAITING") if bool(e.get("waiting_rover", false)) else ""
+		etiqueta.modulate = Color("F0C079")
 	elif not bool(e.get("active", true)):
 		etiqueta.text = "OFF"
 		etiqueta.modulate = Color("FF8178")

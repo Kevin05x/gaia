@@ -20,6 +20,7 @@ boot_splash/show_image=false
 [autoload]
 
 EventBus="*res://autoload/event_bus.gd"
+Red="*res://scenes/net/red.gd"
 
 [display]
 
@@ -42,6 +43,7 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [rendering]
 
+textures/default_filters/anisotropic_filtering_level=4
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="gl_compatibility"

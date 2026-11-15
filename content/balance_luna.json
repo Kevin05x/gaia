@@ -1,6 +1,6 @@
 {
  "version": 1,
- "estado": "Luna (polo sur): mismo motor que Marte con otros parámetros. Días de juego de 24 h con largos periodos de sol bajo y sombras (en el polo el Sol roza el horizonte); noches muy frías (hasta -173 °C según la NASA): la calefacción de los paneles solares gasta mucho más. Sin tormentas de polvo. Valores de juego simplificados.",
+ "estado": "Luna (polo sur): mismo motor que Marte con otros parámetros. factor_solar_max (valor de juego): el Sol roza el horizonte y un panel rinde el 70 % que en Marte; en las zonas de sombra permanente (mapa_luna.json, «sombras») no rinde nada. Días de juego de 24 h con largos periodos de sol bajo y sombras (en el polo el Sol roza el horizonte); noches muy frías (hasta -173 °C según la NASA): la calefacción de los paneles solares gasta mucho más. Sin tormentas de polvo. Valores de juego simplificados.",
  "tiempo": {
   "duracion_sol_s": 300,
   "hora_inicio": 8.0,
@@ -15,6 +15,7 @@
    "rtg": 10
   },
   "factor_solar_tormenta": 0.15,
+  "factor_solar_max": 0.7,
   "polvo_inicial": 0.0,
   "umbral_salida_modo_seguro": 0.25,
   "modos_seguros_para_fallar": 2

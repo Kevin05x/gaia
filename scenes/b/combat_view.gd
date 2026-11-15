@@ -5,6 +5,9 @@ extends Node3D
 ## están en la simulación (sim/systems/combat_system.gd). Cuesta una malla por monstruo.
 const Art := preload("res://scenes/b/art.gd")
 const HpBar := preload("res://scenes/b/hp_bar.gd")
+const Equipo := preload("res://scenes/b/modelos_equipo.gd")
+const MODELO_NIDO := "nido_caverna"  ## caverna con telarañas (assets/texturas/_fuentes/nido_caverna.py)
+const ANCHO_NIDO := 3.3  ## m: algo más que el nido anterior (3,1 m)
 const TILE := Escala.TILE
 const MAX_RAYOS := 8
 const MAX_METEORITOS := 8
@@ -19,6 +22,7 @@ var buildings: Node3D  ## para girar las torretas hacia su blanco
 var _nidos: Array[Node3D] = []
 var _nidos_firma := ""
 var _enemigos: Dictionary = {}  ## id -> {"node", "model", "bar", "target": Vector3, "yaw": float, "fase": float, "tipo", "size", "age"}
+var _bionutrientes: Dictionary = {}  ## id de depósito -> malla
 var _plantillas: Dictionary = {}  ## tipo -> Node3D sin añadir al árbol
 var _rayos: Array[MeshInstance3D] = []
 var _material_rayo: StandardMaterial3D
@@ -67,13 +71,34 @@ func update_state(s: Dictionary) -> void:
 	visible = jugando
 	if not jugando:
 		_limpiar_enemigos()
+		_sincronizar_bionutrientes({})
 		return
 	_construir_nidos(s.get("nests", []))
 	var onda: Dictionary = combate.get("wave", {})
 	_alerta = (not combate.get("enemies", []).is_empty()) or (not onda.is_empty() and float(onda.get("in_h", 99.0)) <= 3.0)
 	_sincronizar_enemigos(combate.get("enemies", []))
+	_sincronizar_bionutrientes(combate.get("bionutrients", {}))
 	_mostrar_rayos(combate.get("shots", []))
 	_mostrar_meteoritos(combate.get("impacts", []))
+
+
+func _sincronizar_bionutrientes(depositos: Dictionary) -> void:
+	for id in _bionutrientes.keys():
+		if not depositos.has(id):
+			_bionutrientes[id].queue_free()
+			_bionutrientes.erase(id)
+	for id in depositos:
+		if _bionutrientes.has(id):
+			continue
+		var marcador := Label3D.new()
+		marcador.text = "◆"
+		marcador.font_size = 52
+		marcador.pixel_size = 0.024
+		marcador.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marcador.modulate = Color("9AD7C6")
+		marcador.position = at_tile(depositos[id]["pos"]) + Vector3(0.0, 0.75, 0.0)
+		add_child(marcador)
+		_bionutrientes[id] = marcador
 
 
 func fogonazo(pos: Vector3, color: Color, tamano: float, duracion: float = 0.45) -> void:
@@ -124,8 +149,8 @@ func _process(delta: float) -> void:
 	var pulso := 0.5 + 0.5 * sin(_reloj * (5.0 if _alerta else 1.8))
 	for nido in _nidos:
 		var brillo := nido.get_node_or_null("Glow") as MeshInstance3D
-		if brillo != null:
-			var material := brillo.material_override as StandardMaterial3D
+		var material: StandardMaterial3D = brillo.material_override as StandardMaterial3D if brillo != null else nido.get_meta("brillo", null)
+		if material != null:
 			material.emission_energy_multiplier = (1.4 + pulso * 2.6) if _alerta else (0.6 + pulso * 0.7)
 	for f in _fogonazos:
 		var nodo: MeshInstance3D = f["node"]
@@ -166,6 +191,17 @@ func _construir_nidos(lista: Array) -> void:
 
 
 func _modelo_nido(nodo: Node3D, semilla: int) -> void:
+	if Equipo.existe(MODELO_NIDO):
+		# Caverna que sale del suelo, con la boca hacia un lado distinto en cada nido. Los sacos de huevos (material
+		# «emisivo_nido») laten con el pulso de abajo; el material es compartido, así que todos los nidos laten a la vez.
+		var azar_giro := RandomNumberGenerator.new()
+		azar_giro.seed = semilla
+		for malla in Equipo.poner(nodo, MODELO_NIDO, ANCHO_NIDO, Vector3.ZERO, azar_giro.randf() * TAU):
+			for i in malla.mesh.get_surface_count():
+				var m := malla.mesh.surface_get_material(i) as StandardMaterial3D
+				if m != null and str(m.resource_name) == "emisivo_nido":
+					nodo.set_meta("brillo", m)
+		return
 	var tierra := Color("3b2b30")
 	Art.cylinder(nodo, 1.55, 0.8, Vector3(0, 0.4, 0), tierra, 0.8, 7)
 	Art.cylinder(nodo, 0.95, 0.12, Vector3(0, 0.84, 0), Color("120c14"), -1.0, 7)

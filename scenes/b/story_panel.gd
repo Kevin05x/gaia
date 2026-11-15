@@ -6,6 +6,7 @@ extends CanvasLayer
 ## Los textos llegan en {"es", "en"} y se eligen según el idioma activo. Las imágenes viven en assets/historia/.
 const UI := preload("res://scenes/b/ui_style.gd")
 const CARPETA_IMAGENES := "res://assets/historia/"
+const CARPETA_VOZ := "res://assets/historia/radio/"
 const ANCHO := 980.0
 const RADIO_ANCHO := 560.0
 const RADIO_SEGUNDOS_MIN := 4.5
@@ -31,6 +32,9 @@ var _al_terminar := Callable()  ## qué hacer al cerrar la escena final
 var _texto_visible := true
 var _espera_t := 0.0
 var _t_desde_build := 1.0
+var _voz_escena: AudioStreamPlayer
+var _voz_escena_cola: Array[AudioStream] = []
+var _voz_escena_clave := ""
 ## Tarjeta de radio: no detiene la misión ni bloquea el juego; las líneas pasan solas o con un clic.
 var radio_root: Control
 var radio_visto := -1  ## último «n» de radio ya mostrado (-1: aún no hemos visto ningún snapshot)
@@ -39,6 +43,7 @@ var _radio: Dictionary = {}
 var radio_tapada: Callable  ## true si otro panel ocupa ahora el rincón de la radio (entonces espera sin avanzar)
 var _radio_cola: Array = []  ## radios que llegaron mientras otra seguía abierta
 var _radio_t := 0.0
+var _voz_radio: AudioStreamPlayer
 
 
 static func text_of(valor: Variant) -> String:
@@ -65,6 +70,13 @@ static func image_of(id: String) -> Texture2D:
 
 func _ready() -> void:
 	layer = 8
+	_voz_radio = AudioStreamPlayer.new()
+	_voz_radio.volume_db = -4.0
+	add_child(_voz_radio)
+	_voz_escena = AudioStreamPlayer.new()
+	_voz_escena.volume_db = _voz_radio.volume_db
+	_voz_escena.finished.connect(_siguiente_voz_escena)
+	add_child(_voz_escena)
 
 
 func is_open() -> bool:
@@ -98,7 +110,11 @@ func show_ending(final: Dictionary, al_terminar: Callable) -> void:
 
 func update_snapshot(s: Dictionary) -> void:
 	snapshot = s
-	_update_radio(s)
+	if s.get("phase", "") == "report":
+		_radio_cola.clear()
+		_close_radio()
+	else:
+		_update_radio(s)
 	if intro_index >= 0:
 		return
 	var pendiente: Dictionary = s.get("story", {}).get("pending", {})
@@ -121,7 +137,7 @@ func update_snapshot(s: Dictionary) -> void:
 
 ## Vuelve a dibujar lo abierto (cambio de idioma).
 func rebuild() -> void:
-	if radio_open():
+	if radio_line >= 0:
 		_build_radio()
 	if intro_index >= 0:
 		_build_intro()
@@ -134,6 +150,8 @@ func _dialogue_count() -> int:
 
 
 func _close() -> void:
+	_detener_voz_escena()
+	_voz_escena_clave = ""
 	shown_node = ""
 	_node = {}
 	step = 0
@@ -309,6 +327,7 @@ func _build_scene() -> void:
 	var n := _dialogue_count()
 	if str(_node.get("scene", "completa")) == "corta":
 		_build_quick()
+		_actualizar_voz_escena(0, n)
 		return
 	var en_decision := step >= n + 1
 	var cuerpo := _base(0.0, false, step == 0)
@@ -327,6 +346,8 @@ func _build_scene() -> void:
 		_advance_row(cuerpo, n)
 	else:
 		_choices(cuerpo)
+	var tiene_linea := step > 0 and not en_decision
+	_actualizar_voz_escena(step - 1, 1 if tiene_linea else 0)
 
 
 ## Escena corta: una sola pantalla con la imagen, el relato, las voces en radio y las opciones.
@@ -408,15 +429,63 @@ func _choices(cuerpo: Control) -> void:
 		if primero == null and habilitada:
 			primero = b
 	if primero != null:
-		primero.grab_focus.call_deferred()
+		var referencia: WeakRef = weakref(primero)
+		(func():
+			var boton := referencia.get_ref() as Button
+			if boton != null and boton.is_inside_tree():
+				boton.grab_focus()).call_deferred()
 
 
 func _elegir(indice: int) -> void:
+	_detener_voz_escena()
 	_firma_opciones = ""
 	command.emit("decide", {"choice": indice})
 
 
+static func _toma_dialogo(nodo: String, indice: int, linea: Dictionary, frase: String) -> AudioStream:
+	# Una traducción editada no reproduce una toma anterior.
+	nodo = str(linea.get("voice_node", nodo))
+	indice = int(linea.get("voice_index", indice))
+	var clave := (str(linea.get("speaker", "")) + "\n" + frase).sha256_text().left(12)
+	var ruta := "%s%s_%d_%s.wav" % [CARPETA_VOZ, nodo, indice + 1, clave]
+	return load(ruta) as AudioStream if ResourceLoader.exists(ruta) else null
+
+
+func _actualizar_voz_escena(inicio: int, cantidad: int) -> void:
+	var clave := "%s|%d|%s" % [shown_node, step, TranslationServer.get_locale()]
+	if clave == _voz_escena_clave:
+		return
+	_voz_escena_clave = clave
+	_detener_voz_escena()
+	for i in range(inicio, inicio + cantidad):
+		var linea: Dictionary = _node["dialogue"][i]
+		var toma := _toma_dialogo(shown_node, i, linea, text_of(linea.get("text", {})))
+		if toma != null:
+			_voz_escena_cola.append(toma)
+	if not _voz_escena_cola.is_empty():
+		if _voz_radio.playing:
+			_voz_radio.stream_paused = true
+		_siguiente_voz_escena()
+
+
+func _siguiente_voz_escena() -> void:
+	if _voz_escena_cola.is_empty():
+		_voz_escena.stream = null
+		return
+	_voz_escena.stream = _voz_escena_cola.pop_front()
+	_voz_escena.play()
+	_voz_escena.stream_paused = bool(snapshot.get("paused", false))
+
+
+func _detener_voz_escena() -> void:
+	_voz_escena.stop()
+	_voz_escena.stream = null
+	_voz_escena_cola.clear()
+
+
 func _build_intro() -> void:
+	_detener_voz_escena()
+	_voz_escena_clave = ""
 	var cuerpo := _base(0.0, false, true)
 	var pagina: Variant = intro_pages[intro_index]
 	var es_final: bool = pagina is Dictionary and bool(pagina.get("final", false))
@@ -514,6 +583,7 @@ func advance_radio() -> void:
 
 
 func _close_radio() -> void:
+	_voz_radio.stop()
 	radio_line = -1
 	_radio = {}
 	if is_instance_valid(radio_root):
@@ -523,6 +593,7 @@ func _close_radio() -> void:
 
 
 func _build_radio() -> void:
+	_voz_radio.stop()
 	if is_instance_valid(radio_root):
 		remove_child(radio_root)
 		radio_root.queue_free()
@@ -565,17 +636,32 @@ func _build_radio() -> void:
 	fila.add_child(col)
 	var quien := UI.label(col, text_of(linea.get("name", {})), 12, Color(str(linea.get("color", "FFF5E4"))))
 	UI.display(quien, 700, 3)
-	var texto := UI.label(col, "«" + text_of(linea.get("text", {})) + "»", 15, UI.CREAM)
+	var frase := text_of(linea.get("text", {}))
+	var texto := UI.label(col, "«" + frase + "»", 15, UI.CREAM)
 	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	texto.custom_minimum_size.x = RADIO_ANCHO - 200.0
 	var pie := UI.label(col, "%s  ·  %d / %d" % [tr("RADIO_TAP"), radio_line + 1, dialogo.size()], 11, Color(UI.CREAM, 0.5))
 	pie.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_radio_t = maxf(RADIO_SEGUNDOS_MIN, text_of(linea.get("text", {})).length() * RADIO_SEGUNDOS_POR_LETRA)
+	_radio_t = maxf(RADIO_SEGUNDOS_MIN, frase.length() * RADIO_SEGUNDOS_POR_LETRA)
+	_voz_radio.stream = _toma_dialogo(str(_radio.get("id", "")), radio_line, linea, frase)
+	if _voz_radio.stream != null:
+		_voz_radio.play()
+		var bloqueada := _radio_bloqueada()
+		if _voz_radio.stream_paused != bloqueada:
+			_voz_radio.stream_paused = bloqueada
 	radio_root.modulate.a = 0.0
 	create_tween().tween_property(radio_root, "modulate:a", 1.0, 0.25)
 
 
+func _radio_bloqueada() -> bool:
+	return is_open() or intro_index >= 0 or bool(snapshot.get("paused", false)) \
+		or (radio_tapada.is_valid() and radio_tapada.call())
+
+
 func _process(delta: float) -> void:
+	var pausada := bool(snapshot.get("paused", false))
+	if _voz_escena.stream != null and _voz_escena.stream_paused != pausada:
+		_voz_escena.stream_paused = pausada
 	var escena := is_open() or intro_index >= 0
 	if escena:
 		_t_desde_build += delta
@@ -583,16 +669,17 @@ func _process(delta: float) -> void:
 			_espera_t += delta
 			if _espera_t >= ESPERA_IMAGEN:
 				_mostrar_texto()
-	var tapada: bool = radio_tapada.is_valid() and radio_tapada.call()
+	var bloqueada := _radio_bloqueada()
+	if _voz_radio.stream != null and _voz_radio.stream_paused != bloqueada:
+		_voz_radio.stream_paused = bloqueada
 	if is_instance_valid(radio_root):
-		# La radio se esconde mientras haya una escena abierta o un panel que ocupa su sitio (el menú Construir).
-		radio_root.visible = not escena and not tapada
-	if escena or tapada or bool(snapshot.get("paused", false)):
+		radio_root.visible = not bloqueada
+	if bloqueada:
 		return
 	if radio_line < 0:
 		if not _radio_cola.is_empty():
 			_next_radio()
 		return
-	_radio_t -= delta
+	_radio_t = maxf(0.2 if _voz_radio.playing else 0.0, _radio_t - delta)
 	if _radio_t <= 0.0:
 		advance_radio()

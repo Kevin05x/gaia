@@ -27,6 +27,7 @@ var lighting: Node
 var tracks: MeshInstance3D
 var _tracks_seeded := false
 var workshop: CanvasLayer
+var launch_pad: CanvasLayer  ## plataforma de lanzamiento en la Tierra (elección del cohete)
 var story: CanvasLayer  ## introducción y ventana de decisión de la historia
 var tutorial: CanvasLayer  ## cartel del tutorial del Sol 1
 var base_hud: CanvasLayer  ## recursos, ética, Rocky y menú de construcción
@@ -123,6 +124,15 @@ func _ready() -> void:
 	add_child(workshop)
 	workshop.command.connect(_command)
 	workshop.options_requested.connect(func(): hud.open_options())
+	# Primer panorama: la plataforma de lanzamiento en la Tierra, donde se elige el cohete.
+	# Se reparte la fase "workshop" con el hangar: este se ve mientras no haya cohete elegido.
+	launch_pad = preload("res://scenes/b/launch_pad.gd").new()
+	launch_pad.name = "LaunchPad"
+	add_child(launch_pad)
+	launch_pad.command.connect(_command)
+	launch_pad.options_requested.connect(func(): hud.open_options())
+	launch_pad.despegue_terminado.connect(func(diseno: Dictionary) -> void:
+		crucero.play(diseno))
 	report_view = preload("res://scenes/b/report.gd").new()
 	report_view.name = "Report"
 	add_child(report_view)
@@ -401,6 +411,7 @@ func change_locale(locale: String) -> void:
 	TranslationServer.set_locale(locale)
 	hud.build()
 	workshop.build()
+	launch_pad.build()
 	base_hud.build()
 	story.rebuild()
 	if not report_view.report.is_empty():
@@ -460,6 +471,10 @@ func apply_snapshot(s: Dictionary) -> void:
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
+	launch_pad.update_snapshot(s)
+	# El hangar y la plataforma se reparten la fase "workshop": nunca se ven los dos a la vez.
+	if launch_pad.visible:
+		workshop.visible = false
 	if s.has("workshop") or s.has("design_summary"):
 		report_view.taller = s.get("workshop", s.get("design_summary"))
 	if is_instance_valid(tarjeta_nasa):
@@ -471,6 +486,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	actors.apply_state(s)
 	hud.update_snapshot(s)
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
+	buildings.set_night(snappedf(lighting.noche_factor(), 0.05))
 	motas.fijar_polvo(float(s.get("dust", 0.0)))
 	rig.enabled = not blocked()
 	if s.get("phase", "") == "workshop":
@@ -478,8 +494,14 @@ func apply_snapshot(s: Dictionary) -> void:
 		_crucero_visto = false
 	if s.get("phase", "") == "landing" and not landing_in_progress and not actors.landed:
 		if _vio_taller and not _crucero_visto:
-			if not crucero.visible:
-				crucero.play(s.get("design_summary", {}))
+			if not crucero.visible and not launch_pad.despegando():
+				# Antes de la secuencia de lanzamiento: en el edificio de montaje se aparta el
+				# techo y el cohete sale por el hueco. Si falta el modelo del edificio, la
+				# plataforma dice que no puede y se va directo a la secuencia, como antes.
+				if launch_pad.puede_despegar():
+					launch_pad.despegar(s.get("design_summary", {}))
+				else:
+					crucero.play(s.get("design_summary", {}))
 		else:
 			landing_in_progress = true
 			actors.start_landing()
@@ -856,7 +878,31 @@ func pick_target(screen: Vector2) -> String:
 
 ## Luna: la Tierra cuelga baja sobre el horizonte, como se ve desde el polo sur. Va con la cámara (como el cielo) y la
 ## ilumina el mismo sol del juego, así que muestra su fase.
+const FOTO_TIERRA := "res://assets/nasa/tierra_disco.webp"  ## foto real del disco terrestre (NASA 3D Resources, «Earth (B)»)
+
+
 func _crear_tierra_en_el_cielo() -> void:
+	if ResourceLoader.exists(FOTO_TIERRA):
+		# Desde la Luna, la Tierra está casi quieta en el cielo y siempre muestra el disco entero: una lámina con la
+		# foto, orientada a la cámara y sin sombreado, se ve más real que una esfera azul lisa.
+		var disco := MeshInstance3D.new()
+		disco.name = "TierraEnElCielo"
+		var lamina := QuadMesh.new()
+		lamina.size = Vector2(32.0, 32.0)
+		disco.mesh = lamina
+		var foto := StandardMaterial3D.new()
+		foto.albedo_texture = load(FOTO_TIERRA)
+		foto.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		foto.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		foto.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		foto.disable_fog = true
+		foto.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		disco.material_override = foto
+		disco.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(disco)
+		_tierra = disco
+		_seguir_tierra()
+		return
 	var tierra := MeshInstance3D.new()
 	tierra.name = "TierraEnElCielo"
 	var esfera := SphereMesh.new()

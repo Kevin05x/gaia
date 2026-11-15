@@ -19,6 +19,7 @@
   -9,
   -9
  ],
+ "estacion_radio": 1,
  "zonas": [
   {
    "id": "orilla",
@@ -41,6 +42,10 @@
     26
    ]
   }
+ ],
+ "sombras": [
+  { "id": "sombra_a", "centro": [-4, -6], "radio": 5 },
+  { "id": "sombra_b", "centro": [22, 12], "radio": 6 }
  ],
  "nidos": [],
  "obstaculos": [

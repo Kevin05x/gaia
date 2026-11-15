@@ -38,44 +38,40 @@
         "en": "Act 1 · Shore of the ancient lake"
       },
       "titulo": {
-        "es": "Aterrizaje en el cráter Jezero",
-        "en": "Landing in Jezero Crater"
+        "es": "Aterrizaje en Jezero",
+        "en": "Landing at Jezero"
       },
       "imagen": "aterrizaje",
       "texto": {
-        "es": "Aquí Control Houston. Perseverance, estás en el delta del cráter Jezero. Perfora las rocas marcadas para extraer filosilicatos (rocas) y olivino, levanta paneles solares antes de que caiga la noche y despliega la Antena Científica para abrir el enlace con la Tierra.",
-        "en": "This is Houston Control. Perseverance, you are on the Jezero Crater delta. Drill the marked rocks to extract phyllosilicates (rocks) and olivine, raise solar panels before night falls and deploy the Science Antenna to open the link with Earth."
-      },
-      "rocky": {
-        "es": "Rocky emite un pitido alegre y señala la primera roca de arcilla.",
-        "en": "Rocky beeps happily and points at the first clay rock."
+        "es": "Perseverance aterriza en el delta de Jezero. Antes de que caiga la noche, la misión necesita energía y una antena para enviar sus primeros datos a la Tierra.",
+        "en": "Perseverance lands on the Jezero delta. Before nightfall, the mission needs power and an antenna to send its first data to Earth."
       },
       "dialogos": [
         {
           "quien": "houston",
           "texto": {
-            "es": "Perseverance, aquí Houston. Confirmamos tu aterrizaje en el delta de Jezero. Bienvenido a casa… por ahora.",
-            "en": "Perseverance, Houston here. We confirm your touchdown on the Jezero delta. Welcome home… for now."
-          }
-        },
-        {
-          "quien": "rocky",
-          "texto": {
-            "es": "¡Bip! Rocky en línea. Sensores al 100 %. ¿Empezamos por esa roca de arcilla?",
-            "en": "Beep! Rocky online. Sensors at 100%. Shall we start with that clay rock?"
+            "es": "Perseverance, aquí Houston. Aterrizaje confirmado. En la Tierra llevan meses esperando una respuesta. En cuanto tengan enlace, envíennos la primera lectura que podamos comprobar.",
+            "en": "Perseverance, Houston here. Landing confirmed. People back on Earth have been waiting months for an answer. Once you have a link, send us the first reading we can verify."
           }
         },
         {
           "quien": "perseverance",
           "texto": {
-            "es": "Primero recursos, luego la antena. Sin enlace, nada de lo que encontremos llegará a la Tierra.",
-            "en": "Resources first, then the antenna. Without a link, nothing we find will reach Earth."
+            "es": "Todavía tenemos luz. Levantemos un panel y la antena antes de que caiga la noche.",
+            "en": "We still have daylight. Let's get a solar panel and the antenna up before nightfall."
+          }
+        },
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Empiecen con roca y olivino. Avisen cuando la antena esté lista.",
+            "en": "Start with rock and olivine. Call when the antenna is ready."
           }
         }
       ],
       "objetivo": {
-        "es": "Construye la Antena Nv. 1 y un panel solar",
-        "en": "Build Antenna Lv. 1 and a solar panel"
+        "es": "Construyan la Antena Científica de nivel 1 y un panel solar",
+        "en": "Build the Level 1 Science Antenna and a solar panel"
       },
       "disparadores": [
         {
@@ -119,43 +115,39 @@
         "en": "Act 1 · Shore of the ancient lake"
       },
       "titulo": {
-        "es": "Enlace abierto… y algo se mueve",
-        "en": "Link open… and something moves"
+        "es": "Tres pulsos bajo la base",
+        "en": "Three pulses beneath the base"
       },
       "imagen": "alerta_sismica",
       "texto": {
-        "es": "¡La Antena Nv. 1 funciona! Ya puedes transmitir datos con la tecla T cuando el enlace esté abierto. Pero el sismógrafo marca movimiento: las vibraciones de la antena han despertado nidos superficiales. Prepara la base para la noche: de noche los paneles no producen nada.",
-        "en": "Antenna Lv. 1 works! You can now transmit data with the T key while the link is open. But the seismograph shows movement: the antenna's vibrations have woken shallow nests. Get the base ready for the night: solar panels produce nothing after dark."
-      },
-      "rocky": {
-        "es": "Rocky gira su sensor hacia las grietas y se acerca a tu rueda.",
-        "en": "Rocky turns its sensor toward the cracks and moves closer to your wheel."
+        "es": "Durante la prueba de la antena, el sismógrafo registra tres golpes bajo la base. La lectura queda guardada en la memoria del rover.",
+        "en": "During the antenna test, the seismograph records three knocks beneath the base. The reading is saved to the rover's memory."
       },
       "dialogos": [
         {
           "quien": "houston",
           "texto": {
-            "es": "Recibimos tu primera señal, Perseverance. ¡Buen trabajo! … Espera. El sismógrafo marca actividad bajo la base.",
-            "en": "We got your first signal, Perseverance. Great job! … Wait. The seismograph shows activity under the base."
-          }
-        },
-        {
-          "quien": "rocky",
-          "texto": {
-            "es": "Bip… bip. Algo se mueve en las grietas. Detecto calor… y muchas patas.",
-            "en": "Beep… beep. Something is moving in the cracks. I detect heat… and lots of legs."
+            "es": "Antena de nivel uno confirmada. Pueden empezar a transmitir cuando el enlace esté abierto.",
+            "en": "Level 1 antenna confirmed. You can start transmitting when the link is open."
           }
         },
         {
           "quien": "perseverance",
           "texto": {
-            "es": "Cae la noche. Sin sol los paneles no rinden: hay que cuidar la batería.",
-            "en": "Night is falling. Without sun the panels give nothing: we must save battery."
+            "es": "Tres pulsos de prueba. Un segundo después, el sismógrafo registra tres golpes bajo la base.",
+            "en": "Three test pulses. A second later, the seismograph picked up three knocks beneath the base."
+          }
+        },
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Guarden esa lectura. Quiero saber si vuelve a pasar. Vigilen la reserva. De noche, los paneles dejan de producir.",
+            "en": "Save that reading. I want to know if it happens again. Watch your reserve. The panels stop generating at night."
           }
         }
       ],
       "objetivo": {
-        "es": "Guarda batería para la noche",
+        "es": "Guarden batería para la noche",
         "en": "Save battery for the night"
       },
       "disparadores": [
@@ -166,20 +158,20 @@
       "opciones": [
         {
           "texto": {
-            "es": "Reforzar la base",
-            "en": "Reinforce the base"
+            "es": "Registrar los tres golpes",
+            "en": "Record the three knocks"
           },
           "detalle": {
-            "es": "Sigue explorando y construyendo antes del anochecer.",
-            "en": "Keep exploring and building before nightfall."
+            "es": "La lectura sísmica se guarda en la memoria del rover.",
+            "en": "The seismic reading is saved to the rover's memory."
           },
           "efectos": {
             "datos": 10
           },
           "siguiente": "noche_aranas",
           "registro": {
-            "es": "Antena Nv. 1 activada: sus vibraciones despertaron nidos superficiales.",
-            "en": "Antenna Lv. 1 online: its vibrations woke shallow nests."
+            "es": "Tras la prueba de la antena, el sismógrafo detectó tres golpes bajo la base.",
+            "en": "After the antenna test, the seismograph recorded three knocks beneath the base."
           }
         }
       ],
@@ -198,37 +190,33 @@
         "en": "Act 1 · Night at the ancient lake"
       },
       "titulo": {
-        "es": "Noche helada y ataque de arañas",
-        "en": "Freezing night and spider attack"
+        "es": "¿A qué le damos energía?",
+        "en": "Where should the power go?"
       },
-      "imagen": "noche_aranas",
+      "imagen": "alerta_sismica",
       "texto": {
-        "es": "El Sol se oculta y los paneles dejan de producir. Atraídas por el calor de los cables y el pulso de la antena, decenas de arañas de regolito salen de las grietas y muerden los paneles y el chasis de Rocky. Tienes batería limitada para pasar la noche.",
-        "en": "The Sun sets and the panels stop producing. Drawn by the heat of the cables and the antenna's pulse, dozens of regolith spiders crawl out of the cracks and bite the panels and Rocky's chassis. Your battery has to last the night."
-      },
-      "rocky": {
-        "es": "¡Chispas en los paneles! Rocky intenta reparar los cables mientras las arañas lo rodean.",
-        "en": "Sparks on the panels! Rocky tries to fix the cables while the spiders surround it."
+        "es": "Los paneles han dejado de producir. Bajo el perímetro se registran otros tres golpes. Un pulso corto podría aclarar el patrón. Seguir perforando mientras vigilamos el perímetro nos daría más roca para preparar la base.",
+        "en": "The solar panels have stopped generating. Three more knocks register beneath the perimeter. A short pulse could clarify the pattern. Keeping the drill running while we monitor the perimeter would give us more rock to prepare the base."
       },
       "dialogos": [
         {
-          "quien": "rocky",
+          "quien": "perseverance",
           "texto": {
-            "es": "¡Están mordiendo los cables! ¡Me rodean!",
-            "en": "They're biting the cables! They're surrounding me!"
+            "es": "Si paramos el taladro, podremos escuchar la respuesta con menos ruido.",
+            "en": "If we stop drilling, we can listen for a response with less noise."
           }
         },
         {
           "quien": "houston",
           "texto": {
-            "es": "Perseverance, la batería no aguantará mucho. Decide: protege a Rocky o defiende la extracción.",
-            "en": "Perseverance, the battery won't last long. Decide: protect Rocky or defend the extraction."
+            "es": "Revisen qué les falta para el hangar y cuánta batería les queda. Díganme qué van a priorizar.",
+            "en": "Check what you're missing for the hangar and how much power you have left. Tell me which one matters most right now."
           }
         }
       ],
       "objetivo": {
-        "es": "Construye el hangar y sube la antena a Nv. 2",
-        "en": "Build the hangar and upgrade the antenna to Lv. 2"
+        "es": "Construyan el hangar y suban la antena a nivel 2",
+        "en": "Build the hangar and upgrade the antenna to Level 2"
       },
       "disparadores": [
         {
@@ -239,12 +227,12 @@
       "opciones": [
         {
           "texto": {
-            "es": "A · Pulso acústico no letal y resguardar a Rocky",
-            "en": "A · Non-lethal acoustic pulse and shelter Rocky"
+            "es": "A · Emitir un pulso y guardar la lectura",
+            "en": "A · Send a pulse and save the reading"
           },
           "detalle": {
-            "es": "Rama científica: espantas a las arañas sin dañarlas. −15 % batería, +ética, +hielo.",
-            "en": "Science branch: you scare the spiders away unharmed. −15% battery, +ethics, +ice."
+            "es": "Batería −15 puntos. Memoria +10 datos. Inventario +15 de hielo.",
+            "en": "Battery −15 percentage points. Memory +10 data. Inventory +15 ice."
           },
           "efectos": {
             "bateria_pct": -15,
@@ -257,18 +245,18 @@
           "rama": "cientifica",
           "siguiente": "glaciar_cientifico",
           "registro": {
-            "es": "Noche del Sol 1: contuviste a las arañas con pulsos acústicos y protegiste a Rocky.",
-            "en": "Night of Sol 1: you held off the spiders with acoustic pulses and protected Rocky."
+            "es": "El equipo emitió un pulso de prueba. El patrón se repitió y la lectura quedó en memoria.",
+            "en": "The team sent a test pulse. The pattern repeated and the reading was saved to memory."
           }
         },
         {
           "texto": {
-            "es": "B · Sobrecargar las torretas y perforar toda la noche",
-            "en": "B · Overload the turrets and drill all night"
+            "es": "B · Vigilar el perímetro y seguir perforando",
+            "en": "B · Monitor the perimeter and keep drilling"
           },
           "detalle": {
-            "es": "Rama militar: exterminas a las arañas y sacas más rocas. −30 % batería, Rocky herido, −ética.",
-            "en": "Military branch: you wipe out the spiders and mine more rock. −30% battery, Rocky hurt, −ethics."
+            "es": "Batería −30 puntos. Memoria +5 datos. Inventario +35 de roca y +10 de hielo. Rocky pierde 20 de vida si está equipado.",
+            "en": "Battery −30 percentage points. Memory +5 data. Inventory +35 rock and +10 ice. Rocky loses 20 health if equipped."
           },
           "efectos": {
             "bateria_pct": -30,
@@ -283,8 +271,8 @@
           "rama": "militar",
           "siguiente": "glaciar_militar",
           "registro": {
-            "es": "Noche del Sol 1: sobrecargaste las torretas para aniquilar a las arañas y seguir perforando.",
-            "en": "Night of Sol 1: you overloaded the turrets to wipe out the spiders and keep drilling."
+            "es": "El equipo vigiló el perímetro y recuperó roca para preparar la base.",
+            "en": "The team monitored the perimeter and recovered rock to prepare the base."
           }
         }
       ],
@@ -307,37 +295,33 @@
         "en": "Act 2 · Subsurface glacier fault"
       },
       "titulo": {
-        "es": "Hangar de mejoras: ingeniería científica",
-        "en": "Upgrade hangar: science engineering"
+        "es": "Una lectura para comparar",
+        "en": "A reading for comparison"
       },
       "imagen": "glaciar_cientifico",
       "texto": {
-        "es": "Llegas a la falla del glaciar, donde afloran cristales de hielo. Con el hangar y el extractor de hielo mejoras a Rocky con un analizador biológico no letal y subes la Antena Científica. Cuidado: el radar detecta formas de vida mucho más grandes bajo el hielo.",
-        "en": "You reach the glacier fault, where ice crystals break the surface. With the hangar and the ice extractor you fit Rocky with a non-lethal bio-analyzer and upgrade the Science Antenna. Careful: the radar detects much larger life forms beneath the ice."
-      },
-      "rocky": {
-        "es": "¡Rocky sube a nivel 2! Su nuevo brazo puede analizar ADN extremófilo sin dañar a las criaturas.",
-        "en": "Rocky reaches level 2! Its new arm can analyze extremophile DNA without harming the creatures."
+        "es": "El pulso de la primera noche dejó una lectura de referencia. La falla del glaciar será el siguiente lugar donde buscar el patrón.",
+        "en": "The first night's pulse left a reference reading. The glacier fault is the next place to look for the pattern."
       },
       "dialogos": [
         {
           "quien": "houston",
           "texto": {
-            "es": "El hielo de la falla puede darnos agua y oxígeno, como demostró el experimento MOXIE. Sigue así.",
-            "en": "The ice in the fault can give us water and oxygen, as the MOXIE experiment showed. Keep going."
+            "es": "Repitan la medición cuando lleguen a la falla. Si vuelven a registrar tres golpes, comparen las lecturas antes de acercarse.",
+            "en": "Take another reading when you reach the fault. If you pick up three knocks again, compare the readings before you get closer."
           }
         },
         {
-          "quien": "rocky",
+          "quien": "perseverance",
           "texto": {
-            "es": "¡Mi brazo nuevo lee ADN sin hacer daño! Ni siquiera les hace cosquillas.",
-            "en": "My new arm reads DNA without harming them! It doesn't even tickle."
+            "es": "Copiado. Dejé marcada la primera lectura para que podamos encontrarla durante la tormenta.",
+            "en": "Copy. I flagged the first reading so we can find it during the storm."
           }
         }
       ],
       "objetivo": {
-        "es": "Sube la antena a Nv. 3 y espera la tormenta",
-        "en": "Upgrade the antenna to Lv. 3 and wait for the storm"
+        "es": "Suban la antena a nivel 3 y prepárense para la tormenta",
+        "en": "Upgrade the antenna to Level 3 and prepare for the storm"
       },
       "disparadores": [
         {
@@ -368,12 +352,12 @@
           },
           "siguiente": "nidos",
           "registro": {
-            "es": "Antena mejorada y Rocky equipado con el analizador biológico.",
-            "en": "Antenna upgraded and Rocky fitted with the bio-analyzer."
+            "es": "Houston recomendó comparar la lectura del pulso con las mediciones de la falla.",
+            "en": "Houston recommended comparing the pulse reading with the readings from the fault."
           }
         }
       ],
-      "modo": "radio",
+      "modo": "automatico",
       "espera_h": 2.0,
       "metas": [
         {
@@ -388,37 +372,33 @@
         "en": "Act 2 · Subsurface glacier fault"
       },
       "titulo": {
-        "es": "Hangar de mejoras: artillería y taladros",
-        "en": "Upgrade hangar: artillery and drills"
+        "es": "Roca para el hangar",
+        "en": "Rock for the hangar"
       },
       "imagen": "glaciar_militar",
       "texto": {
-        "es": "En la falla del glaciar pones el extractor de hielo a máxima potencia y levantas torretas pesadas de cuatro cañones con olivino y percloratos. Subes la antena por la fuerza, pero el ruido sísmico de tus taladros hace temblar todo el cañón subterráneo.",
-        "en": "At the glacier fault you run the ice extractor at full power and build four-barrel heavy turrets from olivine and perchlorates. You force the antenna upgrade, but the seismic noise of your drills shakes the whole underground canyon."
-      },
-      "rocky": {
-        "es": "Rocky (nivel 2, artillero) repara el blindaje del rover, pero avisa que el consumo de las torretas es crítico.",
-        "en": "Rocky (level 2, gunner) repairs the rover's armor but warns that the turrets' power draw is critical."
+        "es": "La roca extraída durante la noche sirve para el hangar. El ruido del taladro tapó parte de la señal, así que la falla será la próxima oportunidad de escucharla.",
+        "en": "The rock extracted overnight helps supply the hangar. The drill drowned out part of the signal, so the fault will be the next chance to listen for it."
       },
       "dialogos": [
         {
           "quien": "houston",
           "texto": {
-            "es": "Perseverance, el consumo de las torretas está en rojo. Y esos temblores… no nos gustan.",
-            "en": "Perseverance, the turrets' power draw is in the red. And those tremors… we don't like them."
+            "es": "La roca que recuperaron cubre buena parte del costo del hangar. Revisen la reserva antes de encender el equipo de la próxima salida.",
+            "en": "That rock covers a good part of the hangar's cost. Check your reserve before you power up for the next trip."
           }
         },
         {
-          "quien": "rocky",
+          "quien": "perseverance",
           "texto": {
-            "es": "Blindaje reparado. Pero todo el cañón vibra. Creo que los hemos despertado.",
-            "en": "Armor repaired. But the whole canyon is shaking. I think we woke them up."
+            "es": "Con el taladro funcionando, el ruido tapó parte del registro. Si el patrón se repite en la falla, sabremos cuándo apagarlo para escuchar.",
+            "en": "The drill drowned out part of the recording. If the pattern comes back at the fault, we'll know when to shut it down and listen."
           }
         }
       ],
       "objetivo": {
-        "es": "Sube la antena a Nv. 3 y espera la tormenta",
-        "en": "Upgrade the antenna to Lv. 3 and wait for the storm"
+        "es": "Suban la antena a nivel 3 y prepárense para la tormenta",
+        "en": "Upgrade the antenna to Level 3 and prepare for the storm"
       },
       "disparadores": [
         {
@@ -449,17 +429,772 @@
           },
           "siguiente": "nidos",
           "registro": {
-            "es": "Base militarizada con torretas pesadas: gran actividad sísmica en el cráter.",
-            "en": "Base militarized with heavy turrets: heavy seismic activity in the crater."
+            "es": "Houston recordó el aporte de roca al hangar y pidió revisar la reserva antes de salir.",
+            "en": "Houston noted the rock recovered for the hangar and asked the team to check its reserve before heading out."
           }
         }
       ],
-      "modo": "radio",
+      "modo": "automatico",
       "espera_h": 2.0,
       "metas": [
         {
           "tipo": "antena",
           "min": 3
+        }
+      ]
+    },
+    "falla_salida_pulso": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Seguir los tres golpes",
+        "en": "Follow the three knocks"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· Perseverance, ya tenemos una lectura limpia de anoche. En la Falla hay un sismógrafo de prospección. Vayan y comprueben si ese patrón también aparece allí.",
+        "en": "· Perseverance, we have a clean reading from last night. There's a survey seismograph in the fault. Go see if it picked up the same pattern."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Perseverance, ya tenemos una lectura limpia de anoche. En la Falla hay un sismógrafo de prospección. Vayan y comprueben si ese patrón también aparece allí.",
+            "en": "· Perseverance, we have a clean reading from last night. There's a survey seismograph in the fault. Go see if it picked up the same pattern."
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· Si podemos verlo desde dos puntos, sabremos dónde buscar cuando llegue la tormenta.",
+            "en": "· If we can see it from two points, we'll know where to look when the storm comes."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Explora la Falla y lee el sismógrafo",
+        "en": "Explore the fault and read the seismograph"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Seguir los tres golpes",
+            "en": "Follow the three knocks"
+          },
+          "detalle": {
+            "es": "· Perseverance, ya tenemos una lectura limpia de anoche. En la Falla hay un sismógrafo de prospección. Vayan y comprueben si ese patrón también aparece allí.",
+            "en": "· Perseverance, we have a clean reading from last night. There's a survey seismograph in the fault. Go see if it picked up the same pattern."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Perseverance, ya tenemos una lectura limpia de anoche. En la Falla hay un sismógrafo de prospección. Vayan y comprueben si ese patrón también aparece allí.",
+            "en": "· Perseverance, we have a clean reading from last night. There's a survey seismograph in the fault. Go see if it picked up the same pattern."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "falla_salida_taladro": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Seguir los tres golpes",
+        "en": "Follow the three knocks"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· Ya tienen roca para adelantar el hangar. El taladro tapó parte de la señal anoche. En la Falla hay un sismógrafo más alejado de la base. Vale la pena escuchar desde allí.",
+        "en": "· You've got rock to get the hangar going. The drill drowned out part of last night's signal. There's a seismograph farther from the base, at the fault. It's worth listening from there."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Ya tienen roca para adelantar el hangar. El taladro tapó parte de la señal anoche. En la Falla hay un sismógrafo más alejado de la base. Vale la pena escuchar desde allí.",
+            "en": "· You've got rock to get the hangar going. The drill drowned out part of last night's signal. There's a seismograph farther from the base, at the fault. It's worth listening from there."
+          }
+        },
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· Voy a guardar silencio al llegar. Si siguen esos tres golpes, esta vez quedarán registrados.",
+            "en": "· I'll go quiet when I get there. If those three knocks are still happening, we'll get them on record this time."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Explora la Falla y lee el sismógrafo",
+        "en": "Explore the fault and read the seismograph"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Seguir los tres golpes",
+            "en": "Follow the three knocks"
+          },
+          "detalle": {
+            "es": "· Ya tienen roca para adelantar el hangar. El taladro tapó parte de la señal anoche. En la Falla hay un sismógrafo más alejado de la base. Vale la pena escuchar desde allí.",
+            "en": "· You've got rock to get the hangar going. The drill drowned out part of last night's signal. There's a seismograph farther from the base, at the fault. It's worth listening from there."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Ya tienen roca para adelantar el hangar. El taladro tapó parte de la señal anoche. En la Falla hay un sismógrafo más alejado de la base. Vale la pena escuchar desde allí.",
+            "en": "· You've got rock to get the hangar going. The drill drowned out part of last night's signal. There's a seismograph farther from the base, at the fault. It's worth listening from there."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "falla_sismografo": {
+      "salida": { "primer_sol": 2, "ultimo_sol": 3, "espera_h": 2.0 },
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Tres golpes sin el taladro",
+        "en": "Three knocks with the drill off"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "El sismógrafo de la Falla registra los mismos tres golpes de la primera noche.",
+        "en": "The seismograph at the fault records the same three knocks from the first night."
+      },
+      "dialogos": [
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· Uno. Dos. Tres. El taladro está parado y los golpes siguen. Aquí se oyen con más fuerza.",
+            "en": "· One. Two. Three. The drill is off and the knocks are still there. They're stronger here."
+          }
+        },
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Que se repitan nos da una pista. Si pueden llegar al segundo sensor, compárenlos desde allí. Si necesitan volver a la base, guarden esta lectura como preliminar.",
+            "en": "· The pattern repeating gives us a lead. If you can reach the second sensor, compare the readings there. If you need to return to base, save this as a preliminary reading."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Explora la Falla y lee el sismógrafo",
+        "en": "Explore the fault and read the seismograph"
+      },
+      "escena": "corta",
+      "campo": {
+        "casilla": [
+          14,
+          0
+        ],
+        "accion": {
+          "es": "Leer el sismógrafo",
+          "en": "Read the seismograph"
+        },
+        "viaje": {
+          "es": "Ir al sismógrafo",
+          "en": "Go to the seismograph"
+        }
+      },
+      "opciones": [
+        {
+          "texto": {
+            "es": "Verificar en el segundo sensor",
+            "en": "Verify at the second sensor"
+          },
+          "detalle": {
+            "es": "Marca el sensor. La batería se cobra al medir allí.",
+            "en": "Mark the sensor. Battery is spent when you take the reading there."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "Fuimos al segundo sensor para comparar los golpes.",
+            "en": "We went to the second sensor to compare the knocks."
+          },
+          "siguiente": "falla_sensor"
+        },
+        {
+          "texto": {
+            "es": "Guardar la lectura preliminar",
+            "en": "Save the preliminary reading"
+          },
+          "detalle": {
+            "es": "Guarda 4 datos en memoria y conserva la batería.",
+            "en": "Save 4 data units to memory and keep your battery charge."
+          },
+          "efectos": {
+            "datos": 4
+          },
+          "registro": {
+            "es": "Guardamos una lectura preliminar de los tres golpes.",
+            "en": "We saved a preliminary reading of the three knocks."
+          },
+          "siguiente": "falla_preliminar"
+        }
+      ]
+    },
+    "falla_sensor": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Sensor de contraste",
+        "en": "Comparison sensor"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "El sensor junto a las grietas está listo. Puedes verificar aquí o conservar la lectura preliminar.",
+        "en": "The sensor by the cracks is ready. Verify the signal here or keep the preliminary reading."
+      },
+      "dialogos": [],
+      "objetivo": {
+        "es": "Verifica la lectura en el segundo sensor",
+        "en": "Verify the reading at the second sensor"
+      },
+      "escena": "corta",
+      "campo": {
+        "casilla": [
+          17,
+          1
+        ],
+        "accion": {
+          "es": "Usar el segundo sensor",
+          "en": "Use the second sensor"
+        },
+        "viaje": {
+          "es": "Ir al segundo sensor",
+          "en": "Go to the second sensor"
+        }
+      },
+      "opciones": [
+        {
+          "texto": {
+            "es": "Repetir la medición",
+            "en": "Repeat the measurement"
+          },
+          "detalle": {
+            "es": "Gasta 10 puntos de batería y guarda 12 datos en memoria.",
+            "en": "Use 10 percentage points of battery and save 12 data units to memory."
+          },
+          "efectos": {
+            "bateria_pct": -10,
+            "datos": 12
+          },
+          "registro": {
+            "es": "Verificamos la lectura desde dos sensores y localizamos las grietas.",
+            "en": "We verified the reading from two sensors and located the cracks."
+          },
+          "bateria_referencia_pct": -6,
+          "detalle_referencia": {
+            "es": "Gasta 6 puntos de batería y guarda 12 datos en memoria.",
+            "en": "Use 6 percentage points of battery and save 12 data units to memory."
+          },
+          "siguiente": "falla_verificada"
+        },
+        {
+          "texto": {
+            "es": "Guardar la lectura preliminar",
+            "en": "Save the preliminary reading"
+          },
+          "detalle": {
+            "es": "Guarda 4 datos en memoria y conserva la batería.",
+            "en": "Save 4 data units to memory and keep your battery charge."
+          },
+          "efectos": {
+            "datos": 4
+          },
+          "registro": {
+            "es": "Guardamos una lectura preliminar de los tres golpes.",
+            "en": "We saved a preliminary reading of the three knocks."
+          },
+          "siguiente": "falla_preliminar"
+        }
+      ]
+    },
+    "falla_verificada": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Lectura verificada",
+        "en": "Verified reading"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· Los golpes llegan antes al sensor junto a las grietas. Son nuestro primer punto de observación cuando volvamos.",
+        "en": "· The knocks reach the sensor by the cracks first. That's where we'll start looking when we come back."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Los golpes llegan antes al sensor junto a las grietas. Son nuestro primer punto de observación cuando volvamos.",
+            "en": "· The knocks reach the sensor by the cracks first. That's where we'll start looking when we come back."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Lectura verificada",
+            "en": "Verified reading"
+          },
+          "detalle": {
+            "es": "· Los golpes llegan antes al sensor junto a las grietas. Son nuestro primer punto de observación cuando volvamos.",
+            "en": "· The knocks reach the sensor by the cracks first. That's where we'll start looking when we come back."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Los golpes llegan antes al sensor junto a las grietas. Son nuestro primer punto de observación cuando volvamos.",
+            "en": "· The knocks reach the sensor by the cracks first. That's where we'll start looking when we come back."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "falla_preliminar": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Lectura preliminar",
+        "en": "Preliminary reading"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· Guarden el archivo con esa advertencia. Sabemos que los golpes se repiten. Todavía nos falta ubicar de dónde vienen.",
+        "en": "· Save the file with that note. We know the knocks repeat. We still need to find where they're coming from."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Guarden el archivo con esa advertencia. Sabemos que los golpes se repiten. Todavía nos falta ubicar de dónde vienen.",
+            "en": "· Save the file with that note. We know the knocks repeat. We still need to find where they're coming from."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Lectura preliminar",
+            "en": "Preliminary reading"
+          },
+          "detalle": {
+            "es": "· Guarden el archivo con esa advertencia. Sabemos que los golpes se repiten. Todavía nos falta ubicar de dónde vienen.",
+            "en": "· Save the file with that note. We know the knocks repeat. We still need to find where they're coming from."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Guarden el archivo con esa advertencia. Sabemos que los golpes se repiten. Todavía nos falta ubicar de dónde vienen.",
+            "en": "· Save the file with that note. We know the knocks repeat. We still need to find where they're coming from."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "falla_tarde": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Tiempo de volver a la base",
+        "en": "Time to return to base"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "Terminó la ventana de investigación. Houston continúa con los indicios de la primera noche.",
+        "en": "The survey window closed. Houston will continue with the first night’s clues."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "Se cerró la ventana para medir. Regresen a la base. Seguiremos con lo que registraron la primera noche.",
+            "en": "The survey window has closed. Return to base. We will work with the readings you took on the first night."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Tiempo de volver a la base",
+            "en": "Time to return to base"
+          },
+          "detalle": {
+            "es": "Terminó la ventana de investigación. Houston continúa con los indicios de la primera noche.",
+            "en": "The survey window closed. Houston will continue with the first night’s clues."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "Terminó la ventana de investigación. Houston continúa con los indicios de la primera noche.",
+            "en": "The survey window closed. Houston will continue with the first night’s clues."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "estacion_auxiliar": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "La estación que nadie reclamó",
+        "en": "The unclaimed station"
+      },
+      "imagen": "aterrizaje",
+      "texto": {
+        "es": "La baliza todavía emite. Junto al mástil hay una etiqueta de servicio y un módulo de registro.",
+        "en": "The beacon is still transmitting. A service tag and a logging module sit beside the mast."
+      },
+      "dialogos": [
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· La etiqueta de servicio dice «Para quien venga después». Alguien dejó el mástil listo para el siguiente turno. El transmisor ya no tiene energía.",
+            "en": "· The service tag says “For whoever comes next.” Someone left the mast ready for the next shift. The transmitter is out of power."
+          }
+        },
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· Podemos alimentar el repetidor lo justo para leer su registro. O pueden recuperar las piezas de olivino y llevarlas a la base. Para desmontarlo habrá que desconectar el módulo que guarda la última lectura.",
+            "en": "· We can power the relay long enough to read its log. Or you can bring the olivine parts back to base. Taking it apart means disconnecting the module that holds the last reading."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "escena": "corta",
+      "campo": {
+        "casilla": [
+          -5,
+          -15
+        ],
+        "accion": {
+          "es": "Inspeccionar estación",
+          "en": "Inspect the station"
+        },
+        "viaje": {
+          "es": "Ir a la baliza secundaria",
+          "en": "Go to the optional beacon"
+        }
+      },
+      "opciones": [
+        {
+          "texto": {
+            "es": "Alimentar el repetidor",
+            "en": "Power the relay"
+          },
+          "detalle": {
+            "es": "Gasta 8 puntos de batería. Guarda 12 datos en memoria y conserva el registro.",
+            "en": "Use 8 percentage points of battery. Save 12 data units and preserve the log."
+          },
+          "efectos": {
+            "bateria_pct": -8,
+            "datos": 12
+          },
+          "registro": {
+            "es": "Recuperamos el registro que dejaron para el siguiente turno.",
+            "en": "We recovered the log left for the next shift."
+          },
+          "siguiente": "estacion_registro"
+        },
+        {
+          "texto": {
+            "es": "Recuperar el olivino",
+            "en": "Recover the olivine"
+          },
+          "detalle": {
+            "es": "Carga 12 de olivino en la bodega. El registro de la estación se pierde.",
+            "en": "Load 12 olivine into the cargo bay. The station’s log is lost."
+          },
+          "efectos": {
+            "carga": {
+              "olivino": 12
+            }
+          },
+          "registro": {
+            "es": "Reutilizamos las piezas del mástil para la base.",
+            "en": "We salvaged mast parts for the base."
+          },
+          "siguiente": "estacion_olivino"
+        },
+        {
+          "texto": {
+            "es": "Volver más tarde",
+            "en": "Come back later"
+          },
+          "detalle": {
+            "es": "Deja la estación pendiente.",
+            "en": "Leave the station for later."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "Estación pendiente.",
+            "en": "Station left for later."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "estacion_registro": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Un registro recuperado",
+        "en": "A log recovered"
+      },
+      "imagen": "aterrizaje",
+      "texto": {
+        "es": "· Aquí dice que el mástil funcionaba con el taladro apagado. Entonces alguien más también eligió quedarse a escuchar.",
+        "en": "· This says the mast was running while the drill was off. Someone else chose to stay and listen, too."
+      },
+      "dialogos": [
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· Aquí dice que el mástil funcionaba con el taladro apagado. Entonces alguien más también eligió quedarse a escuchar.",
+            "en": "· This says the mast was running while the drill was off. Someone else chose to stay and listen, too."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Un registro recuperado",
+            "en": "A log recovered"
+          },
+          "detalle": {
+            "es": "· Aquí dice que el mástil funcionaba con el taladro apagado. Entonces alguien más también eligió quedarse a escuchar.",
+            "en": "· This says the mast was running while the drill was off. Someone else chose to stay and listen, too."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Aquí dice que el mástil funcionaba con el taladro apagado. Entonces alguien más también eligió quedarse a escuchar.",
+            "en": "· This says the mast was running while the drill was off. Someone else chose to stay and listen, too."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "estacion_olivino": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Olivino en la bodega",
+        "en": "Olivine in the cargo bay"
+      },
+      "imagen": "aterrizaje",
+      "texto": {
+        "es": "· Piezas aseguradas. Dejo la etiqueta puesta. Quien venga después sabrá que pasamos por aquí.",
+        "en": "· Parts secured. I'll leave the tag here. Whoever comes next will know we stopped by."
+      },
+      "dialogos": [
+        {
+          "quien": "perseverance",
+          "texto": {
+            "es": "· Piezas aseguradas. Dejo la etiqueta puesta. Quien venga después sabrá que pasamos por aquí.",
+            "en": "· Parts secured. I'll leave the tag here. Whoever comes next will know we stopped by."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Olivino en la bodega",
+            "en": "Olivine in the cargo bay"
+          },
+          "detalle": {
+            "es": "· Piezas aseguradas. Dejo la etiqueta puesta. Quien venga después sabrá que pasamos por aquí.",
+            "en": "· Parts secured. I'll leave the tag here. Whoever comes next will know we stopped by."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· Piezas aseguradas. Dejo la etiqueta puesta. Quien venga después sabrá que pasamos por aquí.",
+            "en": "· Parts secured. I'll leave the tag here. Whoever comes next will know we stopped by."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "nidos_lectura_verificada": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "El punto de observación",
+        "en": "The observation point"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· La señal vuelve a salir de las mismas grietas. Ya tenemos un punto desde el que observar. Acérquense antes de decidir cuánto quieren intervenir.",
+        "en": "· The signal's coming from those same cracks again. We have an observation point now. Get close enough to see what's there before deciding how far to go."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· La señal vuelve a salir de las mismas grietas. Ya tenemos un punto desde el que observar. Acérquense antes de decidir cuánto quieren intervenir.",
+            "en": "· The signal's coming from those same cracks again. We have an observation point now. Get close enough to see what's there before deciding how far to go."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "El punto de observación",
+            "en": "The observation point"
+          },
+          "detalle": {
+            "es": "· La señal vuelve a salir de las mismas grietas. Ya tenemos un punto desde el que observar. Acérquense antes de decidir cuánto quieren intervenir.",
+            "en": "· The signal's coming from those same cracks again. We have an observation point now. Get close enough to see what's there before deciding how far to go."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· La señal vuelve a salir de las mismas grietas. Ya tenemos un punto desde el que observar. Acérquense antes de decidir cuánto quieren intervenir.",
+            "en": "· The signal's coming from those same cracks again. We have an observation point now. Get close enough to see what's there before deciding how far to go."
+          },
+          "cierra": true
+        }
+      ]
+    },
+    "nidos_lectura_preliminar": {
+      "acto": {
+        "es": "Acto 2 · La expedición a la Falla",
+        "en": "Act 2 · The expedition to the fault"
+      },
+      "titulo": {
+        "es": "Una pista bajo la tormenta",
+        "en": "A lead in the storm"
+      },
+      "imagen": "glaciar_cientifico",
+      "texto": {
+        "es": "· El patrón ha vuelto. Las grietas son nuestra mejor pista. Mantengan distancia hasta que puedan ver qué se mueve ahí abajo.",
+        "en": "· The pattern's back. The cracks are our best lead. Keep your distance until you can see what's moving down there."
+      },
+      "dialogos": [
+        {
+          "quien": "houston",
+          "texto": {
+            "es": "· El patrón ha vuelto. Las grietas son nuestra mejor pista. Mantengan distancia hasta que puedan ver qué se mueve ahí abajo.",
+            "en": "· The pattern's back. The cracks are our best lead. Keep your distance until you can see what's moving down there."
+          }
+        }
+      ],
+      "objetivo": {
+        "es": "Prepara la base y sube la antena a nivel 3",
+        "en": "Prepare the base and upgrade the antenna to Level 3"
+      },
+      "modo": "radio",
+      "disparadores": [
+        {
+          "inicio": true
+        }
+      ],
+      "opciones": [
+        {
+          "texto": {
+            "es": "Una pista bajo la tormenta",
+            "en": "A lead in the storm"
+          },
+          "detalle": {
+            "es": "· El patrón ha vuelto. Las grietas son nuestra mejor pista. Mantengan distancia hasta que puedan ver qué se mueve ahí abajo.",
+            "en": "· The pattern's back. The cracks are our best lead. Keep your distance until you can see what's moving down there."
+          },
+          "efectos": {},
+          "registro": {
+            "es": "· El patrón ha vuelto. Las grietas son nuestra mejor pista. Mantengan distancia hasta que puedan ver qué se mueve ahí abajo.",
+            "en": "· The pattern's back. The cracks are our best lead. Keep your distance until you can see what's moving down there."
+          },
+          "cierra": true
         }
       ]
     },

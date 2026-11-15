@@ -7,11 +7,11 @@ const DARK = Color("29343b")
 const BLUE = Color("263c51")
 const ORANGE = Color("ed9a54")
 static var materials: Dictionary = {}
-static func mat(color: Color, metallic: float = 0.0) -> StandardMaterial3D:
- var key = str(color)+str(metallic)
+static func mat(color: Color, metallic: float = 0.0, roughness: float = .86) -> StandardMaterial3D:
+ var key = str(color)+str(metallic)+str(roughness)
  if not materials.has(key):
   var m = StandardMaterial3D.new()
-  m.albedo_color=color;m.roughness=.86;m.metallic=metallic
+  m.albedo_color=color;m.roughness=roughness;m.metallic=metallic
   materials[key]=m
  return materials[key]
 static func shape(parent: Node3D, mesh: Mesh, pos: Vector3, color: Color) -> MeshInstance3D:
@@ -86,7 +86,7 @@ static func dish_mesh(radius: float, depth: float, segs: int = 16, rings: int = 
 static func panel(parent: Node3D, size: Vector3, pos: Vector3, filas: int, columnas: int) -> Node3D:
  var n=Node3D.new();n.set_meta("fusionable",true);parent.add_child(n);n.position=pos
  box(n,Vector3(size.x+.06,size.y,size.z+.06),Vector3.ZERO,Color("cfc8b8"))
- box(n,Vector3(size.x,size.y+.012,size.z),Vector3(0,.002,0),Color("27456f"))
+ box(n,Vector3(size.x,size.y+.012,size.z),Vector3(0,.002,0),Color("27456f")).material_override=mat(Color("27456f"),.3,.22)  # celdas: vidrio liso que refleja
  for c in range(1,columnas):
   box(n,Vector3(.012,size.y+.02,size.z),Vector3(-size.x/2+size.x*c/columnas,.003,0),Color("8d96a0"))
  for f in range(1,filas):
@@ -352,14 +352,10 @@ static func dust(parent: Node3D, count: int, extent: Vector3) -> CPUParticles3D:
 
 # ---- Fusión de mallas (menos llamadas de dibujo): las piezas primitivas de un nodo pasan a una sola malla con
 # color por vértice. Las piezas que se animan o se muestran/ocultan por separado se excluyen con `skip`.
-static var _merged_material: StandardMaterial3D
-static func merged_material() -> StandardMaterial3D:
- if _merged_material == null:
-  _merged_material=StandardMaterial3D.new()
-  _merged_material.vertex_color_use_as_albedo=true
-  _merged_material.vertex_color_is_srgb=true
-  _merged_material.roughness=.86
- return _merged_material
+## Material de las mallas fundidas: el realista de chapa con polvo (material_edificio.gd), que lee el color de vértice y,
+## en UV2, la rugosidad y el metal de cada pieza.
+static func merged_material() -> ShaderMaterial:
+ return preload("res://scenes/b/material_edificio.gd").fundido()
 static func _collect(node: Node, xf: Transform3D, skip: Callable, out: Array, victims: Array) -> void:
  for c in node.get_children():
   if c is MeshInstance3D and (c.mesh is PrimitiveMesh or c.mesh is ArrayMesh):
@@ -371,7 +367,7 @@ static func _collect(node: Node, xf: Transform3D, skip: Callable, out: Array, vi
    victims.append(c)
 static func merged(parent: Node, skip: Callable = Callable()) -> void:
  if parent==null:return
- var verts=PackedVector3Array();var norms=PackedVector3Array();var cols=PackedColorArray();var idx=PackedInt32Array()
+ var verts=PackedVector3Array();var norms=PackedVector3Array();var cols=PackedColorArray();var idx=PackedInt32Array();var pbr=PackedVector2Array()
  var victims: Array=[];var piezas: Array=[]
  _collect(parent,Transform3D.IDENTITY,skip,piezas,victims)
  for par in piezas:
@@ -381,17 +377,18 @@ static func merged(parent: Node, skip: Callable = Callable()) -> void:
   var ind: PackedInt32Array=arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX]!=null else PackedInt32Array()
   if ind.is_empty():
    for k in range(v.size()):ind.append(k)
-  var col=Color.WHITE
-  if c.material_override is StandardMaterial3D:col=c.material_override.albedo_color
+  var col=Color.WHITE;var rm=Vector2(.86,0)
+  if c.material_override is StandardMaterial3D:
+   col=c.material_override.albedo_color;rm=Vector2(c.material_override.roughness,c.material_override.metallic)
   var xf: Transform3D=par[1]
   var nb: Basis=xf.basis.inverse().transposed()
   var base=verts.size()
   for k in range(v.size()):
-   verts.append(xf*v[k]);norms.append((nb*n[k]).normalized());cols.append(col)
+   verts.append(xf*v[k]);norms.append((nb*n[k]).normalized());cols.append(col);pbr.append(rm)
   for k in ind:idx.append(k+base)
  if piezas.is_empty():return
  var arr=[];arr.resize(Mesh.ARRAY_MAX)
- arr[Mesh.ARRAY_VERTEX]=verts;arr[Mesh.ARRAY_NORMAL]=norms;arr[Mesh.ARRAY_COLOR]=cols;arr[Mesh.ARRAY_INDEX]=idx
+ arr[Mesh.ARRAY_VERTEX]=verts;arr[Mesh.ARRAY_NORMAL]=norms;arr[Mesh.ARRAY_COLOR]=cols;arr[Mesh.ARRAY_TEX_UV2]=pbr;arr[Mesh.ARRAY_INDEX]=idx
  var mesh=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arr)
  var mi=MeshInstance3D.new();mi.name="Merged";mi.mesh=mesh;mi.material_override=merged_material()
  for c in victims:

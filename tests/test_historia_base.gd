@@ -19,7 +19,7 @@ func _nueva(con_historia: bool = true) -> Simulation:
 
 
 func before_each() -> void:
-	economia = Economy.desde_archivo("res://content/economia.json")
+	economia = Economy.desde_archivo("res://content/economia.json").para_pruebas()
 	historia = StoryData.desde_archivo("res://content/historia.json")
 	sim = _nueva()
 
@@ -121,7 +121,7 @@ func test_todos_los_textos_estan_en_espanol_e_ingles() -> void:
 func test_empieza_con_recursos_iniciales_y_sin_antena() -> void:
 	_operar()
 	var datos := sim.snapshot()
-	assert_eq(datos["resources"], {"rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0})
+	assert_eq(datos["resources"], {"rocas": 30, "olivino": 0, "hielo": 0, "xenolito": 0, "bionutrientes": 0})
 	assert_eq(datos["antenna_level"], 0)
 	assert_eq(datos["resource_capacity"], 300)
 	assert_eq(datos["buildings"].size(), 1, "solo el sitio de la antena")
@@ -286,6 +286,128 @@ func test_la_rama_militar_hiere_a_rocky_y_baja_la_etica() -> void:
 	assert_eq(int(sim.estado.recursos["rocas"]), rocas + 35)
 	assert_eq(sim.estado.historia_espera, "glaciar_militar")
 	assert_eq(sim.snapshot()["story"]["log"].size(), 3)
+
+
+func _salir_hacia_la_falla(eleccion: int) -> void:
+	_operar()
+	_dar({"rocas": 30, "olivino": 20})
+	_subir_antena()
+	_esperar_radio("alerta_sismica")
+	sim.estado.hora = 18.0
+	sim.avanzar(0.2)
+	_decidir("noche_aranas", eleccion)
+	assert_true(sim.snapshot()["story"]["field_sites"].is_empty(), "la salida se anuncia en el sol 2")
+	sim.estado.sol = 2
+	sim.estado.hora = 8.0
+	sim.avanzar(0.2)
+	assert_eq(sim.estado.historia_radio, "falla_salida_pulso" if eleccion == 0 else "falla_salida_taladro")
+	assert_eq(sim.snapshot()["story"]["field_sites"].size(), 2)
+	sim.estado.casilla_rover = Vector2i(-7, -9)
+	sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh
+
+
+func _ir_a_campo(casilla: Vector2i, sitio: String) -> Dictionary:
+	var orden := sim.ejecutar("move", {"tile": casilla})
+	assert_true(orden["ok"], str(orden))
+	for i in range(750):
+		if not sim.estado.en_movimiento:
+			break
+		sim.avanzar(0.2)
+	assert_eq(sim.estado.casilla_rover, casilla)
+	return sim.ejecutar("inspect_story_site", {"id": sitio})
+
+
+func test_la_salida_directa_verifica_en_dos_sensores_y_conecta_con_los_nidos() -> void:
+	_salir_hacia_la_falla(0)
+	assert_eq(float(sim.snapshot()["story"]["field_sites"][0]["cost_wh"]), 300.0)
+	assert_eq(sim.ejecutar("inspect_story_site", {"id": StorySystem.SISMOGRAFO})["reason"], "TOO_FAR")
+	assert_true(_ir_a_campo(Vector2i(14, 0), StorySystem.SISMOGRAFO)["ok"])
+	var antes := sim.estado.bateria_wh
+	_decidir(StorySystem.SISMOGRAFO)
+	assert_eq(sim.estado.bateria_wh, antes, "apuntar al segundo sensor no gasta batería")
+	assert_true(_ir_a_campo(Vector2i(17, 1), StorySystem.SENSOR)["ok"])
+	antes = sim.estado.bateria_wh
+	var datos := sim.estado.datos
+	_decidir(StorySystem.SENSOR)
+	assert_almost_eq(sim.estado.bateria_wh, antes - sim.estado.bateria_capacidad_wh * 0.06, 0.001)
+	assert_eq(sim.estado.datos, datos + 12.0)
+	assert_eq(sim.estado.historia_falla, "falla_verificada")
+	assert_eq(sim.estado.historia_radio, "falla_verificada")
+	assert_eq(sim.snapshot()["story"]["field_sites"].size(), 1, "queda solo la secundaria")
+	sim.estado.sol = 3
+	sim.estado.hora = 8.0
+	sim.avanzar(0.2)
+	sim.estado.hora = 12.0
+	sim.avanzar(0.2)
+	assert_eq(sim.estado.historia_nodo, "nidos")
+	assert_eq(sim.snapshot()["story"]["pending"]["dialogue"].back()["voice_node"], "nidos_lectura_verificada")
+
+
+func test_la_estacion_se_puede_dejar_para_luego_y_solo_entrega_una_recompensa() -> void:
+	_salir_hacia_la_falla(1)
+	assert_true(_ir_a_campo(Vector2i(-5, -15), StorySystem.ESTACION_AUXILIAR)["ok"])
+	_decidir(StorySystem.ESTACION_AUXILIAR, 2)
+	assert_true(sim.ejecutar("inspect_story_site", {"id": StorySystem.ESTACION_AUXILIAR})["ok"])
+	sim.estado.carga["rocas"] = economia.bodega_rover - 10
+	assert_eq(sim.ejecutar("decide", {"choice": 1})["reason"], "CARGO_FULL")
+	sim.estado.carga["rocas"] = 0
+	var deposito := int(sim.estado.recursos["olivino"])
+	_decidir(StorySystem.ESTACION_AUXILIAR, 1)
+	assert_eq(int(sim.estado.carga["olivino"]), 12)
+	assert_eq(int(sim.estado.recursos["olivino"]), deposito)
+	assert_eq(sim.estado.historia_radio, "estacion_olivino")
+	var restaurada := _nueva()
+	assert_true(restaurada.cargar(sim.guardar()))
+	sim = restaurada
+	assert_false(sim.ejecutar("inspect_story_site", {"id": StorySystem.ESTACION_AUXILIAR})["ok"])
+	assert_false(sim.ejecutar("decide", {"choice": 1})["ok"])
+	assert_eq(int(sim.estado.carga["olivino"]), 12)
+	assert_true(_ir_a_campo(Vector2i(14, 0), StorySystem.SISMOGRAFO)["ok"])
+	_decidir(StorySystem.SISMOGRAFO, 1)
+	assert_eq(sim.estado.historia_falla, "falla_preliminar")
+	assert_true(sim.ejecutar("unload")["ok"])
+	_avanzar(30.0)
+	assert_eq(int(sim.estado.carga.get("olivino", 0)), 0)
+	assert_eq(int(sim.estado.recursos["olivino"]), deposito + 12)
+
+
+func test_la_ruta_del_taladro_cobra_diez_y_el_repetidor_ocho() -> void:
+	_salir_hacia_la_falla(1)
+	assert_true(_ir_a_campo(Vector2i(-5, -15), StorySystem.ESTACION_AUXILIAR)["ok"])
+	var antes := sim.estado.bateria_wh
+	var datos := sim.estado.datos
+	_decidir(StorySystem.ESTACION_AUXILIAR)
+	assert_almost_eq(sim.estado.bateria_wh, antes - sim.estado.bateria_capacidad_wh * 0.08, 0.001)
+	assert_eq(sim.estado.datos, datos + 12.0)
+	assert_false(sim.ejecutar("inspect_story_site", {"id": StorySystem.ESTACION_AUXILIAR})["ok"])
+	assert_true(_ir_a_campo(Vector2i(14, 0), StorySystem.SISMOGRAFO)["ok"])
+	_decidir(StorySystem.SISMOGRAFO)
+	assert_true(_ir_a_campo(Vector2i(17, 1), StorySystem.SENSOR)["ok"])
+	antes = sim.estado.bateria_wh
+	sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh * 0.09
+	assert_eq(sim.ejecutar("decide", {"choice": 0})["reason"], "LOW_ENERGY")
+	sim.estado.bateria_wh = antes
+	_decidir(StorySystem.SENSOR)
+	assert_almost_eq(sim.estado.bateria_wh, antes - sim.estado.bateria_capacidad_wh * 0.1, 0.001)
+
+
+func test_llegar_al_sol_cuatro_sin_medir_deja_avanzar_a_los_nidos() -> void:
+	_salir_hacia_la_falla(0)
+	sim.estado.sol = 3
+	sim.estado.hora = 8.0
+	sim.avanzar(0.2)
+	sim.estado.hora = 12.0
+	sim.avanzar(0.2)
+	assert_eq(sim.estado.historia_espera, "nidos")
+	assert_true(sim.estado.historia_nodo.is_empty())
+	sim.estado.sol = 4
+	sim.estado.hora = 8.0
+	sim.avanzar(0.2)
+	assert_eq(sim.estado.historia_falla, "falla_tarde")
+	assert_eq(sim.estado.historia_radio, "falla_tarde")
+	sim.avanzar(0.2)
+	assert_eq(sim.estado.historia_nodo, "nidos")
+	assert_eq(sim.snapshot()["story"]["field_sites"].size(), 1)
 
 
 func test_llegar_a_100_no_gana_hasta_resolver_el_climax() -> void:

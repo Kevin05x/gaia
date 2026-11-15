@@ -76,6 +76,11 @@ func numero(ruta: String) -> float:
 	return float(valor) if (valor is float or valor is int) else 0.0
 
 
+## true si la ruta existe en el archivo (para claves opcionales que solo usa un destino).
+func tiene(ruta: String) -> bool:
+	return _buscar(ruta) != null
+
+
 ## Datos de una acción ({"costo_wh", "duracion_s", ...}). Vacío si no existe.
 func accion(id: String) -> Dictionary:
 	var valor: Variant = _buscar("acciones.%s" % id)

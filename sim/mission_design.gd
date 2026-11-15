@@ -13,6 +13,10 @@ const ENLACE_POR_PIEZA: Dictionary = {"antena_rele": "relay", "antena_directa": 
 const INSTRUMENTO_POR_PIEZA: Dictionary = {"camara": "panorama", "espectrometro": "spectrometer", "taladro": "drill",
 	"radar": "radar", "dron": "drone", "meteo": "meteo"}
 const PIEZA_COMPANERO := "companero"
+## Herramientas con las que arranca cualquier misión: con qué cavar y con qué mirar. Van puestas de
+## salida en cuanto hay cohete, porque empezar con el rover desnudo deja al jugador delante de una
+## lista en blanco sin saber por dónde entrar. Se pueden quitar, pero entonces el taller avisa.
+const HERRAMIENTAS_BASICAS: Array[String] = ["taladro", "camara"]
 
 var seleccion: Dictionary = {}  ## categoria -> Array de ids elegidos
 
@@ -122,6 +126,8 @@ func validar() -> PackedStringArray:
 
 
 ## Avisos que no bloquean: PENDING_DATA:<id> por cada pieza elegida con datos pendientes.
+## (Que falte una herramienta básica también se avisa, pero eso lo mira el taller: es una ayuda
+## de la pantalla, no una regla de la simulación.)
 func avisos() -> PackedStringArray:
 	var resultado := PackedStringArray()
 	for categoria in seleccion:

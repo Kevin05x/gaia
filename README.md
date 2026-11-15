@@ -25,14 +25,14 @@ Dos destinos: **Marte (cráter Jezero)**, con historia, y **la Luna (polo sur)**
 2. **Taller**: se diseña la misión equilibrando masa, presupuesto, energía y comunicaciones.
 3. **Lanzamiento**: el cohete despega con la carga elegida.
 4. **Aterrizaje**: entrada, descenso y aterrizaje.
-5. **Operaciones**: la misión avanza por soles (días marcianos).
+5. **Operaciones**: la misión avanza por soles (días marcianos). El rover explora, recoge recursos y levanta la base: va hasta cada obra, la suelda y vuelve.
 6. **Informe**: resultado de la misión y causas de lo que ocurrió.
 
 ## Tecnología
 
 - Godot 4.7.2 Standard, GDScript (sin .NET).
 - Escritorio: renderer Forward+ (sombras suaves, SSAO, SSIL y niebla volumétrica según el ajuste gráfico). Web: Compatibility, un solo hilo.
-- Simulación en código puro (`sim/`), contenido en JSON (`content/`), 466 pruebas GUT (`tests/`).
+- Simulación en código puro (`sim/`), contenido en JSON (`content/`), 530 pruebas GUT (`tests/`).
 - Datos de la NASA: press kits de NASA/JPL, NASA Science, NASA Image and Video Library y NASA 3D Resources (ver `docs/DATOS_NASA.md`).
 
 ## Cómo correrlo

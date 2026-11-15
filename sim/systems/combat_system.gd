@@ -16,19 +16,23 @@ const AVISO_OLEADA_H := 3.0  ## horas de juego antes de una oleada en las que el
 const TTL_DISPARO := 0.18  ## segundos que dura el rayo de una torreta en la vista
 const TTL_ATAQUE := 0.35  ## segundos que dura el gesto de ataque de un monstruo
 const AMENAZA_MAX := 100.0
+const RECURSO_BIONUTRIENTES := "bionutrientes"
+const RADIO_RECOGIDA := 1.5  ## casillas desde el depósito
 const DANO_ROVER_METEORITO := 25.0  ## % de vida del rover que quita un meteorito que cae sobre él
 
 var _datos: CombatData
 var _economia: Economy
 var _edificios: BuildSystem
 var _mapa: MapData
+var _recursos: ResourceSystem
 
 
-func _init(datos: CombatData, economia: Economy, edificios: BuildSystem, mapa: MapData) -> void:
+func _init(datos: CombatData, economia: Economy, edificios: BuildSystem, mapa: MapData, recursos: ResourceSystem) -> void:
 	_datos = datos
 	_economia = economia
 	_edificios = edificios
 	_mapa = mapa
+	_recursos = recursos
 
 
 ## La actividad de la base despierta a la fauna: cada taladro suma amenaza.
@@ -50,6 +54,7 @@ func avanzar(estado: MissionState, delta_s: float, horas: float, energia: Energy
 	if not estado.enemigos.is_empty():
 		eventos.append_array(_mover_y_atacar(estado, delta_s))
 		eventos.append_array(_disparar(estado, delta_s, energia))
+	eventos.append_array(_recoger_bionutrientes(estado))
 	_reparar(estado, delta_s, energia)
 	return eventos
 
@@ -90,7 +95,8 @@ func para_la_vista(estado: MissionState) -> Dictionary:
 		caidas.append({"tile": impacto["tile"], "t": float(impacto["t"]), "total": float(impacto.get("total", impacto["t"])),
 			"radius": float(impacto["radio"])})
 	return {"enemies": lista, "shots": estado.disparos.duplicate(true), "impacts": caidas, "threat": estado.amenaza,
-		"threat_extra": extra_por_amenaza(estado), "wave": proxima_oleada(estado), "rover_hp": estado.rover_hp}
+		"threat_extra": extra_por_amenaza(estado), "wave": proxima_oleada(estado), "rover_hp": estado.rover_hp,
+		"bionutrients": estado.bionutrientes_en_suelo.duplicate(true)}
 
 
 ## Avisos del HUD como [id, gravedad, valores].
@@ -347,6 +353,26 @@ func _enemigo_mas_cercano(estado: MissionState, desde: Vector2, alcance: float) 
 	return mejor
 
 
+func _recoger_bionutrientes(estado: MissionState) -> Array[String]:
+	var eventos: Array[String] = []
+	var posicion := Vector2(estado.casilla_rover)
+	var inventario := estado.carga if _recursos.usa_bodega() else estado.recursos
+	for id in estado.bionutrientes_en_suelo.keys():
+		var lote: Dictionary = estado.bionutrientes_en_suelo[id]
+		if posicion.distance_to(lote["pos"]) > RADIO_RECOGIDA:
+			continue
+		if _recursos.bodega_llena(estado):
+			break
+		var antes := int(inventario.get(RECURSO_BIONUTRIENTES, 0))
+		eventos.append_array(_recursos.cargar(estado, {RECURSO_BIONUTRIENTES: lote["cantidad"]}))
+		var recogido := int(inventario.get(RECURSO_BIONUTRIENTES, 0)) - antes
+		estado.bionutrientes_recogidos += recogido
+		lote["cantidad"] = int(lote["cantidad"]) - recogido
+		if lote["cantidad"] == 0:
+			estado.bionutrientes_en_suelo.erase(id)
+	return eventos
+
+
 func _retirar_abatidos(estado: MissionState) -> Array[String]:
 	var eventos: Array[String] = []
 	var olas_tocadas := {}
@@ -356,6 +382,9 @@ func _retirar_abatidos(estado: MissionState) -> Array[String]:
 			continue
 		olas_tocadas[enemigo["wave"]] = true
 		eventos.append("%s:%s" % [EVENTO_ENEMIGO_ABATIDO, enemigo["type"]])
+		var cantidad := int(_datos.enemigo(enemigo["type"]).get("bionutrientes", 0))
+		if cantidad > 0 and estado.recursos.has(RECURSO_BIONUTRIENTES):
+			estado.bionutrientes_en_suelo[enemigo["id"]] = {"pos": enemigo["pos"], "cantidad": cantidad}
 		estado.enemigos.remove_at(i)
 	for ola in olas_tocadas:
 		var quedan := false

@@ -12,7 +12,7 @@ var sim: Simulation
 
 
 func before_each() -> void:
-	economia = Economy.desde_archivo("res://content/economia.json")
+	economia = Economy.desde_archivo("res://content/economia.json").para_pruebas()
 	combate = CombatData.desde_archivo("res://content/combate.json")
 	sim = _nueva()
 	_operar()
@@ -193,10 +193,10 @@ func test_el_snapshot_trae_nidos_y_combate() -> void:
 
 func test_las_torretas_piden_el_hangar() -> void:
 	sim.estado.recursos = {"rocas": 500, "olivino": 500, "hielo": 500, "xenolito": 500}
-	var sin_hangar: Dictionary = sim.ejecutar("build", {"building": "torreta_2", "tile": Vector2i(-8, -9)})
+	var sin_hangar: Dictionary = sim.ejecutar("build", {"building": "torreta_2", "tile": Vector2i(-7, -8)})
 	assert_false(sin_hangar["ok"])
 	assert_eq(sin_hangar["reason"], "NEEDS_HANGAR")
-	assert_true(sim.ejecutar("build", {"building": "torreta", "tile": Vector2i(-8, -9)})["ok"], "la torreta Nv1 no pide nada")
+	assert_true(sim.ejecutar("build", {"building": "torreta", "tile": Vector2i(-7, -8)})["ok"], "la torreta Nv1 no pide nada")
 	_edificio("hangar", Vector2i(-12, -9))
 	for i in 100:
 		sim.avanzar(0.1)  # termina la obra
@@ -204,14 +204,14 @@ func test_las_torretas_piden_el_hangar() -> void:
 
 
 func test_un_edificio_destruido_desaparece_y_libera_la_casilla() -> void:
-	var panel := _edificio("panel_solar", Vector2i(-8, -9))
+	var panel := _edificio("panel_solar", Vector2i(-7, -8))
 	var eventos: Array[String] = sim._edificios.danar(sim.estado, panel["id"], 30.0)
 	assert_eq(panel["hp"], 70.0)
 	assert_eq(eventos.size(), 0)
 	eventos = sim._edificios.danar(sim.estado, panel["id"], 100.0)
 	assert_has(eventos, "BUILDING_DESTROYED:panel_solar:%s" % panel["id"])
 	assert_eq(sim._edificios.edificio_por_id(sim.estado, panel["id"]), {})
-	assert_false(sim._mapa.bloqueada(Vector2i(-8, -9)))
+	assert_false(sim._mapa.bloqueada(Vector2i(-7, -8)))
 
 
 func test_la_antena_baja_un_nivel_en_vez_de_desaparecer() -> void:
@@ -535,6 +535,40 @@ func test_matar_al_ultimo_de_la_oleada_la_da_por_derrotada() -> void:
 	assert_true(sim.estado.enemigos.is_empty())
 	assert_eq(eventos.count("ENEMY_KILLED:arana"), 2)
 	assert_eq(eventos.count("WAVE_CLEARED:prueba"), 1)
+	assert_eq(sim.snapshot()["combat"]["bionutrients"].size(), 2)
+	for lote in sim.estado.bionutrientes_en_suelo.values():
+		sim.estado.casilla_rover = Vector2i(Vector2(lote["pos"]).round())
+		_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 2)
+	assert_true(sim.snapshot()["combat"]["bionutrients"].is_empty())
+	assert_eq(sim.estado.bionutrientes_recogidos, 2)
+
+
+func test_los_depositos_conservan_lo_que_no_cabe_y_sobreviven_al_guardado() -> void:
+	var coloso := _monstruo("coloso", Vector2(-2.0, -9.0), Vector2i(-2, -9))
+	coloso["hp"] = 0.0
+	sim._combate._retirar_abatidos(sim.estado)
+	var id: String = coloso["id"]
+	assert_eq(sim.estado.bionutrientes_en_suelo[id]["cantidad"], 6)
+	var datos := sim.guardar()
+	datos["estado"]["recursos"].erase("bionutrientes")  # partidas de la versión anterior
+	var restaurada := _nueva()
+	assert_true(restaurada.cargar(datos))
+	assert_eq(int(restaurada.estado.recursos["bionutrientes"]), 0)
+	sim = restaurada
+	sim.estado.casilla_rover = Vector2i(-2, -9)
+	sim.estado.carga["rocas"] = economia.bodega_rover - 2
+	_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 2)
+	assert_eq(sim.estado.bionutrientes_en_suelo[id]["cantidad"], 4)
+	sim.estado.casilla_rover = sim.estado.casilla_estacion + Vector2i(1, 0)
+	assert_true(sim.ejecutar("unload")["ok"])
+	assert_eq(int(sim.estado.recursos["bionutrientes"]), 2)
+	sim.estado.casilla_rover = Vector2i(-2, -9)
+	_combatir(0.2)
+	assert_eq(int(sim.estado.carga["bionutrientes"]), 4)
+	assert_true(sim.estado.bionutrientes_en_suelo.is_empty())
+	assert_eq(sim.estado.bionutrientes_recogidos, 6)
 
 
 func test_dos_torretas_paran_la_primera_oleada_y_sin_ellas_la_base_sufre() -> void:

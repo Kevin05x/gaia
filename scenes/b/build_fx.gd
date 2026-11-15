@@ -103,6 +103,13 @@ static func _desde(origen: Material) -> ShaderMaterial:
 			m.set_shader_parameter("use_tex", true)
 		if s.emission_enabled:
 			m.set_shader_parameter("emission_color", Vector3(s.emission.r, s.emission.g, s.emission.b) * s.emission_energy_multiplier)
+	elif origen is ShaderMaterial and (origen as ShaderMaterial).get_shader_parameter("albedo_color") != null:
+		# Material realista de los edificios (material_edificio.gd): mismos parámetros de color.
+		var e := origen as ShaderMaterial
+		for p in ["albedo_color", "roughness", "metallic", "use_vcol", "use_tex", "albedo_tex"]:
+			var valor: Variant = e.get_shader_parameter(p)
+			if valor != null:
+				m.set_shader_parameter(p, valor)
 	return m
 
 
