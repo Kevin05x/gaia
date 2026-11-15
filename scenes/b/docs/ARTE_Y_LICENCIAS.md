@@ -245,7 +245,7 @@ Reglas de entrega:
 - `cohete_medio.glb` — **Atlas V 541**. Llegó ya en metros y de pie, con la base en `y = 0`: 5,4 × 58,3 m, que es su tamaño real. Cumple el contrato tal cual.
 - `cohete_super.glb` — **Saturn V**. Llegó **tumbado sobre Z y en otras unidades**. No se tocó el archivo: `launch_pad.gd` lo endereza, lo centra y lo apoya en `y = 0` al cargarlo.
 - Ambos se escalan a la altura real del lanzador que representan, declarada en `content/parts.json` (`alto_real_m`: 58,3 y 110,6 m), para respetar la escala 1:1 de `docs/ESCALAS.md`. `tests/test_cohetes.gd` lo comprueba.
-- Autoría y licencia de estos dos modelos: **pendiente de anotar por Evelyn**.
+- Autoría y licencia (según Evelyn, 15 nov 2026, por WhatsApp): **`cohete_super.glb` (Saturn V)** es «Cohete» de **albertomarun** en Sketchfab, licencia **CC BY 4.0** (https://sketchfab.com/3d-models/cohete-84ffd15ec9ee4be7b6b3bacb0be0bbfa; la página muestra «CC Attribution», comprobada el 15 nov). **Exige dar crédito**: está en los créditos del juego y en la entrega. **`cohete_medio.glb` (Atlas V 541)** fue «generado con un script de Python proporcionado por Claude» (Evelyn): obra del equipo con ayuda de IA, sin material de terceros.
 
 Qué es de cada quien: la **capacidad, el costo y el `ref_clave`** de cada cohete son datos del taller (`content/parts.json`); el **modelo y su aspecto** son del equipo de arte. Si al llegar los modelos cambian las capacidades o los costos, `tests/test_cohetes.gd` avisa en el momento si el balance se rompe.
 
@@ -293,7 +293,7 @@ copias numeradas (`Armado.001`…) que son la misma, y el juego se queda con la 
 Si al reexportar se renombra, el cohete vuelve a montarse por grúas sin avisar: hay una prueba que
 lo fija cohete por cohete (`tests/test_cohetes.gd`).
 
-Autoría y licencia de los cuatro modelos: **pendiente de anotar por Evelyn**.
+Autoría y licencia de los cuatro modelos: Saturn V, de albertomarun (CC BY 4.0, ver arriba); los otros tres (ligero, medio y pesado), generados con un script de Python proporcionado por Claude, según Evelyn (15 nov 2026). **Falta confirmar con Evelyn si las animaciones «Armado» se hicieron a mano en Blender o también por script.**
 
 ## Edificio de montaje — entregado el 14 de noviembre
 
@@ -372,3 +372,15 @@ para que Houston suene igual que en la historia; si llega el script de mezcla de
 - **Cómo se ve:** `scenes/b/horizonte.gd › cordillera()` carga el `.glb` y le pone el color, la neblina y la paleta de Marte o de la Luna con las mismas reglas de antes. Si falta el archivo, el juego vuelve a las lomas y mesetas por código.
 - **Carpeta `assets/_blender/`:** lleva un `.gdignore` para que Godot no intente importar el `.blend` (necesita Blender configurado en el editor).
 - **No medido:** no se midió el efecto en los FPS (82 000 triángulos fijos, siempre lejos). Hay que repetir `Medir_rendimiento.bat` antes de dar la cifra por buena.
+
+
+## Créditos de modelos de terceros (15 nov 2026)
+
+| Modelo | Autor y fuente | Licencia | Dónde se acredita |
+| --- | --- | --- | --- |
+| `cohete_super.glb` (Saturn V) | «Cohete» de **albertomarun**, Sketchfab (https://sketchfab.com/3d-models/cohete-84ffd15ec9ee4be7b6b3bacb0be0bbfa) | **CC BY 4.0** (exige crédito) | Créditos del menú, esta página, entrega |
+| Hangares, torretas, antena, hielo | **Kenney**, «Space Kit» (https://kenney.nl/assets/space-kit) | CC0 | Créditos del menú, esta página |
+| Taladro y focos | **Kay Lousberg**, «Space Base Bits» (https://www.kaylousberg.com/game-assets/space-base-bits) | CC0 («Free for personal and commercial use, no attribution required») | Créditos del menú, esta página |
+| `cohete_ligero.glb`, `cohete_medio.glb`, `cohete_pesado.glb` | Generados con un script de Python proporcionado por Claude (dicho por Evelyn) | Del equipo, con ayuda de IA | Créditos del menú, declaración de IA |
+
+Las licencias de Sketchfab, Kay Lousberg y Kenney se leyeron en sus páginas el 15 nov 2026. Sigue **sin confirmar** el origen de `hangar_gaia.glb` y de los cristales y minerales (ver arriba).

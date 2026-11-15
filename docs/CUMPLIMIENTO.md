@@ -68,3 +68,12 @@ Codex asistió en la integración de la expedición a la Falla, la estación opc
 - El costo del Perseverance 1:1 en una GPU real: en el contenedor (software) las llamadas de dibujo por cuadro pasaron de 299 a ≈ 520 en Alta; con una tarjeta gráfica ese número es bajo, pero **no se midió**. Ver `docs/PLATAFORMA.md`.
 - Forward+ no se probó en una GPU real: en el contenedor se ejecutó con Vulkan por software.
 - El inglés del juego no pasó por revisión de un hablante nativo.
+
+
+## Modelos 3D y voces: lo que hay que declarar (15 nov 2026)
+
+- **Modelo con licencia que exige crédito:** el Saturn V (`cohete_super.glb`) es «Cohete» de albertomarun (Sketchfab, CC BY 4.0). Va en los créditos del juego y debe ir en la entrega.
+- **Modelos hechos con IA:** los cohetes ligero, medio y pesado los generó Evelyn con un script de Python proporcionado por Claude. Declararlo con el resto del uso de IA.
+- **Modelos de terceros con CC0:** Kenney «Space Kit» y Kay Lousberg «Space Base Bits» (no exigen crédito, pero se acreditan).
+- **Voces en español:** síntesis de voz de Windows (Microsoft Raúl y Pablo) y Piper; no tienen una página pública que enlazar, así que se mencionan **en la declaración de uso de IA**, no como fuente.
+- Pendiente: origen de `hangar_gaia.glb`, cristales y minerales (Evelyn / Arturo).

@@ -294,6 +294,9 @@ Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con ma
 - [x] **12.6 Un rover por jugador (pedido de Kevin, 15 nov).** Ver `docs/MULTIJUGADOR.md`. Probado con pruebas y con `tools/e2e_red.sh` (2, 4 y «entra tarde»). **Sin probar con personas reales.**
 - [ ] **12.7 Pantalla dividida (4 cuartos en un PC).** No hecha: cuatro mundos 3D no caben en una GPU integrada. Alternativa que ya funciona: varias ventanas contra la misma sala.
 - [x] **12.8 Cuatro salas** (`deploy/servidor/nativo`). Preparadas y probadas solo en local; falta instalarlas en el VPS (pasos en `docs/SERVIDOR.md`).
+- [x] **12.9 Textura del fondo en la Luna y Marte (pedido de Kevin, 15 nov).** La cordillera de Blender llevaba solo color de vértice y se veía lisa: ahora lleva la roca del destino en triplanar (`W.cordillera_material`) y un faldón que tapa la franja negra entre el suelo y las montañas. Comprobado en capturas; falta mirarlo en el PC de Kevin.
+- [x] **12.10 Créditos y licencias de modelos (WhatsApp, 15 nov).** Saturn V: «Cohete» de albertomarun, CC BY 4.0 (exige crédito) → créditos del menú y `ARTE_Y_LICENCIAS.md`; los cohetes ligero, medio y pesado, generados con un script de Python proporcionado por Claude (según Evelyn); Kenney y Kay Lousberg, CC0. Las voces de Windows se declaran en la declaración de IA. **Falta:** origen de `hangar_gaia.glb`, cristales y minerales, y confirmar con Evelyn las animaciones «Armado».
+- [ ] **12.11 Diapositivas nuevas con el estilo del juego** y **12.12 página web del juego (landing)** y **12.13 publicar el juego en el dominio y la web en un subdominio**: en curso.
 - [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
 
 ---

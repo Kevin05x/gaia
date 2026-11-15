@@ -592,9 +592,9 @@ func _interruptor(padre: Control, titulo: String, valor: bool, al_cambiar: Calla
 
 
 func _abrir_creditos() -> void:
-	var cuerpo := _abrir_panel(tr("M_CREDITS_TITLE"), 760, 520)
+	var cuerpo := _abrir_panel(tr("M_CREDITS_TITLE"), 760, 640)
 	for par in [["M_CREDITS_TEAM", "M_CREDITS_ROLES"], ["M_CREDITS_DATA", "M_CREDITS_DATA_D"], ["M_CREDITS_ART", "M_CREDITS_ART_D"],
-			["M_CREDITS_MUSIC", "M_CREDITS_MUSIC_D"]]:
+			["M_CREDITS_MODELS", "M_CREDITS_MODELS_D"], ["M_CREDITS_MUSIC", "M_CREDITS_MUSIC_D"]]:
 		_subtitulo(cuerpo, tr(par[0]))
 		var t := UI.label(cuerpo, tr(par[1]), 16, Color(UI.CREAM, 0.85))
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
