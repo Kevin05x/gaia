@@ -20,6 +20,13 @@ con HTTPS automático. Los archivos están en `deploy/servidor/`.
 
 El puerto 9080 de la sala **no** se publica a internet: solo lo ve Caddy dentro de la red de Docker.
 
+## Si el servidor ya tiene otro proyecto
+
+GAIA no necesita tocar nada de lo que ya corre. Antes de instalar, mira sin cambiar nada: `docker ps`, `ss -tlnp | grep -E ':80|:443'` y `ls /opt`.
+Clona en su propia carpeta (`/opt/gaia`), no instales Docker de nuevo si ya está, y usa siempre este mismo archivo de compose (el proyecto se llama `gaia`).
+**Los puertos 80 y 443 solo pueden usarlos un programa a la vez**: si ya los usa otro proxy (nginx, Caddy, Traefik), GAIA debe ir detrás de ese proxy en vez de arrancar el suyo.
+Nunca ejecutes `docker system prune`, `docker compose down -v` ni borres volúmenes de otros proyectos.
+
 ## Pasos
 
 1. **Dominio.** Con el dominio gratis, crea dos registros DNS de tipo A que apunten a la IP pública del servidor: `gaia` y `sala`
