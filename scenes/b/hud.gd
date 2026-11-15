@@ -276,9 +276,10 @@ func _build_slots() -> void:
 	_toast.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PILL, 0.35, 1, 18, 8))
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(_toast, "bc", 0, 128, 360, 0)
-	# Desplazado a la derecha del centro: la tarjeta de radio ocupa la esquina inferior izquierda (hasta x = 580).
-	_toast.offset_left += 140
-	_toast.offset_right += 140
+	# Desplazado a la derecha del centro: la tarjeta de radio (hasta x = 580) y la ventana del tutorial (hasta x = 640)
+	# ocupan la esquina inferior izquierda.
+	_toast.offset_left += 180
+	_toast.offset_right += 180
 	_toast_text = UI.label(_toast, "", UI.FONT_SECONDARY)
 	_toast_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

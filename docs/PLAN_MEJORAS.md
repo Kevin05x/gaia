@@ -84,7 +84,7 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 - [x] **2.1 Pantalla de objetivo** al empezar la misión (después del aterrizaje): una sola tarjeta con la meta («Envía 100 datos a la Tierra
   antes de que acabe el sol 6»), las 3 cosas que la hacen posible (energía → instrumentos → antena y ventana de enlace) y un botón «Entendido».
   Distinta para Marte y Luna (ver 3.5). Archivos: `content/tutorial.json`, `scenes/b/` (nuevo panel).
-- [ ] **2.2 Tutorial en ventana**, no a pantalla completa ni en el cuadro marrón de la derecha: una ventana mediana (~640×420),
+- [x] **2.2 Tutorial en ventana**, no a pantalla completa ni en el cuadro marrón de la derecha: una ventana mediana (~640×420),
   movible o anclada abajo a la izquierda, con **captura real** del paso, flecha a lo que hay que pulsar y «Siguiente / Saltar».
   Las capturas se generan con el propio juego (modo `--capturas` que recorra los pasos y guarde PNG en `assets/tutorial/`).
   Archivos: `sim/systems/tutorial_system.gd` (pasos), `content/tutorial.json`, panel del tutorial en `scenes/b/`.

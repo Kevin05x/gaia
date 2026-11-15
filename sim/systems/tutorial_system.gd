@@ -49,6 +49,16 @@ func omitir(estado: MissionState) -> void:
 	estado.tutorial_activo = false
 
 
+## «Siguiente»: el jugador da por visto el paso actual sin cumplirlo. Tras el último, el tutorial termina.
+func siguiente(estado: MissionState) -> void:
+	if not estado.tutorial_activo:
+		return
+	estado.tutorial_paso += 1
+	estado.tutorial_t = 0.0
+	if estado.tutorial_paso >= _datos.pasos.size():
+		estado.tutorial_activo = false
+
+
 func paso_actual(estado: MissionState) -> Dictionary:
 	if not estado.tutorial_activo or estado.tutorial_paso >= _datos.pasos.size():
 		return {}
@@ -61,7 +71,7 @@ func para_la_vista(estado: MissionState) -> Dictionary:
 	if paso.is_empty():
 		return {"active": false}
 	return {"active": true, "step": estado.tutorial_paso + 1, "total": _datos.pasos.size(), "id": str(paso["id"]),
-		"text": paso["texto"], "highlight": str(paso.get("resalta", ""))}
+		"text": paso["texto"], "highlight": str(paso.get("resalta", "")), "image": str(paso.get("captura", paso["id"]))}
 
 
 func _contar(estado: MissionState, clave: String) -> void:

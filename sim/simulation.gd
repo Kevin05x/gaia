@@ -182,6 +182,11 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 			_tutorial.omitir(estado)
 			return {"ok": true, "reason": ""}
+		"tutorial_next":
+			if _tutorial == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			_tutorial.siguiente(estado)
+			return {"ok": true, "reason": ""}
 		"pause":
 			return _pausar(bool(carga.get("paused", false)))
 		"landing_finished":

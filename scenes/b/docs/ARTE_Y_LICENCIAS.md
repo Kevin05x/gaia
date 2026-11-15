@@ -335,3 +335,9 @@ y su base de lanzamiento: ver `HANGAR_FUERA` en `scenes/b/launch_pad.gd`). Se qu
 - Presupuesto: en `tests/test_optimizacion_arte.gd`, `ESCENARIO_UNICO` da un tope propio al hangar y al Saturno V
   (`cohete_super`), que se cargan una sola vez en la pantalla de la plataforma. Los demás modelos siguen con el tope de 2 500 triángulos.
 - Pendiente de medir en GPU real: la pantalla de la plataforma (con el hangar) con `Medir_rendimiento.bat`.
+
+## Capturas del tutorial (15 nov 2026 · plan de mejoras 2.2 y 2.3)
+
+| Archivos | Qué es | Origen |
+| --- | --- | --- |
+| `assets/tutorial/<marte\|luna>/<es\|en>/<paso>.jpg` (24 JPG de 640×360) | Captura real de cada paso del tutorial, en la ventana del tutorial y en «Cómo jugar» | Capturas del propio juego, sacadas jugando cada paso con `tools/capturar_tutorial.gd` (escrito con ayuda de Claude). Muestran el arte del juego descrito en este documento, incluido el modelo del Perseverance de la NASA. No hay imágenes generadas con IA. Para rehacerlas tras cambiar la interfaz: `godot --rendering-driver opengl3 --path . -s tools/capturar_tutorial.gd` e importar. |

@@ -245,3 +245,58 @@ func test_2_1_la_mision_muestra_la_tarjeta_tras_el_aterrizaje() -> void:
 		await get_tree().process_frame
 	juego.view.apply_snapshot(juego.sim.snapshot())
 	assert_true(juego.view.objetivo.is_open() or juego.view.story.is_open(), "la tarjeta sale (o espera a la escena)")
+
+
+# --- 2.2 Tutorial en ventana con capturas reales, «Siguiente» y «Saltar» ---------------------------------------------
+
+const TutorialPanelScript := preload("res://scenes/b/tutorial_panel.gd")
+
+
+func test_2_2_hay_captura_de_cada_paso_en_los_dos_destinos_e_idiomas() -> void:
+	for destino in ["marte", "luna"]:
+		var datos := TutorialData.desde_archivo(Destino.config(destino)["tutorial"])
+		for paso in datos.pasos:
+			for idioma in ["es", "en"]:
+				var ruta := TutorialPanelScript.ruta_captura(str(paso.get("captura", paso["id"])), destino, idioma)
+				assert_true(ruta.contains("/%s/%s/" % [destino, idioma]), "%s/%s/%s tiene captura" % [destino, idioma, paso["id"]])
+
+
+func test_2_2_siguiente_pasa_de_paso_sin_cumplirlo() -> void:
+	var cfg := Destino.config("marte")
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	MissionRunner.adaptar_catalogo(catalogo, "marte", 1.0)
+	var sim := Simulation.new(Balance.desde_archivo(cfg["balance"]), Rules.desde_archivo(cfg["reglas"]),
+		MapData.desde_archivo(cfg["mapa"]), catalogo, Economy.desde_archivo(cfg["economia"]), null, null,
+		TutorialData.desde_archivo(cfg["tutorial"]))
+	for id in ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro", "taladro"]:
+		sim.ejecutar("design_add", {"part_id": id})
+	sim.ejecutar("design_start")
+	sim.ejecutar("landing_finished")
+	var t: Dictionary = sim.snapshot()["tutorial"]
+	assert_true(t["active"])
+	assert_eq(int(t["step"]), 1)
+	assert_true(sim.ejecutar("tutorial_next")["ok"])
+	t = sim.snapshot()["tutorial"]
+	assert_eq(int(t["step"]), 2, "«Siguiente» da el paso por visto")
+	for i in range(int(t["total"])):
+		sim.ejecutar("tutorial_next")
+	assert_false(sim.snapshot()["tutorial"]["active"], "tras el último, termina")
+
+
+func test_2_2_la_ventana_muestra_captura_y_botones_y_se_pliega() -> void:
+	var panel: CanvasLayer = add_child_autofree(TutorialPanelScript.new())
+	var ordenes: Array[String] = []
+	panel.command.connect(func(o: String, _c: Dictionary) -> void: ordenes.append(o))
+	panel.update_snapshot({"phase": "operations", "tutorial": {"active": true, "step": 1, "total": 6, "id": "mover",
+		"text": {"es": "Haz clic en el suelo.", "en": "Click the ground."}, "highlight": "mapa", "image": "mover"}})
+	assert_true(panel.is_showing())
+	assert_true(panel.is_expanded(), "desplegada: la radio espera")
+	assert_not_null(panel._imagen.texture, "con la captura real del paso")
+	assert_eq(panel._siguiente.text, "Siguiente")
+	panel._siguiente.pressed.emit()
+	panel._skip.pressed.emit()
+	assert_eq(ordenes, ["tutorial_next", "tutorial_skip"])
+	panel.set_plegada(true)
+	assert_false(panel.is_expanded(), "plegada: la radio puede hablar")
+	assert_true(panel.is_showing())
+	assert_false(panel._cuerpo.visible)

@@ -227,7 +227,7 @@ func _ready() -> void:
 	tutorial.command.connect(_command)
 	tutorial.step_changed.connect(func() -> void: audio.ping())
 	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
-	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta() or objetivo.is_open()
+	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta() or objetivo.is_open() 		or tutorial.is_expanded()  # la ventana del tutorial ocupa el rincón de la radio (plan 2.2)
 	objetivo.tapada = func() -> bool: return story.is_open() or story.intro_index >= 0 or imprevisto.is_open()
 	hud.metas_tapadas = func() -> bool: return base_hud.menu.visible
 	base_hud.menu_cambiado.connect(func(_abierto: bool) -> void:
@@ -476,7 +476,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	ciencia.update_snapshot(s)
 	story.update_snapshot(s)
 	tutorial.update_snapshot(s)
-	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible)
+	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible or objetivo.is_open())
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)

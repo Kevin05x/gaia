@@ -6,7 +6,7 @@ extends RefCounted
 
 ## Órdenes que cualquiera puede dar. El taller es de todo el equipo: cada rol aporta su parte del diseño (instrumentos, antena,
 ## chasis…); lanzar, en cambio, lo decide Dirección tras el Go / No-Go.
-const LIBRES: Array[String] = ["select", "stop", "landing_finished", "tutorial_skip", "design_add", "design_remove", "design_validate"]
+const LIBRES: Array[String] = ["select", "stop", "landing_finished", "tutorial_skip", "tutorial_next", "design_add", "design_remove", "design_validate"]
 
 ## Órdenes de cada rol (además de las libres).
 const POR_ROL := {

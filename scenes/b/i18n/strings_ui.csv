@@ -429,3 +429,6 @@ WS_CODE_OTHER,Ese código es de una misión a otro destino.,That code is for a m
 CMP_VIEW_MODEL,Modelo 3D,3D model
 CMP_VIEW_PHOTO,Foto,Photo
 CMP_DRAG,arrastra para girar,drag to rotate
+TUTORIAL_NEXT,Siguiente,Next
+TUTORIAL_FOLD,Plegar,Collapse
+TUTORIAL_EXPAND,Desplegar,Expand
