@@ -5,6 +5,7 @@
     {
       "id": "chasis_base",
       "nombre_clave": "PIEZA_CHASIS_BASE",
+      "recomendada": ["marte", "luna"],
       "masa_kg": 500,
       "costo_musd": 180,
       "ref_clave": "REF_CHASIS_BASE"
@@ -22,6 +23,7 @@
     {
       "id": "cohete_medio",
       "nombre_clave": "PIEZA_COHETE_MEDIO",
+      "recomendada": ["marte", "luna"],
       "capacidad_kg": 900,
       "costo_musd": 250,
       "alto_real_m": 48.8,
@@ -57,6 +59,7 @@
     {
       "id": "trayectoria_rapida",
       "nombre_clave": "PIEZA_TRAY_RAPIDA",
+      "recomendada": ["marte"],
       "factor_capacidad": 0.8,
       "costo_musd": 10,
       "dias_crucero": 150,
@@ -66,6 +69,7 @@
     {
       "id": "trayectoria_directa_luna",
       "nombre_clave": "PIEZA_TRAY_DIRECTA_LUNA",
+      "recomendada": ["luna"],
       "factor_capacidad": 1.0,
       "costo_musd": 15,
       "dias_crucero": 3,
@@ -86,6 +90,7 @@
     {
       "id": "panel_solar",
       "nombre_clave": "PIEZA_PANEL_SOLAR",
+      "recomendada": ["marte"],
       "masa_kg": 20,
       "costo_musd": 20,
       "potencia_max_w": 140,
@@ -94,6 +99,7 @@
     {
       "id": "mmrtg",
       "nombre_clave": "PIEZA_MMRTG",
+      "recomendada": ["luna"],
       "masa_kg": 45,
       "costo_musd": 120,
       "potencia_w": 110,
@@ -111,6 +117,7 @@
     {
       "id": "antena_rele",
       "nombre_clave": "PIEZA_ANTENA_RELE",
+      "recomendada": ["marte", "luna"],
       "masa_kg": 5,
       "costo_musd": 30,
       "ref_clave": "REF_ANTENA_RELE"
@@ -120,6 +127,7 @@
     {
       "id": "espectrometro",
       "nombre_clave": "PIEZA_ESPECTROMETRO",
+      "recomendada": ["marte", "luna"],
       "masa_kg": 11,
       "costo_musd": 35,
       "potencia_w": 18,
@@ -128,6 +136,7 @@
     {
       "id": "taladro",
       "nombre_clave": "PIEZA_TALADRO",
+      "recomendada": ["marte", "luna"],
       "masa_kg": 30,
       "costo_musd": 50,
       "potencia_w": 60,
@@ -136,6 +145,7 @@
     {
       "id": "camara",
       "nombre_clave": "PIEZA_CAMARA",
+      "recomendada": ["marte", "luna"],
       "masa_kg": 4,
       "costo_musd": 20,
       "potencia_w": 17,

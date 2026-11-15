@@ -230,6 +230,8 @@ ENERGY_PILL,Energía %d %%,Energy %d %%
 SCIENCE_PILL,Ciencia %d/%d,Science %d/%d
 CAT_TRAYECTORIA,Trayectoria,Trajectory
 WS_CHANGE_ROCKET,‹ Cambiar de cohete,‹ Change rocket
+WS_RECOMMENDED,Diseño recomendado,Recommended design
+WS_RECOMMENDED_TIP,Pone el diseño que recomendamos para este destino. Después puedes cambiar lo que quieras.,Sets the design we recommend for this destination. You can change anything afterwards.
 AI_MARK,Imagen generada con IA · AI-generated,Imagen generada con IA · AI-generated
 LP_TAG,TIERRA · EDIFICIO DE MONTAJE,EARTH · ASSEMBLY BUILDING
 LP_TITLE,Elige tu cohete,Choose your rocket

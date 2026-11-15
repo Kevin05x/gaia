@@ -123,6 +123,7 @@ var _llama: Node3D
 var _clave: SpotLight3D  ## luz principal sobre el cohete
 var _contra: OmniLight3D  ## contraluz que le dibuja el borde
 var _abordado := false  ## true cuando el abordaje terminó y ya se mandó la orden
+var _recomendado_marcado := false  ## el cohete recomendado se marca solo la primera vez que se entra
 var _names: Dictionary = {}
 var _alto_elegido := 0.0
 
@@ -1044,6 +1045,24 @@ func update_snapshot(s: Dictionary) -> void:
 	_rebuild_cards(taller)
 	_lectura.presupuesto = float(taller.get("totals", {}).get("budget_musd", 0))
 	_lectura.queue_redraw()
+	_marcar_recomendado(taller)
+
+
+## La primera vez, la plataforma llega con el cohete recomendado del destino ya marcado (content/parts.json ›
+## recomendada): basta con abordar o elegir otro. Al volver del hangar no se vuelve a marcar.
+func _marcar_recomendado(taller: Dictionary) -> void:
+	if _recomendado_marcado or not elegido.is_empty() or _t_abordaje >= 0.0 or _t_salida >= 0.0 or _abordado:
+		return
+	_recomendado_marcado = true
+	for categoria in taller.get("categories", []):
+		if str(categoria.get("id", "")) != "cohetes":
+			continue
+		for pieza in categoria.get("parts", []):
+			if (pieza.get("recommended_for", []) as Array).has(Destino.id) and pieza.get("available", true):
+				var capacidad: Variant = pieza.get("capacity_kg")
+				var alto: Variant = pieza.get("real_height_m")
+				_on_card(str(pieza["id"]), float(capacidad) if capacidad != null else 0.0, float(alto) if alto != null else 0.0)
+				return
 
 
 func rebuild() -> void:

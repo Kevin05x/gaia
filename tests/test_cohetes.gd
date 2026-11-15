@@ -201,7 +201,8 @@ func test_el_hangar_pone_las_herramientas_basicas_y_avisa_si_se_quitan() -> void
 		if orden == "design_add":
 			pedidas.append(str(carga.get("part_id", ""))))
 	hangar.update_snapshot(sim.snapshot())
-	assert_eq(pedidas, Array(MissionDesign.HERRAMIENTAS_BASICAS), "pide el taladro y la cámara")
+	for id in MissionDesign.HERRAMIENTAS_BASICAS:  # llegan dentro del diseño recomendado (plan de mejoras 2.4)
+		assert_has(pedidas, id, "pide el taladro y la cámara")
 	assert_eq(hangar.basicas_que_faltan(sim.snapshot()["workshop"]), Array(MissionDesign.HERRAMIENTAS_BASICAS),
 		"mientras no estén puestas, faltan las dos")
 
@@ -234,8 +235,9 @@ func test_el_hangar_puede_devolver_a_la_plataforma() -> void:
 	var ordenes: Array = []
 	hangar.command.connect(func(orden: String, carga: Dictionary) -> void: ordenes.append([orden, carga]))
 	hangar.update_snapshot(sim.snapshot())
-	# Lo primero que hace el hangar al recibir al rover es pedir las herramientas básicas.
-	assert_eq(ordenes.size(), MissionDesign.HERRAMIENTAS_BASICAS.size(), "llega con las básicas puestas")
+	# Lo primero que hace el hangar al recibir al rover es pedir el diseño recomendado (con las herramientas básicas).
+	for id in MissionDesign.HERRAMIENTAS_BASICAS:
+		assert_true(ordenes.has(["design_add", {"part_id": id}]), "llega con las básicas puestas")
 	ordenes.clear()
 	hangar._on_cambiar_cohete()
 	assert_eq(ordenes.size(), 1, "quita el cohete elegido")

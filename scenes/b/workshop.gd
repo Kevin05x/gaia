@@ -60,6 +60,7 @@ var _hint: Label
 var _tip_text: Label
 var _cambiar_cohete: Button
 var _fila_opciones: HBoxContainer  ## «Opciones» y «Código», bajo el catálogo
+var _recomendado: Button  ## «Diseño recomendado», sobre el catálogo
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_until := 0.0
@@ -266,6 +267,15 @@ func _build_header() -> void:
 	_cambiar_cohete.pressed.connect(_on_cambiar_cohete)
 	UI.place(_cambiar_cohete, "tl", 76, 70, 196, 32)
 	root.add_child(_cambiar_cohete)
+	# Diseño recomendado para este destino (content/parts.json › recomendada): lo vuelve a poner si se cambió.
+	_recomendado = Button.new()
+	_recomendado.focus_mode = Control.FOCUS_NONE
+	_recomendado.text = tr("WS_RECOMMENDED")
+	_recomendado.tooltip_text = tr("WS_RECOMMENDED_TIP")
+	_recomendado.add_theme_font_size_override("font_size", UI.FONT_MIN)
+	_recomendado.pressed.connect(func() -> void: poner_recomendado(snapshot.get("workshop", {})))
+	UI.place(_recomendado, "tl", MARGEN, 112, SIDEBAR_ANCHO, 32)
+	root.add_child(_recomendado)
 
 
 ## Se crea al final para quedar por encima de todo lo demás. «Opciones» y «Código» van en una fila
@@ -786,7 +796,7 @@ func _build_catalog() -> void:
 	zona.anchor_right = 0.0
 	zona.offset_left = MARGEN
 	zona.offset_right = MARGEN + SIDEBAR_ANCHO
-	zona.offset_top = 112
+	zona.offset_top = 152  # debajo de «Diseño recomendado»
 	zona.offset_bottom = -52
 	root.add_child(zona)
 	var fondo := Panel.new()
@@ -933,6 +943,8 @@ func basicas_que_faltan(taller: Dictionary) -> Array:
 	return faltan
 
 
+## Al llegar con el cohete, el rover entra con el diseño recomendado ya armado (que incluye las herramientas
+## básicas). Una sola vez por cohete y solo si no hay instrumentos elegidos.
 func _equipar_basicas(taller: Dictionary) -> void:
 	var seleccion: Dictionary = taller.get("selection", {})
 	if (seleccion.get("cohetes", []) as Array).is_empty():
@@ -941,8 +953,43 @@ func _equipar_basicas(taller: Dictionary) -> void:
 	if _basicas_puestas or not (seleccion.get("extras", []) as Array).is_empty():
 		return
 	_basicas_puestas = true
-	for id in MissionDesign.HERRAMIENTAS_BASICAS:
-		command.emit("design_add", {"part_id": str(id)})
+	poner_recomendado(taller)
+
+
+## Piezas recomendadas para el destino actual (sin el cohete, que se elige en la plataforma), por categoría.
+static func recomendadas(taller: Dictionary, destino: String) -> Dictionary:
+	var por_categoria := {}
+	for cat in taller.get("categories", []):
+		if str(cat.get("id", "")) == "cohetes":
+			continue
+		for pieza in cat.get("parts", []):
+			if (pieza.get("recommended_for", []) as Array).has(destino):  # «no disponible» solo es categoría llena: se libera al quitar
+				if not por_categoria.has(cat["id"]):
+					por_categoria[cat["id"]] = []
+				por_categoria[cat["id"]].append(str(pieza["id"]))
+	return por_categoria
+
+
+## Pone el diseño recomendado: en cada categoría con recomendación quita lo que no lo es y añade lo que falta
+## (la trayectoria se cambia, no se añade). Sin recomendación en el destino, solo las herramientas básicas.
+func poner_recomendado(taller: Dictionary) -> void:
+	var por_categoria := recomendadas(taller, Destino.id)
+	if por_categoria.is_empty():
+		for id in MissionDesign.HERRAMIENTAS_BASICAS:
+			command.emit("design_add", {"part_id": str(id)})
+		return
+	var seleccion: Dictionary = taller.get("selection", {})
+	for cat in seleccion:
+		if str(cat) == "cohetes":
+			continue
+		var quiere: Array = por_categoria.get(cat, [])
+		for id in seleccion[cat]:
+			if not quiere.has(str(id)):
+				command.emit("design_remove", {"part_id": str(id)})
+	for cat in por_categoria:
+		for id in por_categoria[cat]:
+			if not (seleccion.get(cat, []) as Array).has(id):
+				command.emit("design_add", {"part_id": id})
 
 
 func _selected_ids(taller: Dictionary) -> Array:

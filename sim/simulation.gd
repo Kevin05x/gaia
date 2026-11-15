@@ -789,6 +789,7 @@ func _taller() -> Dictionary:
 				"capacity_factor": pieza.get("factor_capacidad"), "cruise_days": pieza.get("dias_crucero"),
 				"ref_key": pieza.get("ref_clave", ""), "real_height_m": pieza.get("alto_real_m"),
 				"pending": pieza.get("pendiente", false) == true,
+				"recommended_for": pieza.get("recomendada", []),
 				"available": disponible["enabled"], "reason": disponible["reason"]})
 		categorias.append({"id": categoria, "parts": piezas})
 	var validacion := _diseno.validar()
