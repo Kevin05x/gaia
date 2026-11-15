@@ -89,7 +89,8 @@ func test_quien_entra_con_la_mision_en_marcha_llega_con_su_rover() -> void:
 
 func test_la_vista_dibuja_los_rovers_de_los_demas_y_no_el_propio() -> void:
 	var actores: Node3D = add_child_autofree(preload("res://scenes/b/actors.gd").new())
-	var s: Dictionary = Red.autoridad.sim.snapshot_de(1)
+	var sim: Simulation = Red.autoridad.sim
+	var s: Dictionary = sim.snapshot_de(1)
 	actores.apply_others(s)
 	assert_eq(actores._otros_rovers.size(), 1, "solo el del jugador 2")
 	assert_true(actores._otros_rovers.has(2))

@@ -74,7 +74,7 @@ func test_cada_rover_lleva_su_bodega() -> void:
 
 func test_el_snapshot_de_un_jugador_trae_su_rover_y_la_lista_de_todos() -> void:
 	_dos_rovers()
-	var s := sim.snapshot_de(22)
+	var s: Dictionary = sim.snapshot_de(22)
 	assert_eq(s["rover_id"], 22)
 	assert_eq((s["rovers"] as Array).size(), 2)
 	var ids: Array = []

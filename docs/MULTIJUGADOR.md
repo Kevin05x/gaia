@@ -21,6 +21,7 @@ de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, un
 - **Extremo a extremo, con sockets de verdad:** `GODOT=/ruta/godot bash tools/e2e_red.sh [2|4|tarde] [puerto]` lanza un servidor sin pantalla y clientes sin pantalla.
   Comprueba entrar en la sala, el reparto de roles, que las piezas de otro rol y lo que excede el presupuesto del rol se rechazan, diseño y lanzamiento, un rover por jugador, que cada uno ve a los demás donde están, y que las órdenes de otro rol se rechazan.
   Resultados del 15 nov en el PC de Kevin: **2 jugadores, 4 jugadores y «uno entra tarde»: los tres pasan.** No se probó con personas reales ni en redes distintas.
+- **Prueba a mano en un solo PC: con dos ventanas basta.** El PC de Kevin (GPU integrada) no aguanta cuatro mundos 3D abiertos a la vez, así que la comprobación manual se hace con dos ventanas del juego contra la misma sala (una crea la sala y la otra se une). Los casos de tres y cuatro jugadores los cubre `tools/e2e_red.sh 4` con clientes sin pantalla, no a mano.
 
 ## Salas del servidor
 
