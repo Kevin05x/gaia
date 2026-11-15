@@ -420,9 +420,11 @@ func _build_bottom() -> void:
 	_marker_carga = Button.new()
 	_marker_carga.theme_type_variation = "PrimaryPill"
 	_marker_carga.focus_mode = Control.FOCUS_NONE
-	_marker_carga.add_theme_font_size_override("font_size", 14)
+	_marker_carga.add_theme_font_size_override("font_size", 16)
+	_marker_carga.text = "▼"
+	_marker_carga.tooltip_text = tr("CARGO_MARKER")
 	_marker_carga.visible = false
-	_marker_carga.size = Vector2(250, 34)
+	_marker_carga.size = Vector2(34, 30)
 	root.add_child(_marker_carga)
 	_marker_carga.pressed.connect(_descargar_con_tecla)
 	_progress = ProgressBar.new()
@@ -1126,12 +1128,10 @@ func _descargar_con_tecla() -> void:
 func _actualizar_carga(s: Dictionary, activo: bool) -> void:
 	var bodega: Dictionary = s.get("cargo", {})
 	var con_carga := activo and int(bodega.get("total", 0)) > 0 and not (bodega.get("storages", []) as Array).is_empty()
-	_marker_carga.visible = con_carga
 	if not con_carga:
+		_marker_carga.visible = false
 		return
-	var texto := tr("CARGO_MARKER") + " · " + (tr("CARGO_MARKER_NEAR") if bool(bodega.get("near_storage", false)) else tr("CARGO_MARKER_FAR"))
-	if _marker_carga.text != texto:
-		_marker_carga.text = texto
+	_marker_carga.visible = true
 	_colocar_marcador_carga()
 
 
@@ -1155,14 +1155,13 @@ func _colocar_marcador_carga() -> void:
 	var datos: Dictionary = vista.project_tile(mejor)
 	if datos.is_empty():
 		return
+	# Solo una flecha sobre el edificio; si no está a la vista (detrás o fuera de pantalla) se esconde: la acción y su tecla
+	# están siempre en la píldora de la bodega (posición fija).
 	var tam := root.size
-	var ancho := _marker_carga.get_combined_minimum_size().x
-	_marker_carga.size = Vector2(maxf(ancho, 190.0), 34.0)
-	var pos: Vector2 = datos["pos"] - Vector2(_marker_carga.size.x * 0.5, 56.0)
-	if bool(datos.get("behind", false)):
-		pos.y = tam.y - 120.0
-	_marker_carga.position = Vector2(clampf(pos.x, 12.0, maxf(12.0, tam.x - _marker_carga.size.x - 12.0)),
-		clampf(pos.y, 90.0, maxf(90.0, tam.y - 130.0)))
+	var pos: Vector2 = datos["pos"] - Vector2(_marker_carga.size.x * 0.5, 50.0)
+	var a_la_vista := not bool(datos.get("behind", false)) and Rect2(Vector2(220, 80), tam - Vector2(440, 200)).has_point(datos["pos"])
+	_marker_carga.visible = a_la_vista
+	_marker_carga.position = pos
 
 
 ## Texto al pasar el mouse por un botón: qué hace (ACT_INFO_*) y debajo el atajo o por qué no se puede ahora.

@@ -530,9 +530,15 @@ func _build_preview() -> void:
 	root.add_child(contenedor)
 	var vista := SubViewport.new()
 	vista.own_world_3d = true
-	vista.msaa_3d = Viewport.MSAA_2X
+	var ajustes := Graficos.cargar()
+	vista.msaa_3d = Graficos.msaa_visor(ajustes)
 	vista.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	contenedor.add_child(vista)
+	var calidad := preload("res://scenes/b/calidad_dinamica.gd").new()  # baja sola si el equipo no llega
+	calidad.ventana_s = 1.0
+	calidad.medir = func() -> bool: return root.is_visible_in_tree() and DisplayServer.window_is_focused()
+	vista.add_child(calidad)
+	calidad.configurar(Graficos.msaa_visor(ajustes), float(ajustes.get("resolucion", 1.0)), bool(ajustes.get("auto", true)))
 	var entorno := Environment.new()
 	entorno.background_mode = Environment.BG_COLOR
 	entorno.background_color = Color("0A0604")

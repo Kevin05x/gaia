@@ -241,6 +241,8 @@ func _ready() -> void:
 		if not state.is_empty():
 			hud.update_snapshot(state))
 	tutorial.target_for = func(clave: String) -> Control:  # se consulta cada cuadro: el HUD puede reconstruirse
+		if clave == "carga":
+			return base_hud._bodega
 		return base_hud.build_button if clave == "construir" else hud.highlight_nodes().get(clave, null)
 	port.snapshot_received.connect(apply_snapshot)
 	port.report_received.connect(_report)
@@ -469,6 +471,10 @@ func apply_snapshot(s: Dictionary) -> void:
 			and s.get("rover_tile", Vector2i(9999, 9999)) == terrain.hallazgo_casilla:
 		terrain.quitar_hallazgo()  # el rover llegó al punto del desvío
 	var en_taller: bool = s.get("phase", "") == "workshop"
+	# En el taller (plataforma y hangar tienen su propio visor 3D) el mundo de la misión no se ve: el 3D de la ventana
+	# se apaga entero, con su suavizado, brillo y niebla, que antes se pagaban sobre un cuadro vacío.
+	if get_viewport() != null and get_viewport().disable_3d != en_taller:
+		get_viewport().disable_3d = en_taller
 	terrain.visible = not en_taller
 	actors.visible = not en_taller
 	tracks.visible = not en_taller

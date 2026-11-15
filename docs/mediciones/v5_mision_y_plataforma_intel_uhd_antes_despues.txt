@@ -105,3 +105,15 @@ VRAM usada: 773 MB
 Llamadas de dibujo por cuadro: 577
 Simulación pura (CPU, sin gráficos): 1.004 ms por paso · 1200 pasos en 1204 ms
 Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== 15 nov, tarde · plataforma de lanzamiento (Kevin pidió «el juego está pesado al construir y subir al cohete»)
+Mismo método (editor, 1280×720, --escena=plataforma --preset=alta, calidad automática apagada), Intel UHD:
+  Plataforma, Alta, antes de estos cambios (v5):                 19.8 FPS
+  Con la plataforma sin SSAO salvo Ultra (no cambió nada):       17.9 FPS (dentro del ruido; ventana 1920×1080 dio 16.5)
+  Con MSAA 2x apagado en el visor 3D si la GPU es integrada:     23.1-23.6 FPS
+  Media (sin MSAA en la ventana) para ver el límite:             35.5-35.6 FPS
+  Con el 3D de la ventana principal apagado en el taller:        41.5 FPS (cuadro medio 24 ms, p95 31 ms, peor 36 ms)
+Causa: el mundo de la misión (vacío, pero con MSAA, brillo y niebla de la ventana) se seguía dibujando detrás de la plataforma
+y del hangar. Ahora, en la fase de taller, el 3D de la ventana se apaga (mission_view.gd); la plataforma y el hangar tienen su
+propio visor y, además, bajan solos de calidad si van lentos (calidad_dinamica.gd, cada 1 s).
+No medido: el hangar (vista previa del rover) por separado, ni un .exe exportado.

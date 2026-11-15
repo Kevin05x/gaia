@@ -205,7 +205,7 @@ func _build_panorama() -> void:
 	root.add_child(contenedor)
 	var vista := SubViewport.new()
 	vista.own_world_3d = true
-	vista.msaa_3d = Viewport.MSAA_2X
+	vista.msaa_3d = Graficos.msaa_visor(Graficos.cargar())  # antes siempre 2x: en gráficos integrados costaba cuadros
 	vista.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	contenedor.add_child(vista)
 
@@ -238,7 +238,7 @@ func _build_panorama() -> void:
 		entorno.glow_bloom = 0.12
 		entorno.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 		entorno.glow_hdr_threshold = 1.1
-		entorno.ssao_enabled = int(ajustes.get("sombras", 1)) > 0
+		entorno.ssao_enabled = int(ajustes.get("sombras", 1)) >= 2  # la oclusión ambiental es lo más caro: solo en Ultra
 		entorno.ssao_intensity = 1.6
 		entorno.ssao_radius = 3.0
 		entorno.adjustment_enabled = true
@@ -262,6 +262,17 @@ func _build_panorama() -> void:
 	sol.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if nivel_sombras >= 2 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sol.directional_shadow_max_distance = 420.0 if nivel_sombras >= 2 else 260.0
 	vista.add_child(sol)
+	# Calidad automática de la plataforma (mide cada segundo; solo baja desde lo elegido): sin suavizado, menos resolución,
+	# sin brillo y, al final, sin sombras.
+	var calidad := preload("res://scenes/b/calidad_dinamica.gd").new()
+	calidad.ventana_s = 1.0
+	calidad.medir = func() -> bool: return root.is_visible_in_tree() and DisplayServer.window_is_focused()
+	calidad.al_recortar = func(n: int) -> void:
+		entorno.glow_enabled = n < 1 and bool(ajustes.get("post", true))
+		sol.shadow_enabled = n < 2 and nivel_sombras > 0
+	vista.add_child(calidad)
+	calidad.configurar(Graficos.msaa_visor(ajustes), float(ajustes.get("resolucion", 1.0)), bool(ajustes.get("auto", true)),
+		bool(ajustes.get("post", true)), nivel_sombras > 0)
 
 	_camera = Camera3D.new()
 	_camera.fov = 45

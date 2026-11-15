@@ -30,6 +30,7 @@ var _menu_signature := ""
 var _bodega: PanelContainer  ## bodega del rover: carga actual y botón para descargar
 var _bodega_texto: Label
 var _bodega_barra: ProgressBar
+var _bodega_aviso: Label  ## «[G] Descargar»: la acción vive aquí, en un sitio fijo
 var _antena_fila: Button  ## «Construir antena» / «Antena a Nv. N» arriba del menú Construir
 var _carga_antes := -1
 var _filas: Dictionary = {}  ## tipo -> controles de su fila en el menú
@@ -117,7 +118,12 @@ func _construir_bodega() -> void:
 	_bodega = PanelContainer.new()
 	_bodega.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_NORMAL, UI.RADIUS_PILL, 0.25, 1, 12, 4))
 	_bodega.tooltip_text = tr("CARGO_TIP")
-	UI.place(_bodega, "bl", 180, 64, 190, 36)
+	UI.place(_bodega, "bl", 180, 64, 330, 36)
+	_bodega.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bodega.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_bodega.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			command.emit("unload", {}))
 	root.add_child(_bodega)
 	var fila := HBoxContainer.new()
 	fila.add_theme_constant_override("separation", 8)
@@ -131,6 +137,9 @@ func _construir_bodega() -> void:
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	fila.add_child(col)
 	_bodega_texto = UI.label(col, "", 12, UI.CREAM)
+	_bodega_aviso = UI.label(fila, "", 13, UI.AMBER)
+	_bodega_aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.move_child(_bodega_aviso, fila.get_child_count() - 1)
 	_bodega_barra = ProgressBar.new()
 	_bodega_barra.show_percentage = false
 	_bodega_barra.custom_minimum_size = Vector2(0, 4)
@@ -157,7 +166,9 @@ func _fijar_bodega(s: Dictionary) -> void:
 	_bodega_texto.add_theme_color_override("font_color", UI.CORAL if total >= tope else UI.CREAM)
 	_bodega_barra.max_value = tope
 	_bodega_barra.value = total
-	_bodega.visible = total > 0  # sin carga no hay nada que mostrar; descargar se hace con el marcador del almacén (tecla G)
+	_bodega.visible = total > 0  # sin carga no hay nada que mostrar
+	var cerca: bool = bodega.get("near_storage", false)
+	_bodega_aviso.text = tr("CARGO_MARKER_NEAR") if cerca else tr("CARGO_MARKER_FAR")
 	if _carga_antes >= 0 and total > _carga_antes:
 		_latido(_bodega)  # algo entró en la bodega: un pequeño pulso
 	_carga_antes = total
