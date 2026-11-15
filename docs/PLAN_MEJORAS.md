@@ -195,6 +195,10 @@ Luna 42–60 FPS (427–517 llamadas, 483k–567k triángulos). Arturo midió 20
 
 ## Bloque 7 · Servidor propio para jugar por internet (P1, 2–3 h)
 
+**Estado (15 nov): archivos y guía preparados, sin desplegar.** `deploy/servidor/` (Caddyfile, `Dockerfile.web`,
+`docker-compose.yml`, `.env.ejemplo`) y `docs/SERVIDOR.md` con los pasos. Solo se comprobó que el compose es válido; faltan los
+pasos 1, 2 y 6 en el servidor de Kevin (dominio, puertos, `docker compose up`) y la prueba con 4 personas (paso 6 de la lista).
+
 Servidor de Kevin: 2 CPU, 8 GB de RAM (otro sistema usa ~2 GB), 100 GB de disco (30 % usado), y un dominio gratis.
 El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU por sala (estimado, **sin medir**). Cabe de sobra.
 

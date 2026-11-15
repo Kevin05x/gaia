@@ -1,0 +1,21 @@
+# Caddy pone el HTTPS solo (Let's Encrypt) y reparte dos nombres (plan de mejoras, bloque 7):
+#   gaia.<dominio>  -> la web del juego (archivos exportados por Godot)
+#   sala.<dominio>  -> el servidor multijugador (WebSocket, wss://) que corre en el contenedor «sala»
+# DOMINIO sale del archivo .env (ver .env.ejemplo). Los dos nombres deben apuntar a la IP del servidor.
+
+gaia.{$DOMINIO} {
+	root * /srv
+	encode zstd gzip
+	file_server
+	# Godot web sirve .wasm y .pck grandes: que el navegador los guarde.
+	@estaticos path *.wasm *.pck *.js
+	header @estaticos Cache-Control "public, max-age=3600"
+	# Solo hacen falta con hilos (SharedArrayBuffer). La web de hoy va con un hilo, así que se dejan comentadas:
+	# header Cross-Origin-Opener-Policy "same-origin"
+	# header Cross-Origin-Embedder-Policy "require-corp"
+}
+
+sala.{$DOMINIO} {
+	# Caddy mantiene abiertas las conexiones WebSocket; el juego manda un latido cada 20 s.
+	reverse_proxy sala:9080
+}

@@ -31,7 +31,7 @@ misión en marcha, sus roles pasan al jefe de sala.
 | --- | --- | --- |
 | **Misma red Wi-Fi** (anfitrión de escritorio que también juega) | Escritorio | Nada más. El anfitrión abre el puerto 9080 (Windows pregunta por el cortafuegos la primera vez: *Permitir*). |
 | **Por internet con un túnel** | Escritorio y navegador | El anfitrión de escritorio publica su sala con `cloudflared` (ver la sección de abajo). |
-| **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. |
+| **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. Para un servidor propio con dominio (web + sala con HTTPS): `docs/SERVIDOR.md` y `deploy/servidor/` (preparado el 15 nov, sin probar en un servidor real). |
 
 ## Jugar entre redes distintas con Cloudflare (túnel)
 
