@@ -38,3 +38,12 @@ Llamadas de dibujo por cuadro: 265
 Lectura honesta: en las cuatro mediciones el juego llega al tope de 60 FPS de la pantalla (sincronía vertical), así que 59-60 FPS dice «llega con holgura», no cuánto más podría dar.
 Esto NO coincide con v5 (misión Alta 29 FPS, plataforma Alta 20 FPS). No sabemos el motivo: v5 se midió con otros programas abiertos y quizá con la GPU en otro modo de energía; entre v5 y v6 hubo cambios de arte y de carga, pero no se puede atribuir la diferencia a ellos sin repetir las dos mediciones en igualdad de condiciones.
 Importante: esto es el escritorio. En la web el cuello es otro: la primera vez el navegador tarda 30-50 s en compilar los sombreadores (Chrome sobre Windows, ANGLE/Direct3D 11); la segunda visita tarda unos 3 s. Medido el 15 nov con Chrome real sobre esta misma GPU.
+
+## Medición en el navegador (Chrome real sobre la misma Intel UHD, 15 nov, tarde)
+Método: la web publicada con ?medir=1&escena=mision (misión directa, ajuste fijo, sin calidad automática), contando los intervalos de requestAnimationFrame en los últimos 40 s de una prueba de 170 s.
+- Baja, ventana 1900x900: 27,8 FPS (mediana 33 ms, p95 50 ms, peor 67 ms).
+- Baja, ventana 1280x720: unos 30 FPS salvo un bloqueo de 12 s por compilar sombreadores dentro de la ventana de medición.
+- Baja, ventana 640x360: 43 FPS (mediana 17 ms): la mitad de los píxeles da el doble de FPS, así que el límite es la GPU, no el procesador.
+- Media, ventana 1280x720: no se pudo medir; tras 170 s el primer cuadro seguía compilando sombreadores (bloqueo de más de 70 s).
+- Alta (captura de Kevin en su Chrome, ventana 1920x911, con dos copias del juego abiertas): 4 FPS.
+Conclusión: en la web el límite lo ponen la GPU integrada y el compilador de sombreadores de Chrome en Windows (ANGLE/Direct3D 11). Por eso la web arranca en Baja y la calidad automática puede bajar hasta 0,5 de resolución. El escritorio va a 59-60 FPS (v6).

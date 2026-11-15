@@ -23,10 +23,10 @@ const FACTOR_DISTANCIA := [0.7, 1.0, 1.45]
 const CLAVES: Array[String] = ["sombras", "aa", "resolucion", "post", "texturas", "polvo", "distancia", "auto"]
 
 
-## Ajuste con el que se empieza si nunca se eligió uno: en el navegador (WebGL) Media, que va bien en gráficos
-## integrados; en el escritorio Alta.
+## Ajuste con el que se empieza si nunca se eligió uno: en el navegador (WebGL) Baja (medido el 15 nov con Chrome en una Intel UHD:
+## Media tardaba más de un minuto en compilar sombreadores la primera vez y Baja unos 30 s); en el escritorio Alta.
 static func defecto() -> String:
-	return "media" if OS.has_feature("web") else DEFECTO
+	return "baja" if OS.has_feature("web") else DEFECTO
 
 
 ## Valores de un ajuste predefinido (copia).
@@ -45,6 +45,10 @@ static func cargar() -> Dictionary:
 		for a in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 			if a.begins_with("--preset="):
 				nombre = a.get_slice("=", 1)
+		if OS.has_feature("web"):  # en la web el ajuste se pide en la dirección: ?medir=1&preset=baja
+			var pedido: Variant = JavaScriptBridge.eval("String(new URLSearchParams(window.location.search).get('preset') || '')", true)
+			if str(pedido) != "":
+				nombre = str(pedido)
 		var fijo := de_preset(nombre)
 		fijo["auto"] = false
 		return fijo
