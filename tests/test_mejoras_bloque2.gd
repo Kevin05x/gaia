@@ -479,18 +479,18 @@ func _empezar(destino: String, piezas: Array[String]) -> Simulation:
 	return sim
 
 
-func test_3_2_la_bateria_base_es_de_2000_wh_en_marte_y_en_la_luna() -> void:
+func test_3_2_la_bateria_base_es_de_4000_wh_en_marte_y_en_la_luna() -> void:
 	var marte := _empezar("marte", ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara"])
-	assert_eq(marte.estado.bateria_capacidad_wh, 2000.0)
-	assert_eq(marte.estado.bateria_wh, 2000.0, "sale llena")
+	assert_eq(marte.estado.bateria_capacidad_wh, 4000.0)
+	assert_eq(marte.estado.bateria_wh, 4000.0, "sale llena")
 	var luna := _empezar("luna", ["cohete_medio", "chasis_base", "mmrtg", "antena_rele", "camara"])
-	assert_eq(luna.estado.bateria_capacidad_wh, 2000.0)
+	assert_eq(luna.estado.bateria_capacidad_wh, 4000.0)
 
 
-func test_3_2_la_bateria_extra_suma_1000_wh() -> void:
+func test_3_2_la_bateria_extra_suma_2000_wh() -> void:
 	var sim := _empezar("marte", ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "bateria"])
-	assert_eq(sim.estado.bateria_capacidad_wh, 3000.0, "antes la pieza no sumaba nada")
-	assert_eq(sim.estado.bateria_wh, 3000.0)
+	assert_eq(sim.estado.bateria_capacidad_wh, 6000.0, "antes la pieza no sumaba nada")
+	assert_eq(sim.estado.bateria_wh, 6000.0)
 
 
 # --- 3.1 Duración del sol a elección (6 a 12 min) sin cambiar el balance ---------------------------------------------

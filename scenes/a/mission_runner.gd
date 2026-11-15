@@ -37,6 +37,7 @@ const DISENO_INICIAL: Array[String] = ["cohete_ligero", "chasis_base", "panel_so
 ## true: este es el anfitrión de una partida en red (scenes/net/red.gd). Lleva la simulación sin dibujar nada: las órdenes
 ## llegan de los jugadores por el "port" que se le asigne (RedPort) y lo que pasa se reparte a todos. No guarda partida.
 var modo_red: bool = false
+var _aviso_datos := false  ## ya se explicó cómo se envían los datos a la Tierra
 
 var sim: Simulation
 var port: Node
@@ -113,6 +114,9 @@ func _process(delta: float) -> void:
 			_aviso("NOTICE_ANTENNA_HIT")
 		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
 			_aviso("NOTICE_METEORS")
+		elif evento.begins_with(ScienceSystem.EVENTO_ACCION_TERMINADA + ":") and not _aviso_datos and sim.estado.datos > 0.0:
+			_aviso_datos = true
+			_aviso("DATA_FIRST")
 		elif evento == ResourceSystem.EVENTO_PRIMERA_CARGA:
 			_aviso("CARGO_FIRST")
 		elif evento.begins_with(Simulation.EVENTO_DESCARGA + ":"):

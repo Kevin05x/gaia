@@ -170,7 +170,7 @@
     {
       "id": "bateria",
       "nombre_clave": "PIEZA_BATERIA",
-      "bateria_extra_wh": 1000,
+      "bateria_extra_wh": 2000,
       "masa_kg": 25,
       "costo_musd": 15,
       "ref_clave": "REF_BATERIA"

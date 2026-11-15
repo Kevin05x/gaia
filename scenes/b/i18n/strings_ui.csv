@@ -472,3 +472,4 @@ STORY_CH_BRANCH_CIENTIFICA,la historia sigue por la rama científica,the story f
 STORY_CH_BRANCH_MILITAR,la historia sigue por la rama militar,the story follows the military branch
 STORY_CH_ENDING,lleva al final «%s»,"leads to the ending ""%s"""
 STORY_CH_ENDS,termina la misión,ends the mission
+DATA_FIRST,Los datos quedan en la memoria del rover. Para enviarlos a la Tierra: construye la antena y pulsa Transmitir (T) cuando el enlace esté abierto.,Data is stored in the rover's memory. To send it to Earth: build the antenna and press Transmit (T) while the link is open.
