@@ -122,3 +122,60 @@ func test_guardar_y_cargar_con_varios_rovers_no_falla() -> void:
 	var datos := sim.guardar()
 	assert_true(datos["estado"].has("rovers"))
 	assert_true(sim.cargar(datos))
+
+
+func test_la_obra_la_hace_el_rover_de_quien_la_pidio_y_el_otro_no_se_mueve() -> void:
+	_dos_rovers()
+	sim.estado.recursos = {"rocas": 200, "olivino": 50, "hielo": 50, "xenolito": 0}
+	var lider_inicio := sim.snapshot_de(11)["rover_tile"] as Vector2i
+	var constructor_inicio := sim.snapshot_de(22)["rover_tile"] as Vector2i
+	var pedida := false
+	var sitio := Vector2i.ZERO
+	for dx in range(-6, 7):
+		for dy in range(-6, 7):
+			if pedida:
+				continue
+			var r := sim.ejecutar("build", {"building": "panel_solar", "tile": sim.estado.casilla_estacion + Vector2i(dx, dy), "_rover": 22})
+			if r["ok"]:
+				pedida = true
+				sitio = sim.estado.casilla_estacion + Vector2i(dx, dy)
+	assert_true(pedida, "se pudo pedir un panel en alguna casilla de la base")
+	var terminado := false
+	for i in range(900):
+		sim.avanzar(0.25)
+		for e in sim.estado.edificios:
+			if str(e["type"]) == "panel_solar" and int(e["level"]) >= 1:
+				terminado = true
+		if terminado:
+			break
+	assert_true(terminado, "la obra terminó (con el rover 22 trabajando en ella)")
+	assert_eq(sim.snapshot_de(11)["rover_tile"], lider_inicio, "el rover 11 no se movió")
+	var d := (sim.snapshot_de(22)["rover_tile"] as Vector2i) - sitio
+	assert_lte(maxi(absi(d.x), absi(d.y)), 6, "el rover 22 fue hacia la obra")
+	assert_ne(sim.snapshot_de(22)["rover_tile"], constructor_inicio, "el rover 22 se movió")
+
+
+func test_el_rover_de_ciencia_analiza_una_roca_y_el_dato_va_a_la_memoria_del_equipo() -> void:
+	_dos_rovers()
+	var objetivo := ""
+	for t in sim.snapshot()["targets"]:
+		objetivo = str(t["id"])
+		break
+	assert_ne(objetivo, "")
+	# El rover 11 está lejos: no puede analizar.
+	sim.ejecutar("select", {"target_id": objetivo, "_rover": 11})
+	var lejos := sim.ejecutar("act", {"action": "spectrometer", "target_id": objetivo, "_rover": 11})
+	assert_false(lejos["ok"], "desde lejos no se puede")
+	# El rover 22 se acerca y analiza.
+	assert_true(sim.ejecutar("approach", {"target_id": objetivo, "_rover": 22})["ok"])
+	for i in range(400):
+		sim.avanzar(0.25)
+		if not sim.snapshot_de(22)["moving"]:
+			break
+	var antes := sim.estado.datos
+	var r := sim.ejecutar("act", {"action": "spectrometer", "target_id": objetivo, "_rover": 22})
+	assert_true(r["ok"], str(r))
+	for i in range(200):
+		sim.avanzar(0.25)
+	assert_gt(sim.estado.datos, antes, "el dato quedó en la memoria del equipo")
+	assert_false(sim.snapshot_de(11)["busy"], "el rover 11 no se ocupó")
