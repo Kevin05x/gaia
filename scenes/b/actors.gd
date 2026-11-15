@@ -127,6 +127,15 @@ func apply_others(s: Dictionary) -> void:
    if n==null:n=preload("res://scenes/b/assets/models/rover.tscn").instantiate()
    add_child(n)
    _otros_rovers[id]=n
+   # Mismo diseño que el propio: panel solar o generador nuclear, e instrumentos montados.
+   var diseno: Dictionary=s.get("design",{})
+   var solar: Node3D=n.find_child("solar",true,false)
+   var rtg: Node3D=n.find_child("rtg",true,false)
+   if solar!=null:solar.visible=diseno.get("power","solar")=="solar"
+   if rtg!=null:rtg.visible=diseno.get("power","solar")!="solar"
+   for pieza in ["drill","radar","spectrometer","meteo"]:
+    var nodo_pieza: Node3D=n.find_child(pieza,true,false)
+    if nodo_pieza!=null:nodo_pieza.visible=pieza in diseno.get("instruments",[])
   var nodo: Node3D=_otros_rovers[id]
   var destino: Vector3=at_tile(Vector2i(r.get("tile",Vector2i.ZERO)))
   var d: Vector3=destino-nodo.position

@@ -15,6 +15,7 @@ var _snap: Dictionary = {}
 var _rechazos: Array[String] = []
 var _empezo := false
 var _args: Dictionary = {}
+var _cliente: Node = null  ## con --vista: la vista real del juego (cliente.tscn), para sacar una captura
 var _vistos: Dictionary = {}  ## id del otro -> última casilla vista (si el otro se va, el servidor quita su rover)
 
 
@@ -26,7 +27,11 @@ func _ready() -> void:
 	Red.evento.connect(_al_evento)
 	Red.partida_empieza.connect(func() -> void:
 		_empezo = true
-		Red.avisar_listo())
+		if _args.has("vista"):
+			_cliente = load("res://scenes/net/cliente.tscn").instantiate()  # la vista real avisa «listo» ella misma
+			add_child(_cliente)
+		else:
+			Red.avisar_listo())
 	_correr.call_deferred()
 
 
@@ -94,7 +99,7 @@ func _correr() -> void:
 		if not await _taller(nombre, roles):
 			return
 	# --- Operaciones: cada jugador, su rover -----------------------------------------------------------------------------
-	if not await _esperar(func() -> bool: return str(_snap.get("phase", "")) == "operations", 20.0, "estar en operaciones"):
+	if not await _esperar(func() -> bool: return str(_snap.get("phase", "")) == "operations", 240.0, "estar en operaciones"):
 		return
 	var esperados := int(_args.get("esperar", _n()))
 	if not await _esperar(func() -> bool: return (_snap.get("rovers", []) as Array).size() >= mini(esperados, _n() + (1 if tarde else 0)), 30.0, "ver los rovers del equipo"):
@@ -132,6 +137,13 @@ func _correr() -> void:
 		if not await _esperar(func() -> bool: return _vistos.size() >= esperados - 1, 90.0, "ver llegar a quien entra tarde"):
 			return
 	await get_tree().create_timer(float(_args.get("final", 6.0))).timeout
+	if _cliente != null and _args.has("foto"):
+		var v: Node = _cliente.view
+		if v.objetivo.is_open():
+			v.objetivo.cerrar()
+		await get_tree().create_timer(2.0).timeout
+		get_viewport().get_texture().get_image().save_png(str(_args["foto"]))
+		print("E2E %s foto guardada" % nombre)
 	var lista: Array[String] = []
 	for id in _vistos:
 		lista.append("%d,%d" % [_vistos[id].x, _vistos[id].y])
@@ -178,8 +190,9 @@ func _taller(nombre: String, roles: Array) -> bool:
 		Red.enviar_orden("design_start", {})
 	if not await _esperar(func() -> bool: return str(_snap.get("phase", "")) in ["landing", "operations"], 25.0, "salir del taller"):
 		return false
-	await get_tree().create_timer(1.0).timeout
-	Red.enviar_orden("landing_finished", {})
+	await get_tree().create_timer(float(_args.get("aterrizar", 1.0))).timeout
+	if not _args.has("sinaterrizar"):  # con vista real, es ella quien termina la animación de despegue y aterrizaje
+		Red.enviar_orden("landing_finished", {})
 	return true
 
 
