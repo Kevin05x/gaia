@@ -10,6 +10,9 @@ func before_each() -> void:
 	_habia = FileAccess.file_exists(Graficos.ARCHIVO)
 	if _habia:
 		_copia = FileAccess.get_file_as_bytes(Graficos.ARCHIVO)
+	# Las preferencias del jugador (por ejemplo «Mostrar FPS» encendido) no deben cambiar el resultado: se parte de
+	# un contador apagado y after_each() devuelve el archivo tal como estaba.
+	Graficos.guardar_fps(false)
 
 
 func after_each() -> void:
