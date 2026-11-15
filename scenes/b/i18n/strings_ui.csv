@@ -329,7 +329,7 @@ M_SETUP_TEAM,Equipo,Team
 M_SETUP_SOLO,1 persona,1 person
 M_SETUP_PLAYERS,%d personas,%d people
 M_SETUP_SOLO_D,"Juegas con todos los roles: dirección, ingeniería, ciencia y comunicaciones.","You play every role: mission lead, engineering, science and communications."
-M_SETUP_TEAM_D,Se juega en la misma pantalla. Cada persona revisa su parte y vota GO / NO GO antes del lanzamiento.,Played on the same screen. Each person reviews their part and votes GO / NO GO before launch.
+M_SETUP_TEAM_D,Se juega en la misma pantalla y hay un solo rover. Cada persona revisa su parte y vota GO / NO GO antes del lanzamiento. Para que cada persona tenga su propio rover en su dispositivo, usa «Multijugador».,Played on the same screen with a single rover. Each person reviews their part and votes GO / NO GO before launch. To give each person their own rover on their own device, use Multiplayer.
 M_SETUP_START,Comenzar misión,Start mission
 DIFF_EXPLORACION,Exploración (fácil),Exploration (easy)
 DIFF_ESTANDAR,Estándar (normal),Standard (normal)

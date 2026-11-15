@@ -135,7 +135,10 @@ func test_el_aviso_dice_de_quien_es_la_orden() -> void:
 	assert_eq(Permisos.razon_para("act"), "NET_ONLY_CIENCIA")
 	assert_eq(Permisos.razon_para("transmit"), "NET_ONLY_COMUNICACIONES")
 	assert_eq(Permisos.razon_para("build"), "NET_ONLY_INGENIERIA")
-	assert_eq(Permisos.razon_para("approach"), Permisos.RAZON, "si la orden es de varios roles, aviso genérico")
+	assert_eq(Permisos.razon_para("unload"), Permisos.RAZON, "si la orden es de varios roles, aviso genérico")
+	for rol in ["direccion", "ingenieria", "ciencia", "comunicaciones"]:
+		assert_true(Permisos.permite([rol], "approach"), "ir hasta una roca lo puede pedir cualquiera: cada jugador mueve su rover")
+		assert_true(Permisos.permite([rol], "move"), "mover el rover es de todos")
 
 
 func test_una_persona_sola_puede_todo() -> void:

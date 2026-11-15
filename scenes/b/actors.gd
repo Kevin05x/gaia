@@ -127,6 +127,17 @@ func apply_others(s: Dictionary) -> void:
    if n==null:n=preload("res://scenes/b/assets/models/rover.tscn").instantiate()
    add_child(n)
    _otros_rovers[id]=n
+   # El nombre del jugador, flotando sobre su rover (se ve desde cualquier ángulo y a través de las rocas).
+   var etiqueta:=Label3D.new()
+   etiqueta.text=str(Red.sala.nombres.get(id,"")) if Red.sala!=null else ""
+   etiqueta.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+   etiqueta.no_depth_test=true
+   etiqueta.pixel_size=0.012
+   etiqueta.font_size=56
+   etiqueta.outline_size=14
+   etiqueta.modulate=Color("9AD7C6")
+   etiqueta.position=Vector3(0,3.4,0)
+   n.add_child(etiqueta)
    # Mismo diseño que el propio: panel solar o generador nuclear, e instrumentos montados.
    var diseno: Dictionary=s.get("design",{})
    var solar: Node3D=n.find_child("solar",true,false)

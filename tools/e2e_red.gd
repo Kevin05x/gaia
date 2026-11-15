@@ -140,8 +140,12 @@ func _correr() -> void:
 	await get_tree().create_timer(float(_args.get("final", 6.0))).timeout
 	if _cliente != null and _args.has("foto"):
 		var v: Node = _cliente.view
-		if v.objetivo.is_open():
-			v.objetivo.cerrar()
+		for i in range(20):  # cierra la introducción de la historia y los avisos que tapan el mundo
+			if v.story.is_open():
+				v.story.pulsar()
+			if v.objetivo.is_open():
+				v.objetivo.cerrar()
+			await get_tree().create_timer(0.3).timeout
 		await get_tree().create_timer(2.0).timeout
 		get_viewport().get_texture().get_image().save_png(str(_args["foto"]))
 		print("E2E %s foto guardada" % nombre)

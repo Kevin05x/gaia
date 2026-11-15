@@ -107,6 +107,15 @@ func _draw() -> void:
 	var cola := r - _heading * 1.6
 	_lote.poligono(PackedVector2Array([r + _heading * 8.6, r - _heading * 4.9 + lado * 5.8, r - _heading * 2.4, r - _heading * 4.9 - lado * 5.8]), Color(UI.SURFACE, 0.95))
 	_lote.poligono(PackedVector2Array([punta, ala_a, cola, ala_b]), UI.CREAM)
+	# Los rovers de los demás jugadores (multijugador): punto turquesa con halo.
+	var mio := int(state.get("rover_id", 0))
+	for otro in state.get("rovers", []):
+		if mio == 0 or int(otro.get("id", 0)) == mio:
+			continue
+		var p := point(Vector2i(otro.get("tile", Vector2i.ZERO)))
+		_lote.disco(p, 8.0, Color(0.6, 0.84, 0.78, 0.22), 16)
+		_lote.disco(p, 4.6, Color("9AD7C6"), 12)
+		_lote.disco(p, 2.2, Color(UI.SURFACE, 0.95), 10)
 	_lote.dibujar(get_canvas_item())
 	# Esquinas de marco y coordenadas.
 	var largo := 6.0
