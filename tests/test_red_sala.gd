@@ -112,7 +112,7 @@ func test_ida_y_vuelta_por_la_red() -> void:
 
 func test_permisos_por_rol() -> void:
 	assert_true(Permisos.permite(["direccion"], "move"))
-	assert_false(Permisos.permite(["ciencia"], "move"), "Ciencia no conduce")
+	assert_true(Permisos.permite(["ciencia"], "move"), "cada jugador conduce su propio rover")
 	assert_true(Permisos.permite(["ciencia"], "act"))
 	assert_false(Permisos.permite(["direccion"], "act"))
 	assert_true(Permisos.permite(["comunicaciones"], "transmit"))
@@ -131,7 +131,7 @@ func test_el_taller_es_de_todo_el_equipo_pero_lanzar_es_de_direccion() -> void:
 
 
 func test_el_aviso_dice_de_quien_es_la_orden() -> void:
-	assert_eq(Permisos.razon_para("move"), "NET_ONLY_DIRECCION")
+	assert_eq(Permisos.razon_para("pause"), "NET_ONLY_DIRECCION")
 	assert_eq(Permisos.razon_para("act"), "NET_ONLY_CIENCIA")
 	assert_eq(Permisos.razon_para("transmit"), "NET_ONLY_COMUNICACIONES")
 	assert_eq(Permisos.razon_para("build"), "NET_ONLY_INGENIERIA")

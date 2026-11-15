@@ -303,6 +303,27 @@ func avanzar(delta_s: float) -> Array[String]:
 ## --- Varios rovers (multijugador en red) ---------------------------------------------------------------------------------------
 
 var _selecciones: Dictionary = {}  ## id de rover -> objetivo seleccionado
+var _jugadores: Array[int] = []  ## ids de los jugadores de la sala (en red): cada uno lleva un rover al empezar la misión
+
+
+func fijar_jugadores(ids: Array) -> void:
+	_jugadores.clear()
+	for id in ids:
+		_jugadores.append(int(id))
+
+
+## Un jugador entra (o se va) con la misión ya en marcha: llega con su rover o se lleva el suyo.
+func jugador_entra(id: int) -> void:
+	if not _jugadores.has(id):
+		_jugadores.append(id)
+	if estado.fase != "workshop" and not estado.ids_de_rovers().has(id):
+		agregar_rover(id)
+
+
+func jugador_sale(id: int) -> void:
+	_jugadores.erase(id)
+	if estado.fase != "workshop" and estado.ids_de_rovers().has(id):
+		quitar_rover(id)
 
 
 ## Carga el rover «id» (y su objetivo seleccionado). false si no existe.
@@ -897,6 +918,8 @@ func _comenzar_mision() -> Dictionary:
 	estado.bateria_capacidad_wh = _balance.numero("energia.capacidad_base_wh") + float(configuracion.get("bateria_extra_wh", 0.0))
 	estado.bateria_wh = estado.bateria_capacidad_wh
 	iniciar_aterrizaje()
+	for id in _jugadores:  # en red, cada jugador lleva su rover
+		agregar_rover(id)
 	return {"ok": true, "reason": ""}
 
 

@@ -515,6 +515,7 @@ func apply_snapshot(s: Dictionary) -> void:
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)
+	actors.apply_others(s)
 	hud.update_snapshot(s)
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
 	buildings.set_night(snappedf(lighting.noche_factor(), 0.05))

@@ -113,6 +113,29 @@ func apply_state(s: Dictionary) -> void:
   rover.position=at_tile(s.get("rover_tile",Vector2i.ZERO))
  if safe:route.clear();active_action.clear()
  obra_tile=_obra_del_rover(s)
+var _otros_rovers: Dictionary = {}  ## id -> rover de otro jugador (multijugador en red)
+## Los rovers de los demás jugadores (el propio lo mueve apply_state): se colocan en su casilla, mirando hacia donde van.
+func apply_others(s: Dictionary) -> void:
+ var mine: int=int(s.get("rover_id",0))
+ var vistos: Array=[]
+ for r in s.get("rovers",[]):
+  var id: int=int(r.get("id",0))
+  if mine==0 or id==mine:continue
+  vistos.append(id)
+  if not _otros_rovers.has(id):
+   var n: Node3D=RoverNasa.crear()
+   if n==null:n=preload("res://scenes/b/assets/models/rover.tscn").instantiate()
+   add_child(n)
+   _otros_rovers[id]=n
+  var nodo: Node3D=_otros_rovers[id]
+  var destino: Vector3=at_tile(Vector2i(r.get("tile",Vector2i.ZERO)))
+  var d: Vector3=destino-nodo.position
+  if d.length()>.05 and d.length()<8.0:nodo.rotation.y=atan2(-d.x,-d.z)
+  nodo.position=nodo.position.lerp(destino,.35) if d.length()<8.0 else destino
+ for id in _otros_rovers.keys():
+  if not vistos.has(id):
+   (_otros_rovers[id] as Node3D).queue_free()
+   _otros_rovers.erase(id)
 ## Obra con rover: la obra en curso (no un muro, que se imprime solo) junto a la que está el rover quieto, o null.
 func _obra_del_rover(s: Dictionary) -> Variant:
  if s.get("moving",false) or safe:return null
