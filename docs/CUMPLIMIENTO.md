@@ -76,4 +76,4 @@ Codex asistió en la integración de la expedición a la Falla, la estación opc
 - **Modelos hechos con IA:** los cohetes ligero, medio y pesado los generó Evelyn con un script de Python proporcionado por Claude. Declararlo con el resto del uso de IA.
 - **Modelos de terceros con CC0:** Kenney «Space Kit» y Kay Lousberg «Space Base Bits» (no exigen crédito, pero se acreditan).
 - **Voces en español:** síntesis de voz de Windows (Microsoft Raúl y Pablo) y Piper; no tienen una página pública que enlazar, así que se mencionan **en la declaración de uso de IA**, no como fuente.
-- Pendiente: origen de `hangar_gaia.glb`, cristales y minerales (Evelyn / Arturo).
+- Origen de `hangar_gaia.glb` y de los cohetes: generados por script (ver `scenes/b/docs/ARTE_Y_LICENCIAS.md`, final). Pendiente: origen y licencia de la forma original de cristales y minerales (quien los añadió el 24 oct).
