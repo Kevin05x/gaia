@@ -437,3 +437,15 @@ CMP_DRAG,arrastra para girar,drag to rotate
 TUTORIAL_NEXT,Siguiente,Next
 TUTORIAL_FOLD,Plegar,Collapse
 TUTORIAL_EXPAND,Desplegar,Expand
+STORY_CHANGES,Esta decisión cambiará: %s,This decision will change: %s
+STORY_CH_BATTERY,%+d %% de batería,%+d %% battery
+STORY_CH_DATA,%+d datos en memoria,%+d data in memory
+STORY_CH_ETHICS,ética %+d,ethics %+d
+STORY_CH_ROCKY,Rocky %+d %% de vida,Rocky %+d %% health
+STORY_CH_RES,%+d de %s,%+d %s
+STORY_CH_CARGO,%+d de %s en la bodega,%+d %s in the hold
+STORY_CH_SEND,completa la transmisión,completes the transmission
+STORY_CH_BRANCH_CIENTIFICA,la historia sigue por la rama científica,the story follows the science branch
+STORY_CH_BRANCH_MILITAR,la historia sigue por la rama militar,the story follows the military branch
+STORY_CH_ENDING,lleva al final «%s»,"leads to the ending ""%s"""
+STORY_CH_ENDS,termina la misión,ends the mission

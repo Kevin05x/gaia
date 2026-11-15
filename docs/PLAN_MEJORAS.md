@@ -97,9 +97,15 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
   Archivos: validación en `sim/simulation.gd` (`_taller()`), textos en `scenes/b/i18n/`.
 - [x] **2.6 Imprevistos que explican qué implica cada opción**: debajo de cada opción, el efecto en lenguaje de juego
   («−90 Wh: unas 2 h menos de batería · +10 datos en memoria»). Rediseño visual en el bloque 4.
-- [ ] **2.7 Que las decisiones de la historia cambien algo que se vea**: cada opción de `content/historia.json` debe dejar una huella
+- [x] **2.7 Que las decisiones de la historia cambien algo que se vea**: cada opción de `content/historia.json` debe dejar una huella
   visible (un edificio, un recurso, un aviso de radio distinto, un final distinto). Revisar con Tony qué cambia hoy cada decisión y
   mostrarlo en la tarjeta («Esta decisión cambiará: …»). Archivos: `sim/systems/story_system.gd`, `scenes/b/story_panel.gd`.
+  - Hecho (15 nov): la tarjeta dice lo que cambia de verdad cada opción (batería, datos, ética, Rocky, recursos, bodega, rama de
+    la historia, final y si termina la misión), sacado de sus `efectos` y no escrito a mano.
+  - **Para Tony**: estas dos opciones hoy no cambian nada visible al elegirlas (son «dejarlo para después»). Si deben dejar huella,
+    añadirles `efectos` en `content/historia.json` y quitarlas de `SIN_HUELLA` en `tests/test_mejoras_bloque2.gd`:
+    `falla_sismografo` · «Verificar en el segundo sensor» (el coste llega después, al medir) y
+    `estacion_auxiliar` · «Volver más tarde» (deja la estación pendiente).
 - [ ] **2.8 Escenas que faltan**: confirmar con «Nueva partida» que salen la introducción («de qué trata el juego») y las escenas de Tony.
   Si alguna no sale, revisar `scenes/b/story_panel.gd` (`intro_pages`) y `content/historia.json`.
 

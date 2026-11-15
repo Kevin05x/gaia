@@ -360,3 +360,42 @@ func test_2_6_la_ventana_muestra_el_efecto_debajo_de_cada_opcion() -> void:
 	assert_eq(efectos.size(), 2, "un efecto por opción")
 	assert_string_contains((efectos[0] as Label).text, "enlace cerrado 8 h")
 	assert_string_contains((efectos[1] as Label).text, "se pierde el 33 % de los datos a bordo (unos 10)")
+
+
+# --- 2.7 Cada decisión de la historia dice qué cambiará ------------------------------------------------------------------
+
+const StoryPanelScript := preload("res://scenes/b/story_panel.gd")
+## Opciones que hoy no cambian nada visible (lista para Tony en docs/PLAN_MEJORAS.md, 2.7): dejar algo para después.
+const SIN_HUELLA := ["falla_sismografo:0", "estacion_auxiliar:2"]
+
+
+func test_2_7_cada_opcion_de_una_decision_dice_que_cambiara() -> void:
+	var datos := StoryData.desde_archivo("res://content/historia.json")
+	var sistema := StorySystem.new(datos, null)
+	var e := _sim("marte").estado
+	var revisadas := 0
+	for id in datos.nodos:
+		var opciones: Array = datos.nodos[id].get("opciones", [])
+		if opciones.size() < 2:
+			continue  # no es una decisión: solo «continuar»
+		for i in range(opciones.size()):
+			var texto := StoryPanelScript.resumen_cambios(sistema.cambios(e, opciones[i]))
+			revisadas += 1
+			if SIN_HUELLA.has("%s:%d" % [id, i]):
+				assert_eq(texto, "", "%s:%d sigue sin huella (está en la lista para Tony)" % [id, i])
+			else:
+				assert_false(texto.is_empty(), "%s:%d dice qué cambia" % [id, i])
+				assert_false(texto.contains("STORY_CH") or texto.contains("RES_"), texto)
+	assert_gt(revisadas, 10)
+
+
+func test_2_7_la_rama_y_los_finales_se_anuncian() -> void:
+	var datos := StoryData.desde_archivo("res://content/historia.json")
+	var sistema := StorySystem.new(datos, null)
+	var e := _sim("marte").estado
+	var cientifica := StoryPanelScript.resumen_cambios(sistema.cambios(e, datos.nodos["noche_aranas"]["opciones"][0]))
+	assert_string_contains(cientifica, "la historia sigue por la rama científica")
+	assert_string_contains(cientifica, "+15 de Hielo")
+	var silencio := StoryPanelScript.resumen_cambios(sistema.cambios(e, datos.nodos["climax_destructivo"]["opciones"][2]))
+	assert_string_contains(silencio, "lleva al final «Final 4 · Silencio orbital»")
+	assert_string_contains(silencio, "termina la misión")
