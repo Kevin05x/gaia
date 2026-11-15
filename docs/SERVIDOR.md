@@ -71,3 +71,23 @@ Nunca ejecutes `docker system prune`, `docker compose down -v` ni borres volúme
 ## Alternativa sin servidor propio
 
 Un túnel de Cloudflare desde el PC de quien crea la sala: ver `docs/MULTIJUGADOR.md`.
+
+## Servidor con Caddy propio (sin Docker) — el caso del VPS de Kevin, 15 nov
+
+El VPS ya tenía otro proyecto con **Caddy como servicio del sistema** en los puertos 80 y 443, y sin Docker. Por eso no se usa el
+compose de arriba: se instala solo la sala como servicio `gaia-sala` y se añade un bloque al Caddy existente.
+
+1. **Sala** (con un usuario con sudo): `bash instalar.sh` desde `deploy/servidor/nativo/` (clona en `/opt/gaia`, baja Godot 4.7.2 sin pantalla,
+   importa el proyecto y arranca `gaia-sala` en el puerto 9080). Nada se instala fuera de `/opt/gaia` y del servicio nuevo.
+2. **Caddy**: copia de seguridad, un bloque nuevo, validar y recargar (la recarga no corta lo que ya sirve):
+   ```
+   sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-gaia
+   printf '\nsala.TU_DOMINIO {\n\treverse_proxy localhost:9080\n}\n' | sudo tee -a /etc/caddy/Caddyfile
+   sudo caddy validate --config /etc/caddy/Caddyfile
+   sudo systemctl reload caddy
+   ```
+   Si `validate` falla, se restaura la copia y no se recarga nada.
+3. **Web del juego**: la sirve GitHub Pages (https) y se conecta a `wss://sala.TU_DOMINIO`; no hace falta exportarla en el VPS.
+4. El puerto 9080 queda abierto en el servidor (el cortafuegos de Hostinger no tenía reglas). Es solo el WebSocket del juego.
+
+**Sin probar en un servidor real.**
