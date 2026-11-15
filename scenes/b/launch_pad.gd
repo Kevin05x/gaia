@@ -92,6 +92,9 @@ var _cohete: Node3D
 var _cohete_alto := 40.0
 var _mesa: Node3D
 var _mesa_alto := 2.0
+var _rampa: MeshInstance3D  ## rampa de acceso: del suelo (pie) al borde de la cubierta (cima)
+var _rampa_pie_z := 10.0  ## z local de la mesa donde la rampa toca el suelo
+var _rampa_cima_z := 6.0  ## z local de la mesa donde la rampa llega a la cubierta
 var _puerta: Node3D  ## escotilla iluminada de la mesa de lanzamiento, por donde entra el rover
 var _puerta_luz: OmniLight3D
 var _ascensor: Node3D
@@ -377,19 +380,27 @@ func _build_mesa() -> void:
 			pata.position = Vector3(sx * lado * 0.42, _mesa_alto * 0.45, sz * lado * 0.42)
 			_mesa.add_child(pata)
 
-	# Rampa de acceso por la cara que mira a la cámara.
-	var rampa := MeshInstance3D.new()
+	# Rampa de acceso por la cara que mira a la cámara: su cara de arriba va justo del suelo (pie) al
+	# borde de la cubierta (cima), y el rover sube por ella (ver _altura_de_la_rampa).
+	var recorrido := _mesa_alto * 2.6
+	var pendiente := atan2(_mesa_alto, recorrido)
+	var grosor := 0.3
+	_rampa_cima_z = lado * 0.5
+	_rampa_pie_z = lado * 0.5 + recorrido
+	_rampa = MeshInstance3D.new()
 	var rm := BoxMesh.new()
-	rm.size = Vector3(5.2, 0.3, _mesa_alto * 2.6)
-	rampa.mesh = rm
-	rampa.material_override = _material(Color("4A5057"), 0.8)
-	rampa.position = Vector3(0, _mesa_alto * 0.5, lado * 0.5 + _mesa_alto * 1.1)
-	rampa.rotation.x = atan2(_mesa_alto, _mesa_alto * 2.6)
-	_mesa.add_child(rampa)
+	rm.size = Vector3(5.2, grosor, Vector2(recorrido, _mesa_alto).length())
+	_rampa.mesh = rm
+	_rampa.material_override = _material(Color("4A5057"), 0.8)
+	_rampa.rotation.x = pendiente
+	var normal := Vector3(0.0, cos(pendiente), sin(pendiente))  # la cara de arriba, ya inclinada
+	_rampa.position = Vector3(0, _mesa_alto * 0.5, (_rampa_cima_z + _rampa_pie_z) * 0.5) - normal * grosor * 0.5
+	_mesa.add_child(_rampa)
 
-	# Escotilla: hueco oscuro con marco emisivo, de la altura justa para que entre el rover (2,2 m).
+	# Escotilla: hueco oscuro con marco emisivo sobre la cubierta, al final de la rampa, de la altura
+	# justa para que entre el rover (2,2 m).
 	_puerta = Node3D.new()
-	_puerta.position = Vector3(0, 0.0, lado * 0.5 + 0.08)
+	_puerta.position = Vector3(0, _mesa_alto, lado * 0.5 - 0.4)
 	_mesa.add_child(_puerta)
 	var hueco := MeshInstance3D.new()
 	var hm := BoxMesh.new()
@@ -1339,20 +1350,51 @@ func _boca_de_la_escotilla() -> Vector3:
 	return _mesa.position + _puerta.position + Vector3(0, 1.8, 0)
 
 
+## Altura del suelo que pisa el rover en «z» (coordenadas del panorama): 0 delante de la rampa, la de
+## la cubierta detrás de su cima y, en medio, la de la pendiente.
+func _altura_de_la_rampa(z: float) -> float:
+	if not is_instance_valid(_mesa):
+		return 0.0
+	var local := z - _mesa.position.z
+	if local >= _rampa_pie_z:
+		return 0.0
+	if local <= _rampa_cima_z:
+		return _mesa_alto
+	return _mesa_alto * (_rampa_pie_z - local) / (_rampa_pie_z - _rampa_cima_z)
+
+
+## Apoya el rover en lo que pisa: la altura y el cabeceo salen de sus ruedas delanteras y traseras,
+## así sube la rampa inclinado y se endereza al llegar arriba.
+func _apoyar_en_la_rampa() -> void:
+	const MEDIA_BATALLA := 1.3  # m del centro a cada eje (el Perseverance mide 3 m de largo)
+	var delante := _altura_de_la_rampa(_rover.position.z - MEDIA_BATALLA)  # el frente del rover es −z
+	var detras := _altura_de_la_rampa(_rover.position.z + MEDIA_BATALLA)
+	_rover.position.y = (delante + detras) * 0.5
+	_rover.rotation.x = atan2(delante - detras, MEDIA_BATALLA * 2.0)
+
+
 func _abordar(a: float) -> void:
 	if not is_instance_valid(_rover) or not is_instance_valid(_cohete):
 		return
 	if is_instance_valid(_estado):
 		_estado.fase = Estado.ABORDANDO
 		_estado.avance = a
-	var destino := Vector3(_cohete.position.x, 0.0, _cohete.position.z + _mesa_alto * 2.6 + 6.0)
-	var rodando: float = clampf(a / 0.78, 0.0, 1.0)
+	# Primero rueda hasta el pie de la rampa; luego sube por ella y entra por la escotilla de la cubierta.
+	var base_z: float = _mesa.position.z if is_instance_valid(_mesa) else _cohete.position.z
+	var destino := Vector3(_cohete.position.x, 0.0, base_z + _rampa_pie_z + 3.0)
+	var boca_z: float = _boca_de_la_escotilla().z
+	var rodando: float = clampf(a / 0.72, 0.0, 1.0)
 	var camino := ease(rodando, 0.55)
 	var antes := _rover.position
 	_rover.position = ROVER_POS.lerp(destino, camino)
-	var dentro: float = clampf((a - 0.78) / 0.22, 0.0, 1.0)
+	var subiendo: float = clampf((a - 0.72) / 0.28, 0.0, 1.0)
+	if subiendo > 0.0:
+		_rover.position.z = lerpf(destino.z, boca_z - 3.0, subiendo)
+	# «dentro»: cuánto ha pasado ya por el hueco (0 hasta que el morro llega a la escotilla).
+	var dentro: float = clampf((boca_z + 1.5 - _rover.position.z) / 4.5, 0.0, 1.0)
 	if dentro <= 0.0:
 		_mirar_al_cohete()  # ya dentro del hueco no se reorienta: miraría al cohete que tiene encima
+	_apoyar_en_la_rampa()
 	# Ruedas: giran lo que avanzó el rover, no lo que pasó el tiempo, y en el sentido en el que se
 	# mueve (al salir del cohete va marcha atrás, sin dejar de mirar a su nave).
 	var recorrido := (_rover.position - antes).dot(-_rover.global_transform.basis.z)
@@ -1369,7 +1411,6 @@ func _abordar(a: float) -> void:
 	_camera.look_at(delante.lerp(_boca_de_la_escotilla(), ease(rodando, 0.5)))
 	# Último tramo: el rover se mete por la escotilla y el ascensor sube.
 	if dentro > 0.0:
-		_rover.position.z = destino.z - dentro * (_mesa_alto * 2.6 + 7.0)
 		_rover.scale = Vector3.ONE * maxf(1.0 - dentro, 0.02)
 		_rover.visible = dentro < 0.98
 		if is_instance_valid(_puerta_luz):

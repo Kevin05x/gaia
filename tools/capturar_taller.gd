@@ -74,6 +74,17 @@ func _correr() -> void:
 	await _avanzar(plataforma, LaunchPad.DURACION_ABORDAJE * 0.48)
 	_guardar(salida + "3b_en_la_escotilla.png")
 
+	# 3b2) El mismo abordaje visto de lado: el rover sube por la rampa hasta la escotilla de la cubierta.
+	plataforma.set_process(false)
+	for avance in [0.6, 0.8, 0.88]:
+		plataforma._abordar(avance)
+		var rover: Vector3 = plataforma._rover.position
+		plataforma._camera.position = rover + Vector3(-14.0, 2.5, -2.0)
+		plataforma._camera.look_at(rover + Vector3(0.0, 1.0, -2.0))
+		await _esperar(3)
+		_guardar(salida + "3b_lateral_%d.png" % int(avance * 100))
+	plataforma.set_process(true)
+
 	# 3c) La vuelta: desde el hangar se pulsa «‹ Cambiar de cohete» y el rover sale del cohete.
 	plataforma._fin_abordaje()
 	plataforma._empezar_salida()
