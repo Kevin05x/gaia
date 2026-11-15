@@ -107,20 +107,34 @@ func _capturar(destino: String, idioma: String) -> void:
 		juego.port.submit("select", {"target_id": objetivo})
 		vista.rig.center_on(vista.terrain.targets[objetivo].global_position)
 	await _esperar(25)
-	_guardar(carpeta + "analizar.jpg", _zona(vista.hud.highlight_nodes().get("acciones")))
+	_guardar(carpeta + "analizar.jpg", _zona(vista.hud.highlight_nodes().get("objetivo")))
 	vista.hud.close_actions()
 
-	# 3) Panel: el menú Construir abierto.
+	# 2b) Acciones: el menú emergente (tecla Tab) con las herramientas del rover.
+	vista.hud._abrir_acciones(true)
+	await _esperar(12)
+	_guardar(carpeta + "acciones.jpg", _zona(vista.hud.highlight_nodes().get("acciones"), true))
+	vista.hud._abrir_acciones(false)
+
+	# 2c) Carga: la bodega con algo dentro y el marcador sobre el almacén.
+	sim.estado.carga = {"rocas": 37}
+	juego._publicar()
+	await _esperar(20)
+	_guardar(carpeta + "carga.jpg", _centro())
+	sim.estado.carga = {}
+	juego._publicar()
+
+	# 3) Panel y 4) Antena: el menú Construir abierto (con «Construir antena» arriba).
 	vista.base_hud.toggle_menu()
 	await _esperar(15)
 	_guardar(carpeta + "panel.jpg", _zona(vista.base_hud.build_button, true))
+	_guardar(carpeta + "antena.jpg", _zona(vista.base_hud.build_button, true))
 	vista.base_hud.toggle_menu()
 
-	# 4) Antena: la barra de acciones con «Construir antena».
-	await _esperar(10)
-	_guardar(carpeta + "antena.jpg", _zona(vista.hud.highlight_nodes().get("acciones")))
-
-	# 5) Transmitir: el enlace con la Tierra.
+	# 5) Transmitir: el enlace con la Tierra (solo existe con antena).
+	sim.estado.nivel_antena = 1
+	juego._publicar()
+	await _esperar(20)
 	_guardar(carpeta + "transmitir.jpg", _zona(vista.hud.highlight_nodes().get("enlace")))
 
 	# 6) Noche: la base cuando cae el sol.

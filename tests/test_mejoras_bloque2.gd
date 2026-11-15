@@ -256,8 +256,8 @@ func test_2_2_hay_captura_de_cada_paso_en_los_dos_destinos_e_idiomas() -> void:
 	for destino in ["marte", "luna"]:
 		var datos := TutorialData.desde_archivo(Destino.config(destino)["tutorial"])
 		for paso in datos.pasos:
-			if not paso.has("captura") and ["bienvenida", "acciones", "carga"].has(str(paso["id"])):
-				continue  # pasos de lectura o con elementos nuevos: sin foto, solo texto
+			if not paso.has("captura") and str(paso["id"]) == "bienvenida":
+				continue  # paso de lectura: sin foto, solo texto
 			for idioma in ["es", "en"]:
 				var ruta := TutorialPanelScript.ruta_captura(str(paso.get("captura", paso["id"])), destino, idioma)
 				assert_true(ruta.contains("/%s/%s/" % [destino, idioma]), "%s/%s/%s tiene captura" % [destino, idioma, paso["id"]])

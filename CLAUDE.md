@@ -46,6 +46,10 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 
 - **Multijugador en red** (rama `b/multijugador`, 15 nov): hasta 4 personas, cada una en su dispositivo y todas a la vez en la misma misión, cada una con su rol. El anfitrión lleva la simulación y valida las órdenes por rol; todo por WebSocket (sala en la misma Wi-Fi, o servidor dedicado / túnel para internet y navegador). Ver `docs/MULTIJUGADOR.md`. `sim/` y `EventBus` no cambiaron.
 
+- **Interfaz de la misión** (rama `c/mejoras-15nov`, 15 nov, plan 11): las acciones sin objetivo salen en un menú emergente (**Tab**; Q y E giran la cámara) y su modo se elige en Opciones; «Construir antena» vive en el menú Construir (B); el relé solo existe con antena; la carga se descarga con el marcador sobre el almacén o la tecla **G** (F centra la cámara en el rover). Teclas: B construir, C panorámica, V radar, Z dron, X minerales, U antena, T transmitir, G descargar, Tab acciones.
+- **Tutorial con bloqueo** (plan 11.4): `content/tutorial*.json` lista por paso las órdenes permitidas (`permite`), si el reloj espera (`espera`) y los requisitos (`requiere_instrumento`, `requiere_carga`). Lo aplica `sim/systems/tutorial_system.gd` (`TUTORIAL_LOCKED`). Las pruebas que operan directo (`saltar_taller`) saltan el tutorial.
+- **Estilo «panel de nave»** (`scenes/b/panel_nave.gd`, `UI.nave()`) y **cordillera del horizonte hecha en Blender** (`tools/blender/horizonte.py`, `assets/horizonte/cordillera.glb`, `assets/_blender/horizonte.blend` con `.gdignore`; sin el `.glb` el juego usa las lomas por código).
+
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
@@ -81,7 +85,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests,res://sce
 godot --path . -- --medir --preset=alta     # medición de rendimiento (alta|media|baja)
 ```
 
-Las pruebas deben pasar todas (587 en la rama `integracion`, 14 nov) antes de abrir un PR.
+Las pruebas deben pasar todas (651 en la rama `c/mejoras-15nov`, 15 nov) antes de abrir un PR.
 
 ## Flujo de Git (reglas)
 

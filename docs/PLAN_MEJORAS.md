@@ -273,6 +273,22 @@ Propuesta: el telescopio sirve para **ver el cielo real desde donde está el rov
 
 ---
 
+## Bloque 11 · Peticiones de Kevin del 15 nov (mediodía): interfaz limpia, tutorial guiado y paisaje
+
+Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con marcador sobre el almacén y tecla; tutorial con bloqueo total y reloj en pausa; estilo «panel de nave»; orden: servidor primero, luego HUD y tutorial.
+
+- [x] **11.1 Acciones emergentes.** Las acciones sin objetivo (panorámica, radar, dron, buscar minerales) salen en un menú que abre el botón «Acciones» o la tecla **Tab**; cada una conserva su tecla (C, V, Z, X). Opciones › «Botones de acciones»: *Siempre visibles*, *Emergentes* (por defecto) o *Solo teclas*. (Q y E ya giran la cámara, por eso Tab.)
+- [x] **11.2 «Construir antena» solo en Construir (B).** Primera fila del menú; la tecla U sigue funcionando. El relé («Enlace abierto») solo aparece cuando hay antena.
+- [x] **11.3 Carga.** La bodega solo se ve con carga. Un marcador ámbar «Almacén · [G] Descargar» sobre la estación o el domo más cercano (clic en el marcador o tecla **G**; si el rover está lejos, va y descarga). Se quita el botón fijo «Descargar». El snapshot trae `cargo.storages`.
+- [x] **11.4 Tutorial que guía de verdad.** 9 pasos (`content/tutorial*.json`): cada paso lista las órdenes que permite (`permite`); el resto se rechaza con `TUTORIAL_LOCKED`. Con `espera`, el reloj de la misión está detenido hasta que el jugador hace algo permitido. Los pasos «analizar» y «acciones» nombran las herramientas que el rover lleva de verdad (`requiere_instrumento`, `{tools}`), y «carga» solo sale si hay carga. «Siguiente» y «Saltar tutorial» funcionan siempre. Las pruebas del `MissionRunner` con `saltar_taller` lo saltan.
+- [x] **11.5 Modos de juego más claros.** Dificultad con su nivel entre paréntesis (fácil, normal, difícil) y explicación de qué cambia (presupuesto y monstruos; en la Luna solo el presupuesto). No existe un modo «supervivencia»: el destino (Marte con historia, Luna solo exploración) y la dificultad son los dos ejes.
+- [x] **11.6 Estilo «panel de nave».** `scenes/b/panel_nave.gd` (StyleBox dibujado por código: degradado metálico, filo biselado, filete ámbar arriba, escuadras y remaches) y `UI.nave()`. Lo usan el tema, Construir, pausa, tutorial, avisos, ficha de edificio y tarjetas de historia. Los botones siguen planos.
+- [x] **11.7 Horizonte con Blender.** `tools/blender/horizonte.py` → `assets/horizonte/cordillera.glb` (picos, mesetas escalonadas, barrancos). Se quitan las mesetas y los bloques grandes por código. Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md`. Sin medir en FPS.
+- [ ] **11.8 Servidor propio con dominio.** Pasos entregados a Kevin el 15 nov (VPS Hostinger KVM 2, Ubuntu 26.04). Pendiente de que Kevin reclame el dominio, cree los registros DNS `gaia` y `sala`, y ejecute los comandos de `docs/SERVIDOR.md`. **Sin probar en un servidor real.**
+- [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
+
+---
+
 ## Orden sugerido para el domingo
 
 | Hora | Trabajo |
