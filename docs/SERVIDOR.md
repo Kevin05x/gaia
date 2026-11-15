@@ -130,3 +130,19 @@ Si algo falla, la copia `Caddyfile.bak-gaia` deja el Caddy como estaba antes de 
 3. En el VPS: restaurar la copia de Caddy anterior a GAIA, añadir `Caddyfile.sitios` (reemplaza al bloque de la sala), `sudo caddy validate` y `sudo systemctl reload caddy`.
 
 **Peso del juego web:** `index.pck` pesa unos **370 MB** (más 40 MB de `.wasm`). Es lo mismo que publica GitHub Pages con su exportación: la primera carga es larga y las siguientes salen de la caché del navegador. Para una conexión lenta es mejor la versión de escritorio. Reducir el peso (texturas, duplicados s3tc/etc2, voces) queda pendiente.
+
+### Que Google encuentre el juego y la web (15 nov, noche)
+
+Lo que está en el repositorio:
+- La web (`tools/generar_sitio.py`) escribe en cada página `canonical`, Open Graph con imagen absoluta, `twitter:card`, icono y, en la portada, datos estructurados de videojuego (JSON-LD). También genera `sitio/sitemap.xml` y `sitio/robots.txt`.
+- El juego lleva descripción, `canonical` y Open Graph en el HTML de la exportación (`html/head_include` del preset Web en `export_presets.cfg`). `publicar_sitios.sh` copia `juego_robots.txt` y `juego_sitemap.xml` junto al juego.
+- `sala.gaianasa.tech` responde `X-Robots-Tag: noindex`: es solo el canal del multijugador.
+- `sitio/` lleva un `.gdignore` (Godot no lo importa) y el preset Web excluye `sitio/*` y `deploy/*` del paquete del juego.
+
+Lo que se hace a mano, una vez (Google Search Console, https://search.google.com/search-console):
+1. Añadir una propiedad de tipo **Dominio** con `gaianasa.tech`. Google da un registro TXT `google-site-verification=...`.
+2. En el DNS de Hostinger: añadir un registro `TXT`, nombre `@`, ese valor. Esperar unos minutos y pulsar «Verificar». Una propiedad de dominio cubre el dominio y todos sus subdominios.
+3. En «Sitemaps» enviar `https://info.gaianasa.tech/sitemap.xml` y `https://gaianasa.tech/sitemap.xml`.
+4. En «Inspección de URLs» pegar cada dirección (la portada del juego y las 6 páginas de la web) y pulsar «Solicitar indexación».
+
+Google tarda de unos días a un par de semanas en mostrar la web en los resultados; no hay forma de forzarlo ni de garantizar la posición. El juego es un lienzo de Godot: Google leerá su título y su descripción, no su contenido, así que el texto que se encuentra al buscar «GAIA Full Galácticos» saldrá sobre todo de la web del proyecto.

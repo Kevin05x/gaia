@@ -4,12 +4,14 @@ Uso:  py tools/generar_sitio.py
 Cada página tiene su cuerpo en tools/sitio_fuentes/<id>.html; aquí se le pone la cabecera, el menú y el pie comunes.
 Los textos están en español e inglés con <span class="es"> y <span class="en">; el idioma lo elige el visitante con ES / EN.
 """
+import datetime
 import os
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FUENTES = os.path.join(RAIZ, "tools", "sitio_fuentes")
 SALIDA = os.path.join(RAIZ, "sitio")
 JUEGO = "https://gaianasa.tech"
+SITIO = "https://info.gaianasa.tech"
 
 # id, menú es, menú en, título es, título en, descripción es, descripción en, imagen de cabecera, etiqueta es, etiqueta en, título grande es, título grande en
 PAGINAS = [
@@ -111,6 +113,12 @@ def pagina(p):
     <h1>%s</h1>
   </div>
 </header>""" % (img, bi(et_es, et_en), bi(h_es, h_en))
+    url = SITIO + "/" if id_ == "index" else "%s/%s.html" % (SITIO, id_)
+    json_ld = ""
+    if id_ == "index":
+        json_ld = ('<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"GAIA",'
+                   '"url":"%s","description":"%s","genre":"Simulation, education","gamePlatform":["Web browser","Windows"],'
+                   '"numberOfPlayers":"1-4","inLanguage":["es","en"],"author":{"@type":"Organization","name":"Full Galácticos"}}</script>\n') % (JUEGO, d_en)
     html = """<!doctype html>
 <html lang="es">
 <head>
@@ -118,10 +126,17 @@ def pagina(p):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%(t_es)s</title>
 <meta name="description" content="%(d_es)s">
+<link rel="canonical" href="%(url)s">
+<meta name="theme-color" content="#120C09">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GAIA">
+<meta property="og:url" content="%(url)s">
 <meta property="og:title" content="%(t_es)s">
 <meta property="og:description" content="%(d_es)s">
-<meta property="og:image" content="img/hero.jpg">
-<link rel="stylesheet" href="estilo.css">
+<meta property="og:image" content="%(sitio)s/img/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="img/gaia_logo.png">
+%(json)s<link rel="stylesheet" href="estilo.css">
 </head>
 <body>
 <div class="grano" aria-hidden="true"></div>
@@ -138,13 +153,28 @@ def pagina(p):
 <script src="app.js"></script>
 </body>
 </html>
-""" % {"t_es": t_es, "d_es": d_es, "nav": nav, "cabecera": cabecera, "cuerpo": cuerpo, "pie": pie()}
+""" % {"t_es": t_es, "d_es": d_es, "url": url, "sitio": SITIO, "json": json_ld, "nav": nav, "cabecera": cabecera, "cuerpo": cuerpo, "pie": pie()}
     # el título y la descripción en inglés los cambia app.js según el idioma
     html = html.replace("<title>%s</title>" % t_es, '<title data-es="%s" data-en="%s">%s</title>' % (t_es, t_en, t_es), 1)
     open(os.path.join(SALIDA, id_ + ".html"), "w", encoding="utf-8", newline="\n").write(html)
     print("sitio/%s.html" % id_)
 
 
+
+
+def indexacion():
+    """robots.txt y sitemap.xml de la web, para que los buscadores la encuentren."""
+    hoy = datetime.date.today().isoformat()
+    urls = [SITIO + "/"] + ["%s/%s.html" % (SITIO, p[0]) for p in PAGINAS[1:]]
+    cuerpo = "".join("  <url><loc>%s</loc><lastmod>%s</lastmod></url>\n" % (u, hoy) for u in urls)
+    mapa = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + cuerpo + "</urlset>\n"
+    open(os.path.join(SALIDA, "sitemap.xml"), "w", encoding="utf-8", newline="\n").write(mapa)
+    robots = "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n" % SITIO
+    open(os.path.join(SALIDA, "robots.txt"), "w", encoding="utf-8", newline="\n").write(robots)
+    print("sitio/sitemap.xml y sitio/robots.txt")
+
+
 if __name__ == "__main__":
     for p in PAGINAS:
         pagina(p)
+    indexacion()
