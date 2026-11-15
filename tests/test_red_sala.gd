@@ -245,3 +245,56 @@ func test_gasto_por_rol_suma_las_piezas_de_su_area() -> void:
 	assert_eq(gasto["ingenieria"], 200.0)
 	assert_eq(gasto["ciencia"], 30.0)
 	assert_eq(gasto["comunicaciones"], 0.0)
+
+
+# --- Presupuesto propio por rol (plan 12, 15 nov) ----------------------------------------------------------------
+
+func _taller_de_prueba(gastado_ing: int) -> Dictionary:
+	return {"totals": {"budget_musd": 700.0}, "categories": [
+		{"id": "cohetes", "parts": [{"id": "c1", "cost_musd": 250}]},
+		{"id": "chasis", "parts": [{"id": "ch1", "cost_musd": gastado_ing}]}],
+		"selection": {"cohetes": ["c1"], "chasis": ["ch1"]}}
+
+
+func test_el_reparto_suma_el_presupuesto_y_se_escala_a_la_dificultad() -> void:
+	for destino in ["marte", "luna"]:
+		Destino.id = destino
+		var topes := Permisos.topes_por_rol(700.0)
+		assert_eq(topes.size(), 4, destino)
+		var suma := 0.0
+		for rol in topes:
+			suma += float(topes[rol])
+		assert_almost_eq(suma, 700.0, 0.01, "%s: las partes suman el presupuesto" % destino)
+		var experta := Permisos.topes_por_rol(620.0)
+		var suma2 := 0.0
+		for rol in experta:
+			suma2 += float(experta[rol])
+		assert_almost_eq(suma2, 620.0, 0.01, "%s: se escala a la dificultad" % destino)
+	Destino.id = "marte"
+
+
+func test_el_diseno_recomendado_cabe_en_las_partes_de_cada_rol() -> void:
+	# Marte: cohete medio 250 + trayectoria rápida 10 · chasis 180 + panel solar 20 · antena relé 30 · espectrómetro, taladro y cámara 105.
+	Destino.id = "marte"
+	var t := Permisos.topes_por_rol(700.0)
+	assert_lte(260.0, float(t["direccion"]))
+	assert_lte(200.0, float(t["ingenieria"]))
+	assert_lte(30.0, float(t["comunicaciones"]))
+	assert_lte(105.0, float(t["ciencia"]))
+	# Luna: cohete medio 250 + directa 15 · chasis 180 + MMRTG 120 · antena 30 · 105 de instrumentos.
+	Destino.id = "luna"
+	t = Permisos.topes_por_rol(700.0)
+	assert_lte(265.0, float(t["direccion"]))
+	assert_lte(300.0, float(t["ingenieria"]))
+	assert_lte(30.0, float(t["comunicaciones"]))
+	assert_lte(105.0, float(t["ciencia"]))
+	Destino.id = "marte"
+
+
+func test_el_resto_de_un_rol_dice_cuanto_le_queda_y_si_no_cabe() -> void:
+	Destino.id = "marte"
+	var taller := _taller_de_prueba(150)  # Ingeniería tiene 200: lleva 150
+	assert_almost_eq(float(Permisos.resto_de_rol("ingenieria", 20.0, taller)), 30.0, 0.01, "caben 20 y sobran 30")
+	assert_lt(float(Permisos.resto_de_rol("ingenieria", 80.0, taller)), 0.0, "80 no caben")
+	assert_not_null(Permisos.resto_de_rol("direccion", 0.0, taller))
+	assert_null(Permisos.resto_de_rol("rol_inexistente", 0.0, taller), "sin reparto no hay tope")

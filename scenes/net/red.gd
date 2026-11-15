@@ -470,6 +470,17 @@ func _procesar_orden(id: int, orden: String, carga: Dictionary) -> void:
 		if not Permisos.permite_pieza(roles, pieza):
 			enviar_a(id, "reject", Permisos.razon_de_pieza(pieza))
 			return
+		if orden == "design_add" and sala.orden.size() > 1 and autoridad != null and "sim" in autoridad:
+			var taller: Dictionary = autoridad.sim.snapshot().get("workshop", {})
+			var costo := 0.0
+			for cat in taller.get("categories", []):
+				for p in cat.get("parts", []):
+					if str(p.get("id", "")) == pieza and p.get("cost_musd") != null:
+						costo = float(p["cost_musd"])
+			var resto = Permisos.resto_de_rol(Permisos.rol_de_categoria(Permisos.categoria_de_pieza(pieza)), costo, taller)
+			if resto != null and float(resto) < 0.0:
+				enviar_a(id, "reject", Permisos.RAZON_PRESUPUESTO)
+				return
 	_port.emisor = id
 	_port.orden_actual = orden
 	_port.command_requested.emit(orden, limpia)

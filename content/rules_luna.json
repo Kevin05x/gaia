@@ -1,6 +1,7 @@
 {
   "version": 1,
   "presupuesto_musd": 700,
+  "presupuesto_por_rol": {"direccion": 265, "ingenieria": 300, "comunicaciones": 30, "ciencia": 105},
   "victoria": {
     "datos_requeridos": 100,
     "sol_limite": 6

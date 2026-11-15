@@ -41,6 +41,7 @@ const CARD_BG := Color("1A100A", 0.92)
 const TEXT_DIM := Color("D8C3AC", 0.62)
 
 var root: Control
+var bloqueo: Callable  ## (categoria, pieza, elegida) -> texto; si no está vacío la pieza se ve bloqueada con ese aviso (en red: de otro rol o sin presupuesto)
 var consejo_panel: Control  ## el cuadro «Consejo de ingeniería» (en red se oculta para dejar sitio al panel de rol)
 var snapshot: Dictionary = {}
 var category := "trayectoria"
@@ -1039,7 +1040,10 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	b.focus_mode = Control.FOCUS_ALL
 	var motivo := str(part.get("reason", ""))
 	var puede := bool(part.get("available", true)) or motivo == "CATEGORY_FULL"
-	b.disabled = not puede and not elegida
+	var bloqueada := str(bloqueo.call(category, part, elegida)) if bloqueo.is_valid() else ""
+	if not bloqueada.is_empty():
+		puede = false
+	b.disabled = (not puede and not elegida) or not bloqueada.is_empty()
 	var relleno := Color("2A170B", 0.96) if elegida else CARD_BG
 	var borde := ORANGE if elegida else Color("B8742A", 0.4)
 	var normal := UI.button_box(relleno, borde, 2 if elegida else 1, 12, 8, 8, 0)
@@ -1082,6 +1086,10 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	chips.add_theme_constant_override("v_separation", 3)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(chips)
+	if not bloqueada.is_empty():
+		var candado := UI.label(col, "▣ " + bloqueada, UI.FONT_MIN, ORANGE)  # el motivo, a la vista y no solo al pasar el ratón
+		candado.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		candado.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if part.get("pending", false):
 		chips.add_child(_chip(tr("WS_PENDING"), ORANGE))
 	else:
@@ -1098,6 +1106,8 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 		b.tooltip_text = tr(referencia)
 	if not puede and not elegida and not motivo.is_empty():
 		b.tooltip_text = tr(motivo)
+	if not bloqueada.is_empty():
+		b.tooltip_text = bloqueada
 	b.pressed.connect(_on_card.bind(part, elegida))
 	return b
 
