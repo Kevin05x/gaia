@@ -189,3 +189,21 @@ func test_1_4_se_ofrecen_tamanos_grandes_y_la_nativa() -> void:
 		assert_eq(plantilla.count("%d"), 2, "%s: «Nativa» con su resolución" % idioma)
 	var texto := Texto.texto_nativa(Vector2i(2560, 1440))
 	assert_string_contains(texto, "2560×1440")
+
+
+# --- 1.5 El texto de las escenas sale enseguida, con un fundido sobre la imagen ---------------------------------------
+
+const StoryPanelScript := preload("res://scenes/b/story_panel.gd")
+
+
+func test_1_5_el_texto_de_la_escena_sale_en_poco_mas_de_un_segundo() -> void:
+	assert_almost_eq(StoryPanelScript.ESPERA_IMAGEN, 1.2, 0.001, "antes eran 5 s de imagen sola")
+	var panel: CanvasLayer = StoryPanelScript.new()
+	add_child_autofree(panel)
+	panel.show_intro([{"es": "uno", "en": "one", "image": "aterrizaje"}])
+	assert_false(panel._texto_visible, "primero la imagen")
+	panel._process(1.3)
+	assert_true(panel._texto_visible, "a los 1,2 s ya sale el texto")
+	assert_lt(panel._capa.modulate.a, 1.0, "entra con un fundido, no de golpe")
+	await get_tree().create_timer(0.7).timeout
+	assert_almost_eq(panel._capa.modulate.a, 1.0, 0.01, "y el fundido termina")

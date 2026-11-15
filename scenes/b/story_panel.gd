@@ -11,7 +11,7 @@ const ANCHO := 980.0
 const RADIO_ANCHO := 560.0
 const RADIO_SEGUNDOS_MIN := 4.5
 const RADIO_SEGUNDOS_POR_LETRA := 0.055
-const ESPERA_IMAGEN := 5.0  ## segundos que se ve la imagen sola antes de que aparezca el texto
+const ESPERA_IMAGEN := 1.2  ## segundos que se ve la imagen sola antes de que el texto aparezca con un fundido
 
 signal command(command: String, payload: Dictionary)
 signal intro_finished

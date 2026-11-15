@@ -318,7 +318,7 @@ func test_la_intro_muestra_primero_solo_la_imagen() -> void:
 	panel._process(StoryPanel.ESPERA_IMAGEN - 0.5)
 	assert_false(panel._texto_visible)
 	panel._process(1.0)
-	assert_true(panel._texto_visible, "a los 5 s aparece el texto")
+	assert_true(panel._texto_visible, "a los 1,2 s aparece el texto")
 	assert_eq(panel.intro_index, 0)
 	panel.pulsar()
 	assert_eq(panel.intro_index, 1, "un clic pasa a la siguiente escena")
