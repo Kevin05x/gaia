@@ -43,6 +43,8 @@ const FONT_MIN := 13
 ## Etiqueta OpenType del eje de grosor («wght») de las fuentes variables.
 const WGHT := 0x77676874
 
+const PanelNave := preload("res://scenes/b/panel_nave.gd")
+
 static var _fonts: Dictionary = {}
 
 
@@ -102,6 +104,23 @@ static func box(alpha: float = ALPHA_NORMAL, radius: int = RADIUS_PANEL, border_
 	s.content_margin_top = margin_y
 	s.content_margin_bottom = margin_y
 	s.anti_aliasing = true
+	return s
+
+
+## Panel «de nave» (degradado metálico, luz ámbar arriba y escuadras en las esquinas; ver panel_nave.gd). Mismos parámetros
+## que box(), para cambiar un panel de un estilo al otro sin tocar nada más.
+static func nave(alpha: float = ALPHA_STRONG, radius: int = RADIUS_PANEL, border_alpha: float = 0.3, border_px: int = 1,
+		margin_x: float = 12.0, margin_y: float = 6.0, border_color: Color = AMBER) -> StyleBox:
+	var s: StyleBox = PanelNave.new()
+	s.alpha = clampf(alpha + 0.08, 0.0, 1.0)  # la placa con degradado necesita algo más de cuerpo que el color liso
+	s.chaflan = float(radius)
+	s.borde_alpha = border_alpha
+	s.borde_px = float(border_px)
+	s.borde_color = border_color
+	s.content_margin_left = margin_x
+	s.content_margin_right = margin_x
+	s.content_margin_top = margin_y
+	s.content_margin_bottom = margin_y
 	return s
 
 
@@ -180,7 +199,7 @@ static func theme() -> Theme:
 	t.set_color("font_shadow_color", "Label", SHADOW)
 	t.set_constant("shadow_offset_x", "Label", 0)
 	t.set_constant("shadow_offset_y", "Label", 1)
-	t.set_stylebox("panel", "PanelContainer", box(ALPHA_STRONG, RADIUS_PANEL, 0.22, 1, 16, 14))
+	t.set_stylebox("panel", "PanelContainer", nave(ALPHA_STRONG, RADIUS_PANEL, 0.22, 1, 16, 14))
 
 	_button_states(t, "Button", RADIUS_BUTTON, 14, 6)
 	t.set_font("font", "Button", text_font(560))

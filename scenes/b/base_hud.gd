@@ -96,7 +96,7 @@ func build() -> void:
 	build_button.pressed.connect(toggle_menu)
 	_construir_bodega()
 	menu = PanelContainer.new()
-	menu.add_theme_stylebox_override("panel", UI.box(0.88, UI.RADIUS_PANEL, 0.3, 1, 16, 14))
+	menu.add_theme_stylebox_override("panel", UI.nave(0.88, UI.RADIUS_PANEL, 0.3, 1, 16, 14))
 	UI.place(menu, "bl", 20, 110, 420, 360)
 	menu.visible = false
 	root.add_child(menu)
@@ -488,7 +488,7 @@ func ficha_abierta() -> bool:
 func _crear_ficha() -> void:
 	_ficha = PanelContainer.new()
 	_ficha.name = "Ficha"
-	_ficha.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.35, 1, 18, 16))
+	_ficha.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.35, 1, 18, 16))
 	UI.place(_ficha, "bl", 450, 110, 340, 470)
 	_ficha.visible = false
 	root.add_child(_ficha)

@@ -67,7 +67,7 @@ func _ready() -> void:
 	root.add_child(_punta)
 	_card = PanelContainer.new()
 	_card.mouse_filter = Control.MOUSE_FILTER_STOP
-	_card.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.45, 1, 16, 12, UI.AMBER))
+	_card.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.45, 1, 16, 12, UI.AMBER))
 	UI.place(_card, "bl", 20, 112, ANCHO, 0)
 	_card.visible = false
 	root.add_child(_card)

@@ -371,7 +371,7 @@ func _build_bottom() -> void:
 	# Acciones sin objetivo: un solo bloque abajo al centro, cada una con su icono y su tecla (plan 4.2). Solo se ven
 	# las que se pueden usar (o lo podrán en un momento).
 	_actions_row = PanelContainer.new()
-	_actions_row.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.35, 1, 4, 3))
+	_actions_row.add_theme_stylebox_override("panel", UI.nave(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.35, 1, 4, 3))
 	UI.place(_actions_row, "bl", 190, 20, 660, 40)
 	root.add_child(_actions_row)
 	_actions_fila = HBoxContainer.new()
@@ -582,7 +582,7 @@ func _build_pause() -> void:
 	_dim.visible = false
 	root.add_child(_dim)
 	_menu = PanelContainer.new()
-	_menu.add_theme_stylebox_override("panel", UI.box(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
+	_menu.add_theme_stylebox_override("panel", UI.nave(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
 	UI.place(_menu, "c", 0, 0, 420, 466)
 	_menu.visible = false
 	root.add_child(_menu)
@@ -723,7 +723,7 @@ func _rehacer_tamanos() -> void:
 
 func _subview(titulo: String) -> PanelContainer:
 	var vista := PanelContainer.new()
-	vista.add_theme_stylebox_override("panel", UI.box(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
+	vista.add_theme_stylebox_override("panel", UI.nave(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
 	UI.place(vista, "c", 0, 0, 520, 460)
 	vista.visible = false
 	root.add_child(vista)

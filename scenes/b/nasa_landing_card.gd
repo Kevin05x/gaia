@@ -22,7 +22,7 @@ var _activa := false
 func _ready() -> void:
 	layer = 6
 	_panel = PanelContainer.new()
-	_panel.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.3, 1, 12, 12, UI.AMBER))
+	_panel.add_theme_stylebox_override("panel", UI.nave(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.3, 1, 12, 12, UI.AMBER))
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(_panel, "tl", 24, 84, ANCHO, 0)
 	add_child(_panel)

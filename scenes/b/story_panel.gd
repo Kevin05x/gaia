@@ -640,7 +640,7 @@ func _build_radio() -> void:
 		return
 	var linea: Dictionary = dialogo[radio_line]
 	var tarjeta := PanelContainer.new()
-	tarjeta.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.3, 1, 10, 10, Color(str(linea.get("color", "FFF5E4")))))
+	tarjeta.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.3, 1, 10, 10, Color(str(linea.get("color", "FFF5E4")))))
 	tarjeta.mouse_filter = Control.MOUSE_FILTER_STOP
 	tarjeta.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	UI.place(tarjeta, "bl", 20, 118, RADIO_ANCHO, 120)
