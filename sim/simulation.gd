@@ -120,6 +120,21 @@ func iniciar_aterrizaje() -> bool:
 ## Atiende una orden de la vista. Devuelve {"ok", "reason"} y, según la orden:
 ## "path" y "seconds_per_tile" (move, approach) o "action" (act) para que la vista los presente.
 func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
+	# Con varios rovers, «_rover» en la carga dice cuál es el de quien da la orden: se ejecuta con ese rover cargado.
+	if carga.has("_rover"):
+		var limpia := carga.duplicate()
+		var dueno := int(limpia["_rover"])
+		limpia.erase("_rover")
+		if not estado.hay_varios_rovers():
+			return _ejecutar_con_tutorial(orden, limpia)
+		usar_rover(dueno)
+		var resultado := _ejecutar_con_tutorial(orden, limpia)
+		usar_rover(estado.rover_lider)
+		return resultado
+	return _ejecutar_con_tutorial(orden, carga)
+
+
+func _ejecutar_con_tutorial(orden: String, carga: Dictionary) -> Dictionary:
 	if _tutorial != null:
 		_tutorial.preparar(estado)
 		if not _tutorial.permite(estado, orden):
@@ -244,24 +259,29 @@ func avanzar(delta_s: float) -> Array[String]:
 	for evento in eventos_reloj:
 		if evento == ClockSystem.EVENTO_SOL_NUEVO:
 			eventos.append_array(_ciencia.al_nuevo_sol(estado))
-	var habia_accion := not estado.accion_en_curso.is_empty()
-	var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
-	eventos.append_array(eventos_ciencia)
-	_liberar_agotados(eventos_ciencia)
-	if _combate != null:
-		_combate.reaccionar(estado, eventos_ciencia)
-	if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
-		eventos.append(EVENTO_ACCION_CANCELADA)
-	eventos.append_array(_movimiento.avanzar(estado, delta_s))
-	if estado.descargar_al_llegar and not estado.en_movimiento:
-		estado.descargar_al_llegar = false
-		eventos.append_array(_descargar_aqui())
+	# Cada rover hace lo suyo (ciencia, movimiento, descarga). Con un solo rover es una sola vuelta, como siempre.
+	for id in estado.ids_de_rovers():
+		usar_rover(id)
+		var habia_accion := not estado.accion_en_curso.is_empty()
+		var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
+		eventos.append_array(eventos_ciencia)
+		_liberar_agotados(eventos_ciencia)
+		if _combate != null:
+			_combate.reaccionar(estado, eventos_ciencia)
+		if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
+			eventos.append(EVENTO_ACCION_CANCELADA)
+		eventos.append_array(_movimiento.avanzar(estado, delta_s))
+		if estado.descargar_al_llegar and not estado.en_movimiento:
+			estado.descargar_al_llegar = false
+			eventos.append_array(_descargar_aqui())
+	usar_rover(_constructor())  # la obra del equipo la hace el rover que la pidió (o el líder)
 	eventos.append_array(_comunicaciones.avanzar(estado, referencia))
 	if _edificios != null:
 		_seguir_obra_antes(eventos)
 		var eventos_obra := _edificios.avanzar(estado, referencia, horas)
 		eventos.append_array(eventos_obra)
 		_seguir_obra_despues(eventos, eventos_obra)
+	usar_rover(estado.rover_lider)  # el combate, la historia y lo demás cuentan con el rover del líder
 	if _combate != null:
 		eventos.append_array(_combate.avanzar(estado, referencia, horas, _energia))
 	_anotar_progreso(eventos)
@@ -278,6 +298,74 @@ func avanzar(delta_s: float) -> Array[String]:
 	elif _historia != null:
 		eventos.append_array(_historia.comprobar(estado))
 	return eventos
+
+
+## --- Varios rovers (multijugador en red) ---------------------------------------------------------------------------------------
+
+var _selecciones: Dictionary = {}  ## id de rover -> objetivo seleccionado
+
+
+## Carga el rover «id» (y su objetivo seleccionado). false si no existe.
+func usar_rover(id: int) -> bool:
+	if id == estado.rover_actual:
+		return true
+	_selecciones[estado.rover_actual] = _seleccion
+	var ok := estado.usar_rover(id)
+	_seleccion = str(_selecciones.get(estado.rover_actual, ""))
+	return ok
+
+
+## Agrega el rover de un jugador en una casilla libre cerca de la estación. El primero es el líder.
+func agregar_rover(id: int) -> void:
+	var casilla := estado.casilla_rover
+	var ocupadas: Array[Vector2i] = []
+	for r in estado.ids_de_rovers():
+		ocupadas.append(estado.casilla_rover if r == estado.rover_actual else Vector2i(estado.rovers[r]["casilla_rover"]))
+	var elegida := casilla
+	var encontrada := false
+	for radio in range(1, 5):
+		for dx in range(-radio, radio + 1):
+			for dy in range(-radio, radio + 1):
+				var c := casilla + Vector2i(dx, dy)
+				if not encontrada and maxi(absi(dx), absi(dy)) == radio and not _mapa.bloqueada(c) and not ocupadas.has(c):
+					elegida = c
+					encontrada = true
+	estado.agregar_rover(id, elegida)
+
+
+func quitar_rover(id: int) -> void:
+	usar_rover(estado.rover_lider)
+	estado.quitar_rover(id)
+	_selecciones.erase(id)
+	_seleccion = str(_selecciones.get(estado.rover_actual, _seleccion))
+
+
+## El rover que está haciendo una obra (o el líder si ninguno).
+func _constructor() -> int:
+	if estado.obra_del_rover != "":
+		return estado.rover_actual
+	for id in estado.rovers:
+		if str(estado.rovers[id].get("obra_del_rover", "")) != "":
+			return int(id)
+	return estado.rover_lider
+
+
+## Snapshot de un jugador: el de siempre, con SU rover (posición, bodega, acción) y la lista de los demás rovers.
+func snapshot_de(id: int) -> Dictionary:
+	if not estado.hay_varios_rovers() or not estado.ids_de_rovers().has(id):
+		return snapshot()
+	var anterior := estado.rover_actual
+	usar_rover(id)
+	var datos := snapshot()
+	var otros: Array[Dictionary] = []
+	for r in estado.ids_de_rovers():
+		var casilla: Vector2i = estado.casilla_rover if r == estado.rover_actual else Vector2i(estado.rovers[r]["casilla_rover"])
+		var se_mueve: bool = estado.en_movimiento if r == estado.rover_actual else bool(estado.rovers[r]["en_movimiento"])
+		otros.append({"id": r, "tile": casilla, "moving": se_mueve})
+	datos["rover_id"] = id
+	datos["rovers"] = otros
+	usar_rover(anterior)
+	return datos
 
 
 const EVENTO_DESCARGA := "CARGO_UNLOADED"  ## CARGO_UNLOADED:<unidades>
