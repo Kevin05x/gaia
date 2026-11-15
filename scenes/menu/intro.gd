@@ -92,6 +92,7 @@ func _ready() -> void:
 		gate.modulate.a = 0.0
 		create_tween().tween_property(gate, "modulate:a", 1.0, 0.8)
 		velo.color = Color(0, 0, 0, 0.0)
+		JavaScriptBridge.eval("if (window.gaiaListo) { window.gaiaListo(); }")  # quita la pantalla de carga de la web (deploy/web/gaia_shell.html)
 	else:
 		gate.visible = false
 		_empezar()

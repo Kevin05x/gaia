@@ -659,6 +659,8 @@ func _command(command: String, payload: Dictionary) -> void:
 		return
 	if command == "act" or command == "approach":
 		payload["target_id"] = selected_target
+	if command == "design_start" or command == "landing_finished" or (command == "design_add" and str(payload.get("part_id", "")).begins_with("cohete_")):
+		WebCarga.mostrar("Preparando la siguiente escena.", "Preparing the next scene.")  # la primera vez compila gráficos nuevos
 	port.submit(command, payload)
 
 
