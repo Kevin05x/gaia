@@ -411,7 +411,7 @@ func _build_stepper() -> void:
 		var id: String = ORDER[i]
 		if i > 0:
 			var puntos := DotLine.new()
-			puntos.custom_minimum_size = Vector2(16, 66)
+			puntos.custom_minimum_size = Vector2(10, 66)
 			puntos.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			fila.add_child(puntos)
 		var paso := VBoxContainer.new()
@@ -456,7 +456,7 @@ func _build_stepper() -> void:
 		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 13, Color("F3E6D4"))
 		UI.display(nombre, 700, 0)
 		nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nombre.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # COMUNICACIONES cabe en dos líneas
+		nombre.autowrap_mode = TextServer.AUTOWRAP_OFF  # una línea: la columna se ensancha (antes cortaba «COMUNICACIO-NES»)
 		nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_step_names[id] = nombre
 		boton.pressed.connect(func(): _choose_category(id))

@@ -391,6 +391,7 @@ func _build_bottom() -> void:
 	var fondo_fps := StyleBoxFlat.new()
 	fondo_fps.bg_color = Color(0.05, 0.04, 0.04, 0.72)
 	fondo_fps.set_corner_radius_all(6)
+	fondo_fps.corner_detail = 1
 	fondo_fps.set_content_margin_all(6)
 	_debug.add_theme_stylebox_override("normal", fondo_fps)
 	_debug.mouse_filter = Control.MOUSE_FILTER_IGNORE

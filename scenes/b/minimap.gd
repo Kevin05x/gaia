@@ -47,6 +47,7 @@ func _draw() -> void:
 	var terreno := StyleBoxFlat.new()
 	terreno.bg_color = Destino.color(Color("9a5f43", 0.86))
 	terreno.set_corner_radius_all(6)
+	terreno.corner_detail = 1
 	terreno.set_border_width_all(1)
 	terreno.border_color = Color(UI.CREAM, 0.22)
 	terreno.anti_aliasing = true

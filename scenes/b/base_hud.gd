@@ -490,6 +490,7 @@ func _crear_ficha() -> void:
 	var fondo := StyleBoxFlat.new()
 	fondo.bg_color = Color(0.36, 0.22, 0.16, 0.55)
 	fondo.set_corner_radius_all(UI.RADIUS_LABEL)
+	fondo.corner_detail = 1
 	fondo.border_color = Color(UI.AMBER, 0.25)
 	fondo.set_border_width_all(1)
 	escenario.add_theme_stylebox_override("panel", fondo)

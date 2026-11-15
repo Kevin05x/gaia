@@ -29,7 +29,8 @@ Si el equipo decide sustituir el rover original por el modelo NASA específico d
 | Archivo | Uso | Licencia | Origen |
 | --- | --- | --- | --- |
 | `assets/fonts/Inter.ttf` (variable) | Texto de la interfaz | SIL Open Font License 1.1 (`assets/fonts/OFL-Inter.txt`) | Repositorio google/fonts (ofl/inter) |
-| `assets/fonts/SpaceGrotesk.ttf` (variable) | Títulos, cifras y etiquetas | SIL Open Font License 1.1 (`assets/fonts/OFL-SpaceGrotesk.txt`) | Repositorio google/fonts (ofl/spacegrotesk) |
+| `assets/fonts/SpaceGrotesk.ttf` (variable) | Respaldo de títulos y cifras (si falta Oxanium) | SIL Open Font License 1.1 (`assets/fonts/OFL-SpaceGrotesk.txt`) | Repositorio google/fonts (ofl/spacegrotesk) |
+| `assets/fonts/Oxanium.ttf` (variable, 200–800) | Títulos, cifras y etiquetas desde el 15 nov (plan de mejoras 4.1): letras de esquinas cortadas, parecidas a las del logo | SIL Open Font License 1.1 (`assets/fonts/OFL-Oxanium.txt`), © 2019 The Oxanium Project Authors | Repositorio google/fonts (ofl/oxanium, archivo `Oxanium[wght].ttf`), descargado el 15 nov 2026 |
 
 El emblema de GAIA (`scenes/b/gaia_mark.gd`) y el mapa se dibujan por código; no usan imágenes externas.
 
