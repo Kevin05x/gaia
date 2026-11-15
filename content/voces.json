@@ -1,0 +1,70 @@
+{
+ "version": 1,
+ "_nota": "Voces de radio del juego (plan de mejoras 9.1), aparte de las de la historia de Tony (assets/historia/radio/). Cada evento tiene 3 variantes para no repetir, en español e inglés. «luna» da las variantes propias de la Luna (si falta, se usan las mismas en los dos destinos); «destinos» limita el evento a esos destinos. Las graba tools/voces/generar_voces.py en assets/voces/<marte|luna|comun>/<evento>_<n>_<sha12>.wav, con sha12 = SHA-256 de «quien» + salto de línea + texto (mismo esquema que la historia). La vista las reproduce con scenes/b/voces_radio.gd, con una pausa mínima entre voces.",
+ "pausa_min_s": 20,
+ "eventos": {
+  "mover": {"quien": "perseverance",
+   "variantes": [
+    {"es": "Perseverance en marcha.", "en": "Perseverance on the move."},
+    {"es": "Ruta confirmada. Avanzando.", "en": "Route confirmed. Rolling out."},
+    {"es": "Recibido, Houston. Voy para allá.", "en": "Copy, Houston. Heading there now."}],
+   "luna": [
+    {"es": "Rover en marcha.", "en": "Rover on the move."},
+    {"es": "Ruta confirmada. Avanzando por el regolito.", "en": "Route confirmed. Rolling across the regolith."},
+    {"es": "Recibido, Houston. Voy para allá.", "en": "Copy, Houston. Heading there now."}]},
+  "llegada": {"quien": "perseverance",
+   "variantes": [
+    {"es": "Llegando al objetivo.", "en": "Arriving at the target."},
+    {"es": "En posición. Listo para trabajar.", "en": "In position. Ready to work."},
+    {"es": "Destino alcanzado.", "en": "Destination reached."}]},
+  "bateria": {"quien": "perseverance",
+   "variantes": [
+    {"es": "Batería baja. Conviene volver a la base.", "en": "Battery low. Better head back to base."},
+    {"es": "Me queda poca energía, Houston.", "en": "I'm running low on power, Houston."},
+    {"es": "Batería en reserva. Ahorro energía.", "en": "Battery on reserve. Saving power."}]},
+  "despegue_inicio": {"quien": "houston",
+   "variantes": [
+    {"es": "Aquí Houston. Cuenta atrás: tres, dos, uno. Ignición.", "en": "Houston here. Countdown: three, two, one. Ignition."},
+    {"es": "Todos los sistemas listos. Ignición.", "en": "All systems go. Ignition."},
+    {"es": "Motores encendidos. Ignición confirmada.", "en": "Engines lit. Ignition confirmed."}]},
+  "despegue_fin": {"quien": "houston",
+   "variantes": [
+    {"es": "Despegue confirmado. Separación de etapas nominal.", "en": "Liftoff confirmed. Stage separation nominal."},
+    {"es": "La nave dejó la torre. Buen viaje.", "en": "The vehicle has cleared the tower. Safe travels."},
+    {"es": "Separación de etapas confirmada. Rumbo fijado.", "en": "Stage separation confirmed. Course is set."}]},
+  "aterrizaje_rover": {"quien": "perseverance", "destinos": ["luna"],
+   "variantes": [
+    {"es": "Houston, aquí base Shackleton. Contacto con la superficie.", "en": "Houston, Shackleton Base here. Contact with the surface."},
+    {"es": "Contacto con la superficie. El rover está en el suelo.", "en": "Surface contact. The rover is on the ground."},
+    {"es": "Aquí base Shackleton. Hemos alunizado.", "en": "Shackleton Base here. We have landed."}]},
+  "aterrizaje_houston": {"quien": "houston", "destinos": ["luna"],
+   "variantes": [
+    {"es": "Recibido. Enlace con la Tierra abierto.", "en": "Copy. Link with Earth is open."},
+    {"es": "Los oímos fuerte y claro. Enlace con la Tierra abierto.", "en": "We read you loud and clear. Link with Earth is open."},
+    {"es": "Enlace con la Tierra abierto. Bienvenidos al polo sur.", "en": "Link with Earth is open. Welcome to the south pole."}]},
+  "noche": {"quien": "houston",
+   "variantes": [
+    {"es": "Atención: se acerca la noche. Los paneles dejarán de cargar.", "en": "Heads up: night is coming. The panels will stop charging."},
+    {"es": "Se pone el sol. Vigilen la batería.", "en": "Sunset coming. Watch your battery."},
+    {"es": "Noche en camino. Guarden energía para el frío.", "en": "Night is on its way. Save power for the cold."}]},
+  "ventana": {"quien": "houston",
+   "variantes": [
+    {"es": "Ventana de relé abierta. Pueden transmitir.", "en": "Relay window open. You can transmit."},
+    {"es": "El orbitador está sobre ustedes. Envíen los datos.", "en": "The orbiter is overhead. Send your data."},
+    {"es": "Enlace abierto. Esperamos su ciencia.", "en": "Link open. We're waiting for your science."}],
+   "luna": [
+    {"es": "Enlace con la Tierra abierto. Pueden transmitir.", "en": "Link with Earth open. You can transmit."},
+    {"es": "La Tierra está a la vista. Envíen los datos.", "en": "Earth is in view. Send your data."},
+    {"es": "Enlace abierto. Esperamos su ciencia.", "en": "Link open. We're waiting for your science."}]},
+  "memoria": {"quien": "perseverance",
+   "variantes": [
+    {"es": "Memoria casi llena. Necesito transmitir.", "en": "Memory almost full. I need to transmit."},
+    {"es": "Poco espacio para datos, Houston.", "en": "Running out of data storage, Houston."},
+    {"es": "Memoria al límite. Transmitan pronto.", "en": "Memory near the limit. Transmit soon."}]},
+  "tormenta": {"quien": "houston", "destinos": ["marte"],
+   "variantes": [
+    {"es": "Tormenta de polvo en camino. Protejan la base.", "en": "Dust storm incoming. Secure the base."},
+    {"es": "Llega la tormenta. Los paneles van a rendir menos.", "en": "The storm is here. The panels will produce less."},
+    {"es": "Alerta de tormenta de polvo. Ahorren energía.", "en": "Dust storm alert. Save power."}]}
+ }
+}
