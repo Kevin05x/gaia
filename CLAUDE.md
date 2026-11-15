@@ -51,6 +51,11 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - **Multijugador, un rover por jugador** (15 nov): la simulación lleva varios rovers (`MissionState.usar_rover`); batería, datos y base son del equipo; en red no hay tutorial. Prueba real: `tools/e2e_red.sh`. Cuatro salas en el servidor (`deploy/servidor/nativo`). Ver `docs/MULTIJUGADOR.md`.
 - **Estilo «panel de nave»** (`scenes/b/panel_nave.gd`, `UI.nave()`) y **cordillera del horizonte hecha en Blender** (`tools/blender/horizonte.py`, `assets/horizonte/cordillera.glb`, `assets/_blender/horizonte.blend` con `.gdignore`; sin el `.glb` el juego usa las lomas por código).
 
+- **Presupuesto en red** (15 nov, pedido de Kevin): cada jugador de más suma 200 M$ al presupuesto (`presupuesto_extra_por_jugador_musd` en `content/rules*.json`: 2 jugadores 900, 3 → 1100, 4 → 1300). Los topes por rol (`presupuesto_por_rol`) se reparten sobre ese total. Prueba: `tests/test_red_sala.gd`.
+- **Web en el dominio** (15 nov): juego en `gaianasa.tech`, web del proyecto en `info.gaianasa.tech`, salas en `sala.gaianasa.tech/1..4` (guía en `docs/SERVIDOR.md`). La página que envuelve el juego (`deploy/web/gaia_shell.html`, la genera `tools/generar_shell_web.py`) tiene pantalla de carga con el rover de la NASA y el icono de GAIA; el preset Web ya **incluye los modelos de la NASA** (rover de la NASA también en la web) y **excluye `_shots/`, `sitio/` y `deploy/`**: el paquete pasó de ~350 MB a ~95 MB. Primera visita lenta (el navegador compila los sombreadores, 30–50 s en Intel UHD); Chrome los guarda y la segunda es rápida. `scenes/b/web_carga.gd` muestra el aviso animado en esos momentos.
+- **Material para el video** (fuera del repositorio): `../material_video/` (tomas 4K con `tools/grabar_escenas.gd`, música, imágenes). Ver su `LEEME.md`.
+- **Araña de combate** (`scenes/b/combat_view.gd › _modelo_arana`): caparazón bronce con puntos ámbar y ocho patas, parecida a la ilustración «Tres golpes bajo la base».
+
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
