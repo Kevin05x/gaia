@@ -81,7 +81,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests,res://sce
 godot --path . -- --medir --preset=alta     # medición de rendimiento (alta|media|baja)
 ```
 
-Las pruebas deben pasar todas (530 en `b/dias-y-realismo` el 14 nov por la noche) antes de abrir un PR.
+Las pruebas deben pasar todas (587 en la rama `integracion`, 14 nov) antes de abrir un PR.
 
 ## Flujo de Git (reglas)
 

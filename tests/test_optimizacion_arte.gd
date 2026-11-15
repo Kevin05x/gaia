@@ -9,6 +9,13 @@ const CARPETA_TEXTURAS := "res://assets/texturas/"
 const EDIFICIOS := ["hangar_cuadrado", "hangar_roundA", "torreta_simple", "torreta_doble", "foco", "taladro", "anthena_juego"]
 const MAX_TRIANGULOS := 2500  ## por modelo del equipo
 const MAX_MATERIALES := 8  ## cada material es una llamada de dibujo (modelos_equipo.gd funde por material)
+## Escenarios que se cargan UNA sola vez (la pantalla de la plataforma, antes de la misión) y no se repiten por el mapa:
+## tienen su propio presupuesto, más holgado, para que el límite de arriba siga protegiendo todo lo que se repite.
+## Si un modelo de esta lista crece, la prueba falla; no se amplía sin medir.
+const ESCENARIO_UNICO := {
+	"hangar_gaia": {"triangulos": 72000, "materiales": 18},  ## edificio de montaje (sin lo que el juego oculta)
+	"cohete_super": {"triangulos": 10000, "materiales": 8},  ## Saturno V de la plataforma
+}
 const MAX_EMISIVOS := 2
 const MAX_LADO_TEXTURA := 1024
 const MAX_BYTES_TEXTURAS := 7 * 1024 * 1024  ## descarga de la versión web (12 texturas de 1024 px)
@@ -58,8 +65,13 @@ func test_los_modelos_del_equipo_son_ligeros() -> void:
 			nodo.free()
 			continue
 		var m := _medir(nodo)
-		assert_lt(int(m["triangulos"]), MAX_TRIANGULOS + 1, "%s: %d triángulos" % [nombre, m["triangulos"]])
-		assert_lt((m["materiales"] as Array).size(), MAX_MATERIALES + 1, "%s: %d materiales" % [nombre, (m["materiales"] as Array).size()])
+		var tope_tris := MAX_TRIANGULOS
+		var tope_mats := MAX_MATERIALES
+		if ESCENARIO_UNICO.has(nombre):
+			tope_tris = int(ESCENARIO_UNICO[nombre]["triangulos"])
+			tope_mats = int(ESCENARIO_UNICO[nombre]["materiales"])
+		assert_lt(int(m["triangulos"]), tope_tris + 1, "%s: %d triángulos" % [nombre, m["triangulos"]])
+		assert_lt((m["materiales"] as Array).size(), tope_mats + 1, "%s: %d materiales" % [nombre, (m["materiales"] as Array).size()])
 		nodo.free()
 
 

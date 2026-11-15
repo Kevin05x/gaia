@@ -322,3 +322,16 @@ Dos cosas que conviene saber si se vuelve a exportar:
   abrirse (y no lo nota ninguna prueba, solo se ve en una captura).
 
 Autoría y licencia del edificio: **pendiente de anotar**.
+
+
+## Hangar de montaje aligerado (integración, 14 nov 2026)
+
+`assets/modelos/hangar_gaia.glb` traía 120 376 triángulos, de los cuales el juego ocultaba 49 432 (su cohete, sus rovers, su personal
+y su base de lanzamiento: ver `HANGAR_FUERA` en `scenes/b/launch_pad.gd`). Se quitaron del archivo esos nodos con
+`tools/quitar_nodos_glb.py` (Python estándar; quita también los materiales y las 3 texturas que solo usaban esos nodos).
+- Resultado: 70 944 triángulos, 18 materiales, 12 texturas y 7,0 MB (antes 9,2 MB). Lo que se ve en pantalla es lo mismo.
+- Los `hangar_gaia_0..11.png` son las texturas extraídas del nuevo archivo; `hangar_gaia_12..14.png` ya no hacen falta.
+- El modelo original sigue en el historial de Git (commit cfcc9f4 de `b/cohetes-telescopio`).
+- Presupuesto: en `tests/test_optimizacion_arte.gd`, `ESCENARIO_UNICO` da un tope propio al hangar y al Saturno V
+  (`cohete_super`), que se cargan una sola vez en la pantalla de la plataforma. Los demás modelos siguen con el tope de 2 500 triángulos.
+- Pendiente de medir en GPU real: la pantalla de la plataforma (con el hangar) con `Medir_rendimiento.bat`.
