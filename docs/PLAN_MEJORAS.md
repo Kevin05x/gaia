@@ -68,7 +68,7 @@ libre a unas 5 casillas, y los 90 Wh incluyen el viaje. Si la memoria está llen
 | 3.1 | El selector va en la **pantalla de destino**; en red, en la sala (lo fija el anfitrión). |
 | 3.2 | Más batería en **Marte y Luna**. |
 | 4.1 | Estilo en **todo el juego**. Títulos con una **fuente OFL parecida al logo** (con su licencia, anotada en `ARTE_Y_LICENCIAS.md`). Con la 4.1 se arreglan también las etiquetas cortadas de la barra de pasos del hangar. |
-| 1.6 (extra) | El consejo de trayectoria del hangar lunar deja de decir «Marte». |
+| 1.6 (extra) | El consejo de trayectoria del hangar lunar deja de decir «Marte». **Revisado: no era un fallo del juego** (`content/destinos.json` ya trae el texto lunar); solo la herramienta de capturas no aplicaba los textos lunares. Corregida la herramienta. |
 | 6 | Se mide en el **PC de Kevin**; la Intel UHD la mide el equipo. |
 | 9 | Las voces las **genera Claude** (voces de Windows y Piper, efecto de walkie-talkie propio, anotado en `ARTE_Y_LICENCIAS.md`); si llega el script de Tony, se regraban. |
 | 8 | Claude prepara las **7 diapositivas** (presentación web descargable como PPTX/PDF), el **texto del proyecto** en inglés y el **guion y subtítulos** del video. El montaje del video es del equipo. |

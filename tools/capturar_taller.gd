@@ -128,6 +128,7 @@ func _correr() -> void:
 	hangar.queue_free()
 	var antes := Destino.id
 	Destino.id = "luna"
+	Destino.aplicar_textos()  # como en el juego: «misiones a la Luna», consejos lunares
 	var hangar_luna: CanvasLayer = preload("res://scenes/b/workshop.gd").new()
 	root.add_child(hangar_luna)
 	hangar_luna.category = "extras"
@@ -135,6 +136,7 @@ func _correr() -> void:
 	await _esperar(45)
 	_guardar(salida + "4b_hangar_luna.png")
 	Destino.id = antes
+	Destino.aplicar_textos()
 
 	quit()
 
