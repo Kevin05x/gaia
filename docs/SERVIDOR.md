@@ -90,4 +90,8 @@ compose de arriba: se instala solo la sala como servicio `gaia-sala` y se añade
 3. **Web del juego**: la sirve GitHub Pages (https) y se conecta a `wss://sala.TU_DOMINIO`; no hace falta exportarla en el VPS.
 4. El puerto 9080 queda abierto en el servidor (el cortafuegos de Hostinger no tenía reglas). Es solo el WebSocket del juego.
 
-**Sin probar en un servidor real.**
+**Estado (15 nov, tarde): instalado y comprobado hasta el saludo WebSocket.** En el VPS de Kevin (Hostinger KVM 2, Ubuntu 26.04) están
+`gaia-sala` activo, el certificado de `sala.gaianasa.tech` emitido por Let's Encrypt y el bloque en el Caddy existente; `gruasvp.com` no se tocó.
+Desde el propio VPS, `curl --http1.1` con las cabeceras de WebSocket recibe `101 Switching Protocols` tanto directo (`127.0.0.1:9080`) como por
+`https://sala.gaianasa.tech`. **Aún no se ha jugado una partida** (unirse desde el juego, 2 o más personas, redes distintas): eso sigue pendiente.
+Las visitas de navegador a `https://sala.gaianasa.tech/` dan 502 en el registro de Caddy: es normal (la sala solo habla WebSocket).

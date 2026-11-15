@@ -284,7 +284,7 @@ Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con ma
 - [x] **11.5 Modos de juego más claros.** Dificultad con su nivel entre paréntesis (fácil, normal, difícil) y explicación de qué cambia (presupuesto y monstruos; en la Luna solo el presupuesto). No existe un modo «supervivencia»: el destino (Marte con historia, Luna solo exploración) y la dificultad son los dos ejes.
 - [x] **11.6 Estilo «panel de nave».** `scenes/b/panel_nave.gd` (StyleBox dibujado por código: degradado metálico, filo biselado, filete ámbar arriba, escuadras y remaches) y `UI.nave()`. Lo usan el tema, Construir, pausa, tutorial, avisos, ficha de edificio y tarjetas de historia. Los botones siguen planos.
 - [x] **11.7 Horizonte con Blender.** `tools/blender/horizonte.py` → `assets/horizonte/cordillera.glb` (picos, mesetas escalonadas, barrancos). Se quitan las mesetas y los bloques grandes por código. Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md`. Sin medir en FPS.
-- [ ] **11.8 Servidor propio con dominio.** Pasos entregados a Kevin el 15 nov (VPS Hostinger KVM 2, Ubuntu 26.04). Pendiente de que Kevin reclame el dominio, cree los registros DNS `gaia` y `sala`, y ejecute los comandos de `docs/SERVIDOR.md`. **Sin probar en un servidor real.**
+- [ ] **11.8 Servidor propio con dominio.** Hecho el 15 nov: dominio `gaianasa.tech`, DNS `gaia` y `sala`, servicio `gaia-sala` (sin Docker: el VPS ya tenía Caddy) y certificado de `sala.gaianasa.tech`; saludo WebSocket `101` directo y por HTTPS. **Falta jugar una partida real por la sala** (y la web publicada apuntando a ella) antes de marcarlo.
 - [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
 
 ---
