@@ -35,6 +35,37 @@ func update_snapshot(s: Dictionary) -> void:
 		opened.emit()
 
 
+## Frase con lo que cambió una decisión («applied» de la simulación), en el idioma de quien la lee:
+## «-90 Wh de batería · +10 datos en memoria: transmítelos en la próxima ventana · el rover va al punto marcado».
+static func resumen(aplicado: Dictionary) -> String:
+	var partes: PackedStringArray = []
+	var energia := roundi(float(aplicado.get("energia_wh", 0.0)))
+	if energia != 0:
+		partes.append(TranslationServer.translate("UNEXP_ENERGY") % energia)
+	var datos := roundi(float(aplicado.get("datos", 0.0)))
+	if datos > 0:
+		partes.append(TranslationServer.translate("UNEXP_DATA_IN") % datos)
+	elif datos < 0:
+		partes.append(TranslationServer.translate("UNEXP_DATA_OUT") % -datos)
+	var perdidos := roundi(float(aplicado.get("datos_perdidos", 0.0)))
+	if perdidos > 0:
+		partes.append(TranslationServer.translate("UNEXP_DATA_LOST") % perdidos)
+	var vida := roundi(float(aplicado.get("rover_hp", 0.0)))
+	if vida != 0:
+		partes.append(TranslationServer.translate("UNEXP_HP") % vida)
+	if aplicado.has("bloquear_enlace_h"):
+		partes.append(TranslationServer.translate("UNEXP_LINK") % roundi(float(aplicado["bloquear_enlace_h"])))
+	if aplicado.has("bloquear_movimiento_h"):
+		partes.append(TranslationServer.translate("UNEXP_MOVE") % roundi(float(aplicado["bloquear_movimiento_h"])))
+	if aplicado.has("detour_tile"):
+		partes.append(TranslationServer.translate("UNEXP_DETOUR"))
+	elif aplicado.has("detour_reason"):
+		partes.append(TranslationServer.translate("UNEXP_NO_DETOUR"))
+	if partes.is_empty():
+		partes.append(TranslationServer.translate("UNEXP_NOTHING"))
+	return " · ".join(partes)
+
+
 func _texto(d: Variant) -> String:
 	if d is Dictionary:
 		return str(d.get("en" if TranslationServer.get_locale().begins_with("en") else "es", d.get("es", "")))

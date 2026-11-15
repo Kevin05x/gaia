@@ -31,6 +31,8 @@ var selection: MeshInstance3D
 var route_line: MeshInstance3D
 var cursor: MeshInstance3D
 var range_ring: MeshInstance3D  ## alcance de una torreta mientras se coloca
+var hallazgo: Node3D  ## baliza del punto de un desvío (imprevisto «Oportunidad científica»)
+var hallazgo_casilla := Vector2i.ZERO
 var obstacles: Array[Vector2i] = []
 var grid: Node3D
 var grid_manual := false  ## botón o tecla de la cuadrícula
@@ -681,6 +683,47 @@ func hide_cursor() -> void:
 	if is_instance_valid(cursor):
 		cursor.visible = false
 	hide_range()
+
+
+## Baliza en el punto al que se desvía el rover: un haz ámbar y un anillo en el suelo. Se quita al llegar.
+func marcar_hallazgo(tile: Vector2i) -> void:
+	quitar_hallazgo()
+	hallazgo_casilla = tile
+	hallazgo = Node3D.new()
+	hallazgo.name = "Hallazgo"
+	var x := tile.x * TILE
+	var z := tile.y * TILE
+	hallazgo.position = Vector3(x, maxf(height_at(x, z), BASIN_Y), z)
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 0.72, 0.3, 0.55)
+	var haz := MeshInstance3D.new()
+	var cilindro := CylinderMesh.new()
+	cilindro.top_radius = 0.12
+	cilindro.bottom_radius = 0.22
+	cilindro.height = 9.0
+	haz.mesh = cilindro
+	haz.material_override = material
+	haz.position.y = 4.5
+	haz.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	hallazgo.add_child(haz)
+	var anillo := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 1.2
+	toro.outer_radius = 1.4
+	anillo.mesh = toro
+	anillo.material_override = material
+	anillo.position.y = 0.08
+	anillo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	hallazgo.add_child(anillo)
+	add_child(hallazgo)
+
+
+func quitar_hallazgo() -> void:
+	if is_instance_valid(hallazgo):
+		hallazgo.queue_free()
+	hallazgo = null
 
 
 ## Anillo del alcance (en casillas) alrededor de «tile»; 0 lo oculta.

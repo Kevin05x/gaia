@@ -221,3 +221,113 @@ func test_1_6_el_hangar_muestra_el_paisaje_del_destino() -> void:
 		hangar.free()
 	Destino.id = antes
 	assert_ne(WorkshopScript.FONDO_LUNA, WorkshopScript.FONDO_MARTE)
+
+
+# --- 1.7 Cada decisión de un imprevisto se ve: aviso con lo que cambió y, al desviarse, el rover sale al punto ---------
+
+const ImprevistoPanelScript := preload("res://scenes/b/imprevisto_panel.gd")
+const DISENO: Array[String] = ["cohete_ligero", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro", "taladro"]
+
+
+func _sim_con_imprevistos(destino: String) -> Simulation:
+	var cfg := Destino.config(destino)
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	MissionRunner.adaptar_catalogo(catalogo, destino, float(cfg.get("factor_capacidad_cohete", 1.0)))
+	var sim := Simulation.new(Balance.desde_archivo(cfg.get("balance", "res://content/balance.json")),
+		Rules.desde_archivo(cfg.get("reglas", "res://content/rules.json")),
+		MapData.desde_archivo(cfg.get("mapa", "res://content/mapa.json")), catalogo,
+		Economy.desde_archivo(cfg.get("economia", "res://content/economia.json")).para_pruebas())
+	sim.usar_imprevistos(ImprevistosSystem.desde_archivo("res://content/imprevistos.json", destino), 7)
+	for id in DISENO:
+		sim.ejecutar("design_add", {"part_id": id})
+	var diseno := ["mmrtg", "bateria", "radar"] if destino == "luna" else []
+	for id in diseno:
+		sim.ejecutar("design_add", {"part_id": id})
+	sim.ejecutar("design_start")
+	sim.ejecutar("landing_finished")
+	return sim
+
+
+func test_1_7_cada_opcion_de_los_9_imprevistos_cuenta_lo_que_cambio() -> void:
+	var vistos := {}
+	for destino in ["marte", "luna"]:
+		var sistema := ImprevistosSystem.desde_archivo("res://content/imprevistos.json", destino)
+		for id in sistema.imprevistos:
+			for opcion in range((sistema.imprevistos[id]["opciones"] as Array).size()):
+				var sim := _sim_con_imprevistos(destino)
+				sim.estado.datos = 20.0
+				sim.estado.imprevisto = {"id": id}
+				var r := sim.ejecutar("event_choice", {"choice": opcion})
+				assert_true(r["ok"], "%s/%d se puede elegir" % [id, opcion])
+				assert_true(r.has("applied"), "%s/%d devuelve lo que cambió" % [id, opcion])
+				var texto := ImprevistoPanelScript.resumen(r["applied"])
+				assert_false(texto.is_empty(), "%s/%d tiene aviso" % [id, opcion])
+				assert_false(texto.contains("UNEXP_"), "%s/%d: aviso traducido (%s)" % [id, opcion, texto])
+				vistos[id] = true
+	assert_eq(vistos.size(), 9, "se revisaron los 9 imprevistos")
+
+
+func test_1_7_desviarse_manda_al_rover_al_punto_y_suma_10_datos() -> void:
+	var sim := _sim_con_imprevistos("marte")
+	var e := sim.estado
+	e.datos = 0.0
+	e.bateria_wh = e.bateria_capacidad_wh
+	var bateria := e.bateria_wh
+	var salida := e.casilla_rover
+	e.imprevisto = {"id": "oportunidad"}
+	var r := sim.ejecutar("event_choice", {"choice": 0})
+	assert_true(r["ok"])
+	var aplicado: Dictionary = r["applied"]
+	assert_true(aplicado.has("detour_tile"), "hay un punto marcado")
+	var punto: Vector2i = aplicado["detour_tile"]
+	var distancia := maxi(absi(punto.x - salida.x), absi(punto.y - salida.y))
+	assert_between(distancia, 3, 7, "a unas 5 casillas del rover")
+	assert_false(Array(r["path"]).is_empty(), "con ruta para que la vista mueva al rover")
+	assert_eq(Array(r["path"]).back(), punto, "la ruta acaba en el punto marcado")
+	assert_true(e.en_movimiento, "el rover sale hacia el punto")
+	assert_almost_eq(e.datos, 10.0, 0.01, "+10 datos en memoria al decidir")
+	assert_almost_eq(bateria - e.bateria_wh, 90.0, 0.01, "los 90 Wh incluyen el viaje")
+	assert_almost_eq(float(aplicado["energia_wh"]), -90.0, 0.01)
+	var texto := ImprevistoPanelScript.resumen(aplicado)
+	assert_string_contains(texto, "+10 datos en memoria")
+	assert_string_contains(texto, "punto marcado")
+
+
+func test_1_7_con_la_memoria_llena_el_aviso_cuenta_lo_perdido() -> void:
+	var sim := _sim_con_imprevistos("marte")
+	var e := sim.estado
+	e.datos = e.memoria_capacidad - 4.0
+	e.imprevisto = {"id": "oportunidad"}
+	var r := sim.ejecutar("event_choice", {"choice": 0})
+	var aplicado: Dictionary = r["applied"]
+	assert_almost_eq(float(aplicado["datos"]), 4.0, 0.01, "solo caben 4")
+	assert_almost_eq(float(aplicado["datos_perdidos"]), 6.0, 0.01, "y se pierden 6")
+	assert_string_contains(ImprevistoPanelScript.resumen(aplicado), "6 datos perdidos: memoria llena")
+
+
+func test_1_7_la_baliza_del_desvio_se_quita_al_llegar() -> void:
+	var terreno: Node3D = load("res://scenes/b/terrain.gd").new()
+	add_child_autofree(terreno)
+	terreno.marcar_hallazgo(Vector2i(4, 2))
+	assert_true(is_instance_valid(terreno.hallazgo))
+	assert_eq(terreno.hallazgo_casilla, Vector2i(4, 2))
+	terreno.quitar_hallazgo()
+	assert_null(terreno.hallazgo)
+
+
+func test_1_7_el_runner_presenta_la_ruta_del_desvio() -> void:
+	var port: Node = autofree(preload("res://scenes/b/port.gd").new())
+	var rutas: Array = []
+	port.path_received.connect(func(casillas: Array, _s: float) -> void: rutas.append(casillas))
+	var runner := MissionRunner.new()
+	runner.crear_vista = false
+	runner.saltar_taller = true
+	runner.port = port
+	add_child_autofree(runner)
+	port.submit("landing_finished")
+	runner.sim.usar_imprevistos(ImprevistosSystem.desde_archivo("res://content/imprevistos.json", "marte"), 7)
+	runner.sim.estado.bateria_wh = runner.sim.estado.bateria_capacidad_wh
+	runner.sim.estado.imprevisto = {"id": "oportunidad"}
+	port.submit("event_choice", {"choice": 0})
+	assert_eq(rutas.size(), 1, "la vista recibe la ruta del desvío y mueve al rover")
+	assert_true(runner.sim.estado.imprevisto.is_empty(), "la decisión quedó tomada")

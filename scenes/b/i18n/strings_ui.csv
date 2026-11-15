@@ -376,6 +376,17 @@ EVT_TAG,IMPREVISTO · LA MISIÓN SE DETIENE,UNEXPECTED EVENT · MISSION ON HOLD
 EVT_SOURCE,Basado en: %s,Based on: %s
 EVT_TEAM,Modo equipo: discutan las opciones y decidan juntos.,Team mode: discuss the options and decide together.
 EVT_REPORT,Imprevistos y decisiones,Unexpected events and decisions
+UNEXP_RESULT,Decisión aplicada: %s,Decision applied: %s
+UNEXP_ENERGY,%+d Wh de batería,%+d Wh battery
+UNEXP_DATA_IN,+%d datos en memoria: transmítelos en la próxima ventana,+%d data in memory: send them in the next link window
+UNEXP_DATA_LOST,%d datos perdidos: memoria llena,%d data lost: memory full
+UNEXP_DATA_OUT,%d datos a bordo perdidos,%d data on board lost
+UNEXP_HP,%+d %% de vida del rover,%+d %% rover health
+UNEXP_LINK,enlace cerrado %d h,link closed for %d h
+UNEXP_MOVE,sin moverse %d h,no driving for %d h
+UNEXP_DETOUR,el rover va al punto marcado,the rover heads to the marked spot
+UNEXP_NO_DETOUR,el rover no puede desviarse ahora,the rover can't take the detour now
+UNEXP_NOTHING,sin cambios,no change
 LINK_BLOCKED_EVENT,Enlace cerrado por un imprevisto,Link closed by an unexpected event
 MOVE_BLOCKED_EVENT,Rover detenido por un imprevisto,Rover stopped by an unexpected event
 PIEZA_TRAY_DIRECTA_LUNA,Transferencia directa,Direct transfer

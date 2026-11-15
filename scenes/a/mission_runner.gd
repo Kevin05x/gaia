@@ -15,6 +15,7 @@ const RUTA_COMBATE := "res://content/combate.json"
 const RUTA_TUTORIAL := "res://content/tutorial.json"
 const RUTA_HITOS := "res://content/hitos.json"
 const RUTA_IMPREVISTOS := "res://content/imprevistos.json"
+const ImprevistoPanel := preload("res://scenes/b/imprevisto_panel.gd")
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -263,6 +264,11 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				_aviso("MOVE_STOPPED")
 		"act":
 			port.present_action(resultado["action"])
+		"event_choice":
+			# Lo que cambió la decisión se cuenta en un aviso; con desvío, el rover sale hacia el punto marcado.
+			if not Array(resultado.get("path", [])).is_empty():
+				port.present_path(resultado["path"], resultado["seconds_per_tile"])
+			_ui("aviso_imprevisto", [resultado.get("applied", {})])
 		"upgrade", "build", "build_module":
 			_ui("ping")
 			# Obra con rover: el rover sale hacia la obra (o irá en cuanto acabe lo que hace).
@@ -322,6 +328,11 @@ static func ui_en_vista(vista: Node, metodo: String, args: Array) -> void:
 		"aviso_descarga":
 			vista.hud.show_notice(TranslationServer.translate("CARGO_UNLOADED") % int(args[0]))
 			vista.al_descargar()
+		"aviso_imprevisto":
+			var aplicado: Dictionary = args[0]
+			vista.hud.show_notice("UNEXP_RESULT", [ImprevistoPanel.resumen(aplicado)], 8.0)
+			if aplicado.has("detour_tile"):
+				vista.terrain.marcar_hallazgo(aplicado["detour_tile"])
 		"hito":
 			vista.celebrar_hito(str(args[0]))
 		"ping":

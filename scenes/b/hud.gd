@@ -1171,12 +1171,12 @@ func _update_summary(s: Dictionary) -> void:
 
 # ---------------------------------------------------------------- avisos breves, acciones, ayuda
 
-func show_notice(key: String, valores: Array = []) -> void:
+func show_notice(key: String, valores: Array = [], segundos: float = 3.5) -> void:
 	if not is_instance_valid(_toast_text):
 		return
 	_toast_key = key
 	_toast_text.text = tr(key) % valores if not valores.is_empty() else tr(key)
-	_toast_until = Time.get_ticks_msec() / 1000.0 + 3.5
+	_toast_until = Time.get_ticks_msec() / 1000.0 + segundos
 	_fade(_toast, true)
 
 

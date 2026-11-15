@@ -176,7 +176,7 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 		"event_choice":
 			if _imprevistos == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
-			return _resultado_simple(_imprevistos.decidir(estado, int(carga.get("choice", -1))))
+			return _decidir_imprevisto(int(carga.get("choice", -1)))
 		"tutorial_skip":
 			if _tutorial == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
@@ -633,6 +633,61 @@ func _con_redireccion(iniciar: Callable) -> Dictionary:
 		if not resultado.has("seconds_per_tile") or float(resultado["seconds_per_tile"]) <= 0.0:
 			resultado["seconds_per_tile"] = float(copia["mov"]["seconds_per_tile"])
 	return resultado
+
+
+## Decide el imprevisto pendiente. Devuelve «applied» (lo que cambió, para el aviso) y, si la opción manda al rover a
+## un desvío, la ruta («path», «seconds_per_tile») y la casilla marcada («applied.detour_tile»).
+func _decidir_imprevisto(opcion: int) -> Dictionary:
+	var bateria_inicio := estado.bateria_wh
+	var decision := _imprevistos.decidir(estado, opcion)
+	if not decision["ok"]:
+		return _resultado_simple(decision)
+	var aplicado: Dictionary = decision["applied"]
+	var resultado := {"ok": true, "reason": "", "applied": aplicado}
+	var casillas := int(aplicado.get("desvio_casillas", 0))
+	if casillas <= 0:
+		return resultado
+	var antes_del_viaje := estado.bateria_wh
+	var marcha := _desviar(casillas)
+	if not marcha["ok"] or Array(marcha["path"]).is_empty():
+		aplicado["detour_reason"] = str(marcha.get("reason", "NO_PATH"))
+		return resultado
+	# Los Wh de la opción ya incluyen el viaje: se devuelve lo que costó la ruta, hasta lo que se cobró al decidir
+	# (si el viaje cuesta más, se paga solo el viaje).
+	var cobrado := maxf(0.0, -float(aplicado.get("energia_wh", 0.0)))
+	var viaje := antes_del_viaje - estado.bateria_wh
+	estado.bateria_wh = minf(estado.bateria_wh + minf(viaje, cobrado), estado.bateria_capacidad_wh)
+	aplicado["energia_wh"] = estado.bateria_wh - bateria_inicio
+	aplicado["detour_tile"] = marcha["tile"]
+	resultado["path"] = marcha["path"]
+	resultado["seconds_per_tile"] = marcha["seconds_per_tile"]
+	return resultado
+
+
+## Lleva el rover a una casilla libre y alcanzable a unas «casillas» de distancia (la de ruta más corta; si no hay
+## ninguna a esa distancia, prueba un poco más cerca o más lejos). {"ok", "reason", "path", "seconds_per_tile", "tile"}.
+func _desviar(casillas: int) -> Dictionary:
+	var motivo := ""
+	for radio in [casillas, casillas - 1, casillas + 1, casillas - 2, casillas + 2]:
+		if radio < 1:
+			continue
+		var mejor := Vector2i.ZERO
+		var pasos := -1
+		for desplazamiento in MovementSystem._anillo(radio):
+			var casilla: Vector2i = estado.casilla_rover + desplazamiento
+			var plan := _movimiento.disponibilidad_mover(estado, casilla)
+			if not plan["enabled"]:
+				motivo = str(plan["reason"])
+				continue
+			var ruta: Array = plan["path"]
+			if not ruta.is_empty() and (pasos < 0 or ruta.size() < pasos):
+				mejor = casilla
+				pasos = ruta.size()
+		if pasos > 0:
+			var marcha := _mover(mejor)
+			marcha["tile"] = mejor
+			return marcha
+	return {"ok": false, "reason": motivo if not motivo.is_empty() else "NO_PATH", "path": []}
 
 
 func _mover(casilla: Vector2i) -> Dictionary:

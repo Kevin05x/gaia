@@ -234,7 +234,9 @@ func _ready() -> void:
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
 		actors.follow_path(tiles, seconds)
-		terrain.show_route(tiles))
+		terrain.show_route(tiles)
+		if is_instance_valid(terrain.hallazgo) and (tiles.is_empty() or tiles.back() != terrain.hallazgo_casilla):
+			terrain.quitar_hallazgo())  # el rover va a otro sitio: el desvío se abandonó
 	port.action_received.connect(func(action: Dictionary):
 		for t in port.snapshot.get("targets", []):
 			if str(t.get("id", "")) == str(action.get("target_id", "")) and t.has("tile"):
@@ -447,6 +449,9 @@ func apply_snapshot(s: Dictionary) -> void:
 		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}), s.get("zones", []))
 		map_signature = signature
 		tracks.clear()
+	if is_instance_valid(terrain.hallazgo) and not bool(s.get("moving", false)) \
+			and s.get("rover_tile", Vector2i(9999, 9999)) == terrain.hallazgo_casilla:
+		terrain.quitar_hallazgo()  # el rover llegó al punto del desvío
 	var en_taller: bool = s.get("phase", "") == "workshop"
 	terrain.visible = not en_taller
 	actors.visible = not en_taller
