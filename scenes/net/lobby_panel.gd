@@ -3,6 +3,10 @@ extends Control
 ## dificultad). Cuando el jefe empieza, avisa al menú con «partida_lista» y el menú lleva a todos a la pantalla de carga.
 const UI := preload("res://scenes/b/ui_style.gd")
 const Sesion := preload("res://scenes/menu/game_session.gd")
+const Texto := preload("res://scenes/menu/menu_text.gd")
+const RolesVentana := preload("res://scenes/net/roles_ventana.gd")
+## Servidor de GAIA en internet (VPS de Full Galácticos). Es lo que se propone por defecto: nadie tiene que saber la dirección.
+const SERVIDOR_GAIA := "sala.gaianasa.tech"
 
 signal cerrado
 signal partida_lista
@@ -113,12 +117,18 @@ func _vista_inicio() -> void:
 		crear.grab_focus.call_deferred()
 	_subtitulo(tr("NET_JOIN"))
 	_direccion = LineEdit.new()
-	_direccion.text = direccion_guardada
+	if direccion_guardada.is_empty():
+		direccion_guardada = str(Texto.preferencias().get("net_direccion", ""))  # la última sala a la que se entró
+	_direccion.text = direccion_guardada if not direccion_guardada.is_empty() else SERVIDOR_GAIA
 	_direccion.placeholder_text = tr("NET_ADDR_HINT")
 	_direccion.custom_minimum_size = Vector2(560, 40)
 	_direccion.text_submitted.connect(func(_t: String) -> void: _unirse())
 	_cuerpo.add_child(_direccion)
 	_cuerpo.add_child(_boton(tr("NET_CONNECT"), _unirse, web))
+	_cuerpo.add_child(_boton(tr("NET_OFFICIAL") % SERVIDOR_GAIA, func() -> void:
+		_direccion.text = SERVIDOR_GAIA
+		_unirse(), false, 360))
+	_cuerpo.add_child(_boton(tr("NET_RW_BUTTON"), func() -> void: RolesVentana.abrir(self), false, 260))
 	_cuerpo.add_child(_boton(tr("NET_BACK"), func() -> void: cerrado.emit(), false, 150))
 
 
@@ -141,6 +151,7 @@ func _unirse() -> void:
 	if err != OK:
 		_mensaje.text = tr("NET_ERR_CONNECT")
 		return
+	Texto.guardar("net", "direccion", direccion_guardada)
 	_conectando = true
 	_refrescar()
 
@@ -155,6 +166,7 @@ func _vista_sala() -> void:
 		var ips := Red.direcciones_locales()
 		var texto := "   ·   ".join(ips) if not ips.is_empty() else "—"
 		UI.label(_cuerpo, "%s   (:%d)" % [texto, Red.PUERTO], 18, UI.CREAM)
+	_cuerpo.add_child(_boton(tr("NET_RW_BUTTON"), func() -> void: RolesVentana.abrir(self), false, 260))
 	_subtitulo(tr("NET_PLAYERS") % sala.cuantos())
 	for i in range(sala.cuantos()):
 		var id: int = sala.orden[i]

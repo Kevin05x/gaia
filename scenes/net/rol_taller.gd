@@ -128,6 +128,12 @@ func actualizar(taller: Dictionary) -> void:
 			cifra.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		var pie := UI.label(_caja, tr("NET_SHARED_BUDGET"), UI.FONT_MIN, Color(CREMA, 0.6))
 		pie.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var roles_boton := Button.new()
+		roles_boton.text = tr("NET_RW_BUTTON")
+		roles_boton.focus_mode = Control.FOCUS_NONE
+		roles_boton.add_theme_font_size_override("font_size", UI.FONT_MIN)
+		roles_boton.pressed.connect(func() -> void: preload("res://scenes/net/roles_ventana.gd").abrir(self))
+		_caja.add_child(roles_boton)
 		var abrir := Button.new()
 		abrir.text = tr("NET_G_OPEN")
 		abrir.focus_mode = Control.FOCUS_NONE
