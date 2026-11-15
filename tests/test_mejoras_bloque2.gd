@@ -489,3 +489,80 @@ func test_3_2_la_bateria_extra_suma_1000_wh() -> void:
 	var sim := _empezar("marte", ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "bateria"])
 	assert_eq(sim.estado.bateria_capacidad_wh, 3000.0, "antes la pieza no sumaba nada")
 	assert_eq(sim.estado.bateria_wh, 3000.0)
+
+
+# --- 3.1 Duración del sol a elección (6 a 12 min) sin cambiar el balance ---------------------------------------------
+
+func _sim_operando(duracion_s: float) -> Simulation:
+	var cfg := Destino.config("marte")
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	MissionRunner.adaptar_catalogo(catalogo, "marte", 1.0)
+	var sim := Simulation.new(Balance.desde_archivo(cfg["balance"]), Rules.desde_archivo(cfg["reglas"]),
+		MapData.desde_archivo(cfg["mapa"]), catalogo, Economy.desde_archivo(cfg["economia"]).para_pruebas())
+	sim.fijar_duracion_sol(duracion_s)
+	for id in ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro", "taladro"]:
+		sim.ejecutar("design_add", {"part_id": id})
+	sim.ejecutar("design_start")
+	sim.ejecutar("landing_finished")
+	return sim
+
+
+func _jugar_un_sol(sim: Simulation) -> void:
+	var paso := sim.estado.duracion_sol_s / 2400.0
+	for i in range(2400):
+		sim.avanzar(paso)
+
+
+func test_3_1_un_sol_dura_lo_elegido() -> void:
+	for duracion in [360.0, 720.0]:
+		var sim := _sim_operando(duracion)
+		var hora := sim.estado.hora
+		_jugar_un_sol(sim)
+		assert_eq(sim.estado.sol, 2, "%d s: pasó un sol" % duracion)
+		assert_almost_eq(sim.estado.hora, hora, 0.05, "%d s: a la misma hora" % duracion)
+
+
+func test_3_1_un_dia_de_juego_da_lo_mismo_con_6_y_con_12_minutos() -> void:
+	var resultados: Array[Dictionary] = []
+	for duracion in [360.0, 720.0]:
+		var sim := _sim_operando(duracion)
+		sim.estado.recursos["rocas"] = 200
+		sim.ejecutar("build", {"building": "panel_solar", "tile": sim.estado.casilla_estacion + Vector2i(3, 0)})
+		sim.estado.datos = 40.0
+		sim.estado.nivel_antena = 1
+		sim.ejecutar("transmit", {"on": true})
+		_jugar_un_sol(sim)
+		var obras := sim.estado.edificios.map(func(b): return "%s:%d" % [b["type"], b["level"]])
+		resultados.append({"bateria": sim.estado.bateria_wh, "enviados": sim.estado.enviados, "obras": str(obras)})
+	gut.p("3.1 un día: %s" % [resultados])
+	assert_gt(float(resultados[0]["enviados"]), 0.0, "hubo transmisión")
+	assert_almost_eq(resultados[0]["bateria"], resultados[1]["bateria"], 1.0, "la batería es la misma")
+	assert_almost_eq(resultados[0]["enviados"], resultados[1]["enviados"], 0.5, "se envían los mismos datos")
+	assert_eq(resultados[0]["obras"], resultados[1]["obras"], "la obra avanza igual")
+
+
+func test_3_1_la_partida_guardada_conserva_la_duracion() -> void:
+	var sim := _sim_operando(600.0)
+	var datos: Dictionary = str_to_var(var_to_str(sim.guardar()))
+	var otra := _sim_operando(360.0)
+	assert_true(otra.cargar(datos))
+	assert_eq(otra.estado.duracion_sol_s, 600.0, "se carga con su duración")
+	datos["estado"].erase("duracion_sol_s")
+	assert_true(otra.cargar(datos))
+	assert_eq(otra.estado.duracion_sol_s, 300.0, "una partida de antes vuelve al sol de siempre")
+
+
+func test_3_1_el_menu_y_la_sala_ofrecen_la_duracion() -> void:
+	var Sesion := preload("res://scenes/menu/game_session.gd")
+	assert_eq(Sesion.DURACIONES_SOL, [6, 8, 10, 12])
+	assert_eq(Sesion.duracion_sol_min, 12, "12 min por defecto")
+	var Menu := preload("res://scenes/menu/menu.gd")
+	assert_string_contains(Menu.texto_duracion_sol(12), "72 min")
+	var Sala := preload("res://scenes/net/sala.gd")
+	var sala = Sala.new()
+	sala.anadir(1, "Ana")
+	assert_true(sala.configurar(1, "marte", "estandar", 8))
+	var copia = Sala.desde_dict(sala.a_dict())
+	assert_eq(int(copia.config["duracion_sol_min"]), 8, "el jefe la fija y la ven todos")
+	assert_true(sala.configurar(1, "luna", "experta"))
+	assert_eq(int(sala.config["duracion_sol_min"]), 8, "cambiar destino no la pierde")

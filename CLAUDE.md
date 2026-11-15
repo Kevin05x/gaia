@@ -8,7 +8,7 @@ Lee este archivo antes de tocar nada. Resume qué es el proyecto, qué se decidi
 - **GAIA** (nombre provisional): juego 3D de diseño y operación de misiones espaciales para el **NASA Space Apps Challenge 2026**, reto *Space Mission Design Game*. Equipo **Full Galácticos** (sede Cajamarca).
 - Bucle: briefing → taller (masa, presupuesto 700 M$, energía, comunicaciones, instrumentos) → revisión Go/No-Go por roles → lanzamiento (foto real) → crucero (203 días a Marte, 3 a la Luna) → aterrizaje con grúa aérea → operaciones sol a sol → informe con causas y comparación con la misión real.
 - Dos destinos: **Marte** (cráter Jezero, con historia y combate) y **Luna** (polo sur, sin historia ni combate).
-- Meta de la partida: enviar 100 unidades de datos antes de que termine el sol 6. Un sol dura 300 s reales; el día va de 6:00 a 18:00; de noche no hay sol.
+- Meta de la partida: enviar 100 unidades de datos antes de que termine el sol 6. Un sol dura lo que elige el jugador (6, 8, 10 o 12 min reales; 12 por defecto; plan 3.1). La transmisión, las obras, las oleadas y el tutorial van en horas de juego (no cambian con la duración); el rover y las acciones, en segundos reales. `balance.json` (300 s) es el sol de referencia y el que usan las pruebas. El día va de 6:00 a 18:00; de noche no hay sol.
 - **Entrega: domingo 15 de noviembre, 23:59 (hora local). Meta interna: 2 horas de margen.**
 
 ## Equipo y ramas (acordado el 14 de nov)

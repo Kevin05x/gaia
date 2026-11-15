@@ -71,7 +71,10 @@ func usar_imprevistos(sistema: ImprevistosSystem, semilla: int) -> void:
 
 
 func reiniciar() -> void:
+	var duracion_sol := estado.duracion_sol_s if estado != null else -1.0
 	estado = MissionState.new(_balance, _reglas)
+	if duracion_sol > 0.0:
+		estado.duracion_sol_s = duracion_sol  # la duración elegida se conserva al rediseñar
 	_mapa.aplicar_a(estado)
 	_revision_mapa += 1
 	estado.revision_mapa = _revision_mapa
@@ -213,7 +216,11 @@ func avanzar(delta_s: float) -> Array[String]:
 			_imprevistos.programar(estado, _semilla_imprevistos)
 		if _imprevistos.esperando(estado):
 			return eventos  # imprevisto: el equipo debe decidir antes de seguir
-	var horas := _reloj.horas_de_juego(delta_s)
+	var horas := _reloj.horas_de_juego(delta_s, estado.duracion_sol_s)
+	# Transmisión, obras, oleadas y tutorial se miden en horas de juego (plan 3.1): reciben los segundos que habrían
+	# pasado con el sol de referencia de balance.json, así una duración distinta no cambia el balance. El rover y las
+	# acciones siguen en segundos reales: es lo que se siente al jugar.
+	var referencia := segundos_de_referencia(delta_s)
 	_fijar_tope_envio()
 	eventos.append_array(_energia.avanzar(estado, horas))
 	var eventos_reloj := _reloj.avanzar(estado, delta_s)
@@ -233,19 +240,19 @@ func avanzar(delta_s: float) -> Array[String]:
 	if estado.descargar_al_llegar and not estado.en_movimiento:
 		estado.descargar_al_llegar = false
 		eventos.append_array(_descargar_aqui())
-	eventos.append_array(_comunicaciones.avanzar(estado, delta_s))
+	eventos.append_array(_comunicaciones.avanzar(estado, referencia))
 	if _edificios != null:
 		_seguir_obra_antes(eventos)
-		var eventos_obra := _edificios.avanzar(estado, delta_s, horas)
+		var eventos_obra := _edificios.avanzar(estado, referencia, horas)
 		eventos.append_array(eventos_obra)
 		_seguir_obra_despues(eventos, eventos_obra)
 	if _combate != null:
-		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
+		eventos.append_array(_combate.avanzar(estado, referencia, horas, _energia))
 	_anotar_progreso(eventos)
 	if _hitos != null:
 		eventos.append_array(_hitos.avanzar(estado))
 	if _tutorial != null:
-		eventos.append_array(_tutorial.avanzar(estado, delta_s, eventos))
+		eventos.append_array(_tutorial.avanzar(estado, referencia, eventos))
 	if _imprevistos != null:
 		eventos.append_array(_imprevistos.avanzar(estado))
 	informe = _resultado.evaluar(estado, eventos)
@@ -520,6 +527,7 @@ func cargar(datos: Dictionary) -> bool:
 	if str(campos.get("fase", "")) != "operations":
 		return false
 	reiniciar()
+	estado.duracion_sol_s = _balance.numero("tiempo.duracion_sol_s")  # partidas de antes de 3.1: el sol de siempre
 	var diseno: Dictionary = datos["diseno"]
 	for categoria in Catalog.CATEGORIAS:
 		_diseno.seleccion[categoria] = Array(diseno.get(categoria, []))
@@ -638,6 +646,21 @@ func _con_redireccion(iniciar: Callable) -> Dictionary:
 		if not resultado.has("seconds_per_tile") or float(resultado["seconds_per_tile"]) <= 0.0:
 			resultado["seconds_per_tile"] = float(copia["mov"]["seconds_per_tile"])
 	return resultado
+
+
+## Duración de cada sol en segundos reales (plan 3.1). Se fija antes de empezar; la partida guardada la conserva.
+func fijar_duracion_sol(segundos: float) -> void:
+	if segundos > 0.0:
+		estado.duracion_sol_s = segundos
+
+
+## Segundos reales pasados a los del sol de referencia de balance.json (con 300 s de referencia y un sol de 720 s,
+## 2,4 s reales son 1 s de referencia).
+func segundos_de_referencia(delta_s: float) -> float:
+	var referencia := _balance.numero("tiempo.duracion_sol_s")
+	if estado.duracion_sol_s <= 0.0 or referencia <= 0.0:
+		return delta_s
+	return delta_s * referencia / estado.duracion_sol_s
 
 
 ## Decide el imprevisto pendiente. Devuelve «applied» (lo que cambió, para el aviso) y, si la opción manda al rover a

@@ -24,9 +24,10 @@ func _init(balance: Balance, reglas: Rules) -> void:
 	_soles_tormenta.sort()
 
 
-## Horas de juego que equivalen a los segundos reales indicados.
-func horas_de_juego(delta_s: float) -> float:
-	var duracion := _balance.numero("tiempo.duracion_sol_s")
+## Horas de juego que equivalen a los segundos reales indicados, con un sol de «duracion_s» segundos reales
+## (sin ella, la de balance.json).
+func horas_de_juego(delta_s: float, duracion_s: float = -1.0) -> float:
+	var duracion := duracion_s if duracion_s > 0.0 else _balance.numero("tiempo.duracion_sol_s")
 	if duracion <= 0.0 or delta_s <= 0.0:
 		return 0.0
 	return delta_s * HORAS_POR_SOL / duracion
@@ -41,7 +42,7 @@ func avanzar(estado: MissionState, delta_s: float) -> Array[String]:
 	var eventos: Array[String] = []
 	if estado.fase != "operations" or estado.pausado:
 		return eventos
-	var horas := horas_de_juego(delta_s)
+	var horas := horas_de_juego(delta_s, estado.duracion_sol_s)
 	if horas <= 0.0:
 		return eventos
 	actualizar(estado)

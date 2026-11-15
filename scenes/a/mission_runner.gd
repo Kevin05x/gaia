@@ -192,6 +192,8 @@ func _crear_simulacion() -> void:
 	aplicar_dificultad(reglas, combate, Sesion.dificultad)
 	if errores.is_empty():
 		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
+		if (crear_vista or modo_red) and not preload("res://scenes/a/medidor.gd").pedido():  # pruebas y medición: el sol de balance.json
+			sim.fijar_duracion_sol(Sesion.duracion_sol_min * 60.0)
 		var imprevistos := ImprevistosSystem.desde_archivo(RUTA_IMPREVISTOS, destino)
 		if (crear_vista or modo_red) and imprevistos.errores.is_empty() and not saltar_taller:  # pruebas y medición: sin sorpresas
 			sim.usar_imprevistos(imprevistos, int(Time.get_unix_time_from_system()) % 100000)

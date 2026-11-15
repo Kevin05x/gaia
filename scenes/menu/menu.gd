@@ -244,7 +244,7 @@ func _nueva_partida() -> void:
 
 ## Antes de jugar: objetivo de la misión, dificultad y cuántas personas juegan (modo equipo, hasta 4).
 func _configurar_mision() -> void:
-	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 590)
+	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 680)
 	_subtitulo(cuerpo, tr("M_SETUP_DEST"))
 	var fila_dest := HBoxContainer.new()
 	fila_dest.add_theme_constant_override("separation", 8)
@@ -289,6 +289,7 @@ func _configurar_mision() -> void:
 			explicacion.text = tr("DIFF_" + id.to_upper() + "_D"))
 		fila_dif.add_child(b)
 	explicacion.text = tr("DIFF_" + Sesion.dificultad.to_upper() + "_D")
+	_selector_duracion_sol(cuerpo)
 	_subtitulo(cuerpo, tr("M_SETUP_TEAM"))
 	var fila_eq := HBoxContainer.new()
 	fila_eq.add_theme_constant_override("separation", 8)
@@ -322,6 +323,36 @@ func _configurar_mision() -> void:
 	var volver := pie.get_child(0) as Button
 	volver.theme_type_variation = ""
 	empezar.grab_focus.call_deferred()
+
+
+## Duración de cada sol (plan 3.1): 6, 8, 10 o 12 minutos reales.
+func _selector_duracion_sol(cuerpo: Control) -> void:
+	_subtitulo(cuerpo, tr("M_SETUP_SOL"))
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila)
+	var nota := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.custom_minimum_size.x = 640
+	var grupo := ButtonGroup.new()
+	for minutos in Sesion.DURACIONES_SOL:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo
+		b.text = tr("M_SETUP_SOL_N") % minutos
+		b.custom_minimum_size = Vector2(140, 40)
+		b.button_pressed = Sesion.duracion_sol_min == minutos
+		b.pressed.connect(func() -> void:
+			Sesion.duracion_sol_min = minutos
+			nota.text = texto_duracion_sol(minutos))
+		fila.add_child(b)
+	nota.text = texto_duracion_sol(Sesion.duracion_sol_min)
+
+
+## «6 soles ≈ 72 min de partida…» con el sol límite de content/rules.json.
+static func texto_duracion_sol(minutos: int) -> String:
+	var soles := Rules.desde_archivo("res://content/rules.json").sol_limite
+	return TranslationServer.translate("M_SETUP_SOL_D") % [soles, soles * minutos]
 
 
 ## «Persona 1: Dirección y Ciencia · Persona 2: ...» según cuántos juegan.

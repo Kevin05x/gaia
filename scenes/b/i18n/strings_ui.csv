@@ -321,6 +321,9 @@ INTRO_NASA_CREDIT,%s,%s
 M_SETUP_TITLE,Configura tu misión,Set up your mission
 M_SETUP_GOAL,Objetivo de la misión: buscar señales de vida antigua en el cráter Jezero (Marte) y enviar a la Tierra 100 unidades de datos científicos antes de que termine el sol 6. Primero diseñarás la nave; después la operarás.,Mission objective: search for signs of ancient life in Jezero Crater (Mars) and send 100 units of science data to Earth before sol 6 ends. First you design the spacecraft; then you operate it.
 M_SETUP_DIFF,Dificultad,Difficulty
+M_SETUP_SOL,Duración de cada sol (día de misión),Length of each sol (mission day)
+M_SETUP_SOL_N,%d min,%d min
+M_SETUP_SOL_D,"%d soles ≈ %d min de partida. La base, la transmisión y las oleadas van al mismo ritmo de juego con cualquier duración; con soles largos tienes más tiempo para mover el rover y pensar.","%d sols ≈ %d min of play. The base, transmission and waves keep the same game pace at any length; longer sols give you more time to drive and think."
 M_SETUP_TEAM,Equipo,Team
 M_SETUP_SOLO,1 persona,1 person
 M_SETUP_PLAYERS,%d personas,%d people

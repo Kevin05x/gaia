@@ -277,18 +277,18 @@ func _rpc_sala(datos: Dictionary) -> void:
 	sala_cambiada.emit()
 
 
-## Interfaz → anfitrión: el jefe cambia destino o dificultad.
-func configurar(destino: String, dificultad: String) -> void:
+## Interfaz → anfitrión: el jefe cambia destino, dificultad o duración del sol (-1: la que ya había).
+func configurar(destino: String, dificultad: String, duracion_sol_min: int = -1) -> void:
 	if es_autoridad():
-		if sala.configurar(mi_id, destino, dificultad):
+		if sala.configurar(mi_id, destino, dificultad, duracion_sol_min):
 			_enviar_sala()
 	else:
-		_rpc_config.rpc_id(1, destino, dificultad)
+		_rpc_config.rpc_id(1, destino, dificultad, duracion_sol_min)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_config(destino: String, dificultad: String) -> void:
-	if es_autoridad() and sala.configurar(multiplayer.get_remote_sender_id(), destino, dificultad):
+func _rpc_config(destino: String, dificultad: String, duracion_sol_min: int) -> void:
+	if es_autoridad() and sala.configurar(multiplayer.get_remote_sender_id(), destino, dificultad, duracion_sol_min):
 		_enviar_sala()
 
 
@@ -313,6 +313,7 @@ func _empezar(id: int) -> void:
 		return
 	Sesion.destino = destino
 	Sesion.dificultad = str(sala.config.get("dificultad", "estandar"))
+	Sesion.duracion_sol_min = int(sala.config.get("duracion_sol_min", 12))
 	Sesion.jugadores = sala.cuantos()
 	Sesion.votos = []
 	Sesion.cargar_al_iniciar = false
@@ -337,6 +338,7 @@ func _preparar_cliente(datos: Dictionary) -> void:
 	var cfg: Dictionary = datos.get("config", {})
 	Sesion.destino = str(cfg.get("destino", "marte"))
 	Sesion.dificultad = str(cfg.get("dificultad", "estandar"))
+	Sesion.duracion_sol_min = int(cfg.get("duracion_sol_min", 12))
 	Sesion.jugadores = maxi(1, (datos.get("jugadores", []) as Array).size())
 	Sesion.votos = []
 	Sesion.cargar_al_iniciar = false

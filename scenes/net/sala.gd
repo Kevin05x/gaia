@@ -10,7 +10,7 @@ const NOMBRE_MAXIMO := 16
 
 var orden: Array[int] = []  ## ids de los jugadores en orden de llegada
 var nombres: Dictionary = {}  ## id -> nombre
-var config := {"destino": "marte", "dificultad": "estandar"}
+var config := {"destino": "marte", "dificultad": "estandar", "duracion_sol_min": 12}
 var jugando := false
 var _roles: Dictionary = {}  ## id -> roles, fijados al empezar (y reasignados si alguien se va)
 
@@ -68,10 +68,11 @@ func numero(id: int) -> int:
 
 
 ## Cambia la configuración; solo el jefe, y solo antes de empezar.
-func configurar(id: int, destino: String, dificultad: String) -> bool:
+func configurar(id: int, destino: String, dificultad: String, duracion_sol_min: int = -1) -> bool:
 	if jugando or not es_jefe(id):
 		return false
-	config = {"destino": destino, "dificultad": dificultad}
+	var minutos := duracion_sol_min if duracion_sol_min > 0 else int(config.get("duracion_sol_min", 12))
+	config = {"destino": destino, "dificultad": dificultad, "duracion_sol_min": minutos}
 	return true
 
 
@@ -127,6 +128,7 @@ static func desde_dict(datos: Dictionary) -> Object:
 		sala.nombres[id] = str(j.get("nombre", ""))
 		sala._roles[id] = Array(j.get("roles", []))
 	var cfg: Dictionary = datos.get("config", {})
-	sala.config = {"destino": str(cfg.get("destino", "marte")), "dificultad": str(cfg.get("dificultad", "estandar"))}
+	sala.config = {"destino": str(cfg.get("destino", "marte")), "dificultad": str(cfg.get("dificultad", "estandar")),
+		"duracion_sol_min": int(cfg.get("duracion_sol_min", 12))}
 	sala.jugando = bool(datos.get("jugando", false))
 	return sala

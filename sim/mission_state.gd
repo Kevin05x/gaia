@@ -21,6 +21,8 @@ var limite_max: Vector2i = Vector2i(11, 11)
 
 var bateria_wh: float = 0.0
 var bateria_capacidad_wh: float = 0.0
+## Segundos reales que dura un sol en esta partida (lo elige el jugador: 6 a 12 min; plan 3.1). Se guarda con la partida.
+var duracion_sol_s: float = 300.0
 var generacion_w: float = 0.0
 var carga_w: float = 0.0
 
@@ -125,6 +127,7 @@ var _balance: Balance
 func _init(balance: Balance, reglas: Rules) -> void:
 	_balance = balance
 	hora = balance.numero("tiempo.hora_inicio")
+	duracion_sol_s = balance.numero("tiempo.duracion_sol_s")
 	bateria_capacidad_wh = balance.numero("energia.capacidad_base_wh")
 	bateria_wh = bateria_capacidad_wh
 	carga_w = balance.numero("energia.consumo_base_w")

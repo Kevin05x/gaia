@@ -116,7 +116,7 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 
 ## Bloque 3 · Lógica del juego (P1, 2–3 h, con decisión del equipo)
 
-- [ ] **3.1 Duración del sol a elección del jugador** (decidido por Kevin el 14 nov): antes de empezar la partida, un selector
+- [x] **3.1 Duración del sol a elección del jugador** (decidido por Kevin el 14 nov): antes de empezar la partida, un selector
   **«Duración de cada sol: 6 · 8 · 10 · 12 minutos»** (por defecto 12). La partida dura lo que tenga que durar (6 soles = 36 a 72 min).
   - Dónde se elige: pantalla previa a la misión (después de elegir destino y dificultad) y, en red, en la sala (lo fija el anfitrión
     y lo ven todos; `scenes/net/sala.gd` → `config`).

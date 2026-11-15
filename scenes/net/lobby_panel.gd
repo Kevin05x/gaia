@@ -169,6 +169,7 @@ func _vista_sala() -> void:
 	roles.custom_minimum_size.x = 720
 	_selector_destino(sala, jefe)
 	_selector_dificultad(sala, jefe)
+	_selector_duracion_sol(sala, jefe)
 	if jefe:
 		UI.label(_cuerpo, tr("NET_START_HINT"), 13, Color(UI.AMBER, 0.9))
 	var pie := HBoxContainer.new()
@@ -214,6 +215,25 @@ func _selector_destino(sala, jefe: bool) -> void:
 		b.button_pressed = str(sala.config["destino"]) == str(id)
 		b.disabled = not jefe
 		b.pressed.connect(func() -> void: Red.configurar(str(id), str(sala.config["dificultad"])))
+		fila.add_child(b)
+
+
+## Duración de cada sol (plan 3.1): la fija el jefe de la sala y la ven todos.
+func _selector_duracion_sol(sala, jefe: bool) -> void:
+	_subtitulo(tr("M_SETUP_SOL"))
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	_cuerpo.add_child(fila)
+	var grupo := ButtonGroup.new()
+	for minutos in Sesion.DURACIONES_SOL:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo
+		b.text = tr("M_SETUP_SOL_N") % minutos
+		b.custom_minimum_size = Vector2(110, 40)
+		b.button_pressed = int(sala.config.get("duracion_sol_min", 12)) == minutos
+		b.disabled = not jefe
+		b.pressed.connect(func() -> void: Red.configurar(str(sala.config["destino"]), str(sala.config["dificultad"]), minutos))
 		fila.add_child(b)
 
 
