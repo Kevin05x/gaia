@@ -117,6 +117,18 @@ func _correr() -> void:
 	await _esperar(45)
 	_guardar(salida + "4_hangar_sidebar.png")
 
+	# 4b) El mismo hangar rumbo a la Luna: por el portón se ve el horizonte gris y la Tierra.
+	hangar.queue_free()
+	var antes := Destino.id
+	Destino.id = "luna"
+	var hangar_luna: CanvasLayer = preload("res://scenes/b/workshop.gd").new()
+	root.add_child(hangar_luna)
+	hangar_luna.category = "extras"
+	hangar_luna.update_snapshot(sim.snapshot())
+	await _esperar(45)
+	_guardar(salida + "4b_hangar_luna.png")
+	Destino.id = antes
+
 	quit()
 
 

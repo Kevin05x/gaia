@@ -65,6 +65,7 @@ var _toast_label: Label
 var _toast_until := 0.0
 var _turntable: Node3D
 var _camera: Camera3D
+var _fondo_material: StandardMaterial3D  ## paisaje que se ve por el portón del hangar (cambia con el destino)
 var _rover: Node3D
 var _drone: Node3D
 var _companion: Node3D
@@ -582,8 +583,15 @@ func _build_preview() -> void:
 	root.add_child(_hotspot_layer)
 
 
-## Interior del hangar: muro curvo con costillas, ventana a Marte y plataforma con anillos luminosos.
+## Paisaje del portón según el destino. Marte: la ilustración de la pantalla de carga (IA, ver ARTE_Y_LICENCIAS.md).
+## Luna: foto real de la NASA desde Orion (horizonte gris y la Tierra en el cielo; fuente en docs/DATOS_NASA.md).
+const FONDO_MARTE := "res://assets/menu/pantalla_carga.jpg"
+const FONDO_LUNA := "res://assets/nasa/luna_tierra.jpg"
+
+
+## Interior del hangar: muro curvo con costillas, portón abierto al destino y plataforma con anillos luminosos.
 func _build_hangar(vista: Node) -> void:
+	var luna := Destino.es_luna()
 	var pared_mat := _material(Color("2A1A12"))
 	pared_mat.cull_mode = BaseMaterial3D.CULL_DISABLED  # visible por dentro
 	# Dirección del portón (hacia el fondo, a la derecha del rover) y hueco que deja en el muro.
@@ -619,7 +627,7 @@ func _build_hangar(vista: Node) -> void:
 	luz_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for y in [1.7, 8.0]:
 		_arco(vista, 14.85, y, y + 0.1, luz_mat, ang_hueco, medio_hueco)
-	# Portón del hangar abierto al paisaje de Marte (hacia el fondo, a la derecha del rover). Es una abertura con
+	# Portón del hangar abierto al paisaje del destino (hacia el fondo, a la derecha del rover). Es una abertura con
 	# profundidad: túnel de salida, suelo que continúa afuera, el paisaje lejos y hojas del portón recogidas.
 	var centro := dir * 15.0
 	var porton := Node3D.new()
@@ -636,15 +644,22 @@ func _build_hangar(vista: Node) -> void:
 	cuadro.size = Vector2(46, 25.9)
 	var foto_mat := StandardMaterial3D.new()
 	foto_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	foto_mat.albedo_texture = load("res://assets/menu/pantalla_carga.jpg")
-	foto_mat.albedo_color = Color(1.0, 0.88, 0.8)
-	foto_mat.uv1_scale = Vector3(0.9, 0.86, 1)
-	foto_mat.uv1_offset = Vector3(0.05, 0.02, 0)
-	_add_mesh(porton, cuadro, foto_mat, Vector3(0, 8.0, 26.0), Vector3(0, PI, 0))
-	# Suelo exterior que enlaza con el del hangar.
+	foto_mat.albedo_texture = load(FONDO_LUNA if luna else FONDO_MARTE)
+	if luna:
+		# Foto de 3:2 en un cuadro de 16:9: todo el ancho, sin deformar, con la Tierra a la vista.
+		foto_mat.uv1_scale = Vector3(1.0, 0.845, 1)
+		foto_mat.uv1_offset = Vector3(0.0, 0.08, 0)
+	else:
+		foto_mat.albedo_color = Color(1.0, 0.88, 0.8)
+		foto_mat.uv1_scale = Vector3(0.9, 0.86, 1)
+		foto_mat.uv1_offset = Vector3(0.05, 0.02, 0)
+	_fondo_material = foto_mat
+	# En la Luna el cuadro baja para que el horizonte y la Tierra queden dentro del hueco del portón.
+	_add_mesh(porton, cuadro, foto_mat, Vector3(0, 4.0 if luna else 8.0, 26.0), Vector3(0, PI, 0))
+	# Suelo exterior que enlaza con el del hangar (gris de regolito en la Luna).
 	var terreno := BoxMesh.new()
 	terreno.size = Vector3(60, 0.2, 40)
-	var terreno_mat := _material(Color("6B3A25"))
+	var terreno_mat := _material(Destino.color(Color("6B3A25")))
 	_add_mesh(porton, terreno, terreno_mat, Vector3(0, -0.1, 20.0))
 	# Túnel de salida: paredes, techo y suelo con vetas de luz.
 	var pared := BoxMesh.new()
@@ -686,7 +701,7 @@ func _build_hangar(vista: Node) -> void:
 	for lado in [-1.0, 1.0]:
 		_add_mesh(porton, luz_aviso, _material(Color("FF8A1F"), 2.4), Vector3(lado * (ancho / 2.0 + 0.6), alto + 1.2, -0.75))
 	var sol := OmniLight3D.new()
-	sol.light_color = Color("FFB070")
+	sol.light_color = Color("DCE6F5") if luna else Color("FFB070")  # luz del Sol sin atmósfera en la Luna
 	sol.light_energy = 1.8
 	sol.omni_range = 9.0
 	sol.position = Vector3(0, 2.4, -1.5)

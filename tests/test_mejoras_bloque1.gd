@@ -207,3 +207,17 @@ func test_1_5_el_texto_de_la_escena_sale_en_poco_mas_de_un_segundo() -> void:
 	assert_lt(panel._capa.modulate.a, 1.0, "entra con un fundido, no de golpe")
 	await get_tree().create_timer(0.7).timeout
 	assert_almost_eq(panel._capa.modulate.a, 1.0, 0.01, "y el fundido termina")
+
+
+# --- 1.6 El hangar muestra el paisaje del destino ---------------------------------------------------------------------
+
+func test_1_6_el_hangar_muestra_el_paisaje_del_destino() -> void:
+	var antes := Destino.id
+	for caso in [["marte", WorkshopScript.FONDO_MARTE], ["luna", WorkshopScript.FONDO_LUNA]]:
+		Destino.id = str(caso[0])
+		var hangar: CanvasLayer = add_child_autofree(WorkshopScript.new())
+		var foto: Texture2D = hangar._fondo_material.albedo_texture
+		assert_eq(foto.resource_path, caso[1], "%s: su propio paisaje por el portón" % caso[0])
+		hangar.free()
+	Destino.id = antes
+	assert_ne(WorkshopScript.FONDO_LUNA, WorkshopScript.FONDO_MARTE)
