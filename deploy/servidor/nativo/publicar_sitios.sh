@@ -15,6 +15,8 @@ echo "web del proyecto: $(ls /var/www/gaia-sitio | wc -l) elementos en /var/www/
 if [ -f /tmp/gaia-juego/index.html ]; then
   sudo rm -rf /var/www/gaia-juego/*
   sudo cp -a /tmp/gaia-juego/. /var/www/gaia-juego/
+  # la exportación trae archivos .import que el navegador no necesita
+  sudo find /var/www/gaia-juego -name "*.import" -delete
   # robots.txt y sitemap.xml para los buscadores (el rm de arriba los borra en cada publicación)
   sudo cp deploy/servidor/nativo/juego_robots.txt /var/www/gaia-juego/robots.txt
   sudo cp deploy/servidor/nativo/juego_sitemap.xml /var/www/gaia-juego/sitemap.xml
