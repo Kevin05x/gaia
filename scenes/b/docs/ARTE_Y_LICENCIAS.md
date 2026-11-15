@@ -363,3 +363,12 @@ disponible) sino uno parecido hecho en Python: banda estrecha de 300 a 3000 Hz, 
 frase y ráfagas de estática al abrir y cerrar. **Pendiente**: si se instala la voz «Español (México)» de Windows (trae a
 Microsoft Raúl), volver a ejecutar `py tools/voces/generar_voces.py --modelos <carpeta de modelos> --piper-py <piper-tts>`
 para que Houston suene igual que en la historia; si llega el script de mezcla de Tony, regrabar con él.
+
+## Cordillera del horizonte hecha en Blender (15 nov 2026 · pedido de Kevin, hecha con Claude)
+
+- **Qué es:** el anillo de montañas que rodea el cráter (y el polo sur lunar), con picos, crestas, mesetas escalonadas y barrancos. Sustituye a las lomas y mesetas que generaba el código y a los bloques y mesetas grandes que parecían edificios. Es forma de **juego, no un lugar real**: no copia ninguna foto ni modelo de la NASA.
+- **Cómo se hizo:** `tools/blender/horizonte.py` (Blender 5.3, ruido «ridged multifractal» de Blender, semilla fija). Comando: `blender -b -P tools/blender/horizonte.py -- assets/horizonte/cordillera.glb assets/_blender/horizonte.blend`. Salen `assets/horizonte/cordillera.glb` (solo geometría, unos 42 000 vértices) y `assets/_blender/horizonte.blend`.
+- **Autoría y licencia:** el script y la malla los generó Claude (IA) por encargo del equipo; no usa texturas, imágenes ni modelos de terceros. Se declara como uso de IA igual que el resto del código (docs/CUMPLIMIENTO.md).
+- **Cómo se ve:** `scenes/b/horizonte.gd › cordillera()` carga el `.glb` y le pone el color, la neblina y la paleta de Marte o de la Luna con las mismas reglas de antes. Si falta el archivo, el juego vuelve a las lomas y mesetas por código.
+- **Carpeta `assets/_blender/`:** lleva un `.gdignore` para que Godot no intente importar el `.blend` (necesita Blender configurado en el editor).
+- **No medido:** no se midió el efecto en los FPS (82 000 triángulos fijos, siempre lejos). Hay que repetir `Medir_rendimiento.bat` antes de dar la cifra por buena.

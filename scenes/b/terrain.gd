@@ -138,8 +138,13 @@ func _pasos_mundo() -> Array[Callable]:
 		func() -> void:
 			_build_basin()
 			_build_lake()
-			_world.add_child(Horizonte.lomas(_s, _fine))  # paisaje lejano: scenes/b/horizonte.gd
-			_world.add_child(Horizonte.mesetas(_s, _fine))
+			# Paisaje lejano (scenes/b/horizonte.gd): la cordillera de Blender; sin ese archivo, lomas y mesetas por código.
+			var cordillera := Horizonte.cordillera(_s, _fine)
+			if cordillera != null:
+				_world.add_child(cordillera)
+			else:
+				_world.add_child(Horizonte.lomas(_s, _fine))
+				_world.add_child(Horizonte.mesetas(_s, _fine))
 			_built = true
 			_firma = "%d|%s" % [int(_s), var_to_str(zones)],
 	]
@@ -821,6 +826,12 @@ func _build_decor() -> void:
 		{"id": "mesa1", "mesh": "mesa1", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
 		{"id": "mesa_big", "mesh": "mesa0", "count": int(12 * fr), "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0, "vis": 0.0, "variants": 1},
 	]
+	if Horizonte.hay_cordillera():
+		# Con la cordillera de Blender, las mesetas y los bloques grandes por código sobran (parecían edificios).
+		familias = familias.filter(func(d: Dictionary) -> bool: return not str(d["mesh"]).begins_with("mesa"))
+		for d in familias:
+			if d["id"] == "block":
+				d["count"] = int(int(d["count"]) * 0.3)
 	var paleta := [Color("AD8666"), Color("987256"), Color("A47C5F"), Color("C69D78"), Color("8A6850")]
 	# Cada familia pequeña usa 3 variantes de forma para que no se repita el mismo canto.
 	var expandidas: Array = []

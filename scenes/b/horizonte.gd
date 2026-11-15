@@ -17,6 +17,85 @@ const AIRE_LOMAS := 0.12  ## bruma de las lomas (a 76–170 m); las mesetas, má
 const AIRE_MESETAS := 0.55
 
 
+const CORDILLERA := "res://assets/horizonte/cordillera.glb"  ## la saca tools/blender/horizonte.py
+const S_REFERENCIA := 140.0  ## medio lado del mapa para el que se generó la cordillera (m)
+const R_DENTRO := 290.0
+const R_FUERA := 575.0
+
+
+static func hay_cordillera() -> bool:
+	return ResourceLoader.exists(CORDILLERA)
+
+
+## Cordillera hecha en Blender (picos, mesetas escalonadas y barrancos): sustituye a las lomas y a las mesetas por código.
+## Solo trae la forma; el color, la neblina y la paleta de Marte o la Luna se ponen aquí, con las mismas reglas de siempre.
+## null si falta el archivo (entonces se usan lomas() y mesetas()).
+static func cordillera(s: float, fino: FastNoiseLite) -> MeshInstance3D:
+	if not hay_cordillera():
+		return null
+	var escena := load(CORDILLERA) as PackedScene
+	if escena == null:
+		return null
+	var raiz := escena.instantiate()
+	var origen: Mesh = null
+	for nodo in raiz.find_children("*", "MeshInstance3D", true, false):
+		origen = (nodo as MeshInstance3D).mesh
+		break
+	raiz.free()
+	if origen == null or origen.get_surface_count() < 1:
+		return null
+	var datos := origen.surface_get_arrays(0)
+	var vertices: PackedVector3Array = datos[Mesh.ARRAY_VERTEX]
+	var normales: PackedVector3Array = datos[Mesh.ARRAY_NORMAL]
+	var indices: PackedInt32Array = datos[Mesh.ARRAY_INDEX]
+	if vertices.is_empty() or indices.is_empty():
+		return null
+	var escala := s / S_REFERENCIA if s > 0.0 else 1.0
+	var hacia_arriba := 0.0
+	for n in normales:
+		hacia_arriba += n.y
+	var invertir := hacia_arriba < 0.0  # la malla se ve desde dentro del cráter: las normales deben mirar hacia arriba
+	var colores := PackedColorArray()
+	colores.resize(vertices.size())
+	for i in range(vertices.size()):
+		var v := vertices[i]
+		v.x *= escala
+		v.z *= escala
+		vertices[i] = v
+		var nrm := (-normales[i] if invertir else normales[i]).normalized()
+		normales[i] = nrm
+		var t := clampf((Vector2(v.x, v.z).length() / escala - R_DENTRO) / (R_FUERA - R_DENTRO), 0.0, 1.0)
+		var altura := v.y - BASIN_Y
+		var tono := BASIN.lerp(MOUNTAIN, smoothstep(0.5, 6.0, altura))
+		var banda := 0.5 + 0.5 * sin(altura * 0.55 + fino.get_noise_2d(v.x * 0.02, v.z * 0.02) * 3.0)
+		tono = tono.lerp(ESTRATO_A.lerp(ESTRATO_B, banda), smoothstep(2.0, 14.0, altura) * 0.85)
+		tono *= lerpf(0.52, 1.0, smoothstep(0.30, 0.80, nrm.y)) * 0.9  # paredes y barrancos, en sombra
+		tono = tono.lerp(CUMBRE, smoothstep(30.0, 85.0, altura) * 0.35)  # cumbres al sol
+		tono *= 1.0 + fino.get_noise_2d(v.x * 0.5, v.z * 0.5) * 0.06
+		tono = tono.lerp(CIELO, lerpf(0.04, 0.36, smoothstep(0.05, 0.95, t)))
+		tono.a = 1.0
+		colores[i] = tono
+	if invertir:
+		for j in range(0, indices.size(), 3):
+			var tmp := indices[j + 1]
+			indices[j + 1] = indices[j + 2]
+			indices[j + 2] = tmp
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normales
+	arrays[Mesh.ARRAY_COLOR] = Destino.colores(colores)
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var malla := ArrayMesh.new()
+	malla.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var nodo := MeshInstance3D.new()
+	nodo.name = "Cordillera"
+	nodo.mesh = malla
+	nodo.material_override = W.vertex_material(false)
+	nodo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return nodo
+
+
 ## Lomas: 17 anillos con crestas finas, estratos de color (como las paredes del delta de Jezero), laderas empinadas
 ## más oscuras y cumbres más claras. «s»: medio lado del mapa jugable (m).
 static func lomas(s: float, fino: FastNoiseLite) -> MeshInstance3D:
