@@ -256,6 +256,8 @@ func test_2_2_hay_captura_de_cada_paso_en_los_dos_destinos_e_idiomas() -> void:
 	for destino in ["marte", "luna"]:
 		var datos := TutorialData.desde_archivo(Destino.config(destino)["tutorial"])
 		for paso in datos.pasos:
+			if not paso.has("captura") and ["bienvenida", "acciones", "carga"].has(str(paso["id"])):
+				continue  # pasos de lectura o con elementos nuevos: sin foto, solo texto
 			for idioma in ["es", "en"]:
 				var ruta := TutorialPanelScript.ruta_captura(str(paso.get("captura", paso["id"])), destino, idioma)
 				assert_true(ruta.contains("/%s/%s/" % [destino, idioma]), "%s/%s/%s tiene captura" % [destino, idioma, paso["id"]])
@@ -586,6 +588,8 @@ func test_4_2_las_acciones_van_en_un_bloque_con_icono_y_tecla() -> void:
 	var hud := _hud_con({})
 	assert_true(hud._actions_row is PanelContainer, "un solo bloque")
 	for accion in HudScript.GLOBAL_ACTIONS:
+		if accion == "upgrade":
+			continue
 		var b: Button = hud.buttons[accion]
 		assert_eq(b.get_parent(), hud._actions_fila)
 		assert_eq(b.get_child_count(), 1, "%s con icono" % accion)
@@ -601,7 +605,7 @@ func test_4_2_se_ocultan_las_que_no_se_podran_usar_y_no_las_pasajeras() -> void:
 	assert_false(hud.buttons["drone"].visible, "el dron ya voló este sol: fuera")
 	assert_true(hud.buttons["companion"].visible, "rover en marcha: visible y apagada, la barra no salta")
 	assert_true(hud.buttons["companion"].disabled)
-	assert_true(hud.buttons["upgrade"].visible)
+	assert_false(hud.buttons["upgrade"].visible, "«Construir antena» vive en el menú Construir (B), no en la barra")
 
 
 func test_4_2_el_contador_de_fps_va_arriba_a_la_derecha() -> void:

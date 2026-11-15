@@ -21,6 +21,7 @@ var plegada := false
 var _card: PanelContainer
 var _title: Label
 var _text: Label
+var _reloj: Label  ## «Reloj detenido…» / «El reloj corre»
 var _imagen: TextureRect
 var _cuerpo: HBoxContainer
 var _plegar: Button
@@ -107,6 +108,8 @@ func _ready() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.custom_minimum_size = Vector2(ANCHO - IMAGEN.x - 60.0, 0)
 	_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_reloj = UI.label(derecha, "", 12, Color(UI.CREAM, 0.65))
+	_reloj.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var botones := HBoxContainer.new()
 	botones.add_theme_constant_override("separation", 8)
 	botones.alignment = BoxContainer.ALIGNMENT_END
@@ -164,13 +167,36 @@ func update_snapshot(s: Dictionary) -> void:
 			step_changed.emit()
 		_flash()
 	_title.text = tr("TUTORIAL_TITLE") % [int(t.get("step", 1)), int(t.get("total", 1))]
-	_text.text = Story.text_of(t.get("text", {}))
+	_text.text = texto_del_paso(Story.text_of(t.get("text", {})), id, t.get("tools", []), bool(t.get("companion", false)))
+	var espera := bool(t.get("waiting", false))
+	_reloj.text = tr("TUT_CLOCK_STOPPED") if espera else tr("TUT_CLOCK_RUNS")
+	_reloj.add_theme_color_override("font_color", UI.AMBER if espera else Color(UI.CREAM, 0.65))
+	_siguiente.theme_type_variation = "PrimaryButton" if bool(t.get("manual", false)) else "Button"
 	_skip.text = tr("TUTORIAL_SKIP")
 	_siguiente.text = tr("TUTORIAL_NEXT")
 	_plegar.text = tr("TUTORIAL_EXPAND") if plegada else tr("TUTORIAL_FOLD")
 	_highlight = str(t.get("highlight", ""))
 	_poner_imagen(str(t.get("image", id)))
 	_aplicar_visibilidad()
+
+
+## Herramientas que enseña cada paso (en el orden en que se listan).
+const HERRAMIENTAS_DEL_PASO := {"analizar": ["spectrometer", "drill"], "acciones": ["panorama", "radar", "drone", "companion"]}
+## Id de la acción en la simulación -> clave del texto que la explica.
+const TEXTO_HERRAMIENTA := {"spectrometer": "ESPECTROMETRO", "drill": "TALADRO", "panorama": "CAMARA", "radar": "RADAR", "drone": "DRON",
+	"companion": "COMPANERO"}
+
+
+## Sustituye {tools} por una línea por cada herramienta que el rover lleva de verdad (la que eligió el jugador en el taller).
+static func texto_del_paso(texto: String, paso: String, herramientas: Array, companero: bool) -> String:
+	if not texto.contains("{tools}"):
+		return texto
+	var lineas: Array[String] = []
+	for id in HERRAMIENTAS_DEL_PASO.get(paso, []):
+		if herramientas.has(id) or (id == "companion" and companero):
+			lineas.append(TranslationServer.translate("TUT_TOOL_" + str(TEXTO_HERRAMIENTA[id])))
+	return texto.replace("{tools}", "
+".join(lineas))
 
 
 ## Captura real del paso en el idioma del jugador (o en español si falta); sin captura, solo texto.

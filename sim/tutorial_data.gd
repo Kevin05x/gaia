@@ -5,7 +5,10 @@ extends RefCounted
 ## "CODIGO:detalle".
 
 const TIPOS: Array[String] = ["edificio", "antena", "enviados"]
-const RESALTES: Array[String] = ["", "mapa", "acciones", "construir", "enlace"]
+const RESALTES: Array[String] = ["", "mapa", "acciones", "construir", "enlace", "objetivo", "carga"]
+## Órdenes de juego que el tutorial puede bloquear (el resto, como pausar o elegir una decisión, siempre se aceptan).
+const ORDENES_DE_JUEGO: Array[String] = ["move", "approach", "stop", "unload", "act", "transmit", "upgrade", "build", "build_module",
+	"toggle_building", "inspect_story_site"]
 
 var hasta_sol: int = 2  ## el tutorial se cierra solo al pasar de este sol
 var pasos: Array[Dictionary] = []
@@ -55,6 +58,9 @@ func _cargar(texto: String) -> void:
 		if not RESALTES.has(str(paso.get("resalta", ""))):
 			errores.append("UNKNOWN_HIGHLIGHT:%s" % id)
 		_validar_condicion(id, paso.get("condicion", null))
+		for orden in paso.get("permite", []):
+			if not ORDENES_DE_JUEGO.has(str(orden)):
+				errores.append("UNKNOWN_ORDER:%s:%s" % [id, orden])
 		pasos.append(paso)
 
 
@@ -62,6 +68,8 @@ func _validar_condicion(id: String, condicion: Variant) -> void:
 	if not (condicion is Dictionary):
 		errores.append("MISSING_CONDITION:%s" % id)
 		return
+	if condicion.has("manual"):
+		return  # solo avanza con «Siguiente»
 	if condicion.has("leer_s"):
 		if float(condicion["leer_s"]) <= 0.0:
 			errores.append("INVALID_CONDITION:%s" % id)

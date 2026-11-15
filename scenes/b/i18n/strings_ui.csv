@@ -40,7 +40,7 @@ OPEN,Enlace disponible,Link available
 CLOSED,Esperando próxima pasada,Waiting for next pass
 DIRECT,DIRECTO A TIERRA,DIRECT TO EARTH
 RELAY,RELÉ ORBITAL,ORBITAL RELAY
-CONTROLS,"Clic: seleccionar o mover · Rueda: zoom · Q/E: girar la cámara · C, V, X: instrumentos · T: transmitir · F3: rendimiento · Esc: pausa","Click: select or move · Wheel: zoom · Q/E: rotate camera · C, V, X: instruments · T: transmit · F3: performance · Esc: pause"
+CONTROLS,"Clic: seleccionar o mover · Rueda: zoom · Q/E: girar la cámara · B: construir · Tab: acciones · C, V, Z, X: herramientas · G: descargar · T: transmitir · F3: rendimiento · Esc: pausa","Click: select or move · Wheel: zoom · Q/E: rotate camera · B: build · Tab: actions · C, V, Z, X: tools · G: unload · T: transmit · F3: performance · Esc: pause"
 PAUSE,Pausar,Pause
 RESUME,Continuar,Resume
 PAUSED,MISIÓN EN PAUSA,MISSION PAUSED
@@ -441,6 +441,25 @@ CMP_DRAG,arrastra para girar,drag to rotate
 TUTORIAL_NEXT,Siguiente,Next
 TUTORIAL_FOLD,Plegar,Collapse
 TUTORIAL_EXPAND,Desplegar,Expand
+TUTORIAL_LOCKED,Ahora no: sigue el paso del tutorial (o pulsa «Saltar tutorial»),"Not now: follow the tutorial step (or press ""Skip tutorial"")"
+TUT_CLOCK_STOPPED,Reloj detenido: empieza cuando hagas lo que pide el paso,Clock stopped: it starts when you do what the step asks
+TUT_CLOCK_RUNS,El reloj corre,The clock is running
+TUT_TOOL_ESPECTROMETRO,· Espectrómetro: analiza la roca y da ciencia,· Spectrometer: analyses the rock and gives science
+TUT_TOOL_TALADRO,· Taladro: toma una muestra y da recursos para construir,· Drill: takes a sample and gives resources to build
+TUT_TOOL_CAMARA,· Cámara (C): la panorámica descubre rocas y minerales,· Camera (C): the panorama reveals rocks and minerals
+TUT_TOOL_RADAR,· Radar de subsuelo (V): revela lo que hay enterrado,· Subsurface radar (V): reveals what is buried
+TUT_TOOL_DRON,· Dron (Z): vuela y descubre objetivos (una vez al día),· Drone (Z): flies and reveals targets (once a day)
+TUT_TOOL_COMPANERO,· Rocky (X): busca minerales y trae rocas a la base,· Rocky (X): searches for minerals and brings rocks to the base
+ACTIONS_MENU,Acciones,Actions
+ACTIONS_MENU_TIP,Herramientas del rover (tecla Tab). Cada una tiene su propia tecla.,Rover tools (Tab key). Each one has its own key.
+OPT_ACTIONS,Botones de acciones,Action buttons
+OPT_ACTIONS_ALWAYS,Siempre visibles,Always visible
+OPT_ACTIONS_POPUP,Emergentes,Pop-up
+OPT_ACTIONS_KEYS,Solo teclas,Keys only
+OPT_ACTIONS_HELP,Emergentes: se abren con Tab o con el botón «Acciones». Solo teclas: no hay botones en pantalla.,"Pop-up: open with Tab or the ""Actions"" button. Keys only: no buttons on screen."
+CARGO_MARKER,Almacén,Storage
+CARGO_MARKER_NEAR,[G] Descargar aquí,[G] Unload here
+CARGO_MARKER_FAR,[G] Ir a descargar,[G] Go unload
 STORY_CHANGES,Esta decisión cambiará: %s,This decision will change: %s
 STORY_CH_BATTERY,%+d %% de batería,%+d %% battery
 STORY_CH_DATA,%+d datos en memoria,%+d data in memory

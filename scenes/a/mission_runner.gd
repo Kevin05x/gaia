@@ -241,6 +241,8 @@ func _empezar_con_diseno_inicial(agregar_piezas: bool = true) -> void:
 	var inicio := sim.ejecutar("design_start")
 	if not inicio["ok"]:
 		push_error("GAIA: el diseño inicial no es válido (%s)" % inicio["reason"])
+	elif saltar_taller:
+		sim.ejecutar("tutorial_skip")  # las pruebas operan directo: el tutorial bloquearía órdenes y detendría el reloj
 
 
 func _al_recibir_orden(orden: String, carga: Dictionary) -> void:

@@ -120,6 +120,17 @@ func iniciar_aterrizaje() -> bool:
 ## Atiende una orden de la vista. Devuelve {"ok", "reason"} y, según la orden:
 ## "path" y "seconds_per_tile" (move, approach) o "action" (act) para que la vista los presente.
 func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
+	if _tutorial != null:
+		_tutorial.preparar(estado)
+		if not _tutorial.permite(estado, orden):
+			return {"ok": false, "reason": "TUTORIAL_LOCKED"}
+	var resultado := _ejecutar_orden(orden, carga)
+	if _tutorial != null and bool(resultado.get("ok", false)):
+		_tutorial.al_ordenar(estado, orden)
+	return resultado
+
+
+func _ejecutar_orden(orden: String, carga: Dictionary) -> Dictionary:
 	match orden:
 		"select":
 			return _seleccionar(str(carga.get("target_id", "")))
@@ -210,6 +221,11 @@ func avanzar(delta_s: float) -> Array[String]:
 		return eventos
 	if _historia != null and _historia.esperando_decision(estado):
 		return eventos  # la misión espera la decisión del jugador
+	if _tutorial != null:
+		_tutorial.preparar(estado)
+		if estado.tutorial_activo and estado.tutorial_espera:
+			# Tutorial: el reloj espera a que el jugador haga algo. Solo se comprueba si el paso ya estaba cumplido.
+			return _tutorial.avanzar(estado, 0.0, eventos)
 	if _imprevistos != null:
 		if not estado.imprevistos_programados:
 			estado.imprevistos_programados = true
@@ -457,7 +473,8 @@ func snapshot() -> Dictionary:
 		datos["resource_capacity"] = _recursos.capacidad(estado)
 		if _recursos.usa_bodega():
 			datos["cargo"] = {"items": estado.carga.duplicate(), "total": _recursos.carga_total(estado),
-				"capacity": _recursos.capacidad_bodega(), "near_storage": junto_a_almacen(), "going": estado.descargar_al_llegar}
+				"capacity": _recursos.capacidad_bodega(), "near_storage": junto_a_almacen(), "going": estado.descargar_al_llegar,
+				"storages": almacenes()}
 		datos["buildings"] = _edificios.para_la_vista(estado)
 		datos["build_options"] = _edificios.opciones(estado)
 		datos["base"] = {"center": estado.casilla_estacion, "radius": _economia.zona_base_radio,

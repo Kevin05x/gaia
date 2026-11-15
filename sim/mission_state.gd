@@ -94,6 +94,8 @@ var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el c
 var tutorial_activo: bool = false
 var tutorial_paso: int = 0  ## índice del paso que se muestra
 var tutorial_t: float = 0.0  ## segundos reales que lleva el paso actual en pantalla
+var tutorial_espera: bool = false  ## el reloj de la misión está detenido hasta que el jugador haga algo en este paso
+var tutorial_visto: int = -1  ## último paso ya preparado (requisitos y pausa)
 var tutorial_contadores: Dictionary = {}  ## evento -> veces que ha ocurrido desde que empezó el tutorial
 
 ## Combate (content/combate.json). Todo son datos simples para poder guardarlos.

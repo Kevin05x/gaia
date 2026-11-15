@@ -887,6 +887,20 @@ func project_target(id: String) -> Dictionary:
 	return {"pos": camera.unproject_position(world), "behind": false}
 
 
+## Posición en pantalla de una casilla (por ejemplo, el almacén que marca el HUD). Como project_target, devuelve "behind".
+func project_tile(tile: Vector2i) -> Dictionary:
+	if rig == null or rig.camera == null:
+		return {}
+	var camera: Camera3D = rig.camera
+	var mundo := Escala.a_mundo(tile)
+	mundo.y = maxf(terrain.height_at(mundo.x, mundo.z), -0.55) + 3.2
+	if camera.is_position_behind(mundo):
+		var local := camera.global_transform.affine_inverse() * mundo
+		var size := get_viewport().get_visible_rect().size
+		return {"pos": size / 2.0 + Vector2(local.x, absf(local.y) + 1.0).normalized() * size.length(), "behind": true}
+	return {"pos": camera.unproject_position(mundo), "behind": false}
+
+
 ## Objetivo revelado más cercano al clic en pantalla (zona de 44×44 px), aunque lo tape una roca.
 func pick_target(screen: Vector2) -> String:
 	var best := ""
