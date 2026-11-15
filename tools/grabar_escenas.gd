@@ -280,5 +280,5 @@ func _con_interfaz(carpeta: String) -> void:
 		vista.story.pulsar()
 	juego.sim.estado.hora = 10.0
 	juego._publicar()
-	await _esperar(90)
+	await _esperar(300)  # que se apaguen los avisos pasajeros
 	await _cuadro(carpeta, "hud")
