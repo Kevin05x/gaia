@@ -15,7 +15,8 @@ SERVIDOR=0
 if [ "$MODO" != "lan" ]; then
   PORT="$PUERTO" "$GODOT" --headless --path . scenes/net/servidor.tscn -- --servidor > "$SALIDA/servidor.txt" 2>&1 &
   SERVIDOR=$!
-  sleep 6
+  for _ in $(seq 1 60); do grep -q "GAIA servidor" "$SALIDA/servidor.txt" && break; sleep 1; done  # espera a que de verdad escuche
+  sleep 1
 else
   : > "$SALIDA/servidor.txt"
 fi
