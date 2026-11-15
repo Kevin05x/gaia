@@ -342,3 +342,24 @@ y su base de lanzamiento: ver `HANGAR_FUERA` en `scenes/b/launch_pad.gd`). Se qu
 | Archivos | Qué es | Origen |
 | --- | --- | --- |
 | `assets/tutorial/<marte\|luna>/<es\|en>/<paso>.jpg` (24 JPG de 640×360) | Captura real de cada paso del tutorial, en la ventana del tutorial y en «Cómo jugar» | Capturas del propio juego, sacadas jugando cada paso con `tools/capturar_tutorial.gd` (escrito con ayuda de Claude). Muestran el arte del juego descrito en este documento, incluido el modelo del Perseverance de la NASA. No hay imágenes generadas con IA. Para rehacerlas tras cambiar la interfaz: `godot --rendering-driver opengl3 --path . -s tools/capturar_tutorial.gd` e importar. |
+
+## Voces de radio del juego (15 nov 2026 · plan de mejoras 9.1 a 9.3)
+
+78 frases cortas de radio (Houston y el rover) para Marte y la Luna, en español e inglés: mover el rover, llegar, batería
+baja, despegue, aterrizaje en la Luna, noche, enlace abierto, memoria llena y tormenta. Guion en `content/voces.json`;
+archivos en `assets/voces/<marte|luna|comun>/` con el mismo esquema de nombres que la historia (evento, variante y 12
+caracteres del SHA-256 del hablante, un salto de línea y el texto). Las grabó Claude con `tools/voces/generar_voces.py`
+(escrito con ayuda de Claude) siguiendo el método de las voces de Tony:
+
+| Idioma · hablante | Voz | Licencia / origen |
+| --- | --- | --- |
+| Español · Perseverance (y el rover en la Luna) | Microsoft Pablo (voz de Windows), igual que en la historia | Voz incluida en Windows |
+| Español · Houston | **Piper es_MX «ald» (medium)**, de respaldo: en el PC donde se grabaron no estaba Microsoft Raúl, la voz de Houston de la historia | Datos de entrenamiento con licencia Unlicense ([ficha](https://huggingface.co/rhasspy/piper-voices/blob/main/es/es_MX/ald/medium/MODEL_CARD)) |
+| Inglés · Houston | Piper [John](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/john/medium/MODEL_CARD) (medium), igual que en la historia | Dominio público (LibriVox) |
+| Inglés · Perseverance | Piper [Joe](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/joe/medium/MODEL_CARD) (medium), igual que en la historia | CC0 |
+
+Piper: paquete `piper-tts` 1.8 (Joe necesita 1.5 o superior). El efecto de walkie-talkie no es el script de Tony (no estaba
+disponible) sino uno parecido hecho en Python: banda estrecha de 300 a 3000 Hz, saturación suave, estática baja durante la
+frase y ráfagas de estática al abrir y cerrar. **Pendiente**: si se instala la voz «Español (México)» de Windows (trae a
+Microsoft Raúl), volver a ejecutar `py tools/voces/generar_voces.py --modelos <carpeta de modelos> --piper-py <piper-tts>`
+para que Houston suene igual que en la historia; si llega el script de mezcla de Tony, regrabar con él.
