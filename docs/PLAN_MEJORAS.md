@@ -150,8 +150,11 @@ Referencia buena dentro del propio juego: la **consola de la plataforma** de Amn
 - [x] **4.2 Menos ruido en pantalla**: barra inferior de acciones (Panorámica, Radar, Dron, Minerales, Antena) agrupada en un solo bloque
   con iconos y atajos; ocultar acciones que no se pueden usar en vez de mostrarlas apagadas; mover el contador de FPS fuera
   (solo con la opción «Mostrar FPS»).
-- [ ] **4.3 Tutorial e imprevistos** como ventanas diseñadas (bloque 2), no el cuadro marrón.
-- [ ] **4.4 HUD escalable**: comprobar 1280×720, 1600×900, 1920×1080 y 2560×1440 (`content_scale` y anclajes).
+- [x] **4.3 Tutorial e imprevistos** como ventanas diseñadas (bloque 2), no el cuadro marrón.
+- [x] **4.4 HUD escalable**: comprobar 1280×720, 1600×900, 1920×1080 y 2560×1440 (`content_scale` y anclajes).
+  - Comprobado con capturas reales a 1024×600, 1280×720, 1600×900 y 2560×1440 (el monitor es de 1920×1080, así que 1920×1080 es
+    la pantalla completa nativa): todo va anclado y nada se solapa.
+  - 4.3 quedó hecho con 2.2 (tutorial en ventana), 2.6 (efecto de cada opción) y 4.1 (estilo único).
 - [ ] **4.5 Logo hecho por el equipo**: modelar el logo GAIA en Blender (texto en 3D con el planeta) y renderizarlo; reemplazar el actual
   hecho con IA en el menú y declararlo en `ARTE_Y_LICENCIAS.md` («diseñado en Blender por el equipo con ayuda de Claude»).
   La imagen de fondo del menú hecha con IA conserva su marca «Imagen generada con IA».
