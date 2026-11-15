@@ -215,6 +215,12 @@ El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU p
 
 ## Bloque 8 · Entrega del reto (P0 el domingo por la tarde, 3–4 h)
 
+**Estado (15 nov): borradores preparados, falta el montaje y la revisión del equipo.** En `docs/entrega/`: `PROYECTO_EN.md` (texto
+del proyecto y declaración de IA, con los puntos **[TEAM: confirm]**), `VIDEO_30S_EN.md` y `subtitulos_en.srt` (guion plano a plano y
+subtítulos). Las 7 diapositivas en inglés son una presentación web (se descarga como PPTX o PDF desde su menú); en la
+diapositiva 7 hay dos líneas entre corchetes que completa el equipo. El video lo monta el equipo. Lo de abajo sigue sin marcar
+porque nadie del equipo lo ha revisado ni enviado.
+
 - [ ] Video de máximo 30 s con subtítulos en inglés (motion graphics: problema → taller → lanzamiento → Marte → resultado), o máximo 7 diapositivas.
 - [ ] Diapositivas: cómo se juega, historia, datos reales de la NASA, uso de IA, equipo.
 - [ ] Texto del proyecto en inglés, declaración de IA (`docs/CUMPLIMIENTO.md`), sin caras ni voces de menores de 18.

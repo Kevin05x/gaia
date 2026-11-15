@@ -1,7 +1,7 @@
 extends SceneTree
 ## Herramienta de desarrollo: fotografía la plataforma de la Tierra y el hangar para revisar la
 ## composición sin abrir el juego. No forma parte de la partida.
-## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta> [--ventana=1024x600]
+## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta> [--ventana=1024x600] [--idioma=en]
 ## Con --ventana la ventana toma ese tamaño (la interfaz se escala igual que en el juego, base 1280×720).
 
 const LaunchPad := preload("res://scenes/b/launch_pad.gd")
@@ -18,8 +18,11 @@ func _correr() -> void:
 	var salida := "user://"
 	var args := OS.get_cmdline_user_args()
 	var ventana := Vector2i(ANCHO, ALTO)
+	var idioma_pedido := "es"
 	for a in args:
-		if a.begins_with("--ventana="):
+		if a.begins_with("--idioma="):
+			idioma_pedido = a.get_slice("=", 1)
+		elif a.begins_with("--ventana="):
 			var partes := a.get_slice("=", 1).split("x")
 			ventana = Vector2i(int(partes[0]), int(partes[1]))
 		else:
@@ -38,7 +41,7 @@ func _correr() -> void:
 		for clave in tablas[idioma]:
 			traduccion.add_message(clave, tablas[idioma][clave])
 		TranslationServer.add_translation(traduccion)
-	TranslationServer.set_locale("es")
+	TranslationServer.set_locale(idioma_pedido)
 
 	var sim := Simulation.new(
 		Balance.desde_archivo("res://content/balance.json"),
