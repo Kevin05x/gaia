@@ -51,7 +51,7 @@ const PERIODO_AUTOGUARDADO_S := 30.0  ## autoguardado ligero durante las operaci
 func _ready() -> void:
 	var Medidor := preload("res://scenes/a/medidor.gd")
 	if crear_vista and Medidor.pedido():
-		saltar_taller = true  # la medición usa siempre el mismo diseño inicial
+		saltar_taller = Medidor.escena() != "plataforma"  # la misión con el diseño inicial; la plataforma, en el taller
 		Sesion.cargar_al_iniciar = false
 		add_child(Medidor.new())
 	_crear_simulacion()

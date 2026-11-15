@@ -175,12 +175,21 @@ Luna 42–60 FPS (427–517 llamadas, 483k–567k triángulos). Arturo midió 20
 
 - [ ] **6.1 Llamadas de dibujo**: fundir mallas por material en el taller y en la base (`scenes/b/modelos_equipo.gd` ya lo hace para
   modelos del equipo), `MultiMesh` para rocas y cráteres, LOD (`meshes/generate_lods` ya está activo en el hangar).
-- [ ] **6.2 Sombras**: en Alta, distancia de sombras más corta y 2 cascadas; en Ultra, 4.
-- [ ] **6.3 Medir** con `Medir_rendimiento.bat` antes y después, y guardar los resultados en `docs/mediciones/`.
-- [ ] **6.4 Medir la pantalla de la plataforma en GPU real** (hangar de 70 944 triángulos y los 4 cohetes). Hoy `--medir`
+  - **No hecho (15 nov), a propósito:** la medición v5 en la Intel UHD del PC de Kevin muestra que el límite no son las llamadas
+    de dibujo sino el coste por píxel: con 6.2 la plataforma bajó de 746 a 577 llamadas y siguió a 20 FPS. Fundir mallas no
+    movería los FPS en ese equipo; lo que ayudaría es 5.3 (hangar más ligero) o recortar efectos en Alta. Las rocas ya van en
+    `MultiMesh` (`terrain.gd`).
+- [x] **6.2 Sombras**: en Alta, distancia de sombras más corta y 2 cascadas; en Ultra, 4.
+  - Hecho: misión 40 m y 2 cascadas en Media/Alta, 90 m y 4 en Ultra; la plataforma, que usaba siempre 4 cascadas hasta 420 m,
+    usa 2 hasta 260 m en Media/Alta.
+- [x] **6.3 Medir** con `Medir_rendimiento.bat` antes y después, y guardar los resultados en `docs/mediciones/`.
+  - `docs/mediciones/v5_mision_y_plataforma_intel_uhd_antes_despues.txt` (PC de Kevin, que tiene una Intel UHD).
+- [x] **6.4 Medir la pantalla de la plataforma en GPU real** (hangar de 70 944 triángulos y los 4 cohetes). Hoy `--medir`
   (`scenes/a/medidor.gd`) entra directo a la misión; añadir `--medir --escena=plataforma` que abra la plataforma con el Saturno V
   elegido, y añadir esa línea a `Medir_rendimiento.bat`. Medir en Alta y Baja en el PC de Kevin y en una Intel UHD, y guardar en
   `docs/mediciones/v5_plataforma_*.txt`. Si en la Intel UHD baja de 30 FPS en Alta, simplificar el hangar en Blender (5.3).
+  - Hecho: `--medir --escena=plataforma` y el `.bat` mide misión y plataforma en Alta y Baja. Resultado en la Intel UHD:
+    **plataforma en Alta ≈ 20 FPS** (Baja ≈ 55), misión en Alta ≈ 29 (Baja ≈ 59). Baja de 30 → toca **5.3**.
 
 ---
 

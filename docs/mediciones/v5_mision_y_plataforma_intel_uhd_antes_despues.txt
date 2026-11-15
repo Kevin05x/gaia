@@ -1,0 +1,107 @@
+GAIA · Medición v5 (15 nov 2026, plan de mejoras 6.3 y 6.4) — PC de Kevin
+
+Método: el ejecutable del editor (Godot 4.7.2, build de depuración) con el proyecto, no un .exe exportado:
+  Godot_v4.7.2-stable_win64.exe --path . -- --medir [--escena=plataforma] --preset=alta|baja
+Ventana 1280×720, calidad automática apagada (la medición fija el ajuste), 12 s de calentamiento y 45 s medidos.
+La GPU de este PC es una Intel UHD Graphics: estas cifras son también la medición en Intel UHD que pedía el plan.
+Un .exe exportado (release) puede ir algo más rápido; no se midió.
+
+Resumen (FPS medio · llamadas de dibujo por cuadro):
+  Misión, Alta:       antes 28.7 · 616   después de 6.2: 29.4 · 622   (sin cambio: dentro del ruido)
+  Misión, Baja:       58.6 · 425   (6.2 no cambia Baja: no tiene sombras)
+  Plataforma, Alta:   antes 19.8 · 746   después de 6.2: 20.0 · 577   (−23 % llamadas, mismos FPS)
+  Plataforma, Baja:   54.6 · 274
+
+Lectura: en esta GPU el límite no son las llamadas de dibujo sino el coste por píxel (SSAO, brillo, MSAA 2× y
+las sombras): quitar 170 llamadas en la plataforma no movió los FPS. La plataforma en Alta queda por debajo de 30 FPS:
+el plan (6.4) dice simplificar el hangar en Blender (5.3). Baja va a ~55-60 FPS en las dos pantallas.
+
+=================== antes · mision_alta
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:15:56
+Plataforma: Windows (escritorio)
+Escena medida: misión (operaciones)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 1294 en 45 s de operaciones
+FPS medio: 28.7
+Cuadro medio: 34.8 ms · p95: 43.5 ms · peor: 53.4 ms
+VRAM usada: 732 MB
+Llamadas de dibujo por cuadro: 616
+Simulación pura (CPU, sin gráficos): 1.148 ms por paso · 1200 pasos en 1378 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== antes · mision_baja
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:17:03
+Plataforma: Windows (escritorio)
+Escena medida: misión (operaciones)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: baja · ventana (1280, 720)
+Cuadros medidos: 2636 en 45 s de operaciones
+FPS medio: 58.6
+Cuadro medio: 17.1 ms · p95: 21.2 ms · peor: 91.1 ms
+VRAM usada: 631 MB
+Llamadas de dibujo por cuadro: 425
+Simulación pura (CPU, sin gráficos): 0.609 ms por paso · 1200 pasos en 731 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== antes · plataforma_alta
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:18:07
+Plataforma: Windows (escritorio)
+Escena medida: plataforma de lanzamiento (Saturno V)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 893 en 45 s de operaciones
+FPS medio: 19.8
+Cuadro medio: 50.4 ms · p95: 61.2 ms · peor: 67.0 ms
+VRAM usada: 771 MB
+Llamadas de dibujo por cuadro: 746
+Simulación pura (CPU, sin gráficos): 1.035 ms por paso · 1200 pasos en 1242 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== antes · plataforma_baja
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:19:13
+Plataforma: Windows (escritorio)
+Escena medida: plataforma de lanzamiento (Saturno V)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: baja · ventana (1280, 720)
+Cuadros medidos: 2457 en 45 s de operaciones
+FPS medio: 54.6
+Cuadro medio: 18.3 ms · p95: 23.7 ms · peor: 33.0 ms
+VRAM usada: 638 MB
+Llamadas de dibujo por cuadro: 274
+Simulación pura (CPU, sin gráficos): 0.912 ms por paso · 1200 pasos en 1094 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== despues_6.2 · mision_alta
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:20:56
+Plataforma: Windows (escritorio)
+Escena medida: misión (operaciones)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 1322 en 45 s de operaciones
+FPS medio: 29.4
+Cuadro medio: 34.1 ms · p95: 41.7 ms · peor: 51.2 ms
+VRAM usada: 737 MB
+Llamadas de dibujo por cuadro: 622
+Simulación pura (CPU, sin gráficos): 0.932 ms por paso · 1200 pasos en 1118 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos
+
+=================== despues_6.2 · plataforma_alta
+GAIA - medición de rendimiento
+Fecha: 2026-11-14T23:22:01
+Plataforma: Windows (escritorio)
+Escena medida: plataforma de lanzamiento (Saturno V)
+GPU: Intel(R) UHD Graphics · 12_0
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 902 en 45 s de operaciones
+FPS medio: 20.0
+Cuadro medio: 49.9 ms · p95: 60.1 ms · peor: 67.6 ms
+VRAM usada: 773 MB
+Llamadas de dibujo por cuadro: 577
+Simulación pura (CPU, sin gráficos): 1.004 ms por paso · 1200 pasos en 1204 ms
+Procesador: 12th Gen Intel(R) Core(TM) i5-12450H · 12 hilos

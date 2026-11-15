@@ -58,7 +58,7 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 - Los minerales se ven como cobre, oro o plata (solo es aspecto visual), pero el recurso se sigue llamando «olivino» en los textos.
 - **Aviso de reglas:** Space Apps dice que no se puede empezar a trabajar en el reto antes del hackathon, y este repositorio tiene commits desde el 22 de octubre. El equipo debe consultarlo con el organizador local y la Guía de entrega. No ocultar ni reescribir el historial.
 - Entrega pendiente (equipo): video de máximo 30 s con subtítulos en inglés o máximo 7 diapositivas; texto en inglés; declaración de IA; menores de 18 no deben salir con cara ni voz.
-- Mediciones en GPU real: solo hay una, en una Intel UHD (`docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`): Alta da unos 20 FPS y Baja 60. La chapa de los edificios y el filtrado anisótropo 16× aún no se han medido. El equipo corre `Medir_rendimiento.bat` en Windows.
+- Mediciones en GPU real (Intel UHD): v4 (`docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`) y v5 del 15 nov en el PC de Kevin (`docs/mediciones/v5_mision_y_plataforma_intel_uhd_antes_despues.txt`): misión Alta ≈ 29 FPS y Baja ≈ 59; plataforma Alta ≈ 20 y Baja ≈ 55. En esa GPU el límite es el coste por píxel, no las llamadas de dibujo. El equipo corre `Medir_rendimiento.bat` en Windows (mide misión y plataforma en Alta y Baja).
 
 ## Arquitectura (no romperla)
 

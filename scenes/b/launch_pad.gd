@@ -255,9 +255,12 @@ func _build_panorama() -> void:
 	sol.rotation_degrees = Vector3(-34, 128, 0)
 	sol.light_color = Color("FFD2A0")
 	sol.light_energy = 1.5
-	sol.shadow_enabled = int(Graficos.cargar().get("sombras", 1)) > 0
+	var nivel_sombras := int(Graficos.cargar().get("sombras", 1))
+	sol.shadow_enabled = nivel_sombras > 0
 	sol.shadow_blur = 1.5
-	sol.directional_shadow_max_distance = 420.0
+	# Plan 6.2: dos cascadas y menos distancia en Media y Alta; cuatro en Ultra (antes, siempre cuatro hasta 420 m).
+	sol.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if nivel_sombras >= 2 else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sol.directional_shadow_max_distance = 420.0 if nivel_sombras >= 2 else 260.0
 	vista.add_child(sol)
 
 	_camera = Camera3D.new()

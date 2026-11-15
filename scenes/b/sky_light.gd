@@ -84,8 +84,8 @@ func setup(env: Environment, luz: DirectionalLight3D) -> void:
 	apply(true)
 
 
-## Calidad de las sombras del sol: 1 = normales (atlas 2048, 50 m, una sola cascada); 2 = altas (atlas 4096, 90 m, dos
-## cascadas: finas cerca y largas lejos, más suaves).
+## Calidad de las sombras del sol (plan de mejoras 6.2): 1 = normales (Media y Alta: atlas 2048, 40 m, dos cascadas:
+## más nitidez cerca del rover con menos distancia); 2 = altas (Ultra: atlas 4096, 90 m, cuatro cascadas).
 func fijar_sombras(nivel: int) -> void:
 	sombras = nivel
 	if sun == null:
@@ -94,8 +94,8 @@ func fijar_sombras(nivel: int) -> void:
 	RenderingServer.directional_shadow_atlas_set_size(4096 if altas else 2048, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(
 		RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if altas else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if altas else DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 90.0 if altas else 50.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if altas else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 90.0 if altas else 40.0
 	sun.shadow_blur = 1.6 if altas else 1.2
 	apply()
 

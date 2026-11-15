@@ -608,3 +608,24 @@ func test_4_2_el_contador_de_fps_va_arriba_a_la_derecha() -> void:
 	var hud := _hud_con({})
 	assert_eq(hud._debug.anchor_left, 1.0, "anclado a la derecha, fuera del centro")
 	assert_eq(hud._debug.anchor_top, 0.0)
+
+
+# --- 6.2 Sombras: dos cascadas y menos distancia en Alta, cuatro en Ultra · 6.4 medir la plataforma -----------------
+
+func test_6_2_cascadas_de_sombra_por_nivel() -> void:
+	var cielo: Node = autofree(preload("res://scenes/b/sky_light.gd").new())
+	var sol: DirectionalLight3D = autofree(DirectionalLight3D.new())
+	cielo.setup(Environment.new(), sol)
+	cielo.fijar_sombras(1)
+	assert_eq(sol.directional_shadow_mode, DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS, "Media y Alta: dos cascadas")
+	assert_eq(sol.directional_shadow_max_distance, 40.0, "y menos distancia")
+	cielo.fijar_sombras(2)
+	assert_eq(sol.directional_shadow_mode, DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS, "Ultra: cuatro")
+	assert_eq(sol.directional_shadow_max_distance, 90.0)
+
+
+func test_6_4_el_medidor_sabe_que_escena_mide() -> void:
+	var Medidor := preload("res://scenes/a/medidor.gd")
+	assert_eq(Medidor.escena(), "mision", "sin --escena se mide la misión")
+	assert_true(FileAccess.get_file_as_string("res://tools/paquete_windows/Medir_rendimiento.bat").contains("--escena=plataforma"),
+		"el .bat mide también la plataforma")
