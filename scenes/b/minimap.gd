@@ -77,8 +77,18 @@ func _draw() -> void:
 		var grande: bool = float(m.get("size", 1.0)) > 1.5
 		_lote.disco(q, 5.4 if grande else 3.6, Color(0.08, 0.04, 0.1, 0.9), 10)
 		_lote.disco(q, 4.0 if grande else 2.5, Color("FF5B4A"), 10)
+	for lote in combate.get("bionutrients", {}).values():
+		var p := _point_f(lote["pos"])
+		_lote.aro(p, 4.4, 1.3, UI.TEAL, 12)
+		_lote.disco(p, 1.7, UI.TEAL, 10)
 	for i in combate.get("impacts", []):
 		_lote.aro(point(i.get("tile", Vector2i.ZERO)), 5.0, 1.6, Color("FF9A4D"), 14)
+	for sitio in state.get("story", {}).get("field_sites", []):
+		var p := point(sitio["tile"])
+		var tono: Color = UI.TEAL if sitio["optional"] else UI.AMBER
+		_lote.disco(p, 6.6, Color(UI.SURFACE, 0.9), 16)
+		_lote.aro(p, 5.5, 1.5, tono, 16)
+		_lote.disco(p, 2.1, tono, 10)
 	# Estación: casita con tejado.
 	var e := point(state.get("station_tile", Vector2i(-9, -9)))
 	_lote.poligono(PackedVector2Array([e + Vector2(-6.5, -0.5), e + Vector2(0, -6.5), e + Vector2(6.5, -0.5)]), Color(UI.SURFACE, 0.95))

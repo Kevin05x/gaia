@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_fuentes": "Masas y potencias de instrumentos inspiradas en Perseverance (NASA, science.nasa.gov/mission/mars-2020-perseverance/science-instruments). Los costos en M USD son valores de juego a escala (el presupuesto real de Mars 2020 fue de unos 2.400 M USD). Trayectorias: valores simplificados; Perseverance tardó 203 días (lanzamiento 30 jul 2020, aterrizaje 18 feb 2021). Luna: Apolo 11 entró en órbita lunar a las ~75 h 50 min del lanzamiento (NASA); CAPSTONE usó una transferencia lunar balística de unos 4 meses (28 jun → 13 nov 2022) que reduce mucho el combustible (NASA).",
+  "_fuentes": "Masas y potencias de instrumentos inspiradas en Perseverance (NASA, science.nasa.gov/mission/mars-2020-perseverance/science-instruments). Los costos en M USD son valores de juego a escala (el presupuesto real de Mars 2020 fue de unos 2.400 M USD). Trayectorias: valores simplificados; Perseverance tardó 203 días (lanzamiento 30 jul 2020, aterrizaje 18 feb 2021). Luna: Apolo 11 entró en órbita lunar a las ~75 h 50 min del lanzamiento (NASA); CAPSTONE usó una transferencia lunar balística de unos 4 meses (28 jun → 13 nov 2022) que reduce mucho el combustible (NASA). Lanzadores: los cuatro cohetes del manifiesto representan lanzadores reales y se muestran a su altura real (alto_real_m): Delta II ~39 m, Titan IIIE-Centaur ~48,8 m, Atlas V 541 58,3 m y Saturno V 110,6 m; las capacidades y los costos del juego NO son los reales (ver docs/DATOS_NASA.md).",
   "chasis": [
     {
       "id": "chasis_base",
@@ -16,14 +16,32 @@
       "nombre_clave": "PIEZA_COHETE_LIGERO",
       "capacidad_kg": 600,
       "costo_musd": 150,
+      "alto_real_m": 39.0,
       "ref_clave": "REF_COHETE_LIGERO"
+    },
+    {
+      "id": "cohete_medio",
+      "nombre_clave": "PIEZA_COHETE_MEDIO",
+      "capacidad_kg": 900,
+      "costo_musd": 250,
+      "alto_real_m": 48.8,
+      "ref_clave": "REF_COHETE_MEDIO"
     },
     {
       "id": "cohete_pesado",
       "nombre_clave": "PIEZA_COHETE_PESADO",
       "capacidad_kg": 1200,
       "costo_musd": 300,
+      "alto_real_m": 58.3,
       "ref_clave": "REF_COHETE_PESADO"
+    },
+    {
+      "id": "cohete_super",
+      "nombre_clave": "PIEZA_COHETE_SUPER",
+      "capacidad_kg": 1800,
+      "costo_musd": 400,
+      "alto_real_m": 110.6,
+      "ref_clave": "REF_COHETE_SUPER"
     }
   ],
   "trayectoria": [

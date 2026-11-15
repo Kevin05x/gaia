@@ -47,22 +47,36 @@ func iniciar_acercar(estado: MissionState, objetivo_id: String) -> Dictionary:
 
 
 ## Lleva el rover junto a cualquiera de las casillas dadas (la ruta más corta). Sin ruta: NO_PATH.
-func iniciar_acercar_a(estado: MissionState, casillas: Array) -> Dictionary:
+## «radios»: casilla -> distancia a la que se queda (por defecto 1, contigua; la estación de 3 × 3 pide 2).
+func iniciar_acercar_a(estado: MissionState, casillas: Array, radios: Dictionary = {}) -> Dictionary:
 	var motivo := _motivo_general(estado)
 	if not motivo.is_empty():
 		return _iniciar(estado, _plan(motivo, []))
 	var mejor: Array[Vector2i] = []
 	for c in casillas:
 		var casilla: Vector2i = c
-		if maxi(absi(estado.casilla_rover.x - casilla.x), absi(estado.casilla_rover.y - casilla.y)) <= 1:
+		var radio := int(radios.get(casilla, 1))
+		if maxi(absi(estado.casilla_rover.x - casilla.x), absi(estado.casilla_rover.y - casilla.y)) <= radio:
 			return _iniciar(estado, _plan("", [], 0.0))
-		for desplazamiento in CONTIGUAS:
+		for desplazamiento in _anillo(radio):
 			var ruta := _mapa.ruta(estado.casilla_rover, casilla + desplazamiento)
 			if not ruta.is_empty() and (mejor.is_empty() or ruta.size() < mejor.size()):
 				mejor = ruta
 	if mejor.is_empty():
 		return _iniciar(estado, _plan("NO_PATH", []))
 	return _iniciar(estado, _con_energia(estado, mejor))
+
+
+## Casillas a distancia exacta «radio» (en anillo). Con 1 son las 8 contiguas.
+static func _anillo(radio: int) -> Array[Vector2i]:
+	if radio <= 1:
+		return CONTIGUAS
+	var lista: Array[Vector2i] = []
+	for dx in range(-radio, radio + 1):
+		for dy in range(-radio, radio + 1):
+			if maxi(absi(dx), absi(dy)) == radio:
+				lista.append(Vector2i(dx, dy))
+	return lista
 
 
 ## Avanza el movimiento los segundos reales indicados. Devuelve los eventos ocurridos.

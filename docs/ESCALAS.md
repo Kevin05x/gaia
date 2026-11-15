@@ -14,6 +14,7 @@ En la primera versión cada objeto tenía su propia escala «a ojo»: el rover q
 | Ruedas (6) | Ø 0,52 | NASA/JPL: 52,5 cm |
 | Helicóptero Ingenuity (rotor a rotor) | 1,2 × 0,5 alto | NASA/JPL: 1,2 m de rotor, 0,49 m de alto |
 | Persona (referencia) | 1,8 de alto | — |
+| Estación (base) | 10,6 × 9,0 × 9,5 (con la antena parabólica) | ocupa 3 × 3 casillas (`estacion_radio` en `content/mapa*.json`): unas 3,5 veces el ancho del rover, como un hábitat real |
 | Domo | 3,9 × 3,4 × 2,9 | módulo habitable pequeño |
 | Hangar | 2,9 × 3,9 × 2,7 | cabe el rover (2,2 m) con holgura |
 | Extractor de hielo | 3,6 × 3,6 × 4,1 | torre de perforación |
@@ -30,6 +31,7 @@ En la primera versión cada objeto tenía su propia escala «a ojo»: el rover q
 - Las seis ruedas miden ≈ 52 cm y giran sobre su eje.
 - Ningún edificio es más bajo que el rover ni desborda su casilla.
 - La compuerta deja pasar al rover y el muro no lo tapa.
+- La estación ocupa 3 × 3 casillas: el rover no la atraviesa, no se construye encima, se descarga a 2 casillas y se dibuja al menos 3 veces más ancha que el rover sin salirse de sus casillas (`tests/test_estacion_grande.gd`).
 - Ingenuity mide ≈ 1,2 m de rotor a rotor.
 
 ## Límites (a propósito)

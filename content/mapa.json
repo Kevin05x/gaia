@@ -7,6 +7,7 @@
   },
   "inicio_rover": [0, 0],
   "estacion": [-9, -9],
+  "estacion_radio": 1,
   "zonas": [
     { "id": "orilla", "centro": [-12, -12] },
     { "id": "falla", "centro": [18, 2] },

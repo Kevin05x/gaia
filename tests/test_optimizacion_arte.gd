@@ -1,0 +1,247 @@
+extends GutTest
+## Presupuestos de arte para que el juego siga ligero (ajuste Baja y web): modelos con pocos triángulos y materiales,
+## texturas de 1024 px como mucho y comprimidas en VRAM, emisivos acotados, las texturas de Marte solo en Marte y con
+## «texturas» activado, y el paisaje lejano con una malla razonable. Ver scenes/b/docs/ARTE_Y_LICENCIAS.md.
+
+const W := preload("res://scenes/b/world_art.gd")
+const CARPETA_MODELOS := "res://assets/modelos/"
+const CARPETA_TEXTURAS := "res://assets/texturas/"
+const EDIFICIOS := ["hangar_cuadrado", "hangar_roundA", "torreta_simple", "torreta_doble", "foco", "taladro", "anthena_juego"]
+const MAX_TRIANGULOS := 2500  ## por modelo del equipo
+const MAX_MATERIALES := 8  ## cada material es una llamada de dibujo (modelos_equipo.gd funde por material)
+## Escenarios que se cargan UNA sola vez (la pantalla de la plataforma, antes de la misión) y no se repiten por el mapa:
+## tienen su propio presupuesto, más holgado, para que el límite de arriba siga protegiendo todo lo que se repite.
+## Si un modelo de esta lista crece, la prueba falla; no se amplía sin medir.
+const ESCENARIO_UNICO := {
+	"hangar_gaia": {"triangulos": 72000, "materiales": 18},  ## edificio de montaje (sin lo que el juego oculta)
+	"cohete_super": {"triangulos": 10000, "materiales": 8},  ## Saturno V de la plataforma
+}
+const MAX_EMISIVOS := 2
+const MAX_LADO_TEXTURA := 1024
+const MAX_BYTES_TEXTURAS := 7 * 1024 * 1024  ## descarga de la versión web (12 texturas de 1024 px)
+const ESCENAS := ["res://scenes/b/assets/models/station.tscn", "res://scenes/b/assets/models/companion.tscn",
+	"res://scenes/b/assets/models/drone.tscn", "res://scenes/b/assets/models/rover.tscn"]
+
+
+func after_each() -> void:
+	Destino.id = "marte"
+	W.quality = true
+	W.apply_quality()
+
+
+## {"triangulos", "materiales": Array[Material]} de todas las mallas bajo «nodo».
+func _medir(nodo: Node) -> Dictionary:
+	var tris := 0
+	var mats: Array[Material] = []
+	for m in nodo.find_children("*", "MeshInstance3D", true, false):
+		var malla: Mesh = (m as MeshInstance3D).mesh
+		if malla == null:
+			continue
+		for i in malla.get_surface_count():
+			var arrays := malla.surface_get_arrays(i)
+			var indices: Variant = arrays[Mesh.ARRAY_INDEX]
+			tris += (indices.size() if indices != null else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3
+			var mat := (m as MeshInstance3D).get_active_material(i)
+			if mat != null and not mats.has(mat):
+				mats.append(mat)
+	return {"triangulos": tris, "materiales": mats}
+
+
+func _modelos() -> PackedStringArray:
+	var lista := PackedStringArray()
+	for f in DirAccess.get_files_at(CARPETA_MODELOS):
+		if f.ends_with(".glb"):
+			lista.append(f.get_basename())
+	return lista
+
+
+func test_los_modelos_del_equipo_son_ligeros() -> void:
+	var modelos := _modelos()
+	assert_gt(modelos.size(), 10, "están los modelos del equipo")
+	for nombre in modelos:
+		var nodo: Node = (load(CARPETA_MODELOS + nombre + ".glb") as PackedScene).instantiate()
+		if nombre == "rocas_esculpidas":
+			_comprobar_rocas(nodo)
+			nodo.free()
+			continue
+		var m := _medir(nodo)
+		var tope_tris := MAX_TRIANGULOS
+		var tope_mats := MAX_MATERIALES
+		if ESCENARIO_UNICO.has(nombre):
+			tope_tris = int(ESCENARIO_UNICO[nombre]["triangulos"])
+			tope_mats = int(ESCENARIO_UNICO[nombre]["materiales"])
+		assert_lt(int(m["triangulos"]), tope_tris + 1, "%s: %d triángulos" % [nombre, m["triangulos"]])
+		assert_lt((m["materiales"] as Array).size(), tope_mats + 1, "%s: %d materiales" % [nombre, (m["materiales"] as Array).size()])
+		nodo.free()
+
+
+## La colección de rocas esculpidas: 16 rocas (4 familias × 4 variantes) de 400 triángulos como mucho cada una (hay
+## cientos en el mapa, en MultiMesh).
+func _comprobar_rocas(raiz: Node) -> void:
+	var rocas := raiz.find_children("*", "MeshInstance3D", true, false)
+	assert_eq(rocas.size(), 16, "4 familias × 4 variantes")
+	for r in rocas:
+		var t := int(_medir(r)["triangulos"])
+		assert_lt(t, 401, "%s: %d triángulos" % [r.name, t])
+
+
+func test_las_rocas_grandes_son_las_esculpidas_y_conservan_su_tamano() -> void:
+	for familia in W.FAMILIAS_ESCULPIDAS:
+		var roca := W.rock_mesh(familia, 1)
+		var referencia := W.stone_mesh(familia, 1).get_aabb()
+		assert_gt(roca.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size(), 600, "%s: roca esculpida, no la facetada" % familia)
+		assert_almost_eq(roca.get_aabb().size, referencia.size, Vector3.ONE * 0.01, "%s: mismo tamaño que la roca que sustituye" % familia)
+
+
+func test_los_edificios_brillan_de_noche_con_pocos_materiales_emisivos() -> void:
+	for nombre in EDIFICIOS:
+		var nodo: Node = (load(CARPETA_MODELOS + nombre + ".glb") as PackedScene).instantiate()
+		var emisivos := 0
+		for mat in _medir(nodo)["materiales"]:
+			if mat is StandardMaterial3D and (mat as StandardMaterial3D).emission_enabled:
+				emisivos += 1
+				assert_true(str(mat.resource_name).begins_with("emisivo_"), "%s: el emisivo %s sigue la convención de nombres" % [nombre, mat.resource_name])
+		assert_between(emisivos, 1, MAX_EMISIVOS, "%s tiene luces o ventanas (y no demasiados materiales emisivos)" % nombre)
+		nodo.free()
+
+
+func test_las_texturas_de_marte_son_de_1024_como_mucho_y_van_comprimidas() -> void:
+	var total := 0
+	var archivos := 0
+	for f in DirAccess.get_files_at(CARPETA_TEXTURAS):
+		if not f.ends_with(".jpg"):
+			continue
+		archivos += 1
+		var ruta := CARPETA_TEXTURAS + f
+		total += FileAccess.get_file_as_bytes(ruta).size()
+		var tex := load(ruta) as Texture2D
+		assert_not_null(tex, f)
+		assert_lt(maxi(tex.get_width(), tex.get_height()), MAX_LADO_TEXTURA + 1, "%s: %d px" % [f, tex.get_width()])
+		var importacion := FileAccess.get_file_as_string(ruta + ".import")
+		assert_string_contains(importacion, "compress/mode=2", "%s: comprimida en VRAM" % f)
+		assert_string_contains(importacion, "mipmaps/generate=true", "%s: con mipmaps (se repite en el suelo)" % f)
+		assert_string_contains(importacion, "detect_3d/compress_to=0", "%s: el editor no cambia sus ajustes al abrirse" % f)
+		if f.ends_with("_normal.jpg"):
+			assert_string_contains(importacion, "compress/normal_map=1", "%s: marcada como mapa de normales" % f)
+	assert_eq(archivos, 15, "Marte y Luna, suelo y roca: detalle, normal y rugosidad (el color de referencia está en _fuentes), " +
+		"más la chapa de los edificios: detalle, normal y máscaras")
+	assert_lt(total, MAX_BYTES_TEXTURAS, "las texturas pesan %.1f MB" % (total / 1048576.0))
+
+
+func test_en_marte_el_suelo_las_rocas_y_las_lomas_usan_las_texturas() -> void:
+	Destino.id = "marte"
+	W.quality = true
+	W.ground_material()
+	W.rock_material()
+	W.mountain_material()
+	W.apply_quality()
+	assert_string_contains(W.ground_material().albedo_texture.resource_path, "marte_regolito_detalle")
+	assert_not_null(W.ground_material().roughness_texture, "rugosidad del suelo")
+	assert_string_contains(W.rock_material().albedo_texture.resource_path, "marte_roca_estratos_detalle")
+	assert_string_contains(W.mountain_material().albedo_texture.resource_path, "marte_roca_estratos_detalle")
+
+
+func test_la_luna_usa_sus_propias_texturas() -> void:
+	Destino.id = "luna"
+	W.quality = true
+	W.ground_material()
+	W.rock_material()
+	W.mountain_material()
+	W.apply_quality()
+	assert_string_contains(W.ground_material().albedo_texture.resource_path, "luna_regolito_detalle")
+	assert_not_null(W.ground_material().roughness_texture)
+	assert_string_contains(W.rock_material().albedo_texture.resource_path, "luna_roca_detalle")
+	assert_string_contains(W.mountain_material().albedo_texture.resource_path, "luna_roca_detalle")
+
+
+func test_el_ajuste_baja_no_carga_texturas() -> void:
+	W.quality = false
+	W.ground_material()
+	W.rock_material()
+	W.mountain_material()
+	W.apply_quality()
+	assert_null(W.ground_material().albedo_texture)
+	assert_null(W.ground_material().roughness_texture)
+	assert_null(W.rock_material().albedo_texture)
+	assert_null(W.mountain_material().albedo_texture)
+
+
+func test_las_escenas_del_proyecto_tienen_materiales_del_entorno() -> void:
+	for ruta in ESCENAS:
+		var texto := FileAccess.get_file_as_string(ruta)
+		assert_string_contains(texto, "materiales_entorno", "%s: polvo y PBR aplicados" % ruta)
+		assert_false(texto.contains("roughness = 0.86"), "%s: no quedan materiales planos de antes" % ruta)
+
+
+func test_el_paisaje_lejano_es_una_malla_ligera() -> void:
+	var fino := FastNoiseLite.new()
+	var lomas := Horizonte.lomas(142.0, fino)
+	var mesetas := Horizonte.mesetas(142.0, fino)
+	var total := int(_medir(lomas)["triangulos"]) + int(_medir(mesetas)["triangulos"])
+	assert_lt(total, 15000, "lomas y mesetas: %d triángulos" % total)
+	assert_eq(lomas.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "sin sombras")
+	lomas.free()
+	mesetas.free()
+
+
+func test_los_cristales_tienen_textura_de_gema_sin_cambiar_su_color() -> void:
+	for nombre in ["cristal", "cristal2", "cristal3_rojo", "cristal5_brillo"]:
+		var nodo: Node = (load(CARPETA_MODELOS + nombre + ".glb") as PackedScene).instantiate()
+		for mat in _medir(nodo)["materiales"]:
+			var m := mat as StandardMaterial3D
+			assert_not_null(m.albedo_texture, "%s: estrías e inclusiones" % nombre)
+			assert_true(m.normal_enabled, "%s: relieve de las caras" % nombre)
+			assert_lt(m.roughness, 0.2, "%s: brillo de gema" % nombre)
+		nodo.free()
+
+
+func test_el_nido_es_una_caverna_con_brillo_y_telaranas() -> void:
+	var nodo: Node = (load(CARPETA_MODELOS + "nido_caverna.glb") as PackedScene).instantiate()
+	var nombres := {}
+	for mat in _medir(nodo)["materiales"]:
+		nombres[str(mat.resource_name)] = mat
+	assert_true(nombres.has("emisivo_nido"), "los sacos de huevos laten")
+	assert_true((nombres["emisivo_nido"] as StandardMaterial3D).emission_enabled)
+	var tela := nombres.get("nido_telarana") as StandardMaterial3D
+	assert_not_null(tela, "hay telarañas")
+	assert_ne(tela.transparency, BaseMaterial3D.TRANSPARENCY_DISABLED, "transparente (mezcla: los hilos se desvanecen de lejos en vez de desaparecer)")
+	nodo.free()
+
+
+func test_la_tierra_del_cielo_lunar_es_la_foto_con_fondo_transparente() -> void:
+	var tex := load("res://assets/nasa/tierra_disco.webp") as Texture2D
+	assert_not_null(tex)
+	assert_lt(tex.get_width(), MAX_LADO_TEXTURA + 1)
+	var img := tex.get_image()
+	if img.is_compressed():
+		img.decompress()
+	assert_lt(img.get_pixel(2, 2).a, 0.05, "la esquina es transparente (solo se ve el disco)")
+	assert_gt(img.get_pixel(img.get_width() / 2, img.get_height() / 2).a, 0.95, "el centro es la Tierra")
+
+
+func test_los_minerales_imitan_su_material_real() -> void:
+	var metales := {"mineral_cobre": "cobre_nativo", "mineral_oro": "oro_nativo", "mineral_plata": "plata_nativa"}
+	for nombre in metales:
+		var nodo: Node = (load(CARPETA_MODELOS + nombre + ".glb") as PackedScene).instantiate()
+		var encontrado := false
+		for mat in _medir(nodo)["materiales"]:
+			var m := mat as StandardMaterial3D
+			assert_not_null(m.albedo_texture, "%s/%s: textura de color (WebP: Godot no lee el JPEG de color con CICP)" % [nombre, m.resource_name])
+			assert_not_null(m.normal_texture, "%s/%s: relieve" % [nombre, m.resource_name])
+			if str(m.resource_name) == metales[nombre]:
+				encontrado = true
+				assert_not_null(m.metallic_texture, "%s: metal por textura (la pátina o el deslustre no son metálicos)" % nombre)
+				assert_gt(m.metallic, 0.5, "%s: es un metal" % nombre)
+		assert_true(encontrado, "%s tiene su metal" % nombre)
+		nodo.free()
+	for nombre in ["hielo_2", "hielo_3"]:
+		var nodo: Node = (load(CARPETA_MODELOS + nombre + ".glb") as PackedScene).instantiate()
+		var hielo := false
+		for mat in _medir(nodo)["materiales"]:
+			var m := mat as StandardMaterial3D
+			if str(m.resource_name) == "hielo":
+				hielo = true
+				assert_not_null(m.albedo_texture, "%s: burbujas, grietas y escarcha" % nombre)
+				assert_not_null(m.roughness_texture, "%s: hielo liso y brillante con escarcha rugosa (Godot no importa el barniz glTF)" % nombre)
+		assert_true(hielo, "%s tiene hielo" % nombre)
+		nodo.free()

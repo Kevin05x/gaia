@@ -69,8 +69,10 @@ OUT_OF_BOUNDS,Fuera del área operativa,Outside the operating area
 NO_PATH,Casilla bloqueada o sin ruta,Blocked tile or no route
 ALREADY_NEAR,Ya estás junto al objetivo,Already next to the target
 WRONG_PHASE,Orden no válida en esta fase,Command not valid in this phase
-PIEZA_COHETE_LIGERO,Cohete ligero,Light rocket
-PIEZA_COHETE_PESADO,Cohete pesado,Heavy rocket
+PIEZA_COHETE_LIGERO,Delta II,Delta II
+PIEZA_COHETE_MEDIO,Titan IIIE-Centaur,Titan IIIE-Centaur
+PIEZA_COHETE_PESADO,Atlas V 541,Atlas V 541
+PIEZA_COHETE_SUPER,Saturno V,Saturn V
 PIEZA_CHASIS_BASE,Chasis base,Base chassis
 PIEZA_PANEL_SOLAR,Panel solar,Solar panel
 PIEZA_MMRTG,Generador nuclear MMRTG,MMRTG nuclear generator
@@ -89,6 +91,7 @@ INVALID_DESIGN,Diseño no válido: revisa los requisitos,Invalid design: check t
 UNKNOWN_PART,Pieza no disponible,Part not available
 WARN_SAFE_MODE,Modo seguro: recuperando energía,Safe mode: recovering energy
 WARN_LOW_BATTERY,Batería baja: %d %%,Low battery: %d %%
+WARN_IN_SHADOW,En sombra permanente: el panel solar no genera energía,In permanent shadow: the solar panel produces no power
 WARN_STORM_ACTIVE,Tormenta de polvo activa,Dust storm active
 WARN_STORM_SOON,Tormenta de polvo en %.1f soles,Dust storm in %.1f sols
 WARN_MEMORY_ALMOST_FULL,Memoria casi llena: %d %%,Memory almost full: %d %%
@@ -150,8 +153,10 @@ SUMMARY_STORED,La ciencia guardada en el rover no cuenta hasta transmitirla.,Sci
 LANDING_TITLE,Aterrizaje en Jezero,Landing at Jezero
 LANDING_FIXED,Descenso en curso,Descent in progress
 SOL_SHORT,Sol %d · %02d:%02d,Sol %d · %02d:%02d
+SOL_OF,Sol %d de %d · %02d:%02d,Sol %d of %d · %02d:%02d
 NIGHT_LABEL,Noche,Night
 NIGHT_NOTICE,Anochece: los paneles solares dejan de producir.,Night falls: solar panels stop producing.
+DAWN_NOTICE,Amanece · Sol %d: los paneles vuelven a producir.,Dawn · Sol %d: solar panels produce again.
 INFO_TITLE,Telemetría,Telemetry
 INFO_STORED,Datos guardados,Stored data
 INFO_BATTERY,Batería,Battery
@@ -211,26 +216,50 @@ WS_BUDGET,Presupuesto,Budget
 WS_MASS_LABEL,Masa / capacidad del cohete,Mass / rocket capacity
 WS_POWER_LABEL,Potencia nominal,Nominal power
 WS_VALIDATE,Validar,Validate
-WS_START,Iniciar aterrizaje,Start landing
+WS_START,Despegar,Lift off
 WS_VALID_OK,Diseño válido: listo para despegar,Valid design: ready to launch
 WS_BELOW_MIN,Falta elegir: %s,Missing: %s
 WS_ABOVE_MAX,Demasiadas piezas en: %s,Too many parts in: %s
 WS_OVER_MASS,La nave pesa más de lo que levanta el cohete,The ship weighs more than the rocket can lift
 WS_OVER_BUDGET,El costo supera el presupuesto,The cost exceeds the budget
 WS_PENDING_DATA,%s: datos pendientes de definir,%s: data still to be defined
+WS_MISSING_BASIC,Sin %s: el rover sale sin una herramienta básica,No %s: the rover flies without a basic tool
 WS_PREVIEW_NOTE,Vista previa del rover con tus piezas,Rover preview with your parts
 REDESIGN_SHORT,Rediseñar,Redesign
 ENERGY_PILL,Energía %d %%,Energy %d %%
 SCIENCE_PILL,Ciencia %d/%d,Science %d/%d
 CAT_TRAYECTORIA,Trayectoria,Trajectory
+WS_CHANGE_ROCKET,‹ Cambiar de cohete,‹ Change rocket
+AI_MARK,Imagen generada con IA · AI-generated,Imagen generada con IA · AI-generated
+LP_TAG,TIERRA · EDIFICIO DE MONTAJE,EARTH · ASSEMBLY BUILDING
+LP_TITLE,Elige tu cohete,Choose your rocket
+LP_TEXT,"El cohete decide cuánto peso puedes llevar y cuánto dinero te queda para la ciencia. Uno más grande sube más masa, pero se come el presupuesto de los instrumentos.","The rocket decides how much weight you can carry and how much money is left for science. A bigger one lifts more mass, but it eats the instrument budget."
+LP_CONFIRM,Entrar al cohete,Board the rocket
+LP_BUDGET,Presupuesto %d M USD,Budget %d M USD
+LP_LEFT,RESTAN %d M,%d M LEFT
+LP_MANIFEST,MANIFIESTO DE LANZADORES,LAUNCHER MANIFEST
+LP_CAM,CÁM 01 · PLATAFORMA DE LANZAMIENTO,CAM 01 · LAUNCH PAD
+LP_BUDGET_TAG,PRESUPUESTO,BUDGET
+LP_ST_CHOOSE,ELIGIENDO LANZADOR,CHOOSING LAUNCHER
+LP_ST_BUILD,MONTAJE EN CURSO,ASSEMBLY UNDER WAY
+LP_ST_READY,LISTO PARA ABORDAR,READY TO BOARD
+LP_ST_BOARD,ABORDANDO,BOARDING
+LP_ST_LEAVE,SALIENDO DEL COHETE,LEAVING THE ROCKET
+LP_ST_LIFTOFF,DESPEGUE,LIFTOFF
+LP_CAP_SHORT,CARGA,PAYLOAD
+LP_HEIGHT,%d m,%d m
+LP_COST_TAG,COSTO,COST
+LP_RULE,MÁS CARGA = MENOS CIENCIA,MORE PAYLOAD = LESS SCIENCE
 PIEZA_TRAY_HOHMANN,Transferencia de mínima energía,Minimum-energy transfer
 PIEZA_TRAY_RAPIDA,Transferencia rápida,Fast transfer
 WS_DAYS,%d días,%d days
 WS_FACTOR,Carga %d %%,Payload %d %%
 WS_TRAJ_LINE,Capacidad real: %d kg del cohete × %d %% por la trayectoria · crucero de %d días,Real capacity: %d kg from the rocket × %d %% for the trajectory · %d-day cruise
 WS_OVER_MASS_TRAJ,La nave pesa más de lo que el cohete puede llevar a Marte con esa trayectoria,The ship is heavier than the rocket can carry to Mars on that trajectory
-REF_COHETE_LIGERO,"Lanzador ligero: barato, poca capacidad. Valores de juego. Dato real: Perseverance (1.025 kg) viajó en un Atlas V 541 (NASA/JPL).","Light launcher: cheap, low capacity. Game values. Real fact: Perseverance (1,025 kg) flew on an Atlas V 541 (NASA/JPL)."
-REF_COHETE_PESADO,Lanzador pesado: más capacidad y más costo. Dato real: Perseverance usó un Atlas V 541 (NASA/JPL).,"Heavy launcher: more capacity, more cost. Real fact: Perseverance used an Atlas V 541 (NASA/JPL)."
+REF_COHETE_LIGERO,El más barato del manifiesto y el que menos levanta. Capacidad y costo son valores de juego. Dato real: el Delta II medía unos 39 m y llevó a Marte a los rovers Spirit y Opportunity (NASA).,The cheapest in the manifest and the one that lifts least. Capacity and cost are game values. Real fact: the Delta II stood about 39 m tall and carried the Spirit and Opportunity rovers to Mars (NASA).
+REF_COHETE_MEDIO,"Capacidad y costo equilibrados. Valores de juego. Dato real: el Titan IIIE-Centaur medía unos 48,8 m y lanzó las Viking a Marte en 1975 y las Voyager en 1977 (NASA).",Balanced capacity and cost. Game values. Real fact: the Titan IIIE-Centaur stood about 48.8 m tall and launched the Vikings to Mars in 1975 and the Voyagers in 1977 (NASA).
+REF_COHETE_PESADO,"Más capacidad y más costo. Valores de juego. Dato real: el Atlas V 541 medía 58,3 m y puso en ruta a Marte unos 3.650 kg, de los que 1.025 kg eran el rover Perseverance (NASA/JPL).","More capacity, more cost. Game values. Real fact: the Atlas V 541 stood 58.3 m tall and sent about 3,650 kg toward Mars, of which 1,025 kg was the Perseverance rover (NASA/JPL)."
+REF_COHETE_SUPER,"Carga enorme y casi todo el presupuesto. Valores de juego. Dato real: el Saturno V medía 110,6 m y podía enviar unos 48 t hacia la Luna (NASA).",Huge payload and nearly the whole budget. Game values. Real fact: the Saturn V stood 110.6 m tall and could send about 48 t toward the Moon (NASA).
 REF_TRAY_HOHMANN,"Ruta de mínima energía que aprovecha la ventana de lanzamiento (se abre cada 26 meses). Dato real: Perseverance tardó 203 días, del 30 jul 2020 al 18 feb 2021 (NASA/JPL).","Minimum-energy route using the launch window (it opens every 26 months). Real fact: Perseverance took 203 days, from 30 Jul 2020 to 18 Feb 2021 (NASA/JPL)."
 REF_TRAY_RAPIDA,"Llega antes y el crucero cuesta menos, pero el cohete gasta más energía y solo lleva el 80 % de la masa. Valores simplificados del juego.","Arrives sooner and the cruise costs less, but the rocket spends more energy and carries only 80 % of the mass. Simplified game values."
 REF_CHASIS_BASE,"Estructura, computadora, control térmico y ruedas. Dato real: Perseverance pesa 1.025 kg (NASA/JPL); el juego usa una escala reducida.","Structure, computer, thermal control and wheels. Real fact: Perseverance weighs 1,025 kg (NASA/JPL); the game uses a reduced scale."

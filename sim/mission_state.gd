@@ -58,6 +58,11 @@ var companero_usos: int = 0  ## ayudas de Rocky hechas en ese sol
 var recursos: Dictionary = {}  ## rocas, olivino, hielo, xenolito
 var carga: Dictionary = {}  ## lo que lleva la bodega del rover hasta descargarlo en la estación o en un domo
 var descargar_al_llegar: bool = false
+## Obra con rover (economia.json › obra_con_rover). No se guardan: al continuar una partida el jugador lleva el rover.
+var ir_a_obra: bool = false  ## el rover debe ir a la obra en cuanto quede libre (estaba ocupado al ordenarla)
+var volver_tras_obra: bool = false  ## al terminar la obra, el rover vuelve a «casilla_vuelta»
+var casilla_vuelta: Vector2i = Vector2i.ZERO
+var obra_del_rover: String = ""  ## id del edificio que construye el rover
 var bodega_avisada: bool = false  ## ya se explicó que lo recogido va a la bodega  ## el rover va camino de un almacén para descargar
 var recursos_vistos: Array = []  ## recursos ya conseguidos alguna vez
 var edificios: Array[Dictionary] = []  ## ver BuildSystem
@@ -69,6 +74,8 @@ var rocky_hp: float = 100.0  ## vida de Rocky (el compañero) en %
 var historia_nodo: String = ""  ## nodo que espera decisión ("" si ninguno): la misión se detiene
 var historia_espera: String = ""  ## próximo nodo, que se mostrará cuando se cumpla un disparador
 var historia_ultimo: String = ""  ## último nodo mostrado (da el objetivo actual)
+var historia_falla: String = ""  ## objetivo de campo pendiente o resultado de la lectura
+var historia_noche_h: float = -1.0  ## hora de juego al resolver la primera noche
 var historia_registro: Array = []  ## [{"node", "choice"}] decisiones tomadas
 var historia_final: String = ""  ## final elegido en el clímax
 var historia_rama: String = ""
@@ -96,6 +103,8 @@ var imprevistos_hechos: Array = []  ## [{"id", "choice"}] decisiones tomadas ant
 var enlace_bloqueado_hasta: float = -1.0  ## hora absoluta hasta la que un imprevisto cierra el enlace
 var movimiento_bloqueado_hasta: float = -1.0  ## hora absoluta hasta la que un imprevisto impide moverse
 var enemigos: Array[Dictionary] = []  ## {"id", "type", "wave", "pos": Vector2, "dest": Vector2i, "hp", "cd", "atk"}
+var bionutrientes_en_suelo: Dictionary = {}  ## id del enemigo -> {pos: Vector2, cantidad: int}
+var bionutrientes_recogidos: int = 0
 var siguiente_enemigo: int = 1
 var siguiente_disparo: int = 1  ## número de serie de cada efecto de «disparos» (la vista lo usa para sonar una sola vez)
 var oleadas_hechas: Array = []  ## ids de oleadas y de lluvias de meteoritos que ya empezaron
@@ -107,6 +116,8 @@ var disparos: Array[Dictionary] = []  ## efectos recientes para la vista: {"from
 var revision_mapa: int = 1
 var objetivos: Array[Dictionary] = []
 var obstaculos: Array[Vector2i] = []
+var sombras: Array[Dictionary] = []  ## zonas de sombra permanente {"id", "centro": Vector2i, "radio": float} (casillas); sin Sol
+
 
 var _balance: Balance
 
@@ -136,6 +147,14 @@ func configurar_diseno(nueva_energia: String, nuevo_enlace: String, nuevos_instr
 	return true
 
 
+## true si la casilla está dentro de una zona de sombra permanente (allí un panel solar no genera nada).
+func en_sombra(casilla: Vector2i) -> bool:
+	for zona in sombras:
+		if Vector2(casilla - Vector2i(zona["centro"])).length() <= float(zona["radio"]):
+			return true
+	return false
+
+
 func a_snapshot() -> Dictionary:
 	return {
 		"phase": fase,
@@ -146,6 +165,8 @@ func a_snapshot() -> Dictionary:
 		"hour": hora,
 		"is_night": es_noche,
 		"rover_tile": casilla_rover,
+		"in_shadow": en_sombra(casilla_rover),
+		"shadow_zones": sombras,
 		"station_tile": casilla_estacion,
 		"bounds": {"min": limite_min, "max": limite_max},
 		"battery": {"wh": bateria_wh, "capacity": bateria_capacidad_wh, "generation_w": generacion_w, "load_w": carga_w},

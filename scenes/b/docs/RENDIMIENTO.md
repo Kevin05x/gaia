@@ -62,3 +62,11 @@ Sin dibujar, el trabajo de CPU por cuadro ya iba a 16,7 ms (el tope de 60 cuadro
 # Ronda G (1 nov 2026)
 
 La medición y los cambios están en `RONDA_G.md`: paisaje lejano indexado, calidad automática que empieza con MSAA 2x, barrera en MultiMesh y la interfaz sin rehacerse en cada snapshot.
+
+# Arte de `b/dias-y-realismo` (14 nov 2026)
+
+- **Medido en GPU real** (Intel UHD, `docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`): con las texturas PBR, la paleta y la estación de 3 × 3, Alta pasa de 19,3 a 20,1 FPS y Baja se queda en 60 FPS.
+- **Sin medir todavía** (cuarta ronda):
+  - La chapa de los edificios (`edificio.gdshader`): 9 lecturas de textura por píxel, solo en edificios, estación y vehículos de bloques. En calidad baja, `detalle = 0` quita las texturas.
+  - El filtrado anisótropo 16× (`project.godot`). Antes era 4×, el valor por defecto.
+  - Hay que medir de nuevo con `Medir_rendimiento.bat` antes de dar cifras.

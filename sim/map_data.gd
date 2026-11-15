@@ -14,12 +14,14 @@ var limite_min: Vector2i = Vector2i(-11, -11)
 var limite_max: Vector2i = Vector2i(11, 11)
 var inicio_rover: Vector2i = Vector2i.ZERO
 var estacion: Vector2i = Vector2i.ZERO
+var radio_estacion := 0  ## casillas que ocupa el edificio de la estación alrededor de su centro (1: 3 × 3); «estacion_radio» del mapa
 var obstaculos: Array[Vector2i] = []
 var objetivos: Array[Dictionary] = []  ## {"id", "tile", "type", "revealed"}
 var bloqueos_extra: Dictionary = {}  ## casillas ocupadas durante la partida (edificios); las fija BuildSystem
 var muros: Dictionary = {}  ## casilla -> id del muro o compuerta: los monstruos los rodean o los rompen
 var liberadas: Dictionary = {}  ## casillas de objetivos ya agotados: el objetivo desaparece y la casilla queda libre
 var zonas: Array[Dictionary] = []  ## {"id", "centro"}: cada casilla pertenece a la zona de centro más cercano
+var sombras: Array[Dictionary] = []  ## {"id", "centro", "radio"}: zonas de sombra permanente (Luna); sin Sol no hay energía solar
 var nidos: Array[Dictionary] = []  ## {"id", "tile", "zone"}: de aquí salen los monstruos; el rover no los pisa
 var errores: PackedStringArray = PackedStringArray()
 var _fijas: Dictionary = {}  ## casilla -> true: estación, obstáculos, objetivos y nidos (búsqueda rápida para las rutas)
@@ -44,6 +46,11 @@ static func desde_texto(texto: String) -> MapData:
 
 func dentro_de_limites(casilla: Vector2i) -> bool:
 	return casilla.x >= limite_min.x and casilla.x <= limite_max.x and casilla.y >= limite_min.y and casilla.y <= limite_max.y
+
+
+## true si la casilla es parte del edificio de la estación (su centro y, con radio, las de alrededor).
+func en_estacion(casilla: Vector2i) -> bool:
+	return maxi(absi(casilla.x - estacion.x), absi(casilla.y - estacion.y)) <= radio_estacion
 
 
 ## Casillas donde el rover no puede estar: fuera del mapa, obstáculos, estación y objetivos.
@@ -105,7 +112,7 @@ func es_nido(casilla: Vector2i) -> bool:
 func bloqueada_para_enemigos(casilla: Vector2i) -> bool:
 	if not dentro_de_limites(casilla):
 		return true
-	return _fijas.has(casilla) and not liberadas.has(casilla) and not _casillas_nido.has(casilla) and casilla != estacion
+	return _fijas.has(casilla) and not liberadas.has(casilla) and not _casillas_nido.has(casilla) and not en_estacion(casilla)
 
 
 ## Pasos que le faltan a un monstruo en «casilla» para llegar a la estación (-1 si no puede).
@@ -204,6 +211,9 @@ func aplicar_a(estado: MissionState) -> void:
 	estado.limite_max = limite_max
 	estado.casilla_rover = inicio_rover
 	estado.casilla_estacion = estacion
+	estado.sombras.clear()
+	for sombra in sombras:
+		estado.sombras.append(sombra.duplicate())
 	estado.obstaculos.clear()
 	for casilla in obstaculos:
 		estado.obstaculos.append(casilla)
@@ -233,6 +243,8 @@ func _cargar(texto: String) -> void:
 	var puesto: Variant = _leer_casilla(datos["estacion"], "estacion")
 	if puesto != null:
 		estacion = puesto
+	if datos.has("estacion_radio"):
+		radio_estacion = clampi(int(datos["estacion_radio"]), 0, 3)
 	if datos["obstaculos"] is Array:
 		var indice := 0
 		for valor in datos["obstaculos"]:
@@ -248,6 +260,8 @@ func _cargar(texto: String) -> void:
 		errores.append("INVALID_FIELD:objetivos")
 	if datos.has("zonas"):
 		_leer_zonas(datos["zonas"])
+	if datos.has("sombras"):
+		_leer_sombras(datos["sombras"])
 	if datos.has("nidos"):
 		_leer_nidos(datos["nidos"])
 	if errores.is_empty():
@@ -260,7 +274,9 @@ func _cargar(texto: String) -> void:
 
 func _reconstruir_fijas() -> void:
 	_fijas.clear()
-	_fijas[estacion] = true
+	for dx in range(-radio_estacion, radio_estacion + 1):
+		for dy in range(-radio_estacion, radio_estacion + 1):
+			_fijas[estacion + Vector2i(dx, dy)] = true
 	for casilla in obstaculos:
 		_fijas[casilla] = true
 	for objetivo in objetivos:
@@ -297,6 +313,25 @@ func _comprobar_nidos() -> void:
 	for nido in nidos:
 		if pasos_a_la_estacion(nido["tile"]) < 0:
 			errores.append("UNREACHABLE_NEST:%s" % nido["id"])
+
+
+func _leer_sombras(valor: Variant) -> void:
+	if not (valor is Array):
+		errores.append("INVALID_FIELD:sombras")
+		return
+	for entrada in valor:
+		if not (entrada is Dictionary) or str(entrada.get("id", "")).is_empty():
+			errores.append("INVALID_FIELD:sombras")
+			continue
+		var id := str(entrada["id"])
+		var centro: Variant = _leer_casilla(entrada.get("centro"), "sombras.%s" % id)
+		var radio: Variant = entrada.get("radio")
+		if centro == null:
+			continue
+		if not (radio is float or radio is int) or float(radio) <= 0.0:
+			errores.append("INVALID_FIELD:sombras.%s.radio" % id)
+			continue
+		sombras.append({"id": id, "centro": centro, "radio": float(radio)})
 
 
 func _leer_zonas(valor: Variant) -> void:
@@ -392,7 +427,7 @@ func _comprobar_ocupacion() -> void:
 		var casilla: Vector2i = elemento[1]
 		if not dentro_de_limites(casilla):
 			errores.append("OUT_OF_BOUNDS:%s" % elemento[0])
-		elif ocupadas.has(casilla):
+		elif ocupadas.has(casilla) or (elemento[0] != "estacion" and en_estacion(casilla)):
 			errores.append("TILE_OCCUPIED:%d,%d" % [casilla.x, casilla.y])
 		else:
 			ocupadas[casilla] = elemento[0]

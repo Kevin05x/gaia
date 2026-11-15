@@ -41,6 +41,8 @@ var _tutorial: TutorialSystem
 var _seleccion: String = ""
 var _potencia_nominal_w: float = 0.0  ## del panel o RTG elegido; hace falta para reconstruir los sistemas al cargar
 var _revision_mapa: int = 0  ## sube en cada reiniciar(): la vista reconstruye el mapa
+var _origen_costos_campo: Array = []
+var _costos_campo: Dictionary = {}
 
 
 ## «economia», «historia» y «combate» son opcionales: sin ellas la misión es la de exploración y ciencia de siempre.
@@ -121,36 +123,47 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 		"move":
 			var casilla: Vector2i = carga.get("tile", Vector2i.ZERO)
 			estado.descargar_al_llegar = false
+			_soltar_obra()
 			return _con_redireccion(func() -> Dictionary: return _mover(casilla))
 		"approach":
 			var objetivo_id := str(carga.get("target_id", _seleccion))
 			estado.descargar_al_llegar = false
+			_soltar_obra()
 			return _con_redireccion(func() -> Dictionary: return _acercar(objetivo_id))
 		"stop":
 			estado.descargar_al_llegar = false
+			_soltar_obra()
 			return _detener()
 		"unload":
+			_soltar_obra()
 			return _descargar_bodega()
 		"act":
+			_soltar_obra()
 			return _actuar(str(carga.get("action", "")), str(carga.get("target_id", _seleccion)))
 		"transmit":
 			return _resultado_simple(_comunicaciones.transmitir(estado, bool(carga.get("on", false))))
 		"upgrade":
 			if _edificios != null:
-				return _resultado_simple(_edificios.mejorar_antena(estado))
+				return _obra_con_rover(_edificios.mejorar_antena(estado))
 			return _resultado_simple(_ciencia.mejorar_antena(estado))
 		"build":
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
-			return _resultado_simple(_edificios.construir(estado, str(carga.get("building", "")), carga.get("tile", Vector2i(9999, 9999))))
+			return _obra_con_rover(_edificios.construir(estado, str(carga.get("building", "")), carga.get("tile", Vector2i(9999, 9999))))
 		"build_module":
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
-			return _resultado_simple(_edificios.construir_modulo(estado, str(carga.get("id", ""))))
+			return _obra_con_rover(_edificios.construir_modulo(estado, str(carga.get("id", ""))))
 		"toggle_building":
 			if _edificios == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 			return _resultado_simple(_edificios.alternar(estado, str(carga.get("id", "")), bool(carga.get("on", true))))
+		"inspect_story_site":
+			if _historia == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			if _imprevistos != null and _imprevistos.esperando(estado):
+				return {"ok": false, "reason": "NO_DECISION"}
+			return _historia.inspeccionar_campo(estado, str(carga.get("id", "")))
 		"decide":
 			if _historia == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
@@ -217,7 +230,10 @@ func avanzar(delta_s: float) -> Array[String]:
 		eventos.append_array(_descargar_aqui())
 	eventos.append_array(_comunicaciones.avanzar(estado, delta_s))
 	if _edificios != null:
-		eventos.append_array(_edificios.avanzar(estado, delta_s, horas))
+		_seguir_obra_antes(eventos)
+		var eventos_obra := _edificios.avanzar(estado, delta_s, horas)
+		eventos.append_array(eventos_obra)
+		_seguir_obra_despues(eventos, eventos_obra)
 	if _combate != null:
 		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
 	_anotar_progreso(eventos)
@@ -237,6 +253,103 @@ func avanzar(delta_s: float) -> Array[String]:
 
 
 const EVENTO_DESCARGA := "CARGO_UNLOADED"  ## CARGO_UNLOADED:<unidades>
+## La simulación puso al rover en marcha por su cuenta (va a la obra o vuelve de ella): la vista pide ruta_en_curso().
+const EVENTO_ROVER_AUTOMATICO := "ROVER_AUTO_MOVE"  ## ROVER_AUTO_MOVE:<a_obra|vuelta>
+const EVENTO_OBRA_SIN_ROVER := "BUILD_ROVER_BLOCKED"  ## BUILD_ROVER_BLOCKED:<motivo>, el rover no puede llegar a la obra
+
+
+## Camino que le falta recorrer al rover: {"path", "seconds_per_tile"} (vacío si está quieto).
+func ruta_en_curso() -> Dictionary:
+	if estado.movimiento_en_curso.is_empty():
+		return {}
+	var ruta: Array = estado.movimiento_en_curso["path"]
+	var segundos := float(estado.movimiento_en_curso["seconds_per_tile"])
+	var hechas := mini(int(floorf(float(estado.movimiento_en_curso["elapsed"]) / maxf(segundos, 0.001))), ruta.size())
+	return {"path": ruta.slice(hechas), "seconds_per_tile": segundos}
+
+
+## Orden de obra («build», «build_module», «upgrade»). Si la obra necesita al rover, el rover sale hacia ella (y al
+## terminar vuelve a donde estaba, o sigue hacia donde iba). La respuesta lleva «path» y «seconds_per_tile».
+func _obra_con_rover(resultado: Dictionary) -> Dictionary:
+	var simple := _resultado_simple(resultado)
+	simple["path"] = []
+	simple["seconds_per_tile"] = 0.0
+	if not resultado["ok"] or _edificios == null:
+		return simple
+	var obra := _edificios.obra_esperando_rover(estado)
+	if obra.is_empty() or str(obra["id"]) != str(resultado.get("id", "")):
+		return simple
+	estado.descargar_al_llegar = false
+	estado.obra_del_rover = str(obra["id"])
+	estado.volver_tras_obra = true
+	estado.casilla_vuelta = estado.casilla_rover
+	if estado.en_movimiento and not estado.movimiento_en_curso.is_empty():
+		var ruta: Array = estado.movimiento_en_curso["path"]
+		if not ruta.is_empty():
+			estado.casilla_vuelta = ruta[ruta.size() - 1]  # iba a otro sitio: al terminar sigue hacia allí
+	estado.ir_a_obra = false
+	var marcha := _ir_a_obra(obra)
+	simple["path"] = marcha.get("path", [])
+	simple["seconds_per_tile"] = float(marcha.get("seconds_per_tile", 0.0))
+	if not marcha["ok"]:
+		simple["rover_reason"] = marcha["reason"]
+		if str(marcha["reason"]) in ["BUSY", "MOVING", "PAUSED"]:
+			estado.ir_a_obra = true  # irá en cuanto termine lo que está haciendo
+	return simple
+
+
+## Pone al rover en marcha hacia una casilla contigua a la obra (sin camino si ya está al lado).
+func _ir_a_obra(obra: Dictionary) -> Dictionary:
+	var casilla: Vector2i = obra["tile"]
+	return _con_redireccion(func() -> Dictionary:
+		return _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, [casilla], {casilla: 1})))
+
+
+## El jugador manda al rover a otra cosa: ya no vuelve solo tras la obra ni va a ella por su cuenta.
+func _soltar_obra() -> void:
+	estado.ir_a_obra = false
+	estado.volver_tras_obra = false
+
+
+## Antes de avanzar las obras: si el rover quedó libre y tenía que ir a la obra, sale; si ya está al lado, empieza.
+func _seguir_obra_antes(eventos: Array[String]) -> void:
+	var obra := _edificios.obra_esperando_rover(estado)
+	if obra.is_empty():
+		estado.ir_a_obra = false
+		return
+	if estado.ir_a_obra and not estado.en_movimiento and not estado.ocupado and not _edificios.rover_junto_a(estado, obra):
+		estado.ir_a_obra = false
+		var marcha := _ir_a_obra(obra)
+		if marcha["ok"] and not Array(marcha["path"]).is_empty():
+			eventos.append("%s:a_obra" % EVENTO_ROVER_AUTOMATICO)
+		elif not marcha["ok"]:
+			eventos.append("%s:%s" % [EVENTO_OBRA_SIN_ROVER, marcha["reason"]])
+	eventos.append_array(_edificios.arrancar_obra_con_rover(estado))
+
+
+## Después de avanzar las obras: si terminó la del rover y nadie le dio otra orden, el rover vuelve.
+func _seguir_obra_despues(eventos: Array[String], eventos_obra: Array[String]) -> void:
+	if estado.obra_del_rover.is_empty():
+		return
+	var id := estado.obra_del_rover
+	var terminada := false
+	for evento in eventos_obra:
+		if evento.begins_with(BuildSystem.EVENTO_OBRA_TERMINADA + ":") and evento.get_slice(":", 2) == id:
+			terminada = true
+	if not terminada:
+		if _edificios.edificio_por_id(estado, id).is_empty():
+			estado.obra_del_rover = ""  # la destruyeron antes de acabar
+			estado.volver_tras_obra = false
+		return
+	estado.obra_del_rover = ""
+	if not estado.volver_tras_obra:
+		return
+	estado.volver_tras_obra = false
+	if estado.en_movimiento or estado.ocupado or estado.casilla_vuelta == estado.casilla_rover:
+		return
+	var marcha := _resultado_movimiento(_movimiento.iniciar_mover(estado, estado.casilla_vuelta))
+	if marcha["ok"] and not Array(marcha["path"]).is_empty():
+		eventos.append("%s:vuelta" % EVENTO_ROVER_AUTOMATICO)
 
 
 ## Casillas de los almacenes donde se descarga la bodega: la estación y los domos terminados.
@@ -251,7 +364,7 @@ func almacenes() -> Array[Vector2i]:
 func junto_a_almacen() -> bool:
 	for c in almacenes():
 		var d: Vector2i = c - estado.casilla_rover
-		if maxi(absi(d.x), absi(d.y)) <= (2 if c == estado.casilla_estacion else 1):
+		if maxi(absi(d.x), absi(d.y)) <= (_mapa.radio_estacion + 1 if c == estado.casilla_estacion else 1):
 			return true
 	return false
 
@@ -265,7 +378,7 @@ func _descargar_bodega() -> Dictionary:
 	if junto_a_almacen():
 		var eventos := _descargar_aqui()
 		return {"ok": true, "reason": "", "path": [], "seconds_per_tile": 0.0, "events": eventos}
-	var resultado := _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, almacenes()))
+	var resultado := _resultado_movimiento(_movimiento.iniciar_acercar_a(estado, almacenes(), {estado.casilla_estacion: _mapa.radio_estacion + 1}))
 	if resultado["ok"]:
 		estado.descargar_al_llegar = true
 	return resultado
@@ -339,7 +452,9 @@ func snapshot() -> Dictionary:
 			"antenna_tile": _edificios.casilla_antena(estado), "antenna_max": _economia.nivel_antena_max(),
 			"antenna_next_cost": _edificios.costo_siguiente_antena(estado)}
 	if _historia != null:
-		datos["story"] = _historia.para_la_vista(estado)
+		var historia := _historia.para_la_vista(estado)
+		_anotar_costos_de_campo(historia["field_sites"])
+		datos["story"] = historia
 	if _tutorial != null:
 		datos["tutorial"] = _tutorial.para_la_vista(estado)
 	if _hitos != null:
@@ -350,6 +465,24 @@ func snapshot() -> Dictionary:
 		datos["combat"] = _combate.para_la_vista(estado)
 		datos["nests"] = _mapa.nidos_para_la_vista()
 	return datos
+
+
+func _anotar_costos_de_campo(sitios: Array) -> void:
+	if sitios.is_empty():
+		return
+	# La casilla del rover cambia al terminar el recorrido. Evita recalcular la ruta en cada snapshot.
+	var origen := [_revision_mapa, estado.casilla_rover, _mapa.bloqueos_extra.hash(), _mapa.liberadas.hash()]
+	if origen != _origen_costos_campo:
+		_origen_costos_campo = origen
+		_costos_campo.clear()
+	for sitio in sitios:
+		if sitio["near"]:
+			continue
+		var casilla: Vector2i = sitio["tile"]
+		if not _costos_campo.has(casilla):
+			var pasos := _mapa.ruta(estado.casilla_rover, casilla).size()
+			_costos_campo[casilla] = pasos * _balance.numero("movimiento.costo_wh_por_casilla")
+		sitio["cost_wh"] = _costos_campo[casilla]
 
 
 ## Pantallas de introducción de la historia (vacío si no hay historia).
@@ -403,6 +536,8 @@ func cargar(datos: Dictionary) -> bool:
 	estado.transmitiendo = false
 	_potencia_nominal_w = float(datos.get("potencia_nominal_w", 0.0))
 	_construir_sistemas(_potencia_nominal_w)
+	if _economia != null and _economia.recursos.has(CombatSystem.RECURSO_BIONUTRIENTES):
+		estado.recursos.get_or_add(CombatSystem.RECURSO_BIONUTRIENTES, 0)
 	if _edificios != null:
 		_edificios.sincronizar_mapa(estado)
 	for objetivo in estado.objetivos:
@@ -440,7 +575,7 @@ func _construir_sistemas(potencia_nominal_w: float) -> void:
 		_energia.edificios = _edificios
 		_ciencia.recursos = _recursos
 		if _datos_combate != null:
-			_combate = CombatSystem.new(_datos_combate, _economia, _edificios, _mapa)
+			_combate = CombatSystem.new(_datos_combate, _economia, _edificios, _mapa, _recursos)
 	if _datos_historia != null:
 		_historia = StorySystem.new(_datos_historia, _recursos)
 		_resultado.requiere_final = true
@@ -597,7 +732,7 @@ func _taller() -> Dictionary:
 				"mass_kg": pieza.get("masa_kg"), "cost_musd": pieza.get("costo_musd"),
 				"power_w": pieza.get("potencia_w", pieza.get("potencia_max_w")),
 				"capacity_factor": pieza.get("factor_capacidad"), "cruise_days": pieza.get("dias_crucero"),
-				"ref_key": pieza.get("ref_clave", ""),
+				"ref_key": pieza.get("ref_clave", ""), "real_height_m": pieza.get("alto_real_m"),
 				"pending": pieza.get("pendiente", false) == true,
 				"available": disponible["enabled"], "reason": disponible["reason"]})
 		categorias.append({"id": categoria, "parts": piezas})
@@ -688,6 +823,8 @@ func _avisos() -> Array[Dictionary]:
 		avisos.append(_aviso("LOW_BATTERY", "warning", [porcentaje_bateria]))
 	if estado.envio_max >= 0.0 and estado.enviados >= estado.envio_max and estado.historia_final.is_empty():
 		avisos.append(_aviso("SIGNAL_CAPPED", "warning", []))
+	if estado.energia == "solar" and estado.en_sombra(estado.casilla_rover):
+		avisos.append(_aviso("IN_SHADOW", "warning", []))
 	if estado.tormenta:
 		avisos.append(_aviso("STORM_ACTIVE", "warning", []))
 	elif estado.tormenta_en > 0.0 and estado.tormenta_en <= _balance.numero("avisos.tormenta_pronto_soles"):

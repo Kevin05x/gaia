@@ -3,6 +3,7 @@ extends GutTest
 
 const Catalogo := preload("res://scenes/b/i18n/catalog.gd")
 const TextosMenu := preload("res://scenes/menu/menu_text.gd")
+const TextosRed := preload("res://scenes/net/net_text.gd")
 
 
 func _archivos(carpeta: String, salida: Array[String]) -> void:
@@ -30,9 +31,17 @@ func test_el_menu_tiene_las_mismas_claves_en_los_dos_idiomas() -> void:
 		assert_true(TextosMenu.TABLES["es"].has(clave), "falta en español (menú): %s" % clave)
 
 
+func test_el_multijugador_tiene_las_mismas_claves_en_los_dos_idiomas() -> void:
+	for clave in TextosRed.TABLES["es"]:
+		assert_true(TextosRed.TABLES["en"].has(clave), "falta en inglés (red): %s" % clave)
+	for clave in TextosRed.TABLES["en"]:
+		assert_true(TextosRed.TABLES["es"].has(clave), "falta en español (red): %s" % clave)
+
+
 func test_cada_clave_usada_en_el_codigo_existe() -> void:
 	var es: Dictionary = Catalogo.TABLES["es"].duplicate()
 	es.merge(TextosMenu.TABLES["es"])
+	es.merge(TextosRed.TABLES["es"])
 	var archivos: Array[String] = []
 	_archivos("res://scenes", archivos)
 	_archivos("res://sim", archivos)

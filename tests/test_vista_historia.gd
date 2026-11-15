@@ -169,6 +169,48 @@ func test_la_radio_pasa_sola_con_el_tiempo() -> void:
 	assert_false(panel.radio_open())
 
 
+func test_la_tarjeta_hablada_espera_la_voz_y_el_clic_avanza() -> void:
+	var panel := StoryPanel.new()
+	add_child_autofree(panel)
+	var datos := _radio(1)
+	var historia := StoryData.desde_archivo("res://content/historia.json")
+	var dialogo: Array = historia.nodo("aterrizaje")["dialogos"]
+	for i in range(2):
+		var linea: Dictionary = datos["story"]["radio"]["dialogue"][i]
+		linea["speaker"] = dialogo[i]["quien"]
+		linea["text"] = dialogo[i]["texto"]
+	panel.update_snapshot(_radio(0))
+	panel.update_snapshot(datos)
+	panel._process(0.0)
+	var toma_en_espanol: AudioStream = panel._voz_radio.stream
+	assert_not_null(toma_en_espanol, "se cargó el audio correspondiente al texto en español")
+	assert_true(panel._voz_radio.playing)
+	panel._process(30.0)
+	assert_eq(panel.radio_line, 0, "la tarjeta sigue abierta mientras se reproduce la frase")
+	datos["paused"] = true
+	panel.update_snapshot(datos)
+	panel._process(0.0)
+	assert_false(panel.radio_open())
+	assert_true(panel._voz_radio.stream_paused)
+	datos["paused"] = false
+	panel.update_snapshot(datos)
+	panel._process(0.0)
+	assert_false(panel._voz_radio.stream_paused)
+	assert_true(panel._voz_radio.playing, "la voz se reanuda con la tarjeta")
+	TranslationServer.set_locale("en")
+	panel.rebuild()
+	TranslationServer.set_locale("es")
+	assert_not_null(panel._voz_radio.stream, "se cargó el audio correspondiente al texto en inglés")
+	assert_ne(panel._voz_radio.stream, toma_en_espanol, "el cambio de idioma selecciona otra toma")
+	var toma_primera_linea: AudioStream = panel._voz_radio.stream
+	panel.advance_radio()
+	assert_eq(panel.radio_line, 1)
+	assert_ne(panel._voz_radio.stream, toma_primera_linea)
+	panel.update_snapshot({"phase": "report"})
+	assert_false(panel._voz_radio.playing)
+	assert_false(panel.radio_open())
+
+
 func test_una_partida_cargada_no_repite_la_radio_de_antes() -> void:
 	var panel := StoryPanel.new()
 	add_child_autofree(panel)
@@ -204,11 +246,67 @@ func test_la_escena_corta_va_directo_a_la_decision() -> void:
 	assert_eq(panel.root.find_children("*", "Button", true, false).size(), 2, "solo las opciones")
 
 
+func test_las_escenas_reproducen_sus_dialogos_y_cortan_al_salir() -> void:
+	var panel := StoryPanel.new()
+	add_child_autofree(panel)
+	var historia := StoryData.desde_archivo("res://content/historia.json")
+	for id: String in ["noche_aranas", "nidos"]:
+		var fuente := historia.nodo(id)
+		var nodo := _nodo()
+		nodo["id"] = id
+		nodo["scene"] = fuente.get("escena", "completa")
+		nodo["dialogue"] = []
+		for linea in fuente["dialogos"]:
+			nodo["dialogue"].append({"speaker": linea["quien"], "text": linea["texto"]})
+		panel.update_snapshot({"phase": "operations", "story": {"pending": nodo}})
+		if nodo["scene"] == "corta":
+			assert_eq(panel._voz_escena_cola.size(), 1)
+			var primera_toma := panel._voz_escena.stream
+			panel.rebuild()
+			assert_eq(panel._voz_escena.stream, primera_toma)
+			panel._voz_escena.finished.emit()
+			assert_true(panel._voz_escena_cola.is_empty())
+			assert_ne(panel._voz_escena.stream, primera_toma)
+			panel._elegir(0)
+		else:
+			assert_false(panel._voz_escena.playing, "el relato se presenta antes de los diálogos")
+			panel.advance()
+			var primera_toma := panel._voz_escena.stream
+			assert_not_null(primera_toma)
+			panel.advance()
+			assert_ne(panel._voz_escena.stream, primera_toma, "Rocky tiene su propia toma")
+			panel.update_snapshot({"phase": "operations"})
+		assert_false(panel._voz_escena.playing)
+		assert_null(panel._voz_escena.stream)
+
+
 func test_texto_de_las_metas() -> void:
 	var Hud := preload("res://scenes/b/hud.gd")
 	assert_eq(Hud.goal_text({"kind": "antena", "goal": 2.0, "cur": 1.0}), tr("GOAL_ANTENNA") % 2)
 	assert_eq(Hud.goal_text({"kind": "edificio", "id": "panel_solar", "goal": 1.0}), tr("GOAL_BUILD") % tr("BLD_SOLAR"))
 	assert_eq(Hud.goal_text({"kind": "enviados_pct", "goal": 85.0, "cur": 40.0}), tr("GOAL_SENT") % 85 + ": 40 %")
+
+
+func test_el_hud_permite_ir_a_la_baliza_e_inspeccionarla_al_llegar() -> void:
+	var hud := preload("res://scenes/b/hud.gd").new()
+	add_child_autofree(hud)
+	var comandos: Array = []
+	hud.command.connect(func(comando: String, carga: Dictionary): comandos.append([comando, carga]))
+	var sitio := {"id": "estacion_auxiliar", "tile": Vector2i(-5, -15),
+		"action": {"es": "Inspeccionar estación"}, "travel": {"es": "Ir a la baliza secundaria"},
+		"optional": true, "near": false, "cost_wh": 90.0}
+	hud._fill_goals([], [sitio])
+	var boton: Button = hud._goals.get_child(0)
+	assert_eq(boton.text, "Ir a la baliza secundaria · 90 Wh")
+	boton.pressed.emit()
+	sitio["near"] = true
+	hud._fill_goals([], [sitio])
+	boton = hud._goals.get_child(0)
+	assert_eq(boton.text, "Inspeccionar estación")
+	boton.pressed.emit()
+	assert_eq(comandos, [["move", {"tile": Vector2i(-5, -15)}], ["inspect_story_site", {"id": "estacion_auxiliar"}]])
+	hud._fill_goals([], [])
+	assert_eq(hud._goals.get_child_count(), 0, "la baliza desaparece al resolverse")
 
 
 func test_la_intro_muestra_primero_solo_la_imagen() -> void:
