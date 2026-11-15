@@ -96,7 +96,7 @@ No integrados todavía: `25042_Perseverance.glb` (11 MB y unos 200 000 triángul
 
 ## Escenas ilustradas de la historia (24 oct 2026)
 
-Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro finales) están generadas con IA (generador de imágenes de Canva) a partir de capturas del propio juego como referencia, para que el rover, Rocky, los edificios, el terreno y las criaturas se vean como en el juego. El guion y las decisiones son del equipo (`Historia_Juego_GAIA.docx`). Son material provisional del equipo: la declaración de uso de IA debe constar en la entrega. El storyboard completo (con las criaturas y los minerales en 3D) está en Canva.
+Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro finales) están generadas con IA (generador de imágenes de Canva, usado desde la app de escritorio de Claude como complemento; no se usó Gemini) a partir de capturas del propio juego como referencia, para que el rover, Rocky, los edificios, el terreno y las criaturas se vean como en el juego. El guion y las decisiones son del equipo (`Historia_Juego_GAIA.docx`). Son material provisional del equipo: la declaración de uso de IA debe constar en la entrega. El storyboard completo (con las criaturas y los minerales en 3D) está en Canva.
 
 Ronda E (25 oct 2026): las escenas se exportaron de nuevo desde Canva a 1920 × 1080, porque las anteriores eran de 1280 × 720 con mucha compresión. Se importan como WebP con pérdida leve (calidad 0,9) para que la descarga web no crezca. `nave_fuga.jpg` no está en el storyboard: se reescaló con Lanczos. Las fotos de las fichas de edificios (`assets/edificios/*.png`) se renderizan con `tools/renderizar_fichas.gd` a partir de los mismos modelos del juego.
 
