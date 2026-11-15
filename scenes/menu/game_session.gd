@@ -14,6 +14,9 @@ static var cargar_al_iniciar := false
 static var dificultad := "estandar"
 static var destino := "marte"  ## «marte» o «luna» (content/destinos.json)
 static var jugadores := 1
+## Duración de cada sol en minutos reales (plan 3.1): 6, 8, 10 o 12. La partida guardada lleva la suya.
+const DURACIONES_SOL: Array[int] = [6, 8, 10, 12]
+static var duracion_sol_min := 12
 ## true en una partida en red: la vista habla con el anfitrión por scenes/net/red.gd y no hay partida guardada ni «Continuar».
 static var en_red := false
 ## Votos del último «Go / No-Go» del equipo en el taller: [{"rol", "jugador", "go"}].

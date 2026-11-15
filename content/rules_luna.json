@@ -1,6 +1,8 @@
 {
   "version": 1,
   "presupuesto_musd": 700,
+  "presupuesto_extra_por_jugador_musd": 200,
+  "presupuesto_por_rol": {"direccion": 430, "ingenieria": 300, "comunicaciones": 40, "ciencia": 130},
   "victoria": {
     "datos_requeridos": 100,
     "sol_limite": 6

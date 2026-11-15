@@ -24,8 +24,14 @@ signal menu_requested  ## «Salir al menú» del menú de pausa
 const TARGET_ACTIONS: Array[String] = ["approach", "spectrometer", "drill"]
 ## Acciones sin objetivo: fila inferior central, solo las instaladas.
 const GLOBAL_ACTIONS: Array[String] = ["panorama", "radar", "drone", "companion", "upgrade"]
-const HOTKEYS := {KEY_C: "panorama", KEY_V: "radar", KEY_X: "companion", KEY_T: "transmit"}
-const HOTKEY_TEXT := {"panorama": "C", "radar": "V", "companion": "X", "transmit": "T"}
+const HOTKEYS := {KEY_C: "panorama", KEY_V: "radar", KEY_Z: "drone", KEY_X: "companion", KEY_U: "upgrade", KEY_T: "transmit"}
+const HOTKEY_TEXT := {"panorama": "C", "radar": "V", "drone": "Z", "companion": "X", "upgrade": "U", "transmit": "T"}
+const ACTION_ICONS := {"panorama": "camera", "radar": "radar", "drone": "drone", "companion": "companion", "upgrade": "antenna"}
+## Motivos por los que una acción no se podrá usar en un buen rato: entonces se oculta (plan 4.2). Los pasajeros (rover
+## en marcha, ocupado, de noche, poca energía…) la dejan visible y apagada, para que la barra no salte.
+const OCULTAR_SI: Array[String] = ["NO_INSTRUMENT", "FLIGHT_USED", "HELP_USED", "ROCKY_DOWN", "MAX_LEVEL", "NOT_APPLICABLE"]
+## Cómo se muestran las acciones sin objetivo (Opciones): siempre a la vista, en un menú emergente (Tab) o solo con teclas.
+const MODOS_ACCIONES: Array[String] = ["siempre", "emergentes", "teclas"]
 const LABEL_SIZE := Vector2(176, 34)
 const ROW_HEIGHT := 40.0
 
@@ -75,7 +81,12 @@ var _comms_hover := false
 var _comms_expanded := false
 var _comms_wants := false
 var _comms_tween: Tween
-var _actions_row: HBoxContainer
+var _modo_acciones := "emergentes"
+var _acciones_abierto := false  ## el menú emergente de acciones está abierto
+var _acciones_btn: Button  ## «Acciones [Tab]»: abre el menú emergente
+var _marker_carga: Button  ## sobre el almacén más cercano cuando el rover lleva carga
+var _actions_row: PanelContainer  ## un solo bloque con las acciones sin objetivo (plan 4.2)
+var _actions_fila: HBoxContainer
 var _progress: ProgressBar
 var _active_seconds := 0.0
 var _active_total := 0.0
@@ -98,6 +109,8 @@ var _rows: Dictionary = {}
 var _landing_text: PanelContainer
 var _dim: ColorRect
 var _menu: PanelContainer
+var _fila_tamanos: HFlowContainer  ## tamaños de ventana y «Nativa» en el menú de pausa
+var _casilla_completa: CheckButton
 var _menu_resume: Button
 var _hover_hint: PanelContainer
 var _hover_label: Label
@@ -115,7 +128,8 @@ var _free_options := false  ## opciones abiertas fuera de la pausa (taller)
 
 ## Partes del HUD a las que apunta el halo del tutorial.
 func highlight_nodes() -> Dictionary:
-	return {"acciones": _actions_row, "enlace": _comms}
+	return {"acciones": _acciones_btn if _modo_acciones == "emergentes" else _actions_row, "enlace": _comms, "objetivo": _label_box,
+		"carga": _marker_carga}
 
 
 func _ready() -> void:
@@ -136,6 +150,8 @@ func build() -> void:
 	if is_instance_valid(root):
 		remove_child(root)
 		root.queue_free()
+	_modo_acciones = str(Texto.preferencias().get("acciones_modo", "emergentes"))
+	_acciones_abierto = false
 	buttons.clear()
 	_ops.clear()
 	_rows.clear()
@@ -274,9 +290,10 @@ func _build_slots() -> void:
 	_toast.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_STRONG, UI.RADIUS_PILL, 0.35, 1, 18, 8))
 	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(_toast, "bc", 0, 128, 360, 0)
-	# Desplazado a la derecha del centro: la tarjeta de radio ocupa la esquina inferior izquierda (hasta x = 580).
-	_toast.offset_left += 140
-	_toast.offset_right += 140
+	# Desplazado a la derecha del centro: la tarjeta de radio (hasta x = 580) y la ventana del tutorial (hasta x = 640)
+	# ocupan la esquina inferior izquierda.
+	_toast.offset_left += 180
+	_toast.offset_right += 180
 	_toast_text = UI.label(_toast, "", UI.FONT_SECONDARY)
 	_toast_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -351,26 +368,65 @@ func _build_bottom() -> void:
 	transmitir.pressed.connect(func(): emit_command("transmit", {"on": not snapshot.get("transmitting", false)}))
 	buttons["transmit"] = transmitir
 	_ops.append(_comms)
-	# Acciones sin objetivo (decisión de A: fila discreta abajo al centro, solo instrumentos instalados).
-	_actions_row = HBoxContainer.new()
-	_actions_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_actions_row.add_theme_constant_override("separation", 6)
-	UI.place(_actions_row, "bl", 190, 20, 660, 36)
+	# Acciones sin objetivo: un solo bloque abajo al centro, cada una con su icono y su tecla (plan 4.2). Solo se ven
+	# las que se pueden usar (o lo podrán en un momento).
+	_actions_row = PanelContainer.new()
+	_actions_row.add_theme_stylebox_override("panel", UI.nave(UI.ALPHA_STRONG, UI.RADIUS_PANEL, 0.35, 1, 4, 3))
+	UI.place(_actions_row, "bl", 190, 20, 660, 40)
 	root.add_child(_actions_row)
+	_actions_fila = HBoxContainer.new()
+	_actions_fila.add_theme_constant_override("separation", 2)
+	_actions_row.add_child(_actions_fila)
+	var vacio := UI.button_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, UI.RADIUS_BUTTON, 7, 4, 0)
+	var encima := UI.button_box(Color(UI.AMBER, 0.16), Color(UI.AMBER, 0.6), 1, UI.RADIUS_BUTTON, 7, 4, 0)
 	for accion in GLOBAL_ACTIONS:
 		var b := Button.new()
-		b.theme_type_variation = "PillButton"
 		b.focus_mode = Control.FOCUS_NONE
-		b.text = tr(accion.to_upper())
-		b.custom_minimum_size = Vector2(0, 36)
+		b.text = "     " + tr(accion.to_upper())  # sitio para el icono; la tecla va en la ayuda emergente
+		b.custom_minimum_size = Vector2(0, 34)
 		b.add_theme_font_size_override("font_size", 13)
-		_actions_row.add_child(b)
+		for estado in ["normal", "disabled"]:
+			b.add_theme_stylebox_override(estado, vacio)
+		for estado in ["hover", "pressed"]:
+			b.add_theme_stylebox_override(estado, encima)
+		var icono := Icon.make(str(ACTION_ICONS.get(accion, "info")), 16, UI.AMBER)
+		icono.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+		icono.offset_left = 7
+		icono.offset_right = 23
+		icono.offset_top = -8
+		icono.offset_bottom = 8
+		icono.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(icono)
+		_actions_fila.add_child(b)
+		b.visible = accion != "upgrade"  # «Construir antena» vive en el menú Construir (B); la tecla U sigue funcionando
 		if accion == "upgrade":
 			b.pressed.connect(func(): emit_command("upgrade"))
 		else:
 			b.pressed.connect(_act.bind(accion))
 		buttons[accion] = b
-	_ops.append(_actions_row)
+	# Botón «Acciones»: con el modo emergente abre y cierra la barra (también con Tab).
+	_acciones_btn = Button.new()
+	_acciones_btn.theme_type_variation = "PillButton"
+	_acciones_btn.focus_mode = Control.FOCUS_NONE
+	_acciones_btn.add_theme_font_size_override("font_size", 14)
+	_acciones_btn.text = tr("ACTIONS_MENU") + "  [Tab]"
+	_acciones_btn.tooltip_text = tr("ACTIONS_MENU_TIP")
+	UI.place(_acciones_btn, "bc", 0, 20, 150, 34)
+	_acciones_btn.visible = false
+	root.add_child(_acciones_btn)
+	_acciones_btn.pressed.connect(func() -> void: _abrir_acciones(not _acciones_abierto))
+	_actions_row.visible = false
+	# Marcador del almacén: aparece sobre la estación o el domo más cercano mientras el rover lleva carga.
+	_marker_carga = Button.new()
+	_marker_carga.theme_type_variation = "PrimaryPill"
+	_marker_carga.focus_mode = Control.FOCUS_NONE
+	_marker_carga.add_theme_font_size_override("font_size", 16)
+	_marker_carga.text = "▼"
+	_marker_carga.tooltip_text = tr("CARGO_MARKER")
+	_marker_carga.visible = false
+	_marker_carga.size = Vector2(34, 30)
+	root.add_child(_marker_carga)
+	_marker_carga.pressed.connect(_descargar_con_tecla)
 	_progress = ProgressBar.new()
 	_progress.show_percentage = false
 	_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -378,16 +434,13 @@ func _build_bottom() -> void:
 	_progress.visible = false
 	root.add_child(_progress)
 	_debug = UI.label(root, "", 13, Color(UI.CREAM, 0.95))
-	# Arriba al centro: es el único hueco libre (abajo están la bodega, las acciones y la radio).
-	_debug.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_debug.offset_left = -180
-	_debug.offset_right = 180
-	_debug.offset_top = 8
-	_debug.offset_bottom = 74
-	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Arriba a la derecha, bajo los recursos (plan 4.2: fuera del centro). Solo con «Mostrar FPS» (o F3 / P).
+	UI.place(_debug, "tr", 20, 96, 330, 66)
+	_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var fondo_fps := StyleBoxFlat.new()
 	fondo_fps.bg_color = Color(0.05, 0.04, 0.04, 0.72)
 	fondo_fps.set_corner_radius_all(6)
+	fondo_fps.corner_detail = 1
 	fondo_fps.set_content_margin_all(6)
 	_debug.add_theme_stylebox_override("normal", fondo_fps)
 	_debug.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -531,7 +584,7 @@ func _build_pause() -> void:
 	_dim.visible = false
 	root.add_child(_dim)
 	_menu = PanelContainer.new()
-	_menu.add_theme_stylebox_override("panel", UI.box(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
+	_menu.add_theme_stylebox_override("panel", UI.nave(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
 	UI.place(_menu, "c", 0, 0, 420, 466)
 	_menu.visible = false
 	root.add_child(_menu)
@@ -596,20 +649,46 @@ func _build_pause() -> void:
 	sonido.text = tr("SOUND")
 	sonido.button_pressed = not muted
 	cuerpo.add_child(sonido)
+	var voces := CheckButton.new()  # voces de radio de Houston y el rover (plan 9.3)
+	voces.text = tr("RADIO_VOICES")
+	voces.button_pressed = bool(Texto.preferencias().get("radio_voices", true))
+	voces.toggled.connect(func(on: bool) -> void: Texto.guardar("audio", "radio_voices", on))
+	cuerpo.add_child(voces)
+	UI.label(cuerpo, tr("OPT_ACTIONS"), UI.FONT_SECONDARY)
+	var fila_modos := HBoxContainer.new()
+	fila_modos.add_theme_constant_override("separation", 6)
+	cuerpo.add_child(fila_modos)
+	var grupo_modos := ButtonGroup.new()
+	for modo in MODOS_ACCIONES:
+		var bm := Button.new()
+		bm.toggle_mode = true
+		bm.button_group = grupo_modos
+		bm.text = tr("OPT_ACTIONS_" + ("ALWAYS" if modo == "siempre" else "POPUP" if modo == "emergentes" else "KEYS"))
+		bm.custom_minimum_size = Vector2(0, 36)
+		bm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bm.button_pressed = modo == _modo_acciones
+		bm.pressed.connect(func() -> void: poner_modo_acciones(modo))
+		fila_modos.add_child(bm)
+	var ayuda_modos := UI.label(cuerpo, tr("OPT_ACTIONS_HELP"), 12, Color(UI.CREAM, 0.7))
+	ayuda_modos.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ayuda_modos.custom_minimum_size.x = 340
 	var completa := CheckButton.new()
 	completa.text = tr("FULLSCREEN")
-	completa.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	completa.button_pressed = Texto.en_pantalla_completa()
 	cuerpo.add_child(completa)
 	deslizador.value_changed.connect(func(valor: float): volume = valor; preferences_changed.emit(volume, muted, quality))
 	sonido.toggled.connect(func(on: bool): muted = not on; preferences_changed.emit(volume, muted, quality))
-	completa.toggled.connect(func(on: bool): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
+	completa.toggled.connect(func(on: bool) -> void:
+		Texto.poner_pantalla_completa(on)
+		_rehacer_tamanos())
 	if not Texto.tamanos_disponibles().is_empty():
 		UI.label(cuerpo, tr("WINDOW_SIZE"), UI.FONT_SECONDARY)
-		var ventana := HFlowContainer.new()
-		ventana.add_theme_constant_override("h_separation", 8)
-		ventana.add_theme_constant_override("v_separation", 6)
-		cuerpo.add_child(ventana)
-		Texto.botones_tamano(ventana, func(): completa.set_pressed_no_signal(false))
+		_fila_tamanos = HFlowContainer.new()
+		_fila_tamanos.add_theme_constant_override("h_separation", 8)
+		_fila_tamanos.add_theme_constant_override("v_separation", 6)
+		cuerpo.add_child(_fila_tamanos)
+		_casilla_completa = completa
+		Texto.botones_tamano(_fila_tamanos, _rehacer_tamanos)
 	UI.label(derecha, tr("GRAPHICS"), UI.FONT_TEXT, UI.AMBER)
 	var opciones_graficos := OpcionesGraficos.new(graficos if not graficos.is_empty() else Graficos.cargar(), 14)
 	derecha.add_child(opciones_graficos)
@@ -632,9 +711,21 @@ func _build_pause() -> void:
 		texto.custom_minimum_size.x = 440
 
 
+## Rehace la fila de tamaños y la casilla de pantalla completa para que marquen lo guardado.
+func _rehacer_tamanos() -> void:
+	if is_instance_valid(_casilla_completa):
+		_casilla_completa.set_pressed_no_signal(Texto.en_pantalla_completa())
+	if not is_instance_valid(_fila_tamanos):
+		return
+	for hijo in _fila_tamanos.get_children():
+		_fila_tamanos.remove_child(hijo)
+		hijo.queue_free()
+	Texto.botones_tamano(_fila_tamanos, _rehacer_tamanos)
+
+
 func _subview(titulo: String) -> PanelContainer:
 	var vista := PanelContainer.new()
-	vista.add_theme_stylebox_override("panel", UI.box(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
+	vista.add_theme_stylebox_override("panel", UI.nave(0.95, UI.RADIUS_PANEL, 0.25, 1, 24, 24))
 	UI.place(vista, "c", 0, 0, 520, 460)
 	vista.visible = false
 	root.add_child(vista)
@@ -780,6 +871,7 @@ func emit_command(key: String, payload: Dictionary = {}) -> void:
 
 
 func _act(action: String) -> void:
+	_abrir_acciones(false)
 	emit_command("act", {"target_id": target_id, "action": action})
 
 
@@ -930,25 +1022,32 @@ func update_snapshot(s: Dictionary) -> void:
 	_night_known = true
 	_avisos.actualizar(s, en_operacion)
 	_update_comms(s)
+	_comms.visible = en_operacion and int(s.get("antenna_level", 0)) >= 1  # el enlace solo existe con antena
 	var bloqueado := pausa or seguro or not en_operacion
 	var disponibles: Dictionary = s.get("available_actions", {})
 	for accion in GLOBAL_ACTIONS:
 		var b: Button = buttons[accion]
 		var d: Dictionary = disponibles.get(accion, {"enabled": false, "reason": "WAIT"})
 		var motivo := str(d.get("reason", ""))
-		b.visible = accion == "upgrade" or motivo != "NO_INSTRUMENT"
+		b.visible = accion != "upgrade" and (bool(d.get("enabled", false)) or not OCULTAR_SI.has(motivo))
 		b.disabled = bloqueado or not bool(d.get("enabled", false))
 		b.tooltip_text = _ayuda(accion, tr(motivo) if b.disabled and not motivo.is_empty() else _hotkey_hint(accion))
 		if accion == "upgrade" and s.has("base"):
 			var nivel := int(s.get("antenna_level", 0))
 			var base: Dictionary = s["base"]
 			if nivel >= int(base.get("antenna_max", 3)):
-				b.text = tr("ANTENNA_MAX")
+				b.text = "     " + tr("ANTENNA_MAX")
 			else:
-				b.text = tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1)
+				b.text = "     " + (tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1))
 			var costo := BaseHud.cost_text(base.get("antenna_next_cost", {}))
 			if not costo.is_empty():
 				b.tooltip_text = (b.tooltip_text + "\n" if not b.tooltip_text.is_empty() else "") + tr("COST_LABEL") + ": " + costo
+	var alguna := false
+	for b in _actions_fila.get_children():
+		alguna = alguna or (b as Control).visible
+	_actions_row.self_modulate.a = 1.0 if alguna else 0.0  # sin acciones a la vista, ni el marco del bloque
+	_aplicar_modo_acciones(en_operacion, alguna and not pausa)
+	_actualizar_carga(s, en_operacion and not pausa)
 	var dt: Dictionary = disponibles.get("transmit", {"enabled": false, "reason": "WAIT"})
 	buttons.transmit.disabled = bloqueado or not bool(dt.get("enabled", false))
 	buttons.transmit.text = tr("STOP_SHORT") if s.get("transmitting", false) else tr("TRANSMIT_SHORT")
@@ -978,6 +1077,91 @@ func update_snapshot(s: Dictionary) -> void:
 			_open_sub(help_view)
 	if not pausa:
 		_pending_help = false
+
+
+## Quién se ve de las acciones según el modo elegido en Opciones.
+func _aplicar_modo_acciones(en_operacion: bool, alguna: bool) -> void:
+	if not alguna:
+		_acciones_abierto = false
+	match _modo_acciones:
+		"siempre":
+			_acciones_btn.visible = false
+			_actions_row.visible = en_operacion
+		"emergentes":
+			_acciones_btn.visible = en_operacion and alguna
+			_actions_row.visible = en_operacion and alguna and _acciones_abierto
+		_:
+			_acciones_btn.visible = false
+			_actions_row.visible = false
+
+
+func _abrir_acciones(abrir: bool) -> void:
+	if abrir and (_modo_acciones != "emergentes" or not _acciones_btn.visible):
+		return
+	_acciones_abierto = abrir
+	_actions_row.visible = abrir
+	if abrir:
+		_close_popups()
+		_layout_actions()
+
+
+## Cambia el modo de acciones (Opciones) y lo guarda.
+func poner_modo_acciones(modo: String) -> void:
+	if not MODOS_ACCIONES.has(modo):
+		return
+	_modo_acciones = modo
+	_acciones_abierto = false
+	Texto.guardar("ui", "acciones_modo", modo)
+	if not snapshot.is_empty():
+		update_snapshot(snapshot)
+
+
+## Tecla G (o clic en el marcador): descarga la bodega; si el rover está lejos, va al almacén más cercano.
+func _descargar_con_tecla() -> void:
+	var bodega: Dictionary = snapshot.get("cargo", {})
+	if int(bodega.get("total", 0)) <= 0:
+		show_notice("CARGO_EMPTY")
+		return
+	emit_command("unload", {})
+
+
+func _actualizar_carga(s: Dictionary, activo: bool) -> void:
+	var bodega: Dictionary = s.get("cargo", {})
+	var con_carga := activo and int(bodega.get("total", 0)) > 0 and not (bodega.get("storages", []) as Array).is_empty()
+	if not con_carga:
+		_marker_carga.visible = false
+		return
+	_marker_carga.visible = true
+	_colocar_marcador_carga()
+
+
+## Sobre el almacén más cercano al rover; si queda fuera de la pantalla, pegado al borde (como una flecha de ayuda).
+func _colocar_marcador_carga() -> void:
+	if not _marker_carga.visible:
+		return
+	var bodega: Dictionary = snapshot.get("cargo", {})
+	var rover: Vector2i = snapshot.get("rover_tile", Vector2i.ZERO)
+	var mejor := Vector2i.ZERO
+	var mejor_d := 1 << 30
+	for c in bodega.get("storages", []):
+		var d: Vector2i = c - rover
+		var dist := maxi(absi(d.x), absi(d.y))
+		if dist < mejor_d:
+			mejor_d = dist
+			mejor = c
+	var vista := get_parent()
+	if vista == null or not vista.has_method("project_tile"):
+		return
+	var datos: Dictionary = vista.project_tile(mejor)
+	if datos.is_empty():
+		return
+	# Solo una flecha sobre el edificio; si no está a la vista (detrás o fuera de pantalla) se esconde: la acción y su tecla
+	# están siempre en la píldora de la bodega (posición fija).
+	var tam := root.size
+	var pos: Vector2 = datos["pos"] - Vector2(_marker_carga.size.x * 0.5, 50.0)
+	var a_la_vista := not bool(datos.get("behind", false)) and Rect2(Vector2(220, 80), tam - Vector2(440, 200)).has_point(datos["pos"])
+	_marker_carga.visible = a_la_vista
+	_marker_carga.position = pos
 
 
 ## Texto al pasar el mouse por un botón: qué hace (ACT_INFO_*) y debajo el atajo o por qué no se puede ahora.
@@ -1154,12 +1338,12 @@ func _update_summary(s: Dictionary) -> void:
 
 # ---------------------------------------------------------------- avisos breves, acciones, ayuda
 
-func show_notice(key: String, valores: Array = []) -> void:
+func show_notice(key: String, valores: Array = [], segundos: float = 3.5) -> void:
 	if not is_instance_valid(_toast_text):
 		return
 	_toast_key = key
 	_toast_text.text = tr(key) % valores if not valores.is_empty() else tr(key)
-	_toast_until = Time.get_ticks_msec() / 1000.0 + 3.5
+	_toast_until = Time.get_ticks_msec() / 1000.0 + segundos
 	_fade(_toast, true)
 
 
@@ -1325,6 +1509,13 @@ func _layout_actions() -> void:
 		return
 	var ancho_vista := root.size.x
 	var ancho := maxf(_actions_row.get_combined_minimum_size().x, 1.0)
+	if _modo_acciones == "emergentes":
+		# Menú emergente: centrado, justo encima del botón «Acciones».
+		_actions_row.offset_left = ancho_vista * 0.5 - ancho * 0.5
+		_actions_row.offset_right = _actions_row.offset_left + ancho
+		_actions_row.offset_bottom = -64.0
+		_actions_row.offset_top = -64.0 - 40.0
+		return
 	# Se usa el ancho del panel del relé ya desplegado (336) aunque esté animándose: así no se mueve a saltos.
 	var ancho_comms := maxf(_comms.size.x, 336.0 if _comms_expanded else 166.0) if _comms.visible else 0.0
 	var comms_izq := ancho_vista - 20.0 - ancho_comms
@@ -1351,6 +1542,9 @@ func _input(e: InputEvent) -> void:
 	# Un clic fuera de un panel a demanda lo cierra (y no atraviesa al mundo).
 	if not (e is InputEventMouseButton and e.pressed) or not is_instance_valid(root):
 		return
+	if _acciones_abierto and not _actions_row.get_global_rect().has_point(e.position) \
+			and not _acciones_btn.get_global_rect().has_point(e.position):
+		_abrir_acciones(false)  # no consume el clic: sigue al mundo
 	var cerrado := false
 	for par in [[_info, [_energy_pill, _science_pill]], [_summary, [_summary_button]], [_warn_list, [_avisos.boton_mas]], [_list, [_arrow]]]:
 		var panel: Control = par[0]
@@ -1378,6 +1572,8 @@ func _unhandled_input(e: InputEvent) -> void:
 			_close_sub()
 		elif review_panel.visible:
 			review_panel.hide()
+		elif _acciones_abierto:
+			_abrir_acciones(false)
 		elif _close_popups():
 			pass
 		elif bool(snapshot.get("moving", false)) and str(snapshot.get("phase", "")) == "operations" and not bool(snapshot.get("paused", false)):
@@ -1393,6 +1589,14 @@ func _unhandled_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif tecla == KEY_F1 or tecla == KEY_H:
 		show_help()
+		get_viewport().set_input_as_handled()
+	elif tecla == KEY_TAB and _modo_acciones == "emergentes" and not settings.visible and not review_panel.visible \
+			and not bool(snapshot.get("paused", false)):
+		_abrir_acciones(not _acciones_abierto)
+		get_viewport().set_input_as_handled()
+	elif tecla == KEY_G and not settings.visible and not review_panel.visible and not bool(snapshot.get("paused", false)) \
+			and str(snapshot.get("phase", "")) == "operations":
+		_descargar_con_tecla()
 		get_viewport().set_input_as_handled()
 	elif HOTKEYS.has(tecla) and not settings.visible and not review_panel.visible and not snapshot.get("paused", false):
 		var b: Button = buttons.get(HOTKEYS[tecla])

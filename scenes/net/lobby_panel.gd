@@ -3,6 +3,11 @@ extends Control
 ## dificultad). Cuando el jefe empieza, avisa al menú con «partida_lista» y el menú lleva a todos a la pantalla de carga.
 const UI := preload("res://scenes/b/ui_style.gd")
 const Sesion := preload("res://scenes/menu/game_session.gd")
+const Texto := preload("res://scenes/menu/menu_text.gd")
+const RolesVentana := preload("res://scenes/net/roles_ventana.gd")
+## Servidor de GAIA en internet (VPS de Full Galácticos). Es lo que se propone por defecto: nadie tiene que saber la dirección.
+const SERVIDOR_GAIA := "sala.gaianasa.tech"
+const SALAS_GAIA := 4  ## salas del servidor: sala.gaianasa.tech/1 a /4 (deploy/servidor/nativo)
 
 signal cerrado
 signal partida_lista
@@ -113,12 +118,23 @@ func _vista_inicio() -> void:
 		crear.grab_focus.call_deferred()
 	_subtitulo(tr("NET_JOIN"))
 	_direccion = LineEdit.new()
-	_direccion.text = direccion_guardada
+	if direccion_guardada.is_empty():
+		direccion_guardada = str(Texto.preferencias().get("net_direccion", ""))  # la última sala a la que se entró
+	_direccion.text = direccion_guardada if not direccion_guardada.is_empty() else SERVIDOR_GAIA
 	_direccion.placeholder_text = tr("NET_ADDR_HINT")
 	_direccion.custom_minimum_size = Vector2(560, 40)
 	_direccion.text_submitted.connect(func(_t: String) -> void: _unirse())
 	_cuerpo.add_child(_direccion)
 	_cuerpo.add_child(_boton(tr("NET_CONNECT"), _unirse, web))
+	UI.label(_cuerpo, tr("NET_OFFICIAL") % SERVIDOR_GAIA, 14, UI.AMBER)
+	var salas := HBoxContainer.new()
+	salas.add_theme_constant_override("separation", 8)
+	_cuerpo.add_child(salas)
+	for numero in range(1, SALAS_GAIA + 1):  # una sala por número: dos grupos no se mezclan
+		salas.add_child(_boton(tr("NET_ROOM_N") % numero, func() -> void:
+			_direccion.text = "%s/%d" % [SERVIDOR_GAIA, numero]
+			_unirse(), false, 150))
+	_cuerpo.add_child(_boton(tr("NET_RW_BUTTON"), func() -> void: RolesVentana.abrir(self), false, 260))
 	_cuerpo.add_child(_boton(tr("NET_BACK"), func() -> void: cerrado.emit(), false, 150))
 
 
@@ -141,6 +157,7 @@ func _unirse() -> void:
 	if err != OK:
 		_mensaje.text = tr("NET_ERR_CONNECT")
 		return
+	Texto.guardar("net", "direccion", direccion_guardada)
 	_conectando = true
 	_refrescar()
 
@@ -155,6 +172,7 @@ func _vista_sala() -> void:
 		var ips := Red.direcciones_locales()
 		var texto := "   ·   ".join(ips) if not ips.is_empty() else "—"
 		UI.label(_cuerpo, "%s   (:%d)" % [texto, Red.PUERTO], 18, UI.CREAM)
+	_cuerpo.add_child(_boton(tr("NET_RW_BUTTON"), func() -> void: RolesVentana.abrir(self), false, 260))
 	_subtitulo(tr("NET_PLAYERS") % sala.cuantos())
 	for i in range(sala.cuantos()):
 		var id: int = sala.orden[i]
@@ -169,6 +187,7 @@ func _vista_sala() -> void:
 	roles.custom_minimum_size.x = 720
 	_selector_destino(sala, jefe)
 	_selector_dificultad(sala, jefe)
+	_selector_duracion_sol(sala, jefe)
 	if jefe:
 		UI.label(_cuerpo, tr("NET_START_HINT"), 13, Color(UI.AMBER, 0.9))
 	var pie := HBoxContainer.new()
@@ -214,6 +233,25 @@ func _selector_destino(sala, jefe: bool) -> void:
 		b.button_pressed = str(sala.config["destino"]) == str(id)
 		b.disabled = not jefe
 		b.pressed.connect(func() -> void: Red.configurar(str(id), str(sala.config["dificultad"])))
+		fila.add_child(b)
+
+
+## Duración de cada sol (plan 3.1): la fija el jefe de la sala y la ven todos.
+func _selector_duracion_sol(sala, jefe: bool) -> void:
+	_subtitulo(tr("M_SETUP_SOL"))
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	_cuerpo.add_child(fila)
+	var grupo := ButtonGroup.new()
+	for minutos in Sesion.DURACIONES_SOL:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo
+		b.text = tr("M_SETUP_SOL_N") % minutos
+		b.custom_minimum_size = Vector2(110, 40)
+		b.button_pressed = int(sala.config.get("duracion_sol_min", 12)) == minutos
+		b.disabled = not jefe
+		b.pressed.connect(func() -> void: Red.configurar(str(sala.config["destino"]), str(sala.config["dificultad"]), minutos))
 		fila.add_child(b)
 
 

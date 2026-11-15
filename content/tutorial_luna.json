@@ -1,79 +1,168 @@
 {
- "version": 1,
- "estado": "Luna: igual que el tutorial de Marte, pero el último paso avisa del frío de la noche lunar en vez de la fauna.",
+ "version": 2,
+ "estado": "Luna: igual que el tutorial de Marte (con bloqueo), pero el último paso avisa del frío de la noche lunar en vez de la fauna.",
  "hasta_sol": 2,
  "pasos": [
+  {
+   "id": "bienvenida",
+   "resalta": "",
+   "texto": {
+    "es": "Bienvenido al rover. Lo básico: haz clic para moverte, usa las herramientas que montaste en el taller, construye una base y transmite la ciencia a la Tierra. El reloj está detenido mientras lees: pulsa «Siguiente».",
+    "en": "Welcome to the rover. The basics: click to drive, use the tools you built in the workshop, build a base and transmit the science to Earth. The clock is stopped while you read: press \"Next\"."
+   },
+   "condicion": {
+    "manual": true
+   },
+   "permite": [],
+   "espera": true
+  },
   {
    "id": "mover",
    "resalta": "mapa",
    "texto": {
-    "es": "Haz clic en el suelo para que el rover se mueva hasta allí.",
-    "en": "Click on the ground to drive the rover there."
+    "es": "Haz clic en el suelo (o en el minimapa) para mover el rover. Prueba con un par de casillas. El reloj corre solo mientras el rover se mueve.",
+    "en": "Click on the ground (or on the minimap) to drive the rover. Try a couple of tiles. The clock only runs while the rover is moving."
    },
    "condicion": {
     "evento": "MOVE_DONE",
     "min": 1
-   }
+   },
+   "permite": [
+    "move",
+    "stop"
+   ],
+   "espera": true
   },
   {
    "id": "analizar",
-   "resalta": "acciones",
+   "resalta": "objetivo",
    "texto": {
-    "es": "Haz clic en un objetivo (círculo) y elige una acción de la barra de abajo. Cada análisis suma ciencia y puede dar recursos.",
-    "en": "Click a target (circle) and pick an action from the bottom bar. Each analysis adds science and can yield resources."
+    "es": "Haz clic en un objetivo (círculo) y elige qué hacer con él. Tu rover lleva:\n{tools}\nCada análisis suma ciencia y puede dar recursos.",
+    "en": "Click a target (circle) and pick what to do with it. Your rover carries:\n{tools}\nEach analysis adds science and can yield resources."
    },
    "condicion": {
     "evento": "ACTION_DONE",
     "min": 1
-   }
+   },
+   "permite": [
+    "move",
+    "stop",
+    "approach",
+    "act"
+   ],
+   "espera": true,
+   "requiere_instrumento": [
+    "spectrometer",
+    "drill"
+   ]
+  },
+  {
+   "id": "acciones",
+   "resalta": "acciones",
+   "texto": {
+    "es": "Tus otras herramientas están en el menú «Acciones» (tecla Tab); cada una tiene su tecla:\n{tools}\nNo hace falta tenerlas a la vista: cuando quieras, usa su tecla.",
+    "en": "Your other tools are in the \"Actions\" menu (Tab key); each has its own key:\n{tools}\nYou don't need them on screen: use their key whenever you like."
+   },
+   "condicion": {
+    "manual": true
+   },
+   "permite": [],
+   "espera": true,
+   "requiere_instrumento": [
+    "panorama",
+    "radar",
+    "drone",
+    "companion"
+   ]
+  },
+  {
+   "id": "carga",
+   "resalta": "carga",
+   "texto": {
+    "es": "Lo que recoges va a la bodega del rover (arriba, junto a Construir). Llévalo a un almacén: el marcador ámbar señala la estación. Al llegar pulsa G o haz clic en el marcador.",
+    "en": "What you collect goes into the rover's hold (top, next to Build). Take it to a storage: the amber marker points at the station. When you arrive, press G or click the marker."
+   },
+   "condicion": {
+    "evento": "CARGO_UNLOADED",
+    "min": 1
+   },
+   "permite": [
+    "move",
+    "stop",
+    "unload"
+   ],
+   "espera": true,
+   "requiere_carga": true
   },
   {
    "id": "panel",
    "resalta": "construir",
    "texto": {
-    "es": "Pulsa «Construir» (tecla B) y levanta un panel solar. De noche no hay sol: la batería es tu reserva.",
-    "en": "Press \"Build\" (B key) and put up a solar panel. At night there is no sun: the battery is your reserve."
+    "es": "Pulsa B (Construir) y levanta un panel solar en una casilla de la base. De noche no hay sol: la batería es tu reserva.",
+    "en": "Press B (Build) and put up a solar panel on a base tile. At night there is no sun: the battery is your reserve."
    },
    "condicion": {
     "tipo": "edificio",
     "id": "panel_solar",
     "min": 1
-   }
+   },
+   "permite": [
+    "build",
+    "toggle_building",
+    "stop"
+   ],
+   "espera": true
   },
   {
    "id": "antena",
-   "resalta": "acciones",
+   "resalta": "construir",
    "texto": {
-    "es": "Construye la Antena Científica (botón «Construir antena»). Sin ella no puedes transmitir.",
-    "en": "Build the Science Antenna (\"Build antenna\" button). Without it you cannot transmit."
+    "es": "Abre Construir (B): arriba está «Construir antena». Sin la Antena Científica no puedes transmitir.",
+    "en": "Open Build (B): \"Build antenna\" is at the top. Without the Science Antenna you cannot transmit."
    },
    "condicion": {
     "tipo": "antena",
     "min": 1
-   }
+   },
+   "permite": [
+    "upgrade",
+    "toggle_building",
+    "stop"
+   ],
+   "espera": true
   },
   {
    "id": "transmitir",
    "resalta": "enlace",
    "texto": {
-    "es": "Cuando el enlace esté abierto, pulsa «Transmitir» (abajo a la derecha) para enviar la ciencia a la Tierra.",
-    "en": "When the link is open, press \"Transmit\" (bottom right) to send the science to Earth."
+    "es": "Con la antena, abajo a la derecha aparece el enlace con la Tierra. Cuando esté abierto, pulsa «Transmitir» (o la tecla T) para enviar la ciencia. Solo cuenta lo enviado.",
+    "en": "With the antenna, the link to Earth appears at the bottom right. When it is open, press \"Transmit\" (or the T key) to send the science. Only what is sent counts."
    },
    "condicion": {
     "tipo": "enviados",
     "min": 1
-   }
+   },
+   "permite": [
+    "transmit",
+    "move",
+    "stop",
+    "approach",
+    "act",
+    "unload"
+   ]
   },
   {
    "id": "noche",
    "resalta": "",
    "texto": {
-    "es": "Ojo con la noche lunar: hace un frío extremo y los paneles solares gastan mucha energía en calefacción. Guarda batería antes de que oscurezca.",
-    "en": "Mind the lunar night: it is extremely cold and solar panels spend a lot of energy on heating. Save battery before it gets dark."
+    "es": "Ojo con la noche lunar: hace un frío extremo y los paneles solares gastan mucha energía en calefacción. Guarda batería antes de que oscurezca. Pulsa «Siguiente» para empezar a jugar.",
+    "en": "Mind the lunar night: it is extremely cold and solar panels spend a lot of energy on heating. Save battery before it gets dark. Press \"Next\" to start playing."
    },
    "condicion": {
-    "leer_s": 16
-   }
+    "manual": true
+   },
+   "permite": [],
+   "espera": true
   }
  ]
 }

@@ -19,16 +19,24 @@ func present_report(value: Dictionary) -> void:
 	Red.repartir("report", value)
 
 
+## Con un rover por jugador, la animación de lo que hace cada rover es solo de su dueño (los demás ven su posición en el snapshot).
+func _a_su_dueno(tipo: String, datos: Variant) -> void:
+	if emisor != 0:
+		Red.enviar_a(emisor, tipo, datos)
+	else:
+		Red.repartir(tipo, datos)
+
+
 func present_action(value: Dictionary) -> void:
-	Red.repartir("action", value)
+	_a_su_dueno("action", value)
 
 
 func present_path(tiles: Array, seconds_per_tile: float = 0.65) -> void:
-	Red.repartir("path", {"tiles": tiles, "spt": seconds_per_tile})
+	_a_su_dueno("path", {"tiles": tiles, "spt": seconds_per_tile})
 
 
 func cancel_presentation() -> void:
-	Red.repartir("cancel", null)
+	_a_su_dueno("cancel", null)
 
 
 func reject(reason_key: String) -> void:

@@ -11,7 +11,7 @@ const ANCHO := 980.0
 const RADIO_ANCHO := 560.0
 const RADIO_SEGUNDOS_MIN := 4.5
 const RADIO_SEGUNDOS_POR_LETRA := 0.055
-const ESPERA_IMAGEN := 5.0  ## segundos que se ve la imagen sola antes de que aparezca el texto
+const ESPERA_IMAGEN := 1.2  ## segundos que se ve la imagen sola antes de que el texto aparezca con un fundido
 
 signal command(command: String, payload: Dictionary)
 signal intro_finished
@@ -418,6 +418,9 @@ func _choices(cuerpo: Control) -> void:
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var detalle := text_of(op.get("detail", {}))
+		var cambia := resumen_cambios(op.get("changes", {}))
+		if not cambia.is_empty():
+			detalle += ("\n" if not detalle.is_empty() else "") + tr("STORY_CHANGES") % cambia
 		var habilitada := bool(op.get("enabled", true))
 		if not habilitada:
 			detalle += "\n— " + tr(str(op.get("reason", "")))
@@ -434,6 +437,35 @@ func _choices(cuerpo: Control) -> void:
 			var boton := referencia.get_ref() as Button
 			if boton != null and boton.is_inside_tree():
 				boton.grab_focus()).call_deferred()
+
+
+## «+10 datos en memoria · ética +15 · +15 Hielo · la historia sigue por la rama científica» (plan 2.7): lo que cambia
+## de verdad una opción, a partir de StorySystem.cambios(). Vacío si no cambia nada que se vea.
+static func resumen_cambios(c: Dictionary) -> String:
+	var t := TranslationServer
+	var partes: PackedStringArray = []
+	if c.has("bateria_pct"):
+		partes.append(t.translate("STORY_CH_BATTERY") % roundi(float(c["bateria_pct"])))
+	if c.has("datos"):
+		partes.append(t.translate("STORY_CH_DATA") % roundi(float(c["datos"])))
+	if c.has("etica"):
+		partes.append(t.translate("STORY_CH_ETHICS") % roundi(float(c["etica"])))
+	if c.has("rocky_hp"):
+		partes.append(t.translate("STORY_CH_ROCKY") % roundi(float(c["rocky_hp"])))
+	for clave in ["recursos", "carga"]:
+		if c.get(clave) is Dictionary:
+			for recurso in c[clave]:
+				var nombre := t.translate("RES_" + str(recurso).to_upper())
+				partes.append(t.translate("STORY_CH_RES" if clave == "recursos" else "STORY_CH_CARGO") % [int(c[clave][recurso]), nombre])
+	if bool(c.get("completa_transmision", false)):
+		partes.append(t.translate("STORY_CH_SEND"))
+	if c.has("rama"):
+		partes.append(t.translate("STORY_CH_BRANCH_" + str(c["rama"]).to_upper()))
+	if c.has("final"):
+		partes.append(t.translate("STORY_CH_ENDING") % text_of(c["final"]))
+	if bool(c.get("termina", false)):
+		partes.append(t.translate("STORY_CH_ENDS"))
+	return " · ".join(partes)
 
 
 func _elegir(indice: int) -> void:
@@ -608,7 +640,7 @@ func _build_radio() -> void:
 		return
 	var linea: Dictionary = dialogo[radio_line]
 	var tarjeta := PanelContainer.new()
-	tarjeta.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.3, 1, 10, 10, Color(str(linea.get("color", "FFF5E4")))))
+	tarjeta.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.3, 1, 10, 10, Color(str(linea.get("color", "FFF5E4")))))
 	tarjeta.mouse_filter = Control.MOUSE_FILTER_STOP
 	tarjeta.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	UI.place(tarjeta, "bl", 20, 118, RADIO_ANCHO, 120)

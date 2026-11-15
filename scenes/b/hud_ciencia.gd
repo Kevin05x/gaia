@@ -25,7 +25,7 @@ func _ready() -> void:
 	root.theme = UI.theme()
 	add_child(root)
 	panel = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UI.box(0.93, UI.RADIUS_PANEL, 0.3, 1, 18, 14))
+	panel.add_theme_stylebox_override("panel", UI.nave(0.93, UI.RADIUS_PANEL, 0.3, 1, 18, 14))
 	UI.place(panel, "tr", 20, 72, 380, 0)
 	panel.visible = false
 	root.add_child(panel)
@@ -40,7 +40,7 @@ func _ready() -> void:
 	_lista.add_theme_constant_override("separation", 3)
 	col.add_child(_lista)
 	_cartel = PanelContainer.new()
-	_cartel.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.6, 2, 20, 12, UI.AMBER))
+	_cartel.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.6, 2, 20, 12, UI.AMBER))
 	_cartel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.place(_cartel, "tc", 0, 150, 420, 0)
 	_cartel.visible = false

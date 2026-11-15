@@ -30,7 +30,8 @@ var _menu_signature := ""
 var _bodega: PanelContainer  ## bodega del rover: carga actual y botón para descargar
 var _bodega_texto: Label
 var _bodega_barra: ProgressBar
-var descargar_button: Button
+var _bodega_aviso: Label  ## «[G] Descargar»: la acción vive aquí, en un sitio fijo
+var _antena_fila: Button  ## «Construir antena» / «Antena a Nv. N» arriba del menú Construir
 var _carga_antes := -1
 var _filas: Dictionary = {}  ## tipo -> controles de su fila en el menú
 var _interruptores: Dictionary = {}  ## id -> CheckButton de encendido
@@ -96,7 +97,7 @@ func build() -> void:
 	build_button.pressed.connect(toggle_menu)
 	_construir_bodega()
 	menu = PanelContainer.new()
-	menu.add_theme_stylebox_override("panel", UI.box(0.88, UI.RADIUS_PANEL, 0.3, 1, 16, 14))
+	menu.add_theme_stylebox_override("panel", UI.nave(0.88, UI.RADIUS_PANEL, 0.3, 1, 16, 14))
 	UI.place(menu, "bl", 20, 110, 420, 360)
 	menu.visible = false
 	root.add_child(menu)
@@ -111,13 +112,18 @@ func build() -> void:
 		update_snapshot(snapshot)
 
 
-## Bodega del rover junto al botón Construir: «Bodega 37/90», una barra fina y el botón Descargar (o «Ir a
-## descargar» si el rover está lejos de la estación y de los domos).
+## Bodega del rover junto al botón Construir: «Bodega 37/90» y una barra fina. Solo se ve si el rover lleva carga. Descargar
+## se hace con el marcador sobre el almacén (hud.gd) o con la tecla G.
 func _construir_bodega() -> void:
 	_bodega = PanelContainer.new()
 	_bodega.add_theme_stylebox_override("panel", UI.box(UI.ALPHA_NORMAL, UI.RADIUS_PILL, 0.25, 1, 12, 4))
 	_bodega.tooltip_text = tr("CARGO_TIP")
-	UI.place(_bodega, "bl", 180, 64, 300, 36)
+	UI.place(_bodega, "bl", 180, 64, 330, 36)
+	_bodega.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bodega.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_bodega.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			command.emit("unload", {}))
 	root.add_child(_bodega)
 	var fila := HBoxContainer.new()
 	fila.add_theme_constant_override("separation", 8)
@@ -131,6 +137,9 @@ func _construir_bodega() -> void:
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	fila.add_child(col)
 	_bodega_texto = UI.label(col, "", 12, UI.CREAM)
+	_bodega_aviso = UI.label(fila, "", 13, UI.AMBER)
+	_bodega_aviso.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.move_child(_bodega_aviso, fila.get_child_count() - 1)
 	_bodega_barra = ProgressBar.new()
 	_bodega_barra.show_percentage = false
 	_bodega_barra.custom_minimum_size = Vector2(0, 4)
@@ -143,13 +152,6 @@ func _construir_bodega() -> void:
 	_bodega_barra.add_theme_stylebox_override("background", fondo)
 	_bodega_barra.add_theme_stylebox_override("fill", lleno)
 	col.add_child(_bodega_barra)
-	descargar_button = Button.new()
-	descargar_button.theme_type_variation = "PillButton"
-	descargar_button.focus_mode = Control.FOCUS_NONE
-	descargar_button.add_theme_font_size_override("font_size", 13)
-	descargar_button.custom_minimum_size = Vector2(110, 26)
-	descargar_button.pressed.connect(func() -> void: command.emit("unload", {}))
-	fila.add_child(descargar_button)
 	_bodega.visible = false
 
 
@@ -164,9 +166,9 @@ func _fijar_bodega(s: Dictionary) -> void:
 	_bodega_texto.add_theme_color_override("font_color", UI.CORAL if total >= tope else UI.CREAM)
 	_bodega_barra.max_value = tope
 	_bodega_barra.value = total
+	_bodega.visible = total > 0  # sin carga no hay nada que mostrar
 	var cerca: bool = bodega.get("near_storage", false)
-	descargar_button.text = tr("CARGO_UNLOAD") if cerca else tr("CARGO_GO_UNLOAD")
-	descargar_button.disabled = total <= 0 or bool(bodega.get("going", false)) or bool(s.get("paused", false))
+	_bodega_aviso.text = tr("CARGO_MARKER_NEAR") if cerca else tr("CARGO_MARKER_FAR")
 	if _carga_antes >= 0 and total > _carga_antes:
 		_latido(_bodega)  # algo entró en la bodega: un pequeño pulso
 	_carga_antes = total
@@ -292,6 +294,7 @@ func _fill_menu() -> void:
 	if firma != _menu_signature:
 		_menu_signature = firma
 		_rehacer_menu(opciones, edificios)
+	_fijar_antena(snapshot)
 	for op in opciones:
 		var id := str(op.get("id", ""))
 		if _filas.has(id):
@@ -309,6 +312,28 @@ func _fill_menu() -> void:
 				_llenar_ficha(op)
 
 
+## Fila de la antena: construirla o subirla de nivel, con su costo y el motivo si no se puede.
+func _fijar_antena(s: Dictionary) -> void:
+	if not is_instance_valid(_antena_fila) or not s.has("base"):
+		return
+	var nivel := int(s.get("antenna_level", 0))
+	var base: Dictionary = s["base"]
+	var disp: Dictionary = s.get("available_actions", {}).get("upgrade", {})
+	var al_maximo := nivel >= int(base.get("antenna_max", 3))
+	var nombre := tr("ANTENNA_MAX") if al_maximo else (tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1))
+	var texto := nombre
+	if not al_maximo:
+		var costo := cost_text(base.get("antenna_next_cost", {}))
+		if not costo.is_empty():
+			texto += "\n" + costo
+		if not bool(disp.get("enabled", false)) and not str(disp.get("reason", "")).is_empty():
+			texto += "\n— " + tr(str(disp["reason"]))
+	if _antena_fila.text != texto:
+		_antena_fila.text = texto
+	_antena_fila.disabled = al_maximo or not bool(disp.get("enabled", false))
+	_antena_fila.tooltip_text = tr("ACT_INFO_UPGRADE") if tr("ACT_INFO_UPGRADE") != "ACT_INFO_UPGRADE" else ""
+
+
 func _rehacer_menu(opciones: Array, edificios: Array) -> void:
 	_filas.clear()
 	_interruptores.clear()
@@ -319,6 +344,18 @@ func _rehacer_menu(opciones: Array, edificios: Array) -> void:
 	var titulo := UI.label(_menu_box, tr("BUILD_TITLE"), UI.FONT_PANEL_TITLE, UI.CREAM)
 	UI.display(titulo, 700, 2)
 	UI.label(_menu_box, tr("BUILD_HINT"), 12, Color(UI.CREAM, 0.7)).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_antena_fila = Button.new()
+	_antena_fila.theme_type_variation = "RowButton"
+	_antena_fila.focus_mode = Control.FOCUS_NONE
+	_antena_fila.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_antena_fila.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_antena_fila.custom_minimum_size = Vector2(380, 52)
+	_antena_fila.add_theme_font_size_override("font_size", 14)
+	_antena_fila.pressed.connect(func() -> void:
+		menu.visible = false
+		cerrar_ficha()
+		command.emit("upgrade", {}))
+	_menu_box.add_child(_antena_fila)
 	for op in opciones:
 		var tipo := str(op.get("id", ""))
 		_filas[tipo] = _crear_fila(tipo)
@@ -462,7 +499,7 @@ func ficha_abierta() -> bool:
 func _crear_ficha() -> void:
 	_ficha = PanelContainer.new()
 	_ficha.name = "Ficha"
-	_ficha.add_theme_stylebox_override("panel", UI.box(0.92, UI.RADIUS_PANEL, 0.35, 1, 18, 16))
+	_ficha.add_theme_stylebox_override("panel", UI.nave(0.92, UI.RADIUS_PANEL, 0.35, 1, 18, 16))
 	UI.place(_ficha, "bl", 450, 110, 340, 470)
 	_ficha.visible = false
 	root.add_child(_ficha)
@@ -490,6 +527,7 @@ func _crear_ficha() -> void:
 	var fondo := StyleBoxFlat.new()
 	fondo.bg_color = Color(0.36, 0.22, 0.16, 0.55)
 	fondo.set_corner_radius_all(UI.RADIUS_LABEL)
+	fondo.corner_detail = 1
 	fondo.border_color = Color(UI.AMBER, 0.25)
 	fondo.set_border_width_all(1)
 	escenario.add_theme_stylebox_override("panel", fondo)

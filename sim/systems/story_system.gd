@@ -182,6 +182,20 @@ func disponibilidad_opcion(estado: MissionState, opcion: Dictionary) -> Dictiona
 	return {"enabled": motivo.is_empty(), "reason": motivo}
 
 
+## Lo que cambia de verdad una opción (plan 2.7), para que la tarjeta lo diga: sus efectos (batería, datos, ética,
+## Rocky, recursos, bodega, transmisión), la rama de la historia que abre, el final al que lleva y si termina la misión.
+## Vacío si no cambia nada que se vea.
+func cambios(estado: MissionState, opcion: Dictionary) -> Dictionary:
+	var c: Dictionary = _efectos_de(estado, opcion).duplicate(true)
+	if opcion.has("rama"):
+		c["rama"] = str(opcion["rama"])
+	if opcion.has("final"):
+		c["final"] = _datos.final(str(opcion["final"])).get("titulo", {})
+	if bool(opcion.get("termina", false)):
+		c["termina"] = true
+	return c
+
+
 func _efectos_de(estado: MissionState, opcion: Dictionary) -> Dictionary:
 	var efectos: Dictionary = opcion.get("efectos", {})
 	if estado.historia_rama == "cientifica" and opcion.has("bateria_referencia_pct"):
@@ -254,7 +268,7 @@ func para_la_vista(estado: MissionState) -> Dictionary:
 			var disp := disponibilidad_opcion(estado, opcion)
 			var detalle := "detalle_referencia" if estado.historia_rama == "cientifica" and opcion.has("detalle_referencia") else "detalle"
 			opciones.append({"text": opcion.get("texto", {}), "detail": opcion.get(detalle, {}),
-				"enabled": disp["enabled"], "reason": disp["reason"]})
+				"enabled": disp["enabled"], "reason": disp["reason"], "changes": cambios(estado, opcion)})
 		var dialogo := _dialogos(nodo)
 		if estado.historia_nodo == "nidos" and RADIOS_NIDOS.has(estado.historia_falla):
 			var id_lectura: String = RADIOS_NIDOS[estado.historia_falla]

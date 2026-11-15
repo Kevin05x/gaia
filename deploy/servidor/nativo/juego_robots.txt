@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gaianasa.tech/sitemap.xml

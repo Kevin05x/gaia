@@ -28,6 +28,7 @@ func _operar(sim: Simulation, diseno: Array[String]) -> void:
 		assert_true(sim.ejecutar("design_add", {"part_id": id})["ok"], "pieza %s" % id)
 	assert_true(sim.ejecutar("design_start")["ok"], "el diseño es válido")
 	sim.ejecutar("landing_finished")
+	sim.ejecutar("tutorial_skip")  # el tutorial detiene el reloj; estas pruebas miden la misión
 
 
 func test_cada_destino_tiene_sus_imprevistos() -> void:

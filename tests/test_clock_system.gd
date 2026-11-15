@@ -1,6 +1,6 @@
 extends GutTest
 ## Pruebas de ClockSystem con los datos reales: sol de 300 s (12,5 s por hora de juego),
-## tormenta en el sol 3 y ventanas del relé de 8–11 h y 17–20 h.
+## tormenta en el sol 4 (plan de mejoras 3.4, igual que la historia) y ventanas del relé de 8–11 h y 17–20 h.
 
 var balance: Balance
 var reglas: Rules
@@ -70,27 +70,27 @@ func test_sin_eventos_falsos_en_el_primer_avance() -> void:
 	assert_eq(reloj.avanzar(estado, 1.0).size(), 0)
 
 
-func test_tormenta_en_el_sol_3() -> void:
-	estado.sol = 2
+func test_tormenta_en_el_sol_4() -> void:
+	estado.sol = 3
 	estado.hora = 23.9
 	var eventos := reloj.avanzar(estado, 3.0)
-	assert_eq(estado.sol, 3)
+	assert_eq(estado.sol, 4)
 	assert_true(estado.tormenta)
 	assert_true(eventos.has(ClockSystem.EVENTO_TORMENTA_INICIA))
 	estado.hora = 23.9
 	eventos = reloj.avanzar(estado, 3.0)
-	assert_eq(estado.sol, 4)
+	assert_eq(estado.sol, 5)
 	assert_false(estado.tormenta)
 	assert_true(eventos.has(ClockSystem.EVENTO_TORMENTA_TERMINA))
 
 
 func test_soles_hasta_la_tormenta() -> void:
 	reloj.actualizar(estado)
-	assert_almost_eq(estado.tormenta_en, 3.0 - 1.0 - 8.0 / 24.0, 0.001)
-	estado.sol = 3
+	assert_almost_eq(estado.tormenta_en, 4.0 - 1.0 - 8.0 / 24.0, 0.001)
+	estado.sol = 4
 	reloj.actualizar(estado)
 	assert_eq(estado.tormenta_en, 0.0)
-	estado.sol = 4
+	estado.sol = 5
 	reloj.actualizar(estado)
 	assert_eq(estado.tormenta_en, 0.0)
 

@@ -12,6 +12,7 @@ var _caja: VBoxContainer
 var _primera := true
 var _guia: Control
 var _taller_actual: Dictionary = {}
+var _abierto := false  ## el panel está desplegado (por defecto solo una línea, para no tapar el catálogo)
 
 
 func _ready() -> void:
@@ -23,32 +24,46 @@ func _ready() -> void:
 	estilo.bg_color = Color("120A06", 0.82)
 	panel.add_theme_stylebox_override("panel", estilo)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UI.place(panel, "tl", 24, 168, 290, 0)
+	# Abajo, a la derecha del catálogo y bajo el rover: ya no tapa las piezas. Plegado es una sola tarjeta baja; al desplegarlo crece hacia arriba.
+	UI.place(panel, "bl", 352, 16, 310, 0)
 	add_child(panel)
 	_caja = VBoxContainer.new()
 	_caja.add_theme_constant_override("separation", 5)
 	panel.add_child(_caja)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if taller_vista != null:
+		taller_vista.bloqueo = _bloqueo
 	actualizar(taller_vista.snapshot.get("workshop", {}) if taller_vista != null else {})
 
 
-## Cuánto lleva gastado cada rol: suma del costo de las piezas elegidas en las categorías de su área.
+## Cuánto lleva gastado cada rol (ver Permisos.gasto_por_rol).
 static func gasto_por_rol(taller: Dictionary) -> Dictionary:
-	var costo := {}
-	for cat in taller.get("categories", []):
-		for pieza in cat.get("parts", []):
-			costo[str(pieza.get("id", ""))] = float(pieza.get("cost_musd", 0.0) if pieza.get("cost_musd") != null else 0.0)
-	var gasto := {}
-	for rol in Permisos.AREAS:
-		gasto[rol] = 0.0
-	var seleccion: Dictionary = taller.get("selection", {})
-	for categoria in seleccion:
-		var rol := Permisos.rol_de_categoria(str(categoria))
-		if rol.is_empty():
-			continue
-		for id in seleccion[categoria]:
-			gasto[rol] += float(costo.get(str(id), 0.0))
-	return gasto
+	return Permisos.gasto_por_rol(taller)
+
+
+## Más de un jugador: cada rol tiene su parte del presupuesto y las piezas de otros roles se ven bloqueadas.
+func _hay_reparto() -> bool:
+	return Red.sala != null and Red.sala.orden.size() > 1
+
+
+## Aviso con el que se bloquea una pieza en el catálogo (vacío = libre): es de otro rol, o no cabe en la parte de tu rol.
+func _bloqueo(categoria: String, pieza: Dictionary, elegida: bool) -> String:
+	if not _hay_reparto():
+		return ""
+	var rol := Permisos.rol_de_categoria(categoria)
+	if rol.is_empty():
+		return ""
+	if not Red.mis_roles().has(rol):
+		var id: int = Red.sala.quien_tiene(rol)
+		var quien: String = tr("NET_WS_ME") if id == Red.mi_id else str(Red.sala.nombres.get(id, ""))
+		return tr("NET_LOCKED_BY") % [tr("NET_R_" + rol.to_upper()), quien]
+	if elegida:
+		return ""
+	var valor = pieza.get("cost_musd")
+	var resto = Permisos.resto_de_rol(rol, float(valor) if valor != null else 0.0, _taller_actual)
+	if resto != null and float(resto) < 0.0:
+		return tr("NET_NO_BUDGET") % int(maxf(0.0, float(resto) + (float(valor) if valor != null else 0.0)))
+	return ""
 
 
 func actualizar(taller: Dictionary) -> void:
@@ -61,38 +76,70 @@ func actualizar(taller: Dictionary) -> void:
 	var mis_nombres: Array[String] = []
 	for rol in mis_roles:
 		mis_nombres.append(tr("NET_R_" + str(rol).to_upper()))
-	UI.label(_caja, tr("NET_YOUR_ROLE"), UI.FONT_MIN, Color(NARANJA, 0.9))
-	var titulo := UI.label(_caja, " · ".join(mis_nombres), UI.FONT_TEXT, CREMA)
-	titulo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var areas: Array[String] = []
-	for categoria in Permisos.categorias_de(mis_roles):
-		areas.append(tr(taller_vista.CATEGORY_KEYS[categoria]))
-	var te_toca := UI.label(_caja, tr("NET_YOUR_AREAS") % ", ".join(areas), UI.FONT_MIN, NARANJA)
-	te_toca.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_caja.add_child(HSeparator.new())
-	var gasto := gasto_por_rol(taller)
-	for rol in ["direccion", "ingenieria", "comunicaciones", "ciencia"]:
-		var id: int = Red.sala.quien_tiene(rol)
-		if id == 0:
-			continue
-		var mio: bool = mis_roles.has(rol)
-		var fila := HBoxContainer.new()
-		_caja.add_child(fila)
-		var quien: String = tr("NET_WS_ME") if id == Red.mi_id else str(Red.sala.nombres.get(id, ""))
-		var etiqueta := UI.label(fila, "%s · %s" % [tr("NET_R_" + rol.to_upper()), quien], UI.FONT_MIN, NARANJA if mio else Color(CREMA, 0.75))
-		etiqueta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		etiqueta.clip_text = true
-		var cifra := UI.label(fila, "%d M$" % int(round(gasto.get(rol, 0.0))), UI.FONT_MIN, NARANJA if mio else Color(CREMA, 0.75))
-		cifra.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	var pie := UI.label(_caja, tr("NET_SHARED_BUDGET"), UI.FONT_MIN, Color(CREMA, 0.6))
-	pie.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var abrir := Button.new()
-	abrir.text = tr("NET_G_OPEN")
-	abrir.focus_mode = Control.FOCUS_NONE
-	abrir.add_theme_font_size_override("font_size", UI.FONT_MIN)
-	abrir.pressed.connect(mostrar_guia)
-	_caja.add_child(abrir)
 	_taller_actual = taller
+	var gasto := Permisos.gasto_por_rol(taller)
+	var topes := Permisos.topes_por_rol(float(taller.get("totals", {}).get("budget_musd", 0.0))) if _hay_reparto() else {}
+	var cabecera := HBoxContainer.new()
+	_caja.add_child(cabecera)
+	var textos := VBoxContainer.new()
+	textos.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	textos.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cabecera.add_child(textos)
+	UI.label(textos, tr("NET_YOUR_ROLE"), UI.FONT_MIN, Color(NARANJA, 0.9))
+	var titulo := UI.label(textos, " · ".join(mis_nombres), UI.FONT_TEXT, CREMA)
+	titulo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if not topes.is_empty():
+		var mio := 0.0
+		var tope_mio := 0.0
+		for rol in mis_roles:
+			mio += float(gasto.get(rol, 0.0))
+			tope_mio += float(topes.get(rol, 0.0))
+		var resto := tope_mio - mio
+		UI.label(textos, tr("NET_MY_BUDGET") % [int(round(mio)), int(round(tope_mio))], UI.FONT_MIN, UI.CORAL if resto < 0.0 else NARANJA)
+	var plegar := Button.new()
+	plegar.text = tr("NET_PANEL_HIDE") if _abierto else tr("NET_PANEL_SHOW")
+	plegar.focus_mode = Control.FOCUS_NONE
+	plegar.add_theme_font_size_override("font_size", UI.FONT_MIN)
+	plegar.pressed.connect(func() -> void:
+		_abierto = not _abierto
+		actualizar(_taller_actual))
+	plegar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cabecera.add_child(plegar)
+	if _abierto:
+		var areas: Array[String] = []
+		for categoria in Permisos.categorias_de(mis_roles):
+			areas.append(tr(taller_vista.CATEGORY_KEYS[categoria]))
+		var te_toca := UI.label(_caja, tr("NET_YOUR_AREAS") % ", ".join(areas), UI.FONT_MIN, NARANJA)
+		te_toca.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_caja.add_child(HSeparator.new())
+		for rol in ["direccion", "ingenieria", "comunicaciones", "ciencia"]:
+			var id: int = Red.sala.quien_tiene(rol)
+			if id == 0:
+				continue
+			var mio_rol: bool = mis_roles.has(rol)
+			var fila := HBoxContainer.new()
+			_caja.add_child(fila)
+			var quien: String = tr("NET_WS_ME") if id == Red.mi_id else str(Red.sala.nombres.get(id, ""))
+			var etiqueta := UI.label(fila, "%s · %s" % [tr("NET_R_" + rol.to_upper()), quien], UI.FONT_MIN, NARANJA if mio_rol else Color(CREMA, 0.75))
+			etiqueta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			etiqueta.clip_text = true
+			var texto_cifra := "%d / %d M$" % [int(round(gasto.get(rol, 0.0))), int(round(topes[rol]))] if topes.has(rol) else "%d M$" % int(round(gasto.get(rol, 0.0)))
+			var cifra := UI.label(fila, texto_cifra, UI.FONT_MIN, NARANJA if mio_rol else Color(CREMA, 0.75))
+			cifra.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		var pie := UI.label(_caja, tr("NET_SHARED_BUDGET"), UI.FONT_MIN, Color(CREMA, 0.6))
+		pie.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var roles_boton := Button.new()
+		roles_boton.text = tr("NET_RW_BUTTON")
+		roles_boton.focus_mode = Control.FOCUS_NONE
+		roles_boton.add_theme_font_size_override("font_size", UI.FONT_MIN)
+		roles_boton.pressed.connect(func() -> void: preload("res://scenes/net/roles_ventana.gd").abrir(self))
+		_caja.add_child(roles_boton)
+		var abrir := Button.new()
+		abrir.text = tr("NET_G_OPEN")
+		abrir.focus_mode = Control.FOCUS_NONE
+		abrir.add_theme_font_size_override("font_size", UI.FONT_MIN)
+		abrir.pressed.connect(mostrar_guia)
+		_caja.add_child(abrir)
 	if is_instance_valid(_guia):
 		_pintar_guia()
 	_atenuar_ajenas(mis_roles)

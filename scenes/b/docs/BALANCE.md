@@ -34,3 +34,12 @@ Una torreta cuesta 40 rocas + 15 olivino: hay que tener 2 antes del sol 5 y 1 an
 - **Bodega del rover**: 90 (`economia.json › bodega_rover`). Al llenarse, el taladro avisa `CARGO_FULL`.
 - **Barrera**: un muro cuesta 4 rocas, tiene 320 PV y tarda 2 s (máx. 90). Una compuerta cuesta 12 rocas + 4 olivino y tiene 240 PV (máx. 6). Escudo de 3 PV/s tras 5 s sin golpes. Coste de muro para los monstruos (`MapData.COSTO_MURO`): 12. Con un hueco a menos de unas 12 casillas, los monstruos lo rodean.
 - Rocky también repara muros, igual que los demás edificios, si no hay monstruos a menos de 4 casillas de la estación.
+
+## Batería (15 nov 2026 · plan de mejoras 3.2)
+
+- `energia.capacidad_base_wh`: 1000 → **2000 Wh** en Marte (`balance.json`) y en la Luna (`balance_luna.json`).
+- La pieza «Batería extra» no sumaba nada en la simulación (solo masa y costo). Ahora suma **+1000 Wh**
+  (`parts.json › bateria › bateria_extra_wh`), la mitad de la base, como antes se pensaba en proporción. Valor de juego.
+- **Sin medir el balance:** el repositorio no tiene un bot que juegue con estrategia. Las partidas automáticas de
+  `tests/test_partida_completa.gd` dan órdenes al azar (comprueban que nada se rompe) y siguen terminando todas, pero no dicen si
+  la partida es más fácil. Hay que comprobarlo jugando.

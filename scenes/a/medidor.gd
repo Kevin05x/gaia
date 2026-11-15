@@ -4,6 +4,8 @@ extends Node
 ##   Web:        https://.../gaia/?medir=1   Muestra el resultado en pantalla y en la consola del navegador.
 ## Empieza la misión con el diseño inicial, espera CALENTAR_S (carga y sombreadores) y mide MEDIR_S segundos de
 ## operaciones: FPS medio, cuadro medio, percentil 95 y peor, memoria del motor y llamadas de dibujo.
+## Con --escena=plataforma (web: ?escena=plataforma) mide la plataforma de lanzamiento de la Tierra con el Saturno V
+## elegido (hangar de 70 944 triángulos y el cohete más alto), en vez de la misión (plan de mejoras 6.4).
 
 const CALENTAR_S := 12.0
 const MEDIR_S := 45.0
@@ -13,7 +15,20 @@ var _cuadros: PackedFloat32Array = PackedFloat32Array()
 var _dibujo := 0.0
 var _muestras := 0
 var _hecho := false
+var _cohete_elegido := false
 var _ultimo_us := 0  ## reloj real: «delta» del motor se recorta a 8 pasos de física (133 ms) y escondería los cuadros lentos
+
+
+## Escena que se mide: «mision» (por defecto) o «plataforma».
+static func escena() -> String:
+	for a in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+		if a.begins_with("--escena="):
+			return a.get_slice("=", 1)
+	if OS.has_feature("web"):
+		var r: Variant = JavaScriptBridge.eval("String(new URLSearchParams(window.location.search).get('escena') || '')", true)
+		if str(r) == "plataforma":
+			return "plataforma"
+	return "mision"
 
 
 ## true si se pidió medir (argumento --medir o ?medir=1 en la web).
@@ -34,6 +49,8 @@ func _process(delta: float) -> void:
 	_ultimo_us = ahora
 	_t += real_s
 	if _t < CALENTAR_S:
+		if escena() == "plataforma" and _t > 1.0 and not _cohete_elegido:
+			_elegir_saturno()
 		return
 	_cuadros.append(real_s)
 	_dibujo += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
@@ -41,6 +58,20 @@ func _process(delta: float) -> void:
 	if _t >= CALENTAR_S + MEDIR_S:
 		_hecho = true
 		_terminar()
+
+
+## Plataforma: marca el Saturno V (cohete_super) como haría el jugador; se monta durante el calentamiento.
+func _elegir_saturno() -> void:
+	var vista: Node = get_parent().get("view")
+	if vista == null or vista.get("launch_pad") == null:
+		return
+	var plataforma: CanvasLayer = vista.launch_pad
+	for categoria in plataforma.snapshot.get("workshop", {}).get("categories", []):
+		for pieza in categoria.get("parts", []):
+			if str(pieza.get("id", "")) == "cohete_super":
+				plataforma.elegido = ""
+				plataforma._on_card("cohete_super", float(pieza.get("capacity_kg", 1800.0)), float(pieza.get("real_height_m", 110.6)))
+				_cohete_elegido = true
 
 
 ## Banco de CPU independiente de la GPU: corre la misma simulación (diseño inicial, 1200 pasos de 0,25 h) sin
@@ -79,6 +110,7 @@ func _terminar() -> void:
 		"GAIA - medición de rendimiento",
 		"Fecha: %s" % Time.get_datetime_string_from_system(),
 		"Plataforma: %s (%s)" % [OS.get_name(), "web" if OS.has_feature("web") else "escritorio"],
+		"Escena medida: %s" % ("plataforma de lanzamiento (Saturno V)" if escena() == "plataforma" else "misión (operaciones)"),
 		"GPU: %s · %s" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_video_adapter_api_version()],
 		"Ajuste gráfico: %s · ventana %s" % [str(g.get("preset", "?")), str(DisplayServer.window_get_size())],
 		"Cuadros medidos: %d en %.0f s de operaciones" % [orden.size(), MEDIR_S],

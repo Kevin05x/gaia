@@ -328,29 +328,39 @@ func _brillo(padre: Node3D, pos: Vector3, radio: float, color: Color, nombre: St
 	return ojo
 
 
+## Araña de las criaturas de la historia (ver la ilustración «Tres golpes bajo la base»): caparazón bajo y ancho color bronce y óxido, con
+## puntos que brillan en ámbar, abdomen detrás, cabeza pequeña y ocho patas finas que salen arqueadas hacia arriba antes de bajar al suelo.
 func _modelo_arana(raiz: Node3D) -> void:
-	var cuerpo := Color("4d3a5c")
-	var pata := Color("3a2c47")
-	var marca := Color("e0643f")
-	var abdomen := Art.ball(raiz, 0.5, Vector3(0, 0.62, 0.52), Color("5a4268"))
-	abdomen.scale = Vector3(1.0, 0.82, 1.2)
-	Art.box(raiz, Vector3(0.16, 0.05, 0.62), Vector3(0, 1.0, 0.52), marca)
-	var torax := Art.ball(raiz, 0.4, Vector3(0, 0.58, -0.1), cuerpo)
-	torax.scale = Vector3(1.0, 0.75, 1.1)
-	Art.ball(raiz, 0.26, Vector3(0, 0.55, -0.62), Color("624a72"))
+	var caparazon := Color("9a7b5c")
+	var cresta := Color("b8976f")
+	var abdomen_color := Color("7a6249")
+	var pata := Color("5a4636")
+	var junta := Color("8a6a4a")
+	var cuerpo := Art.ball(raiz, 0.46, Vector3(0, 0.5, 0.0), caparazon)
+	cuerpo.scale = Vector3(1.2, 0.62, 1.0)
+	var lomo := Art.ball(raiz, 0.3, Vector3(0, 0.66, 0.02), cresta)
+	lomo.scale = Vector3(1.0, 0.5, 1.1)
+	var abdomen := Art.ball(raiz, 0.36, Vector3(0, 0.46, 0.62), abdomen_color)
+	abdomen.scale = Vector3(1.0, 0.72, 1.15)
+	var cabeza := Art.ball(raiz, 0.2, Vector3(0, 0.44, -0.6), Color("6a5440"))
+	cabeza.scale = Vector3(1.1, 0.85, 1.0)
 	for lado in [-1.0, 1.0]:
-		Art.rod(raiz, Vector3(lado * 0.1, 0.42, -0.82), Vector3(lado * 0.09, 0.14, -0.98), 0.045, Color("d9d0c0"))
+		Art.rod(raiz, Vector3(lado * 0.09, 0.36, -0.74), Vector3(lado * 0.07, 0.14, -0.9), 0.04, Color("d9c9ac"))  # colmillos
 		for i in 4:
-			var z := -0.3 + float(i) * 0.24
-			var cadera := Vector3(lado * 0.3, 0.58, z * 0.7)
-			var rodilla := Vector3(lado * 0.95, 1.0, z * 1.25)
-			var pie := Vector3(lado * 1.35, 0.0, z * 1.55)
-			Art.rod(raiz, cadera, rodilla, 0.062, pata)
-			Art.rod(raiz, rodilla, pie, 0.045, pata)
+			var z := -0.38 + float(i) * 0.26
+			var cadera := Vector3(lado * 0.42, 0.5, z * 0.8)
+			var rodilla := Vector3(lado * 0.82, 0.92 - absf(z) * 0.1, z * 1.3)
+			var pie := Vector3(lado * 1.2, 0.0, z * 1.55)
+			Art.rod(raiz, cadera, rodilla, 0.07, pata)
+			Art.rod(raiz, rodilla, pie, 0.048, pata)
+			Art.ball(raiz, 0.08, rodilla, junta)
 	Art.merged(raiz)
 	for lado in [-1.0, 1.0]:
-		_brillo(raiz, Vector3(lado * 0.1, 0.63, -0.8), 0.055, Color("FF5B3D"))
-		_brillo(raiz, Vector3(lado * 0.18, 0.55, -0.72), 0.04, Color("FF5B3D"))
+		_brillo(raiz, Vector3(lado * 0.09, 0.5, -0.76), 0.045, Color("FFB347"))
+		_brillo(raiz, Vector3(lado * 0.17, 0.44, -0.7), 0.032, Color("FFB347"))
+	for i in 6:  # los puntos luminosos del caparazón (dos filas)
+		var lado := -1.0 if i % 2 == 0 else 1.0
+		_brillo(raiz, Vector3(lado * 0.26, 0.74 - 0.04 * float(i / 2), -0.18 + 0.2 * float(i / 2)), 0.028, Color("FFB347"), "Mota")
 
 
 func _modelo_biter(raiz: Node3D) -> void:

@@ -20,7 +20,7 @@ func _ready() -> void:
 	var vista := SubViewport.new()
 	vista.own_world_3d = true
 	vista.transparent_bg = false
-	vista.msaa_3d = Viewport.MSAA_4X
+	vista.msaa_3d = Graficos.msaa_visor(Graficos.cargar())  # antes siempre 4x
 	vista.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	add_child(vista)
 	var mundo := WorldEnvironment.new()

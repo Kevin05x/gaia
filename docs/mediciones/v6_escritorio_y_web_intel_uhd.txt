@@ -1,0 +1,40 @@
+GAIA - medición de rendimiento v6 (15 nov 2026, tarde, PC de Kevin)
+Método: igual que v5 (editor de Godot, 1280×720, --medir con ajuste fijo y sin calidad automática), Intel UHD (i5-12450H), nada más pesado abierto.
+Comando: godot --rendering-driver opengl3 --path . -- --medir --preset=<alta|baja> --escena=<mision|plataforma>
+
+== mision alta
+Escena medida: misión (operaciones)
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 2655 en 45 s de operaciones
+FPS medio: 59.0
+Cuadro medio: 17.0 ms · p95: 20.6 ms · peor: 35.4 ms
+VRAM usada: 230 MB
+Llamadas de dibujo por cuadro: 602
+== mision baja
+Escena medida: misión (operaciones)
+Ajuste gráfico: baja · ventana (1280, 720)
+Cuadros medidos: 2699 en 45 s de operaciones
+FPS medio: 60.0
+Cuadro medio: 16.7 ms · p95: 20.0 ms · peor: 32.2 ms
+VRAM usada: 190 MB
+Llamadas de dibujo por cuadro: 407
+== plataforma alta
+Escena medida: plataforma de lanzamiento (Saturno V)
+Ajuste gráfico: alta · ventana (1280, 720)
+Cuadros medidos: 2667 en 45 s de operaciones
+FPS medio: 59.2
+Cuadro medio: 16.9 ms · p95: 21.0 ms · peor: 39.4 ms
+VRAM usada: 232 MB
+Llamadas de dibujo por cuadro: 567
+== plataforma baja
+Escena medida: plataforma de lanzamiento (Saturno V)
+Ajuste gráfico: baja · ventana (1280, 720)
+Cuadros medidos: 2690 en 45 s de operaciones
+FPS medio: 59.8
+Cuadro medio: 16.7 ms · p95: 21.0 ms · peor: 37.5 ms
+VRAM usada: 254 MB
+Llamadas de dibujo por cuadro: 265
+
+Lectura honesta: en las cuatro mediciones el juego llega al tope de 60 FPS de la pantalla (sincronía vertical), así que 59-60 FPS dice «llega con holgura», no cuánto más podría dar.
+Esto NO coincide con v5 (misión Alta 29 FPS, plataforma Alta 20 FPS). No sabemos el motivo: v5 se midió con otros programas abiertos y quizá con la GPU en otro modo de energía; entre v5 y v6 hubo cambios de arte y de carga, pero no se puede atribuir la diferencia a ellos sin repetir las dos mediciones en igualdad de condiciones.
+Importante: esto es el escritorio. En la web el cuello es otro: la primera vez el navegador tarda 30-50 s en compilar los sombreadores (Chrome sobre Windows, ANGLE/Direct3D 11); la segunda visita tarda unos 3 s. Medido el 15 nov con Chrome real sobre esta misma GPU.

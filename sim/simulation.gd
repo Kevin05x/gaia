@@ -71,7 +71,10 @@ func usar_imprevistos(sistema: ImprevistosSystem, semilla: int) -> void:
 
 
 func reiniciar() -> void:
+	var duracion_sol := estado.duracion_sol_s if estado != null else -1.0
 	estado = MissionState.new(_balance, _reglas)
+	if duracion_sol > 0.0:
+		estado.duracion_sol_s = duracion_sol  # la duración elegida se conserva al rediseñar
 	_mapa.aplicar_a(estado)
 	_revision_mapa += 1
 	estado.revision_mapa = _revision_mapa
@@ -117,6 +120,32 @@ func iniciar_aterrizaje() -> bool:
 ## Atiende una orden de la vista. Devuelve {"ok", "reason"} y, según la orden:
 ## "path" y "seconds_per_tile" (move, approach) o "action" (act) para que la vista los presente.
 func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
+	# Con varios rovers, «_rover» en la carga dice cuál es el de quien da la orden: se ejecuta con ese rover cargado.
+	if carga.has("_rover"):
+		var limpia := carga.duplicate()
+		var dueno := int(limpia["_rover"])
+		limpia.erase("_rover")
+		if not estado.hay_varios_rovers():
+			return _ejecutar_con_tutorial(orden, limpia)
+		usar_rover(dueno)
+		var resultado := _ejecutar_con_tutorial(orden, limpia)
+		usar_rover(estado.rover_lider)
+		return resultado
+	return _ejecutar_con_tutorial(orden, carga)
+
+
+func _ejecutar_con_tutorial(orden: String, carga: Dictionary) -> Dictionary:
+	if _tutorial != null:
+		_tutorial.preparar(estado)
+		if not _tutorial.permite(estado, orden):
+			return {"ok": false, "reason": "TUTORIAL_LOCKED"}
+	var resultado := _ejecutar_orden(orden, carga)
+	if _tutorial != null and bool(resultado.get("ok", false)):
+		_tutorial.al_ordenar(estado, orden)
+	return resultado
+
+
+func _ejecutar_orden(orden: String, carga: Dictionary) -> Dictionary:
 	match orden:
 		"select":
 			return _seleccionar(str(carga.get("target_id", "")))
@@ -176,11 +205,16 @@ func ejecutar(orden: String, carga: Dictionary = {}) -> Dictionary:
 		"event_choice":
 			if _imprevistos == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
-			return _resultado_simple(_imprevistos.decidir(estado, int(carga.get("choice", -1))))
+			return _decidir_imprevisto(int(carga.get("choice", -1)))
 		"tutorial_skip":
 			if _tutorial == null:
 				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
 			_tutorial.omitir(estado)
+			return {"ok": true, "reason": ""}
+		"tutorial_next":
+			if _tutorial == null:
+				return {"ok": false, "reason": "UNKNOWN_COMMAND"}
+			_tutorial.siguiente(estado)
 			return {"ok": true, "reason": ""}
 		"pause":
 			return _pausar(bool(carga.get("paused", false)))
@@ -202,13 +236,22 @@ func avanzar(delta_s: float) -> Array[String]:
 		return eventos
 	if _historia != null and _historia.esperando_decision(estado):
 		return eventos  # la misión espera la decisión del jugador
+	if _tutorial != null:
+		_tutorial.preparar(estado)
+		if estado.tutorial_activo and estado.tutorial_espera:
+			# Tutorial: el reloj espera a que el jugador haga algo. Solo se comprueba si el paso ya estaba cumplido.
+			return _tutorial.avanzar(estado, 0.0, eventos)
 	if _imprevistos != null:
 		if not estado.imprevistos_programados:
 			estado.imprevistos_programados = true
 			_imprevistos.programar(estado, _semilla_imprevistos)
 		if _imprevistos.esperando(estado):
 			return eventos  # imprevisto: el equipo debe decidir antes de seguir
-	var horas := _reloj.horas_de_juego(delta_s)
+	var horas := _reloj.horas_de_juego(delta_s, estado.duracion_sol_s)
+	# Transmisión, obras, oleadas y tutorial se miden en horas de juego (plan 3.1): reciben los segundos que habrían
+	# pasado con el sol de referencia de balance.json, así una duración distinta no cambia el balance. El rover y las
+	# acciones siguen en segundos reales: es lo que se siente al jugar.
+	var referencia := segundos_de_referencia(delta_s)
 	_fijar_tope_envio()
 	eventos.append_array(_energia.avanzar(estado, horas))
 	var eventos_reloj := _reloj.avanzar(estado, delta_s)
@@ -216,31 +259,36 @@ func avanzar(delta_s: float) -> Array[String]:
 	for evento in eventos_reloj:
 		if evento == ClockSystem.EVENTO_SOL_NUEVO:
 			eventos.append_array(_ciencia.al_nuevo_sol(estado))
-	var habia_accion := not estado.accion_en_curso.is_empty()
-	var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
-	eventos.append_array(eventos_ciencia)
-	_liberar_agotados(eventos_ciencia)
-	if _combate != null:
-		_combate.reaccionar(estado, eventos_ciencia)
-	if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
-		eventos.append(EVENTO_ACCION_CANCELADA)
-	eventos.append_array(_movimiento.avanzar(estado, delta_s))
-	if estado.descargar_al_llegar and not estado.en_movimiento:
-		estado.descargar_al_llegar = false
-		eventos.append_array(_descargar_aqui())
-	eventos.append_array(_comunicaciones.avanzar(estado, delta_s))
+	# Cada rover hace lo suyo (ciencia, movimiento, descarga). Con un solo rover es una sola vuelta, como siempre.
+	for id in estado.ids_de_rovers():
+		usar_rover(id)
+		var habia_accion := not estado.accion_en_curso.is_empty()
+		var eventos_ciencia := _ciencia.avanzar(estado, delta_s)
+		eventos.append_array(eventos_ciencia)
+		_liberar_agotados(eventos_ciencia)
+		if _combate != null:
+			_combate.reaccionar(estado, eventos_ciencia)
+		if habia_accion and estado.accion_en_curso.is_empty() and not _hay_evento(eventos_ciencia, ScienceSystem.EVENTO_ACCION_TERMINADA):
+			eventos.append(EVENTO_ACCION_CANCELADA)
+		eventos.append_array(_movimiento.avanzar(estado, delta_s))
+		if estado.descargar_al_llegar and not estado.en_movimiento:
+			estado.descargar_al_llegar = false
+			eventos.append_array(_descargar_aqui())
+	usar_rover(_constructor())  # la obra del equipo la hace el rover que la pidió (o el líder)
+	eventos.append_array(_comunicaciones.avanzar(estado, referencia))
 	if _edificios != null:
 		_seguir_obra_antes(eventos)
-		var eventos_obra := _edificios.avanzar(estado, delta_s, horas)
+		var eventos_obra := _edificios.avanzar(estado, referencia, horas)
 		eventos.append_array(eventos_obra)
 		_seguir_obra_despues(eventos, eventos_obra)
+	usar_rover(estado.rover_lider)  # el combate, la historia y lo demás cuentan con el rover del líder
 	if _combate != null:
-		eventos.append_array(_combate.avanzar(estado, delta_s, horas, _energia))
+		eventos.append_array(_combate.avanzar(estado, referencia, horas, _energia))
 	_anotar_progreso(eventos)
 	if _hitos != null:
 		eventos.append_array(_hitos.avanzar(estado))
 	if _tutorial != null:
-		eventos.append_array(_tutorial.avanzar(estado, delta_s, eventos))
+		eventos.append_array(_tutorial.avanzar(estado, referencia, eventos))
 	if _imprevistos != null:
 		eventos.append_array(_imprevistos.avanzar(estado))
 	informe = _resultado.evaluar(estado, eventos)
@@ -250,6 +298,95 @@ func avanzar(delta_s: float) -> Array[String]:
 	elif _historia != null:
 		eventos.append_array(_historia.comprobar(estado))
 	return eventos
+
+
+## --- Varios rovers (multijugador en red) ---------------------------------------------------------------------------------------
+
+var _selecciones: Dictionary = {}  ## id de rover -> objetivo seleccionado
+var _jugadores: Array[int] = []  ## ids de los jugadores de la sala (en red): cada uno lleva un rover al empezar la misión
+
+
+func fijar_jugadores(ids: Array) -> void:
+	_jugadores.clear()
+	for id in ids:
+		_jugadores.append(int(id))
+
+
+## Un jugador entra (o se va) con la misión ya en marcha: llega con su rover o se lleva el suyo.
+func jugador_entra(id: int) -> void:
+	if not _jugadores.has(id):
+		_jugadores.append(id)
+	if estado.fase != "workshop" and not estado.ids_de_rovers().has(id):
+		agregar_rover(id)
+
+
+func jugador_sale(id: int) -> void:
+	_jugadores.erase(id)
+	if estado.fase != "workshop" and estado.ids_de_rovers().has(id):
+		quitar_rover(id)
+
+
+## Carga el rover «id» (y su objetivo seleccionado). false si no existe.
+func usar_rover(id: int) -> bool:
+	if id == estado.rover_actual:
+		return true
+	_selecciones[estado.rover_actual] = _seleccion
+	var ok := estado.usar_rover(id)
+	_seleccion = str(_selecciones.get(estado.rover_actual, ""))
+	return ok
+
+
+## Agrega el rover de un jugador en una casilla libre cerca de la estación. El primero es el líder.
+func agregar_rover(id: int) -> void:
+	var casilla := estado.casilla_rover
+	var ocupadas: Array[Vector2i] = []
+	for r in estado.ids_de_rovers():
+		ocupadas.append(estado.casilla_rover if r == estado.rover_actual else Vector2i(estado.rovers[r]["casilla_rover"]))
+	var elegida := casilla
+	var encontrada := false
+	for radio in range(1, 5):
+		for dx in range(-radio, radio + 1):
+			for dy in range(-radio, radio + 1):
+				var c := casilla + Vector2i(dx, dy)
+				if not encontrada and maxi(absi(dx), absi(dy)) == radio and not _mapa.bloqueada(c) and not ocupadas.has(c):
+					elegida = c
+					encontrada = true
+	estado.agregar_rover(id, elegida)
+
+
+func quitar_rover(id: int) -> void:
+	usar_rover(estado.rover_lider)
+	estado.quitar_rover(id)
+	_selecciones.erase(id)
+	_seleccion = str(_selecciones.get(estado.rover_actual, _seleccion))
+
+
+## El rover que está haciendo una obra (o el líder si ninguno).
+func _constructor() -> int:
+	if estado.obra_del_rover != "":
+		return estado.rover_actual
+	for id in estado.rovers:
+		if str(estado.rovers[id].get("obra_del_rover", "")) != "":
+			return int(id)
+	return estado.rover_lider
+
+
+## Snapshot de un jugador: el de siempre, con SU rover (posición, bodega, acción) y la lista de los demás rovers.
+func snapshot_de(id: int) -> Dictionary:
+	if not estado.hay_varios_rovers() or not estado.ids_de_rovers().has(id):
+		return snapshot()
+	var anterior := estado.rover_actual
+	usar_rover(id)
+	var datos := snapshot()
+	var otros: Array[Dictionary] = []
+	for r in estado.ids_de_rovers():
+		var casilla: Vector2i = estado.casilla_rover if r == estado.rover_actual else Vector2i(estado.rovers[r]["casilla_rover"])
+		var se_mueve: bool = estado.en_movimiento if r == estado.rover_actual else bool(estado.rovers[r]["en_movimiento"])
+		otros.append({"id": r, "tile": casilla, "moving": se_mueve})
+	datos["rover_id"] = id
+	datos["rovers"] = otros
+	usar_rover(anterior)
+	return datos
 
 
 const EVENTO_DESCARGA := "CARGO_UNLOADED"  ## CARGO_UNLOADED:<unidades>
@@ -445,7 +582,8 @@ func snapshot() -> Dictionary:
 		datos["resource_capacity"] = _recursos.capacidad(estado)
 		if _recursos.usa_bodega():
 			datos["cargo"] = {"items": estado.carga.duplicate(), "total": _recursos.carga_total(estado),
-				"capacity": _recursos.capacidad_bodega(), "near_storage": junto_a_almacen(), "going": estado.descargar_al_llegar}
+				"capacity": _recursos.capacidad_bodega(), "near_storage": junto_a_almacen(), "going": estado.descargar_al_llegar,
+				"storages": almacenes()}
 		datos["buildings"] = _edificios.para_la_vista(estado)
 		datos["build_options"] = _edificios.opciones(estado)
 		datos["base"] = {"center": estado.casilla_estacion, "radius": _economia.zona_base_radio,
@@ -515,6 +653,7 @@ func cargar(datos: Dictionary) -> bool:
 	if str(campos.get("fase", "")) != "operations":
 		return false
 	reiniciar()
+	estado.duracion_sol_s = _balance.numero("tiempo.duracion_sol_s")  # partidas de antes de 3.1: el sol de siempre
 	var diseno: Dictionary = datos["diseno"]
 	for categoria in Catalog.CATEGORIAS:
 		_diseno.seleccion[categoria] = Array(diseno.get(categoria, []))
@@ -635,6 +774,76 @@ func _con_redireccion(iniciar: Callable) -> Dictionary:
 	return resultado
 
 
+## Duración de cada sol en segundos reales (plan 3.1). Se fija antes de empezar; la partida guardada la conserva.
+func fijar_duracion_sol(segundos: float) -> void:
+	if segundos > 0.0:
+		estado.duracion_sol_s = segundos
+
+
+## Segundos reales pasados a los del sol de referencia de balance.json (con 300 s de referencia y un sol de 720 s,
+## 2,4 s reales son 1 s de referencia).
+func segundos_de_referencia(delta_s: float) -> float:
+	var referencia := _balance.numero("tiempo.duracion_sol_s")
+	if estado.duracion_sol_s <= 0.0 or referencia <= 0.0:
+		return delta_s
+	return delta_s * referencia / estado.duracion_sol_s
+
+
+## Decide el imprevisto pendiente. Devuelve «applied» (lo que cambió, para el aviso) y, si la opción manda al rover a
+## un desvío, la ruta («path», «seconds_per_tile») y la casilla marcada («applied.detour_tile»).
+func _decidir_imprevisto(opcion: int) -> Dictionary:
+	var bateria_inicio := estado.bateria_wh
+	var decision := _imprevistos.decidir(estado, opcion)
+	if not decision["ok"]:
+		return _resultado_simple(decision)
+	var aplicado: Dictionary = decision["applied"]
+	var resultado := {"ok": true, "reason": "", "applied": aplicado}
+	var casillas := int(aplicado.get("desvio_casillas", 0))
+	if casillas <= 0:
+		return resultado
+	var antes_del_viaje := estado.bateria_wh
+	var marcha := _desviar(casillas)
+	if not marcha["ok"] or Array(marcha["path"]).is_empty():
+		aplicado["detour_reason"] = str(marcha.get("reason", "NO_PATH"))
+		return resultado
+	# Los Wh de la opción ya incluyen el viaje: se devuelve lo que costó la ruta, hasta lo que se cobró al decidir
+	# (si el viaje cuesta más, se paga solo el viaje).
+	var cobrado := maxf(0.0, -float(aplicado.get("energia_wh", 0.0)))
+	var viaje := antes_del_viaje - estado.bateria_wh
+	estado.bateria_wh = minf(estado.bateria_wh + minf(viaje, cobrado), estado.bateria_capacidad_wh)
+	aplicado["energia_wh"] = estado.bateria_wh - bateria_inicio
+	aplicado["detour_tile"] = marcha["tile"]
+	resultado["path"] = marcha["path"]
+	resultado["seconds_per_tile"] = marcha["seconds_per_tile"]
+	return resultado
+
+
+## Lleva el rover a una casilla libre y alcanzable a unas «casillas» de distancia (la de ruta más corta; si no hay
+## ninguna a esa distancia, prueba un poco más cerca o más lejos). {"ok", "reason", "path", "seconds_per_tile", "tile"}.
+func _desviar(casillas: int) -> Dictionary:
+	var motivo := ""
+	for radio in [casillas, casillas - 1, casillas + 1, casillas - 2, casillas + 2]:
+		if radio < 1:
+			continue
+		var mejor := Vector2i.ZERO
+		var pasos := -1
+		for desplazamiento in MovementSystem._anillo(radio):
+			var casilla: Vector2i = estado.casilla_rover + desplazamiento
+			var plan := _movimiento.disponibilidad_mover(estado, casilla)
+			if not plan["enabled"]:
+				motivo = str(plan["reason"])
+				continue
+			var ruta: Array = plan["path"]
+			if not ruta.is_empty() and (pasos < 0 or ruta.size() < pasos):
+				mejor = casilla
+				pasos = ruta.size()
+		if pasos > 0:
+			var marcha := _mover(mejor)
+			marcha["tile"] = mejor
+			return marcha
+	return {"ok": false, "reason": motivo if not motivo.is_empty() else "NO_PATH", "path": []}
+
+
 func _mover(casilla: Vector2i) -> Dictionary:
 	return _resultado_movimiento(_movimiento.iniciar_mover(estado, casilla))
 
@@ -705,7 +914,12 @@ func _comenzar_mision() -> Dictionary:
 	if not configurar_diseno(configuracion["energia"], configuracion["enlace"], configuracion["instrumentos"],
 			configuracion["companero"], configuracion["potencia_nominal_w"]):
 		return {"ok": false, "reason": "INVALID_DESIGN"}
+	# Batería: la base del destino más la de las baterías extra del diseño (parts.json › bateria_extra_wh). Sale llena.
+	estado.bateria_capacidad_wh = _balance.numero("energia.capacidad_base_wh") + float(configuracion.get("bateria_extra_wh", 0.0))
+	estado.bateria_wh = estado.bateria_capacidad_wh
 	iniciar_aterrizaje()
+	for id in _jugadores:  # en red, cada jugador lleva su rover
+		agregar_rover(id)
 	return {"ok": true, "reason": ""}
 
 
@@ -734,6 +948,7 @@ func _taller() -> Dictionary:
 				"capacity_factor": pieza.get("factor_capacidad"), "cruise_days": pieza.get("dias_crucero"),
 				"ref_key": pieza.get("ref_clave", ""), "real_height_m": pieza.get("alto_real_m"),
 				"pending": pieza.get("pendiente", false) == true,
+				"recommended_for": pieza.get("recomendada", []),
 				"available": disponible["enabled"], "reason": disponible["reason"]})
 		categorias.append({"id": categoria, "parts": piezas})
 	var validacion := _diseno.validar()

@@ -43,13 +43,37 @@ Reglas que no cambian: arquitectura de tres capas (`content/` → `sim/` → `sc
 
 | # | Problema que vio Kevin | Dónde mirar | Qué hacer | Cómo se comprueba |
 |---|---|---|---|---|
-| 1.1 | La cuadrícula aparece sola cada vez que el rover se mueve | `scenes/b/mission_view.gd` (al recibir una ruta llama a `terrain.flash_grid()`), `scenes/b/terrain.gd` | Quitar el destello al moverse. La cuadrícula solo se ve con el botón (o con la tecla) y en el modo construir | Moverse con la cuadrícula apagada: no aparece |
-| 1.2 | Al abordar, el rover atraviesa la rampa | `scenes/b/launch_pad.gd` (`_build_mesa`, la rampa hacia `_puerta`, `DURACION_ABORDAJE`) | Que el recorrido siga la pendiente de la rampa (altura por tramo) y que la rampa llegue al suelo | Captura del abordaje desde el lateral |
-| 1.3 | «Opciones» y «Código» se montan en pantallas pequeñas | `scenes/b/workshop.gd`, bloque con `UI.place(opciones, "bl", ...)` y `codigo` | Colocarlos en una fila con anclaje y separación fija, o dentro del panel del catálogo | Ventana 1280×720 y 1024×600 |
-| 1.4 | Cambiar la resolución no se aplica o vuelve a la anterior; no pasa de 1080 | `scenes/menu/menu_text.gd` (`TAMANOS_VENTANA`, `DisplayServer.window_set_size`), `project.godot` (`display/window/...`) | Separar «tamaño de ventana» de «pantalla completa»; en pantalla completa usar la resolución nativa del monitor; guardar y leer la preferencia en un solo sitio; añadir 2560×1440 y «nativa» | Cambiar de 1280 a 1920 y a pantalla completa, cerrar y abrir |
-| 1.5 | Las escenas tardan 5 s en mostrar el texto | `scenes/b/story_panel.gd`, `const ESPERA_IMAGEN := 5.0` | Bajar a 1,2 s; el texto aparece con un fundido mientras la imagen sigue visible | `tests/test_vista_historia.gd` sigue en verde |
-| 1.6 | En el taller rumbo a la Luna se ve Marte al fondo | Fondo del hangar en `scenes/b/workshop.gd` / escena del hangar | Elegir el fondo según `Destino.id` (Luna: horizonte gris y la Tierra en el cielo) | Abrir el taller con Luna |
-| 1.7 | «Oportunidad científica → Desviarse» no hace nada visible | `content/imprevistos.json` (`oportunidad`), `sim/systems/imprevistos_system.gd` (`datos` va a la **memoria** del rover, no a «Ciencia 0/100», y se recorta si la memoria está llena) | Al elegir, mostrar el resultado: aviso «+10 datos en memoria: transmítelos en la próxima ventana», marcar un punto en el mapa y mover el rover hasta él. Revisar los 9 imprevistos con el mismo criterio | Elegir cada opción y ver un cambio en pantalla |
+| [x] 1.1 | La cuadrícula aparece sola cada vez que el rover se mueve | `scenes/b/mission_view.gd` (al recibir una ruta llama a `terrain.flash_grid()`), `scenes/b/terrain.gd` | Quitar el destello al moverse. La cuadrícula solo se ve con el botón (o con la tecla) y en el modo construir | Moverse con la cuadrícula apagada: no aparece |
+| [x] 1.2 | Al abordar, el rover atraviesa la rampa | `scenes/b/launch_pad.gd` (`_build_mesa`, la rampa hacia `_puerta`, `DURACION_ABORDAJE`) | Que el recorrido siga la pendiente de la rampa (altura por tramo) y que la rampa llegue al suelo | Captura del abordaje desde el lateral |
+| [x] 1.3 | «Opciones» y «Código» se montan en pantallas pequeñas | `scenes/b/workshop.gd`, bloque con `UI.place(opciones, "bl", ...)` y `codigo` | Colocarlos en una fila con anclaje y separación fija, o dentro del panel del catálogo | Ventana 1280×720 y 1024×600 |
+| [x] 1.4 | Cambiar la resolución no se aplica o vuelve a la anterior; no pasa de 1080 | `scenes/menu/menu_text.gd` (`TAMANOS_VENTANA`, `DisplayServer.window_set_size`), `project.godot` (`display/window/...`) | Separar «tamaño de ventana» de «pantalla completa»; en pantalla completa usar la resolución nativa del monitor; guardar y leer la preferencia en un solo sitio; añadir 2560×1440 y «nativa» | Cambiar de 1280 a 1920 y a pantalla completa, cerrar y abrir |
+| [x] 1.5 | Las escenas tardan 5 s en mostrar el texto | `scenes/b/story_panel.gd`, `const ESPERA_IMAGEN := 5.0` | Bajar a 1,2 s; el texto aparece con un fundido mientras la imagen sigue visible | `tests/test_vista_historia.gd` sigue en verde |
+| [x] 1.6 | En el taller rumbo a la Luna se ve Marte al fondo | Fondo del hangar en `scenes/b/workshop.gd` / escena del hangar | Elegir el fondo según `Destino.id` (Luna: horizonte gris y la Tierra en el cielo) | Abrir el taller con Luna |
+| [x] 1.7 | «Oportunidad científica → Desviarse» no hace nada visible | `content/imprevistos.json` (`oportunidad`), `sim/systems/imprevistos_system.gd` (`datos` va a la **memoria** del rover, no a «Ciencia 0/100», y se recorta si la memoria está llena) | Al elegir, mostrar el resultado: aviso «+10 datos en memoria: transmítelos en la próxima ventana», marcar un punto en el mapa y mover el rover hasta él. Revisar los 9 imprevistos con el mismo criterio | Elegir cada opción y ver un cambio en pantalla |
+
+Decisiones de Kevin para 1.7 (15 nov): los +10 datos entran en memoria **al decidir**; el rover sale solo hacia una casilla
+libre a unas 5 casillas, y los 90 Wh incluyen el viaje. Si la memoria está llena, lo que no cabe se pierde y el aviso lo dice.
+
+### Decisiones de Kevin para el resto del plan (15 nov, mañana)
+
+| Tarea | Decisión |
+|---|---|
+| 2.4 | La plataforma llega con el **cohete medio ya marcado**; el hangar llega con el resto del diseño recomendado y el botón «Diseño recomendado» lo restaura. En la **Luna**, el diseño recomendado lleva **MMRTG** en vez de panel solar (y la trayectoria directa lunar). |
+| 2.5 | El aviso **no lleva cifra**: «Sin taladro no podrás tomar muestras». |
+| 2.1 | La Luna **mantiene la meta** (100 datos antes del día 6) con textos lunares en su tarjeta. La 3.5 queda para después del reto. |
+| 2.2 | Ventana **anclada abajo a la izquierda** (se puede arrastrar); la radio de Houston espera mientras está abierta. |
+| 2.2 y 2.3 | Capturas en **español e inglés** (`assets/tutorial/es` y `/en`). |
+| 2.6, 2.7, 2.8 | Se hacen las tres. En 2.7 no se inventan consecuencias: se muestra lo que hoy cambia cada decisión y se listan para Tony las que no cambian nada visible. |
+| 3.4 | La tormenta pasa al **sol 4** en `content/rules.json`. |
+| 3.1 | El selector va en la **pantalla de destino**; en red, en la sala (lo fija el anfitrión). |
+| 3.2 | Más batería en **Marte y Luna**. |
+| 4.1 | Estilo en **todo el juego**. Títulos con una **fuente OFL parecida al logo** (con su licencia, anotada en `ARTE_Y_LICENCIAS.md`). Con la 4.1 se arreglan también las etiquetas cortadas de la barra de pasos del hangar. |
+| 1.6 (extra) | El consejo de trayectoria del hangar lunar deja de decir «Marte». **Revisado: no era un fallo del juego** (`content/destinos.json` ya trae el texto lunar); solo la herramienta de capturas no aplicaba los textos lunares. Corregida la herramienta. |
+| 6 | Se mide en el **PC de Kevin**; la Intel UHD la mide el equipo. |
+| 9 | Las voces las **genera Claude** (voces de Windows y Piper, efecto de walkie-talkie propio, anotado en `ARTE_Y_LICENCIAS.md`); si llega el script de Tony, se regraban. |
+| 8 | Claude prepara las **7 diapositivas** (presentación web descargable como PPTX/PDF), el **texto del proyecto** en inglés y el **guion y subtítulos** del video. El montaje del video es del equipo. |
+| 7 | Claude prepara los **archivos y la guía**; Kevin los corre en su servidor. |
+| 10 | Solo **si sobra tiempo**. |
 
 ---
 
@@ -57,33 +81,42 @@ Reglas que no cambian: arquitectura de tres capas (`content/` → `sim/` → `sc
 
 El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué hacer**.
 
-- [ ] **2.1 Pantalla de objetivo** al empezar la misión (después del aterrizaje): una sola tarjeta con la meta («Envía 100 datos a la Tierra
+- [x] **2.1 Pantalla de objetivo** al empezar la misión (después del aterrizaje): una sola tarjeta con la meta («Envía 100 datos a la Tierra
   antes de que acabe el sol 6»), las 3 cosas que la hacen posible (energía → instrumentos → antena y ventana de enlace) y un botón «Entendido».
   Distinta para Marte y Luna (ver 3.5). Archivos: `content/tutorial.json`, `scenes/b/` (nuevo panel).
-- [ ] **2.2 Tutorial en ventana**, no a pantalla completa ni en el cuadro marrón de la derecha: una ventana mediana (~640×420),
+- [x] **2.2 Tutorial en ventana**, no a pantalla completa ni en el cuadro marrón de la derecha: una ventana mediana (~640×420),
   movible o anclada abajo a la izquierda, con **captura real** del paso, flecha a lo que hay que pulsar y «Siguiente / Saltar».
   Las capturas se generan con el propio juego (modo `--capturas` que recorra los pasos y guarde PNG en `assets/tutorial/`).
   Archivos: `sim/systems/tutorial_system.gd` (pasos), `content/tutorial.json`, panel del tutorial en `scenes/b/`.
-- [ ] **2.3 «Cómo jugar» del menú con imágenes reales** (las mismas capturas de 2.2) en cada una de sus 5 páginas. `scenes/menu/`.
-- [ ] **2.4 Configuración del rover por defecto** en el taller: entrar con un diseño válido ya armado (cohete medio, trayectoria rápida,
+- [x] **2.3 «Cómo jugar» del menú con imágenes reales** (las mismas capturas de 2.2) en cada una de sus 5 páginas. `scenes/menu/`.
+- [x] **2.4 Configuración del rover por defecto** en el taller: entrar con un diseño válido ya armado (cohete medio, trayectoria rápida,
   chasis base, panel solar, antena relé, cámara, espectrómetro y taladro) y un botón «Diseño recomendado». El jugador puede cambiarlo.
   Archivos: `scenes/b/workshop.gd`, `content/parts.json` (marcar `"recomendada": true`), la simulación (`design_add`).
-- [ ] **2.5 Aviso si falta un instrumento clave** (taladro, espectrómetro, cámara o antena): en la validación de misión, una línea roja
+- [x] **2.5 Aviso si falta un instrumento clave** (taladro, espectrómetro, cámara o antena): en la validación de misión, una línea roja
   «Sin taladro no podrás tomar muestras: perderás X datos posibles» y una confirmación al pulsar DESPEGAR. No bloquea.
   Archivos: validación en `sim/simulation.gd` (`_taller()`), textos en `scenes/b/i18n/`.
-- [ ] **2.6 Imprevistos que explican qué implica cada opción**: debajo de cada opción, el efecto en lenguaje de juego
+- [x] **2.6 Imprevistos que explican qué implica cada opción**: debajo de cada opción, el efecto en lenguaje de juego
   («−90 Wh: unas 2 h menos de batería · +10 datos en memoria»). Rediseño visual en el bloque 4.
-- [ ] **2.7 Que las decisiones de la historia cambien algo que se vea**: cada opción de `content/historia.json` debe dejar una huella
+- [x] **2.7 Que las decisiones de la historia cambien algo que se vea**: cada opción de `content/historia.json` debe dejar una huella
   visible (un edificio, un recurso, un aviso de radio distinto, un final distinto). Revisar con Tony qué cambia hoy cada decisión y
   mostrarlo en la tarjeta («Esta decisión cambiará: …»). Archivos: `sim/systems/story_system.gd`, `scenes/b/story_panel.gd`.
-- [ ] **2.8 Escenas que faltan**: confirmar con «Nueva partida» que salen la introducción («de qué trata el juego») y las escenas de Tony.
+  - Hecho (15 nov): la tarjeta dice lo que cambia de verdad cada opción (batería, datos, ética, Rocky, recursos, bodega, rama de
+    la historia, final y si termina la misión), sacado de sus `efectos` y no escrito a mano.
+  - **Para Tony**: estas dos opciones hoy no cambian nada visible al elegirlas (son «dejarlo para después»). Si deben dejar huella,
+    añadirles `efectos` en `content/historia.json` y quitarlas de `SIN_HUELLA` en `tests/test_mejoras_bloque2.gd`:
+    `falla_sismografo` · «Verificar en el segundo sensor» (el coste llega después, al medir) y
+    `estacion_auxiliar` · «Volver más tarde» (deja la estación pendiente).
+- [x] **2.8 Escenas que faltan**: confirmar con «Nueva partida» que salen la introducción («de qué trata el juego») y las escenas de Tony.
   Si alguna no sale, revisar `scenes/b/story_panel.gd` (`intro_pages`) y `content/historia.json`.
+  - Comprobado (15 nov, pruebas en `tests/test_mejoras_bloque2.gd`): «Nueva partida» → Marte abre la introducción; la
+    introducción, las escenas y los 4 finales tienen imagen; tras aterrizar llega la radio de Houston del aterrizaje; las 36 líneas
+    de diálogo de la historia tienen voz en español e inglés. No faltaba nada. Con «Continuar» la introducción no se repite (a propósito).
 
 ---
 
 ## Bloque 3 · Lógica del juego (P1, 2–3 h, con decisión del equipo)
 
-- [ ] **3.1 Duración del sol a elección del jugador** (decidido por Kevin el 14 nov): antes de empezar la partida, un selector
+- [x] **3.1 Duración del sol a elección del jugador** (decidido por Kevin el 14 nov): antes de empezar la partida, un selector
   **«Duración de cada sol: 6 · 8 · 10 · 12 minutos»** (por defecto 12). La partida dura lo que tenga que durar (6 soles = 36 a 72 min).
   - Dónde se elige: pantalla previa a la misión (después de elegir destino y dificultad) y, en red, en la sala (lo fija el anfitrión
     y lo ven todos; `scenes/net/sala.gd` → `config`).
@@ -93,10 +126,13 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
     medido en **horas de juego**, para que cambiar la duración no cambie el balance. Revisarlo y probarlo con 6 y con 12 minutos.
   - Pruebas: una que cree la simulación con 360 s y otra con 720 s y compruebe que un sol dura eso y que el resultado de un día
     de juego es el mismo.
-- [ ] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
+- [x] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
   y volver a correr el bot de balance (`tools/`) para que la partida siga siendo ganable pero no trivial.
+  - Hecho (15 nov): 2000 Wh en Marte y Luna; la «Batería extra», que no sumaba nada, ahora suma +1000 Wh. **Pendiente**: no existe
+    un bot de balance con estrategia (el de `tools/` es el de la red); hay que comprobar jugando que no quedó trivial
+    (`scenes/b/docs/BALANCE.md`).
 - [ ] **3.3 Coherencia de ritmos**: con sol más largo, revisar ventanas de relé, carga solar, construcción y oleadas.
-- [ ] **3.4 Tormenta de polvo**: `content/rules.json` la pone en el sol 3 y la historia dice 4–5. Unificar.
+- [x] **3.4 Tormenta de polvo**: `content/rules.json` la pone en el sol 3 y la historia dice 4–5. Unificar.
 - [ ] **3.5 Marte y Luna con objetivos distintos** (hoy comparten meta). Propuesta:
   Marte = «100 datos de ciencia antes del sol 6» (historia y combate);
   Luna = «encontrar hielo en las zonas de sombra permanente y enviar 3 muestras» (sin combate; energía lunar del 70 % y crestas iluminadas).
@@ -109,13 +145,16 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 Kevin: «se ve genérica, como una web; botones muy redondeados; ocupa mucha pantalla; los botones estorban».
 Referencia buena dentro del propio juego: la **consola de la plataforma** de Amner (`scenes/b/consola.gd`: chapa con esquinas cortadas, corchetes y reglillas).
 
-- [ ] **4.1 Un solo estilo** en `scenes/b/ui_style.gd`: esquinas cortadas (chaflán) en vez de redondeadas, borde fino ámbar, fondo oscuro
+- [x] **4.1 Un solo estilo** en `scenes/b/ui_style.gd`: esquinas cortadas (chaflán) en vez de redondeadas, borde fino ámbar, fondo oscuro
   translúcido, tipografía del logo GAIA en títulos. Aplicarlo a botones, tarjetas, avisos, tutorial e imprevistos.
-- [ ] **4.2 Menos ruido en pantalla**: barra inferior de acciones (Panorámica, Radar, Dron, Minerales, Antena) agrupada en un solo bloque
+- [x] **4.2 Menos ruido en pantalla**: barra inferior de acciones (Panorámica, Radar, Dron, Minerales, Antena) agrupada en un solo bloque
   con iconos y atajos; ocultar acciones que no se pueden usar en vez de mostrarlas apagadas; mover el contador de FPS fuera
   (solo con la opción «Mostrar FPS»).
-- [ ] **4.3 Tutorial e imprevistos** como ventanas diseñadas (bloque 2), no el cuadro marrón.
-- [ ] **4.4 HUD escalable**: comprobar 1280×720, 1600×900, 1920×1080 y 2560×1440 (`content_scale` y anclajes).
+- [x] **4.3 Tutorial e imprevistos** como ventanas diseñadas (bloque 2), no el cuadro marrón.
+- [x] **4.4 HUD escalable**: comprobar 1280×720, 1600×900, 1920×1080 y 2560×1440 (`content_scale` y anclajes).
+  - Comprobado con capturas reales a 1024×600, 1280×720, 1600×900 y 2560×1440 (el monitor es de 1920×1080, así que 1920×1080 es
+    la pantalla completa nativa): todo va anclado y nada se solapa.
+  - 4.3 quedó hecho con 2.2 (tutorial en ventana), 2.6 (efecto de cada opción) y 4.1 (estilo único).
 - [ ] **4.5 Logo hecho por el equipo**: modelar el logo GAIA en Blender (texto en 3D con el planeta) y renderizarlo; reemplazar el actual
   hecho con IA en el menú y declararlo en `ARTE_Y_LICENCIAS.md` («diseñado en Blender por el equipo con ayuda de Claude»).
   La imagen de fondo del menú hecha con IA conserva su marca «Imagen generada con IA».
@@ -139,16 +178,29 @@ Luna 42–60 FPS (427–517 llamadas, 483k–567k triángulos). Arturo midió 20
 
 - [ ] **6.1 Llamadas de dibujo**: fundir mallas por material en el taller y en la base (`scenes/b/modelos_equipo.gd` ya lo hace para
   modelos del equipo), `MultiMesh` para rocas y cráteres, LOD (`meshes/generate_lods` ya está activo en el hangar).
-- [ ] **6.2 Sombras**: en Alta, distancia de sombras más corta y 2 cascadas; en Ultra, 4.
-- [ ] **6.3 Medir** con `Medir_rendimiento.bat` antes y después, y guardar los resultados en `docs/mediciones/`.
-- [ ] **6.4 Medir la pantalla de la plataforma en GPU real** (hangar de 70 944 triángulos y los 4 cohetes). Hoy `--medir`
+  - **No hecho (15 nov), a propósito:** la medición v5 en la Intel UHD del PC de Kevin muestra que el límite no son las llamadas
+    de dibujo sino el coste por píxel: con 6.2 la plataforma bajó de 746 a 577 llamadas y siguió a 20 FPS. Fundir mallas no
+    movería los FPS en ese equipo; lo que ayudaría es 5.3 (hangar más ligero) o recortar efectos en Alta. Las rocas ya van en
+    `MultiMesh` (`terrain.gd`).
+- [x] **6.2 Sombras**: en Alta, distancia de sombras más corta y 2 cascadas; en Ultra, 4.
+  - Hecho: misión 40 m y 2 cascadas en Media/Alta, 90 m y 4 en Ultra; la plataforma, que usaba siempre 4 cascadas hasta 420 m,
+    usa 2 hasta 260 m en Media/Alta.
+- [x] **6.3 Medir** con `Medir_rendimiento.bat` antes y después, y guardar los resultados en `docs/mediciones/`.
+  - `docs/mediciones/v5_mision_y_plataforma_intel_uhd_antes_despues.txt` (PC de Kevin, que tiene una Intel UHD).
+- [x] **6.4 Medir la pantalla de la plataforma en GPU real** (hangar de 70 944 triángulos y los 4 cohetes). Hoy `--medir`
   (`scenes/a/medidor.gd`) entra directo a la misión; añadir `--medir --escena=plataforma` que abra la plataforma con el Saturno V
   elegido, y añadir esa línea a `Medir_rendimiento.bat`. Medir en Alta y Baja en el PC de Kevin y en una Intel UHD, y guardar en
   `docs/mediciones/v5_plataforma_*.txt`. Si en la Intel UHD baja de 30 FPS en Alta, simplificar el hangar en Blender (5.3).
+  - Hecho: `--medir --escena=plataforma` y el `.bat` mide misión y plataforma en Alta y Baja. Resultado en la Intel UHD:
+    **plataforma en Alta ≈ 20 FPS** (Baja ≈ 55), misión en Alta ≈ 29 (Baja ≈ 59). Baja de 30 → toca **5.3**.
 
 ---
 
 ## Bloque 7 · Servidor propio para jugar por internet (P1, 2–3 h)
+
+**Estado (15 nov): archivos y guía preparados, sin desplegar.** `deploy/servidor/` (Caddyfile, `Dockerfile.web`,
+`docker-compose.yml`, `.env.ejemplo`) y `docs/SERVIDOR.md` con los pasos. Solo se comprobó que el compose es válido; faltan los
+pasos 1, 2 y 6 en el servidor de Kevin (dominio, puertos, `docker compose up`) y la prueba con 4 personas (paso 6 de la lista).
 
 Servidor de Kevin: 2 CPU, 8 GB de RAM (otro sistema usa ~2 GB), 100 GB de disco (30 % usado), y un dominio gratis.
 El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU por sala (estimado, **sin medir**). Cabe de sobra.
@@ -166,6 +218,12 @@ El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU p
 
 ## Bloque 8 · Entrega del reto (P0 el domingo por la tarde, 3–4 h)
 
+**Estado (15 nov): borradores preparados, falta el montaje y la revisión del equipo.** En `docs/entrega/`: `PROYECTO_EN.md` (texto
+del proyecto y declaración de IA, con los puntos **[TEAM: confirm]**), `VIDEO_30S_EN.md` y `subtitulos_en.srt` (guion plano a plano y
+subtítulos). Las 7 diapositivas en inglés son una presentación web (se descarga como PPTX o PDF desde su menú); en la
+diapositiva 7 hay dos líneas entre corchetes que completa el equipo. El video lo monta el equipo. Lo de abajo sigue sin marcar
+porque nadie del equipo lo ha revisado ni enviado.
+
 - [ ] Video de máximo 30 s con subtítulos en inglés (motion graphics: problema → taller → lanzamiento → Marte → resultado), o máximo 7 diapositivas.
 - [ ] Diapositivas: cómo se juega, historia, datos reales de la NASA, uso de IA, equipo.
 - [ ] Texto del proyecto en inglés, declaración de IA (`docs/CUMPLIMIENTO.md`), sin caras ni voces de menores de 18.
@@ -178,17 +236,17 @@ El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU p
 Las voces de Tony solo existen para las escenas de la historia de Marte. Tony no hizo las de mover el rover ni las del despegue:
 las hacemos nosotros, para **Marte y Luna**, en español e inglés.
 
-- [ ] **9.1 Guion** (`content/voces.json`, nuevo): frases cortas de radio con 3 variantes cada una para no repetir.
+- [x] **9.1 Guion** (`content/voces.json`, nuevo): frases cortas de radio con 3 variantes cada una para no repetir.
   - Mover el rover: «Perseverance en marcha», «Ruta confirmada», «Llegando al objetivo», «Batería baja, vuelvo a la base».
   - Despegue (plataforma): cuenta atrás de Houston, «Ignición», «Despegue confirmado», «Separación de etapas».
   - Aterrizaje y primer enlace, para la Luna (Marte ya tiene el de Tony): «Contacto con la superficie», «Enlace con la Tierra abierto».
   - Avisos de juego: noche que llega, ventana de relé abierta, memoria llena, tormenta.
   - En la Luna, «Houston» habla con la referencia de Apolo; en Marte, igual que en la historia de Tony.
-- [ ] **9.2 Grabación con el mismo método que Tony** (documentado en `scenes/b/docs/ARTE_Y_LICENCIAS.md`): español con las voces de
+- [x] **9.2 Grabación con el mismo método que Tony** (documentado en `scenes/b/docs/ARTE_Y_LICENCIAS.md`): español con las voces de
   Windows Microsoft Raúl (Houston) y Microsoft Pablo (Perseverance); inglés con Piper, voces John (Houston) y Joe (Perseverance);
   el mismo efecto de walkie-talkie. Nombres de archivo con el mismo esquema (nodo, línea y 12 caracteres del SHA-256 del hablante y
   el texto) en `assets/voces/` (por destino: `marte/`, `luna/`). Pedirle a Tony su script de mezcla para que suenen igual.
-- [ ] **9.3 Reproducirlas sin cansar**: un reproductor de voces en la vista (no en `sim/`) que escuche eventos ya existentes
+- [x] **9.3 Reproducirlas sin cansar**: un reproductor de voces en la vista (no en `sim/`) que escuche eventos ya existentes
   (ruta recibida, despegue, aterrizaje, avisos), con una pausa mínima entre voces (~20 s), sin pisar las voces de la historia, y
   con opción «Voces de radio: sí/no» en Configuración. Pruebas: que cada frase tenga archivo en los dos idiomas.
 - [ ] **9.4 Autoría y licencia de los 5 modelos de Amner** (P0, antes de entregar): `cohete_ligero/medio/pesado/super.glb` y
@@ -212,6 +270,36 @@ Propuesta: el telescopio sirve para **ver el cielo real desde donde está el rov
 - [ ] **10.3 Qué da**: datos de ciencia (por ejemplo +5 por observación nueva) y un logro por completar el catálogo.
 - [ ] **10.4 Modelo 3D**: telescopio de Evelyn si lo tiene; si no, uno sencillo en Blender (cúpula y tubo).
 - [ ] Decidir con el equipo antes de empezar. Si no da tiempo el domingo, queda para después del reto.
+
+---
+
+## Bloque 11 · Peticiones de Kevin del 15 nov (mediodía): interfaz limpia, tutorial guiado y paisaje
+
+Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con marcador sobre el almacén y tecla; tutorial con bloqueo total y reloj en pausa; estilo «panel de nave»; orden: servidor primero, luego HUD y tutorial.
+
+- [x] **11.1 Acciones emergentes.** Las acciones sin objetivo (panorámica, radar, dron, buscar minerales) salen en un menú que abre el botón «Acciones» o la tecla **Tab**; cada una conserva su tecla (C, V, Z, X). Opciones › «Botones de acciones»: *Siempre visibles*, *Emergentes* (por defecto) o *Solo teclas*. (Q y E ya giran la cámara, por eso Tab.)
+- [x] **11.2 «Construir antena» solo en Construir (B).** Primera fila del menú; la tecla U sigue funcionando. El relé («Enlace abierto») solo aparece cuando hay antena.
+- [x] **11.3 Carga.** La bodega solo se ve con carga. Un marcador ámbar «Almacén · [G] Descargar» sobre la estación o el domo más cercano (clic en el marcador o tecla **G**; si el rover está lejos, va y descarga). Se quita el botón fijo «Descargar». El snapshot trae `cargo.storages`.
+- [x] **11.4 Tutorial que guía de verdad.** 9 pasos (`content/tutorial*.json`): cada paso lista las órdenes que permite (`permite`); el resto se rechaza con `TUTORIAL_LOCKED`. Con `espera`, el reloj de la misión está detenido hasta que el jugador hace algo permitido. Los pasos «analizar» y «acciones» nombran las herramientas que el rover lleva de verdad (`requiere_instrumento`, `{tools}`), y «carga» solo sale si hay carga. «Siguiente» y «Saltar tutorial» funcionan siempre. Las pruebas del `MissionRunner` con `saltar_taller` lo saltan.
+- [x] **11.5 Modos de juego más claros.** Dificultad con su nivel entre paréntesis (fácil, normal, difícil) y explicación de qué cambia (presupuesto y monstruos; en la Luna solo el presupuesto). No existe un modo «supervivencia»: el destino (Marte con historia, Luna solo exploración) y la dificultad son los dos ejes.
+- [x] **11.6 Estilo «panel de nave».** `scenes/b/panel_nave.gd` (StyleBox dibujado por código: degradado metálico, filo biselado, filete ámbar arriba, escuadras y remaches) y `UI.nave()`. Lo usan el tema, Construir, pausa, tutorial, avisos, ficha de edificio y tarjetas de historia. Los botones siguen planos.
+- [x] **11.7 Horizonte con Blender.** `tools/blender/horizonte.py` → `assets/horizonte/cordillera.glb` (picos, mesetas escalonadas, barrancos). Se quitan las mesetas y los bloques grandes por código. Ver `scenes/b/docs/ARTE_Y_LICENCIAS.md`. Sin medir en FPS.
+- [ ] **11.8 Servidor propio con dominio.** Hecho el 15 nov: dominio `gaianasa.tech`, DNS `gaia` y `sala`, servicio `gaia-sala` (sin Docker: el VPS ya tenía Caddy) y certificado de `sala.gaianasa.tech`; saludo WebSocket `101` directo y por HTTPS. **Falta jugar una partida real por la sala** (y la web publicada apuntando a ella) antes de marcarlo.
+- [x] **11.10 Multijugador: roles y presupuesto (15 nov, tras probar con 2 ventanas por el VPS).** Cada rol tiene su parte del presupuesto (`presupuesto_por_rol`: Marte 300/200/50/150 de Dirección/Ingeniería/Comunicaciones/Ciencia; Luna 265/300/30/105; se escalan a la dificultad). El anfitrión rechaza lo que no cabe (`NET_ROLE_BUDGET`). Las piezas de otros roles se ven bloqueadas con su dueño. El panel «Tu rol» ya no tapa el catálogo: va abajo, plegado, con «Tu presupuesto: gastado / parte». Probado con pruebas y capturas; **falta jugarlo entre dos dispositivos**.
+- [x] **12.1 Batería al doble (pedido de Kevin, 15 nov).** `capacidad_base_wh` 2000 → 4000 en Marte y la Luna; la batería extra suma 2000 Wh. Valor de juego, **sin comprobar jugando** que el balance siga bien.
+- [x] **12.2 Cómo se envían los datos a la Tierra (pregunta del equipo en WhatsApp).** La primera vez que hay datos en la memoria sale el aviso `DATA_FIRST`: se envían con la antena y «Transmitir» (T) con el enlace abierto. El tutorial ya lo trae en el paso «transmitir».
+- [ ] **12.3 Sonidos que faltan (despegue, rover rodando hacia el cohete, rover desplegado en Marte).** Amner dice que ya los agregó en su rama (`b/cohetes-telescopio`); falta integrarlos y comprobar que suenan.
+- [ ] **12.4 Minerales que no suben el inventario (Arturo).** Por diseño, lo recogido va a la bodega del rover y solo suma al almacén al descargar (marcador del almacén o tecla G). Si además hay minerales que «no estaban en el campo», es otro fallo: Arturo lo revisa.
+- [ ] **12.5 Pregunta del equipo: «¿los modos de juego solo dan dinero extra?»** Exploración da 820 M$ y la mitad de monstruos; Estándar, 700 M$; Experta, 620 M$ y 50 % más monstruos (en la Luna no hay monstruos, solo cambia el presupuesto). Ya está explicado en la pantalla de configuración.
+- [x] **12.6 Un rover por jugador (pedido de Kevin, 15 nov).** Ver `docs/MULTIJUGADOR.md`. Probado con pruebas y con `tools/e2e_red.sh` (2, 4 y «entra tarde»). **Sin probar con personas reales.**
+- [ ] **12.7 Pantalla dividida (4 cuartos en un PC).** No hecha: cuatro mundos 3D no caben en una GPU integrada. Alternativa que ya funciona: varias ventanas contra la misma sala.
+- [x] **12.8 Cuatro salas** (`deploy/servidor/nativo`). Preparadas y probadas solo en local; falta instalarlas en el VPS (pasos en `docs/SERVIDOR.md`).
+- [x] **12.9 Textura del fondo en la Luna y Marte (pedido de Kevin, 15 nov).** La cordillera de Blender llevaba solo color de vértice y se veía lisa: ahora lleva la roca del destino en triplanar (`W.cordillera_material`) y un faldón que tapa la franja negra entre el suelo y las montañas. Comprobado en capturas; falta mirarlo en el PC de Kevin.
+- [x] **12.10 Créditos y licencias de modelos (WhatsApp, 15 nov).** Saturn V: «Cohete» de albertomarun, CC BY 4.0 (exige crédito) → créditos del menú y `ARTE_Y_LICENCIAS.md`; los cohetes ligero, medio y pesado, generados con un script de Python proporcionado por Claude (según Evelyn); Kenney y Kay Lousberg, CC0. Las voces de Windows se declaran en la declaración de IA. **Falta:** origen de `hangar_gaia.glb`, cristales y minerales, y confirmar con Evelyn las animaciones «Armado».
+- [ ] **12.11 Diapositivas nuevas con el estilo del juego** y **12.12 página web del juego (landing)** y **12.13 publicar el juego en el dominio y la web en un subdominio**: en curso.
+- [x] **12.12 Web del proyecto** en `sitio/` (6 páginas, ES/EN, estilo del juego); se genera con `py tools/generar_sitio.py` desde `tools/sitio_fuentes/`. Texto sobrio y sin guiones largos. Datos del reto tomados de la descripción que ya tiene el equipo en Space Apps. **Falta:** nombres, roles y la historia propia del equipo (marcados `[EQUIPO]`).
+- [ ] **12.13 Publicación** (`deploy/servidor/nativo/Caddyfile.sitios`, `publicar_sitios.sh`, `docs/SERVIDOR.md`): preparada y probada solo en local; falta DNS, subir el juego e instalarlo en el VPS.
+- [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
 
 ---
 

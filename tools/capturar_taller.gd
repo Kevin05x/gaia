@@ -1,7 +1,8 @@
 extends SceneTree
 ## Herramienta de desarrollo: fotografía la plataforma de la Tierra y el hangar para revisar la
 ## composición sin abrir el juego. No forma parte de la partida.
-## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta>
+## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta> [--ventana=1024x600] [--idioma=en]
+## Con --ventana la ventana toma ese tamaño (la interfaz se escala igual que en el juego, base 1280×720).
 
 const LaunchPad := preload("res://scenes/b/launch_pad.gd")
 
@@ -16,12 +17,20 @@ func _initialize() -> void:
 func _correr() -> void:
 	var salida := "user://"
 	var args := OS.get_cmdline_user_args()
-	if args.size() > 0:
-		salida = args[0]
+	var ventana := Vector2i(ANCHO, ALTO)
+	var idioma_pedido := "es"
+	for a in args:
+		if a.begins_with("--idioma="):
+			idioma_pedido = a.get_slice("=", 1)
+		elif a.begins_with("--ventana="):
+			var partes := a.get_slice("=", 1).split("x")
+			ventana = Vector2i(int(partes[0]), int(partes[1]))
+		else:
+			salida = a
 	if not salida.ends_with("/"):
 		salida += "/"
 
-	DisplayServer.window_set_size(Vector2i(ANCHO, ALTO))
+	DisplayServer.window_set_size(ventana)
 	root.content_scale_size = Vector2i(ANCHO, ALTO)
 
 	# Traducciones, igual que MissionView.setup_locale().
@@ -32,7 +41,7 @@ func _correr() -> void:
 		for clave in tablas[idioma]:
 			traduccion.add_message(clave, tablas[idioma][clave])
 		TranslationServer.add_translation(traduccion)
-	TranslationServer.set_locale("es")
+	TranslationServer.set_locale(idioma_pedido)
 
 	var sim := Simulation.new(
 		Balance.desde_archivo("res://content/balance.json"),
@@ -74,6 +83,17 @@ func _correr() -> void:
 	await _avanzar(plataforma, LaunchPad.DURACION_ABORDAJE * 0.48)
 	_guardar(salida + "3b_en_la_escotilla.png")
 
+	# 3b2) El mismo abordaje visto de lado: el rover sube por la rampa hasta la escotilla de la cubierta.
+	plataforma.set_process(false)
+	for avance in [0.6, 0.8, 0.88]:
+		plataforma._abordar(avance)
+		var rover: Vector3 = plataforma._rover.position
+		plataforma._camera.position = rover + Vector3(-14.0, 2.5, -2.0)
+		plataforma._camera.look_at(rover + Vector3(0.0, 1.0, -2.0))
+		await _esperar(3)
+		_guardar(salida + "3b_lateral_%d.png" % int(avance * 100))
+	plataforma.set_process(true)
+
 	# 3c) La vuelta: desde el hangar se pulsa «‹ Cambiar de cohete» y el rover sale del cohete.
 	plataforma._fin_abordaje()
 	plataforma._empezar_salida()
@@ -99,6 +119,27 @@ func _correr() -> void:
 	hangar.update_snapshot(sim.snapshot())
 	await _esperar(45)
 	_guardar(salida + "4_hangar_sidebar.png")
+
+	# 4a) Al despegar sin taladro ni espectrómetro, el hangar pide confirmación (no bloquea).
+	hangar.validated = true
+	hangar._on_action()
+	await _esperar(10)
+	_guardar(salida + "4a_falta_instrumento.png")
+	hangar._cerrar_confirmacion()
+
+	# 4b) El mismo hangar rumbo a la Luna: por el portón se ve el horizonte gris y la Tierra.
+	hangar.queue_free()
+	var antes := Destino.id
+	Destino.id = "luna"
+	Destino.aplicar_textos()  # como en el juego: «misiones a la Luna», consejos lunares
+	var hangar_luna: CanvasLayer = preload("res://scenes/b/workshop.gd").new()
+	root.add_child(hangar_luna)
+	hangar_luna.category = "extras"
+	hangar_luna.update_snapshot(sim.snapshot())
+	await _esperar(45)
+	_guardar(salida + "4b_hangar_luna.png")
+	Destino.id = antes
+	Destino.aplicar_textos()
 
 	quit()
 

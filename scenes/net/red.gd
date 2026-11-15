@@ -211,6 +211,8 @@ func _al_desconectar_par(id: int) -> void:
 	if not sala.orden.has(id):
 		return
 	sala.quitar(id)
+	if autoridad != null and is_instance_valid(autoridad) and "sim" in autoridad and autoridad.sim != null:
+		autoridad.sim.jugador_sale(id)  # su rover se va con él
 	if sala.cuantos() == 0:  # el servidor dedicado se queda sin jugadores: vuelve a abrirse una sala nueva
 		_terminar_partida()
 		sala = Sala.new()
@@ -257,6 +259,8 @@ func _rpc_hola(nombre: String, protocolo: int) -> void:
 	else:
 		_enviar_sala()
 		if sala.jugando:
+			if autoridad != null and is_instance_valid(autoridad) and "sim" in autoridad and autoridad.sim != null:
+				autoridad.sim.jugador_entra(id)  # llega con su rover
 			# Se une a una misión en marcha: pasa directo a la partida (su vista pide el estado actual al estar lista) y los que
 			# ya juegan se enteran de que los roles se repartieron de nuevo.
 			repartir("ui", {"m": "aviso", "a": ["NET_ROLES_CHANGED"]})
@@ -277,18 +281,18 @@ func _rpc_sala(datos: Dictionary) -> void:
 	sala_cambiada.emit()
 
 
-## Interfaz → anfitrión: el jefe cambia destino o dificultad.
-func configurar(destino: String, dificultad: String) -> void:
+## Interfaz → anfitrión: el jefe cambia destino, dificultad o duración del sol (-1: la que ya había).
+func configurar(destino: String, dificultad: String, duracion_sol_min: int = -1) -> void:
 	if es_autoridad():
-		if sala.configurar(mi_id, destino, dificultad):
+		if sala.configurar(mi_id, destino, dificultad, duracion_sol_min):
 			_enviar_sala()
 	else:
-		_rpc_config.rpc_id(1, destino, dificultad)
+		_rpc_config.rpc_id(1, destino, dificultad, duracion_sol_min)
 
 
 @rpc("any_peer", "reliable")
-func _rpc_config(destino: String, dificultad: String) -> void:
-	if es_autoridad() and sala.configurar(multiplayer.get_remote_sender_id(), destino, dificultad):
+func _rpc_config(destino: String, dificultad: String, duracion_sol_min: int) -> void:
+	if es_autoridad() and sala.configurar(multiplayer.get_remote_sender_id(), destino, dificultad, duracion_sol_min):
 		_enviar_sala()
 
 
@@ -313,6 +317,7 @@ func _empezar(id: int) -> void:
 		return
 	Sesion.destino = destino
 	Sesion.dificultad = str(sala.config.get("dificultad", "estandar"))
+	Sesion.duracion_sol_min = int(sala.config.get("duracion_sol_min", 12))
 	Sesion.jugadores = sala.cuantos()
 	Sesion.votos = []
 	Sesion.cargar_al_iniciar = false
@@ -337,6 +342,7 @@ func _preparar_cliente(datos: Dictionary) -> void:
 	var cfg: Dictionary = datos.get("config", {})
 	Sesion.destino = str(cfg.get("destino", "marte"))
 	Sesion.dificultad = str(cfg.get("dificultad", "estandar"))
+	Sesion.duracion_sol_min = int(cfg.get("duracion_sol_min", 12))
 	Sesion.jugadores = maxi(1, (datos.get("jugadores", []) as Array).size())
 	Sesion.votos = []
 	Sesion.cargar_al_iniciar = false
@@ -355,6 +361,8 @@ func _crear_autoridad() -> void:
 	runner.add_child(_port)
 	autoridad = runner
 	add_child(runner)
+	if "sim" in runner and runner.sim != null:
+		runner.sim.fijar_jugadores(sala.orden)  # cada jugador lleva su rover al empezar la misión
 	_votos.clear()
 	_listos.clear()
 
@@ -393,7 +401,7 @@ func _cliente_listo(id: int) -> void:
 	if sim == null:
 		return
 	if not _port.snapshot.is_empty():
-		enviar_a(id, "snapshot", _port.snapshot)
+		enviar_a(id, "snapshot", _snapshot_para(id, _port.snapshot))
 	if sim.estado.fase == "workshop" and not sim.intro_historia().is_empty():
 		enviar_a(id, "ui", {"m": "intro", "a": [sim.intro_historia()]})
 
@@ -426,7 +434,15 @@ func _enviar_snapshot_pendiente() -> void:
 	_hay_pendiente = false
 	_desde_envio = 0.0
 	for id in _listos.keys():
-		enviar_a(int(id), "snapshot", _pendiente)
+		enviar_a(int(id), "snapshot", _snapshot_para(int(id), _pendiente))
+
+
+## Con un rover por jugador cada uno recibe el snapshot con SU rover (y la lista de los demás); si no, el de todos.
+func _snapshot_para(id: int, general: Dictionary) -> Dictionary:
+	if autoridad != null and is_instance_valid(autoridad) and "sim" in autoridad and autoridad.sim != null \
+			and autoridad.sim.estado.hay_varios_rovers():
+		return autoridad.sim.snapshot_de(id)
+	return general
 
 
 @rpc("authority", "reliable")
@@ -468,6 +484,18 @@ func _procesar_orden(id: int, orden: String, carga: Dictionary) -> void:
 		if not Permisos.permite_pieza(roles, pieza):
 			enviar_a(id, "reject", Permisos.razon_de_pieza(pieza))
 			return
+		if orden == "design_add" and sala.orden.size() > 1 and autoridad != null and "sim" in autoridad:
+			var taller: Dictionary = autoridad.sim.snapshot().get("workshop", {})
+			var costo := 0.0
+			for cat in taller.get("categories", []):
+				for p in cat.get("parts", []):
+					if str(p.get("id", "")) == pieza and p.get("cost_musd") != null:
+						costo = float(p["cost_musd"])
+			var resto = Permisos.resto_de_rol(Permisos.rol_de_categoria(Permisos.categoria_de_pieza(pieza)), costo, taller)
+			if resto != null and float(resto) < 0.0:
+				enviar_a(id, "reject", Permisos.RAZON_PRESUPUESTO)
+				return
+	limpia["_rover"] = id  # la simulación ejecuta la orden con el rover de quien la da
 	_port.emisor = id
 	_port.orden_actual = orden
 	_port.command_requested.emit(orden, limpia)

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "_nota": "Imprevistos de misión: aparecen por sorpresa (con semilla fija por partida) y piden una decisión. Mientras se decide, el tiempo se detiene. Cada uno se basa en algo que de verdad les pasó a misiones de la NASA; el dato real va en «real» y su fuente en «fuente». Efectos: energia_wh, datos (a bordo), enviados, recursos {id: n}, rover_hp, bloquear_enlace_h, bloquear_movimiento_h.",
+ "_nota": "Imprevistos de misión: aparecen por sorpresa (con semilla fija por partida) y piden una decisión. Mientras se decide, el tiempo se detiene. Cada uno se basa en algo que de verdad les pasó a misiones de la NASA; el dato real va en «real» y su fuente en «fuente». Efectos: energia_wh, datos (a bordo), enviados, recursos {id: n}, rover_hp, bloquear_enlace_h, bloquear_movimiento_h, desvio_casillas (el rover va solo a una casilla libre a esa distancia; los Wh de la opción incluyen el viaje).",
  "por_partida": 3,
  "ventana_soles": [1.6, 5.4],
  "separacion_min_h": 14,
@@ -56,7 +56,7 @@
    "real": {"es": "Real: el plan de cada día de un rover se rehace según lo que los científicos ven en las imágenes del día anterior.", "en": "Real: a rover's daily plan is rebuilt from what scientists see in the previous day's images."},
    "fuente": "NASA/JPL, A day in the life of a Mars rover team",
    "opciones": [
-    {"texto": {"es": "Desviarse (-90 Wh, +10 datos)", "en": "Take the detour (-90 Wh, +10 data)"}, "efectos": {"energia_wh": -90, "datos": 10}},
+    {"texto": {"es": "Desviarse (-90 Wh, +10 datos)", "en": "Take the detour (-90 Wh, +10 data)"}, "efectos": {"energia_wh": -90, "datos": 10, "desvio_casillas": 5}},
     {"texto": {"es": "Mantener el plan", "en": "Keep the plan"}, "efectos": {}}
    ]},
   {"id": "particulas_solares", "destinos": ["luna"],

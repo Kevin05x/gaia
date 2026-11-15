@@ -1,0 +1,19 @@
+# Servidor de la sala multijugador de GAIA como servicio del sistema (sin Docker). Lo instala instalar.sh.
+# Escucha en el puerto 9080; el Caddy del servidor lo publica como wss://sala.<dominio>.
+[Unit]
+Description=GAIA - servidor de la sala multijugador
+After=network.target
+
+[Service]
+User=__USUARIO__
+WorkingDirectory=/opt/gaia/repo
+Environment=PORT=9080
+ExecStart=/opt/gaia/godot --headless --path /opt/gaia/repo scenes/net/servidor.tscn -- --servidor
+Restart=on-failure
+RestartSec=3
+MemoryMax=1G
+# Solo escribe en su propia carpeta de datos de usuario.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

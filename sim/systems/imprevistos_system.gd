@@ -87,7 +87,9 @@ func esperando(estado: MissionState) -> bool:
 	return not estado.imprevisto.is_empty()
 
 
-## Aplica la opción elegida. {"ok", "reason"}.
+## Aplica la opción elegida. {"ok", "reason", "event", "applied"}. «applied» es lo que de verdad cambió (para que la
+## vista lo cuente): energia_wh, datos (lo que entró o salió de la memoria), datos_perdidos (lo que no cupo porque la
+## memoria estaba llena), rover_hp, bloquear_enlace_h, bloquear_movimiento_h, recursos y desvio_casillas.
 func decidir(estado: MissionState, opcion: int) -> Dictionary:
 	if estado.imprevisto.is_empty():
 		return {"ok": false, "reason": "NO_EVENT"}
@@ -97,24 +99,40 @@ func decidir(estado: MissionState, opcion: int) -> Dictionary:
 		return {"ok": false, "reason": "INVALID_CHOICE"}
 	var efectos: Dictionary = opciones[opcion].get("efectos", {})
 	var ahora := t_abs(estado)
+	var aplicado := {}
 	if efectos.has("energia_wh"):
+		var antes := estado.bateria_wh
 		estado.bateria_wh = clampf(estado.bateria_wh + float(efectos["energia_wh"]), 0.0, estado.bateria_capacidad_wh)
-	if efectos.has("datos"):
-		estado.datos = clampf(estado.datos + float(efectos["datos"]), 0.0, estado.memoria_capacidad)
-	if efectos.has("datos_pct"):
-		estado.datos = maxf(estado.datos * (1.0 + float(efectos["datos_pct"])), 0.0)
+		aplicado["energia_wh"] = estado.bateria_wh - antes
+	if efectos.has("datos") or efectos.has("datos_pct"):
+		var antes := estado.datos
+		if efectos.has("datos"):
+			var pedidos := float(efectos["datos"])
+			estado.datos = clampf(estado.datos + pedidos, 0.0, estado.memoria_capacidad)
+			if pedidos > 0.0 and pedidos - (estado.datos - antes) >= 0.5:
+				aplicado["datos_perdidos"] = pedidos - (estado.datos - antes)  # no cupieron: memoria llena
+		if efectos.has("datos_pct"):
+			estado.datos = maxf(estado.datos * (1.0 + float(efectos["datos_pct"])), 0.0)
+		aplicado["datos"] = estado.datos - antes
 	if efectos.has("rover_hp"):
+		var antes := estado.rover_hp
 		estado.rover_hp = clampf(estado.rover_hp + float(efectos["rover_hp"]), 1.0, 100.0)
+		aplicado["rover_hp"] = estado.rover_hp - antes
 	if efectos.has("bloquear_enlace_h"):
 		estado.enlace_bloqueado_hasta = maxf(estado.enlace_bloqueado_hasta, ahora + float(efectos["bloquear_enlace_h"]))
 		estado.transmitiendo = false
+		aplicado["bloquear_enlace_h"] = float(efectos["bloquear_enlace_h"])
 	if efectos.has("bloquear_movimiento_h"):
 		estado.movimiento_bloqueado_hasta = maxf(estado.movimiento_bloqueado_hasta, ahora + float(efectos["bloquear_movimiento_h"]))
+		aplicado["bloquear_movimiento_h"] = float(efectos["bloquear_movimiento_h"])
 	for recurso in efectos.get("recursos", {}):
 		estado.recursos[recurso] = int(estado.recursos.get(recurso, 0)) + int(efectos["recursos"][recurso])
+		aplicado["recursos"] = efectos["recursos"].duplicate()
+	if efectos.has("desvio_casillas"):
+		aplicado["desvio_casillas"] = int(efectos["desvio_casillas"])  # lo hace Simulation: necesita mapa y movimiento
 	estado.imprevistos_hechos.append({"id": id, "choice": opcion})
 	estado.imprevisto = {}
-	return {"ok": true, "reason": "", "event": "%s:%s:%d" % [EVENTO_RESUELTO, id, opcion]}
+	return {"ok": true, "reason": "", "event": "%s:%s:%d" % [EVENTO_RESUELTO, id, opcion], "applied": aplicado}
 
 
 ## Lo que la vista necesita para mostrar el imprevisto pendiente (vacío si no hay).
@@ -123,10 +141,12 @@ func para_la_vista(estado: MissionState) -> Dictionary:
 		return {}
 	var datos: Dictionary = imprevistos.get(str(estado.imprevisto["id"]), {})
 	var opciones: Array = []
+	var efectos: Array = []
 	for o in datos.get("opciones", []):
 		opciones.append(o.get("texto", {}))
+		efectos.append((o.get("efectos", {}) as Dictionary).duplicate(true))
 	return {"id": estado.imprevisto["id"], "title": datos.get("titulo", {}), "text": datos.get("texto", {}),
-		"real": datos.get("real", {}), "source": datos.get("fuente", ""), "options": opciones}
+		"real": datos.get("real", {}), "source": datos.get("fuente", ""), "options": opciones, "effects": efectos}
 
 
 static func enlace_bloqueado(estado: MissionState) -> bool:

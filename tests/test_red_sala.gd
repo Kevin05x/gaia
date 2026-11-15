@@ -112,7 +112,7 @@ func test_ida_y_vuelta_por_la_red() -> void:
 
 func test_permisos_por_rol() -> void:
 	assert_true(Permisos.permite(["direccion"], "move"))
-	assert_false(Permisos.permite(["ciencia"], "move"), "Ciencia no conduce")
+	assert_true(Permisos.permite(["ciencia"], "move"), "cada jugador conduce su propio rover")
 	assert_true(Permisos.permite(["ciencia"], "act"))
 	assert_false(Permisos.permite(["direccion"], "act"))
 	assert_true(Permisos.permite(["comunicaciones"], "transmit"))
@@ -131,11 +131,14 @@ func test_el_taller_es_de_todo_el_equipo_pero_lanzar_es_de_direccion() -> void:
 
 
 func test_el_aviso_dice_de_quien_es_la_orden() -> void:
-	assert_eq(Permisos.razon_para("move"), "NET_ONLY_DIRECCION")
+	assert_eq(Permisos.razon_para("pause"), "NET_ONLY_DIRECCION")
 	assert_eq(Permisos.razon_para("act"), "NET_ONLY_CIENCIA")
 	assert_eq(Permisos.razon_para("transmit"), "NET_ONLY_COMUNICACIONES")
 	assert_eq(Permisos.razon_para("build"), "NET_ONLY_INGENIERIA")
-	assert_eq(Permisos.razon_para("approach"), Permisos.RAZON, "si la orden es de varios roles, aviso genérico")
+	assert_eq(Permisos.razon_para("unload"), Permisos.RAZON, "si la orden es de varios roles, aviso genérico")
+	for rol in ["direccion", "ingenieria", "ciencia", "comunicaciones"]:
+		assert_true(Permisos.permite([rol], "approach"), "ir hasta una roca lo puede pedir cualquiera: cada jugador mueve su rover")
+		assert_true(Permisos.permite([rol], "move"), "mover el rover es de todos")
 
 
 func test_una_persona_sola_puede_todo() -> void:
@@ -245,3 +248,78 @@ func test_gasto_por_rol_suma_las_piezas_de_su_area() -> void:
 	assert_eq(gasto["ingenieria"], 200.0)
 	assert_eq(gasto["ciencia"], 30.0)
 	assert_eq(gasto["comunicaciones"], 0.0)
+
+
+# --- Presupuesto propio por rol (plan 12, 15 nov) ----------------------------------------------------------------
+
+func _taller_de_prueba(gastado_ing: int) -> Dictionary:
+	return {"totals": {"budget_musd": 700.0}, "categories": [
+		{"id": "cohetes", "parts": [{"id": "c1", "cost_musd": 250}]},
+		{"id": "chasis", "parts": [{"id": "ch1", "cost_musd": gastado_ing}]}],
+		"selection": {"cohetes": ["c1"], "chasis": ["ch1"]}}
+
+
+func test_el_reparto_suma_el_presupuesto_y_se_escala_a_la_dificultad() -> void:
+	for destino in ["marte", "luna"]:
+		Destino.id = destino
+		var topes := Permisos.topes_por_rol(700.0)
+		assert_eq(topes.size(), 4, destino)
+		var suma := 0.0
+		for rol in topes:
+			suma += float(topes[rol])
+		assert_almost_eq(suma, 700.0, 0.01, "%s: las partes suman el presupuesto" % destino)
+		var experta := Permisos.topes_por_rol(620.0)
+		var suma2 := 0.0
+		for rol in experta:
+			suma2 += float(experta[rol])
+		assert_almost_eq(suma2, 620.0, 0.01, "%s: se escala a la dificultad" % destino)
+	Destino.id = "marte"
+
+
+func test_el_diseno_recomendado_cabe_en_las_partes_de_cada_rol() -> void:
+	# Con dos jugadores el presupuesto es 700 + 200 = 900 (content/rules*.json › presupuesto_extra_por_jugador_musd).
+	# Marte: cohete medio 250 + trayectoria rápida 10 · chasis 180 + panel solar 20 · antena relé 30 · espectrómetro, taladro y cámara 105.
+	Destino.id = "marte"
+	var t := Permisos.topes_por_rol(900.0)
+	assert_lte(260.0, float(t["direccion"]))
+	assert_lte(200.0, float(t["ingenieria"]))
+	assert_lte(30.0, float(t["comunicaciones"]))
+	assert_lte(105.0, float(t["ciencia"]))
+	# Luna: cohete medio 250 + directa 15 · chasis 180 + MMRTG 120 · antena 30 · 105 de instrumentos.
+	Destino.id = "luna"
+	t = Permisos.topes_por_rol(900.0)
+	assert_lte(265.0, float(t["direccion"]))
+	assert_lte(300.0, float(t["ingenieria"]))
+	assert_lte(30.0, float(t["comunicaciones"]))
+	assert_lte(105.0, float(t["ciencia"]))
+	Destino.id = "marte"
+
+
+func test_el_resto_de_un_rol_dice_cuanto_le_queda_y_si_no_cabe() -> void:
+	Destino.id = "marte"
+	var taller := _taller_de_prueba(150)  # el taller de prueba tiene 700 M$; Ingeniería recibe 280/900 de eso y lleva 150
+	var tope_ing := 280.0 * 700.0 / 900.0
+	assert_almost_eq(float(Permisos.resto_de_rol("ingenieria", 20.0, taller)), tope_ing - 150.0 - 20.0, 0.01, "caben 20 y sobra el resto")
+	assert_lt(float(Permisos.resto_de_rol("ingenieria", 80.0, taller)), 0.0, "80 no caben")
+	assert_not_null(Permisos.resto_de_rol("direccion", 0.0, taller))
+	assert_null(Permisos.resto_de_rol("rol_inexistente", 0.0, taller), "sin reparto no hay tope")
+
+
+func test_cada_jugador_de_mas_suma_su_presupuesto_en_red() -> void:
+	var sesion := preload("res://scenes/menu/game_session.gd")
+	var runner := preload("res://scenes/a/mission_runner.gd")
+	var antes_red: bool = sesion.en_red
+	var antes_n: int = sesion.jugadores
+	sesion.en_red = true
+	for caso in [[1, 700.0], [2, 900.0], [3, 1100.0], [4, 1300.0]]:
+		sesion.jugadores = caso[0]
+		var reglas := Rules.desde_archivo("res://content/rules.json")
+		runner.aplicar_dificultad(reglas, null, "estandar")
+		assert_almost_eq(reglas.presupuesto_musd, float(caso[1]), 0.01, "%d jugadores" % caso[0])
+	sesion.en_red = false  # fuera de la red no se suma nada, aunque la sesión recuerde varios jugadores
+	sesion.jugadores = 4
+	var sola := Rules.desde_archivo("res://content/rules.json")
+	runner.aplicar_dificultad(sola, null, "estandar")
+	assert_almost_eq(sola.presupuesto_musd, 700.0, 0.01, "una partida local no suma")
+	sesion.en_red = antes_red
+	sesion.jugadores = antes_n

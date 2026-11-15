@@ -39,6 +39,7 @@ var _objetivo := 0.0
 
 func _ready() -> void:
 	Texto.install()
+	WebCarga.mostrar("Preparando los gráficos. La primera vez puede tardar hasta un minuto; las siguientes, unos segundos.", "Preparing the graphics. The first time it can take up to a minute; after that, a few seconds.", 600000)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = UI.theme()
 	var base := ColorRect.new()
@@ -181,3 +182,4 @@ func _cargar() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.5)
 	tw.tween_callback(capa.queue_free)
+	WebCarga.ocultar()

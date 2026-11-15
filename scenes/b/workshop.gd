@@ -41,6 +41,7 @@ const CARD_BG := Color("1A100A", 0.92)
 const TEXT_DIM := Color("D8C3AC", 0.62)
 
 var root: Control
+var bloqueo: Callable  ## (categoria, pieza, elegida) -> texto; si no está vacío la pieza se ve bloqueada con ese aviso (en red: de otro rol o sin presupuesto)
 var consejo_panel: Control  ## el cuadro «Consejo de ingeniería» (en red se oculta para dejar sitio al panel de rol)
 var snapshot: Dictionary = {}
 var category := "trayectoria"
@@ -59,11 +60,15 @@ var _action: Button
 var _hint: Label
 var _tip_text: Label
 var _cambiar_cohete: Button
+var _fila_opciones: HBoxContainer  ## «Opciones» y «Código», bajo el catálogo
+var _recomendado: Button  ## «Diseño recomendado», sobre el catálogo
+var _confirmacion: PanelContainer  ## «¿Despegar sin todo?» cuando falta un instrumento clave
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_until := 0.0
 var _turntable: Node3D
 var _camera: Camera3D
+var _fondo_material: StandardMaterial3D  ## paisaje que se ve por el portón del hangar (cambia con el destino)
 var _rover: Node3D
 var _drone: Node3D
 var _companion: Node3D
@@ -264,11 +269,27 @@ func _build_header() -> void:
 	_cambiar_cohete.pressed.connect(_on_cambiar_cohete)
 	UI.place(_cambiar_cohete, "tl", 76, 70, 196, 32)
 	root.add_child(_cambiar_cohete)
+	# Diseño recomendado para este destino (content/parts.json › recomendada): lo vuelve a poner si se cambió.
+	_recomendado = Button.new()
+	_recomendado.focus_mode = Control.FOCUS_NONE
+	_recomendado.text = tr("WS_RECOMMENDED")
+	_recomendado.tooltip_text = tr("WS_RECOMMENDED_TIP")
+	_recomendado.add_theme_font_size_override("font_size", UI.FONT_MIN)
+	_recomendado.pressed.connect(func() -> void: poner_recomendado(snapshot.get("workshop", {})))
+	UI.place(_recomendado, "tl", MARGEN, 112, SIDEBAR_ANCHO, 32)
+	root.add_child(_recomendado)
 
 
-## Se crea al final para quedar por encima de todo lo demás.
+## Se crea al final para quedar por encima de todo lo demás. «Opciones» y «Código» van en una fila
+## anclada abajo a la izquierda, del ancho del catálogo y con separación fija: así no se montan uno
+## sobre otro aunque el texto (o el idioma) sea más largo.
 func _build_options() -> void:
+	_fila_opciones = HBoxContainer.new()
+	_fila_opciones.add_theme_constant_override("separation", 8)
+	UI.place(_fila_opciones, "bl", MARGEN, 10, SIDEBAR_ANCHO, 28)
+	root.add_child(_fila_opciones)
 	var opciones := Button.new()
+	opciones.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	opciones.focus_mode = Control.FOCUS_NONE
 	opciones.tooltip_text = tr("OPTIONS")
 	opciones.text = "      " + tr("WS_HELP").to_upper()
@@ -285,10 +306,10 @@ func _build_options() -> void:
 	engranaje.offset_top = -7
 	engranaje.offset_bottom = 7
 	opciones.add_child(engranaje)
-	UI.place(opciones, "bl", 24, 10, 96, 28)
-	root.add_child(opciones)
+	_fila_opciones.add_child(opciones)
 	opciones.pressed.connect(func(): options_requested.emit())
 	var codigo := Button.new()
+	codigo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	codigo.focus_mode = Control.FOCUS_NONE
 	codigo.text = tr("WS_CODE").to_upper()
 	codigo.tooltip_text = tr("WS_CODE_TIP")
@@ -297,8 +318,7 @@ func _build_options() -> void:
 	codigo.add_theme_color_override("font_hover_color", ORANGE)
 	codigo.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
 	codigo.add_theme_stylebox_override("hover", UI.button_box(Color("2A170B", 0.95), Color(ORANGE, 0.9), 1, 14, 12, 4, 0))
-	UI.place(codigo, "bl", 128, 10, 150, 28)
-	root.add_child(codigo)
+	_fila_opciones.add_child(codigo)
 	codigo.pressed.connect(_abrir_codigo)
 
 
@@ -392,7 +412,7 @@ func _build_stepper() -> void:
 		var id: String = ORDER[i]
 		if i > 0:
 			var puntos := DotLine.new()
-			puntos.custom_minimum_size = Vector2(16, 66)
+			puntos.custom_minimum_size = Vector2(10, 66)
 			puntos.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			fila.add_child(puntos)
 		var paso := VBoxContainer.new()
@@ -437,7 +457,7 @@ func _build_stepper() -> void:
 		var nombre := UI.label(paso, tr(CATEGORY_KEYS[id]).to_upper(), 13, Color("F3E6D4"))
 		UI.display(nombre, 700, 0)
 		nombre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nombre.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # COMUNICACIONES cabe en dos líneas
+		nombre.autowrap_mode = TextServer.AUTOWRAP_OFF  # una línea: la columna se ensancha (antes cortaba «COMUNICACIO-NES»)
 		nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_step_names[id] = nombre
 		boton.pressed.connect(func(): _choose_category(id))
@@ -511,9 +531,15 @@ func _build_preview() -> void:
 	root.add_child(contenedor)
 	var vista := SubViewport.new()
 	vista.own_world_3d = true
-	vista.msaa_3d = Viewport.MSAA_2X
+	var ajustes := Graficos.cargar()
+	vista.msaa_3d = Graficos.msaa_visor(ajustes)
 	vista.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	contenedor.add_child(vista)
+	var calidad := preload("res://scenes/b/calidad_dinamica.gd").new()  # baja sola si el equipo no llega
+	calidad.ventana_s = 1.0
+	calidad.medir = func() -> bool: return root.is_visible_in_tree() and DisplayServer.window_is_focused()
+	vista.add_child(calidad)
+	calidad.configurar(Graficos.msaa_visor(ajustes), float(ajustes.get("resolucion", 1.0)), bool(ajustes.get("auto", true)))
 	var entorno := Environment.new()
 	entorno.background_mode = Environment.BG_COLOR
 	entorno.background_color = Color("0A0604")
@@ -575,8 +601,15 @@ func _build_preview() -> void:
 	root.add_child(_hotspot_layer)
 
 
-## Interior del hangar: muro curvo con costillas, ventana a Marte y plataforma con anillos luminosos.
+## Paisaje del portón según el destino. Marte: la ilustración de la pantalla de carga (IA, ver ARTE_Y_LICENCIAS.md).
+## Luna: foto real de la NASA desde Orion (horizonte gris y la Tierra en el cielo; fuente en docs/DATOS_NASA.md).
+const FONDO_MARTE := "res://assets/menu/pantalla_carga.jpg"
+const FONDO_LUNA := "res://assets/nasa/luna_tierra.jpg"
+
+
+## Interior del hangar: muro curvo con costillas, portón abierto al destino y plataforma con anillos luminosos.
 func _build_hangar(vista: Node) -> void:
+	var luna := Destino.es_luna()
 	var pared_mat := _material(Color("2A1A12"))
 	pared_mat.cull_mode = BaseMaterial3D.CULL_DISABLED  # visible por dentro
 	# Dirección del portón (hacia el fondo, a la derecha del rover) y hueco que deja en el muro.
@@ -612,7 +645,7 @@ func _build_hangar(vista: Node) -> void:
 	luz_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	for y in [1.7, 8.0]:
 		_arco(vista, 14.85, y, y + 0.1, luz_mat, ang_hueco, medio_hueco)
-	# Portón del hangar abierto al paisaje de Marte (hacia el fondo, a la derecha del rover). Es una abertura con
+	# Portón del hangar abierto al paisaje del destino (hacia el fondo, a la derecha del rover). Es una abertura con
 	# profundidad: túnel de salida, suelo que continúa afuera, el paisaje lejos y hojas del portón recogidas.
 	var centro := dir * 15.0
 	var porton := Node3D.new()
@@ -629,15 +662,22 @@ func _build_hangar(vista: Node) -> void:
 	cuadro.size = Vector2(46, 25.9)
 	var foto_mat := StandardMaterial3D.new()
 	foto_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	foto_mat.albedo_texture = load("res://assets/menu/pantalla_carga.jpg")
-	foto_mat.albedo_color = Color(1.0, 0.88, 0.8)
-	foto_mat.uv1_scale = Vector3(0.9, 0.86, 1)
-	foto_mat.uv1_offset = Vector3(0.05, 0.02, 0)
-	_add_mesh(porton, cuadro, foto_mat, Vector3(0, 8.0, 26.0), Vector3(0, PI, 0))
-	# Suelo exterior que enlaza con el del hangar.
+	foto_mat.albedo_texture = load(FONDO_LUNA if luna else FONDO_MARTE)
+	if luna:
+		# Foto de 3:2 en un cuadro de 16:9: todo el ancho, sin deformar, con la Tierra a la vista.
+		foto_mat.uv1_scale = Vector3(1.0, 0.845, 1)
+		foto_mat.uv1_offset = Vector3(0.0, 0.08, 0)
+	else:
+		foto_mat.albedo_color = Color(1.0, 0.88, 0.8)
+		foto_mat.uv1_scale = Vector3(0.9, 0.86, 1)
+		foto_mat.uv1_offset = Vector3(0.05, 0.02, 0)
+	_fondo_material = foto_mat
+	# En la Luna el cuadro baja para que el horizonte y la Tierra queden dentro del hueco del portón.
+	_add_mesh(porton, cuadro, foto_mat, Vector3(0, 4.0 if luna else 8.0, 26.0), Vector3(0, PI, 0))
+	# Suelo exterior que enlaza con el del hangar (gris de regolito en la Luna).
 	var terreno := BoxMesh.new()
 	terreno.size = Vector3(60, 0.2, 40)
-	var terreno_mat := _material(Color("6B3A25"))
+	var terreno_mat := _material(Destino.color(Color("6B3A25")))
 	_add_mesh(porton, terreno, terreno_mat, Vector3(0, -0.1, 20.0))
 	# Túnel de salida: paredes, techo y suelo con vetas de luz.
 	var pared := BoxMesh.new()
@@ -679,7 +719,7 @@ func _build_hangar(vista: Node) -> void:
 	for lado in [-1.0, 1.0]:
 		_add_mesh(porton, luz_aviso, _material(Color("FF8A1F"), 2.4), Vector3(lado * (ancho / 2.0 + 0.6), alto + 1.2, -0.75))
 	var sol := OmniLight3D.new()
-	sol.light_color = Color("FFB070")
+	sol.light_color = Color("DCE6F5") if luna else Color("FFB070")  # luz del Sol sin atmósfera en la Luna
 	sol.light_energy = 1.8
 	sol.omni_range = 9.0
 	sol.position = Vector3(0, 2.4, -1.5)
@@ -764,7 +804,7 @@ func _build_catalog() -> void:
 	zona.anchor_right = 0.0
 	zona.offset_left = MARGEN
 	zona.offset_right = MARGEN + SIDEBAR_ANCHO
-	zona.offset_top = 112
+	zona.offset_top = 152  # debajo de «Diseño recomendado»
 	zona.offset_bottom = -52
 	root.add_child(zona)
 	var fondo := Panel.new()
@@ -876,6 +916,8 @@ func update_snapshot(s: Dictionary) -> void:
 		for part in cat.get("parts", []):
 			_names[str(part["id"])] = str(part.get("name_key", ""))
 	_equipar_basicas(taller)
+	if not is_same(snapshot, s):
+		return  # al equipar, cada orden trajo una foto más nueva y ya se dibujó: esta se quedó vieja
 	var firma := "%s|%s|%s|%s|%s" % [category, str(taller.get("selection")), str(taller.get("totals")), str(taller.get("validation")), TranslationServer.get_locale()]
 	if firma == _signature:
 		return
@@ -911,6 +953,8 @@ func basicas_que_faltan(taller: Dictionary) -> Array:
 	return faltan
 
 
+## Al llegar con el cohete, el rover entra con el diseño recomendado ya armado (que incluye las herramientas
+## básicas). Una sola vez por cohete y solo si no hay instrumentos elegidos.
 func _equipar_basicas(taller: Dictionary) -> void:
 	var seleccion: Dictionary = taller.get("selection", {})
 	if (seleccion.get("cohetes", []) as Array).is_empty():
@@ -919,8 +963,43 @@ func _equipar_basicas(taller: Dictionary) -> void:
 	if _basicas_puestas or not (seleccion.get("extras", []) as Array).is_empty():
 		return
 	_basicas_puestas = true
-	for id in MissionDesign.HERRAMIENTAS_BASICAS:
-		command.emit("design_add", {"part_id": str(id)})
+	poner_recomendado(taller)
+
+
+## Piezas recomendadas para el destino actual (sin el cohete, que se elige en la plataforma), por categoría.
+static func recomendadas(taller: Dictionary, destino: String) -> Dictionary:
+	var por_categoria := {}
+	for cat in taller.get("categories", []):
+		if str(cat.get("id", "")) == "cohetes":
+			continue
+		for pieza in cat.get("parts", []):
+			if (pieza.get("recommended_for", []) as Array).has(destino):  # «no disponible» solo es categoría llena: se libera al quitar
+				if not por_categoria.has(cat["id"]):
+					por_categoria[cat["id"]] = []
+				por_categoria[cat["id"]].append(str(pieza["id"]))
+	return por_categoria
+
+
+## Pone el diseño recomendado: en cada categoría con recomendación quita lo que no lo es y añade lo que falta
+## (la trayectoria se cambia, no se añade). Sin recomendación en el destino, solo las herramientas básicas.
+func poner_recomendado(taller: Dictionary) -> void:
+	var por_categoria := recomendadas(taller, Destino.id)
+	if por_categoria.is_empty():
+		for id in MissionDesign.HERRAMIENTAS_BASICAS:
+			command.emit("design_add", {"part_id": str(id)})
+		return
+	var seleccion: Dictionary = taller.get("selection", {})
+	for cat in seleccion:
+		if str(cat) == "cohetes":
+			continue
+		var quiere: Array = por_categoria.get(cat, [])
+		for id in seleccion[cat]:
+			if not quiere.has(str(id)):
+				command.emit("design_remove", {"part_id": str(id)})
+	for cat in por_categoria:
+		for id in por_categoria[cat]:
+			if not (seleccion.get(cat, []) as Array).has(id):
+				command.emit("design_add", {"part_id": id})
 
 
 func _selected_ids(taller: Dictionary) -> Array:
@@ -961,7 +1040,10 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	b.focus_mode = Control.FOCUS_ALL
 	var motivo := str(part.get("reason", ""))
 	var puede := bool(part.get("available", true)) or motivo == "CATEGORY_FULL"
-	b.disabled = not puede and not elegida
+	var bloqueada := str(bloqueo.call(category, part, elegida)) if bloqueo.is_valid() else ""
+	if not bloqueada.is_empty():
+		puede = false
+	b.disabled = (not puede and not elegida) or not bloqueada.is_empty()
 	var relleno := Color("2A170B", 0.96) if elegida else CARD_BG
 	var borde := ORANGE if elegida else Color("B8742A", 0.4)
 	var normal := UI.button_box(relleno, borde, 2 if elegida else 1, 12, 8, 8, 0)
@@ -1004,6 +1086,10 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 	chips.add_theme_constant_override("v_separation", 3)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(chips)
+	if not bloqueada.is_empty():
+		var candado := UI.label(col, "▣ " + bloqueada, UI.FONT_MIN, ORANGE)  # el motivo, a la vista y no solo al pasar el ratón
+		candado.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		candado.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if part.get("pending", false):
 		chips.add_child(_chip(tr("WS_PENDING"), ORANGE))
 	else:
@@ -1020,6 +1106,8 @@ func _card(part: Dictionary, elegida: bool) -> Button:
 		b.tooltip_text = tr(referencia)
 	if not puede and not elegida and not motivo.is_empty():
 		b.tooltip_text = tr(motivo)
+	if not bloqueada.is_empty():
+		b.tooltip_text = bloqueada
 	b.pressed.connect(_on_card.bind(part, elegida))
 	return b
 
@@ -1145,6 +1233,8 @@ func _rebuild_summary(taller: Dictionary) -> void:
 	for codigo in taller.get("notices", []):
 		if str(codigo).begins_with("PENDING_DATA:"):
 			pendientes.append(str(codigo))
+		elif str(codigo).begins_with("MISSING_KEY:"):  # instrumento clave: en rojo, con lo que se pierde
+			_check_line(tr("WS_MISSING_KEY_" + str(codigo).get_slice(":", 1).to_upper()), "critical", UI.CORAL)
 		else:
 			_check_line(_message(str(codigo)), "warning", ORANGE)
 	if pendientes.size() == 1:
@@ -1156,7 +1246,8 @@ func _rebuild_summary(taller: Dictionary) -> void:
 		var linea := _check_line(tr("WS_PENDING_MANY") % pendientes.size(), "warning", ORANGE)
 		linea.tooltip_text = ", ".join(nombres)
 	for id in basicas_que_faltan(taller):
-		_check_line(tr("WS_MISSING_BASIC") % tr(str(_names.get(id, id))), "warning", ORANGE)
+		if not MissionDesign.INSTRUMENTOS_CLAVE.has(id):  # los clave ya salen en rojo (MISSING_KEY)
+			_check_line(tr("WS_MISSING_BASIC") % tr(str(_names.get(id, id))), "warning", ORANGE)
 	if taller.get("valid", false):
 		_check_line(tr("WS_VALID_OK"), "check_circle", UI.TEAL)
 
@@ -1220,22 +1311,76 @@ func _message(codigo: String) -> String:
 	return codigo
 
 
+## Instrumentos clave que faltan en el diseño (avisos MISSING_KEY de la simulación).
+static func clave_que_faltan(taller: Dictionary) -> Array[String]:
+	var faltan: Array[String] = []
+	for codigo in taller.get("notices", []):
+		if str(codigo).begins_with("MISSING_KEY:"):
+			faltan.append(str(codigo).get_slice(":", 1))
+	return faltan
+
+
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		var sesion := preload("res://scenes/menu/game_session.gd")
-		var jugadores := int(sesion.jugadores)
-		if jugadores > 1 and sesion.en_red:
-			command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
-		elif jugadores > 1:
-			_revision_de_equipo(taller, jugadores)
-		else:
-			command.emit("design_start", {})
+		var faltan := clave_que_faltan(taller)
+		if faltan.is_empty():
+			_despegar(taller)
+		elif not is_instance_valid(_confirmacion):
+			_pedir_confirmacion(faltan)
 		return
 	command.emit("design_validate", {})
 	validated = bool(snapshot.get("workshop", {}).get("valid", false))
 	_signature = ""
 	update_snapshot(snapshot)
+
+
+func _despegar(taller: Dictionary) -> void:
+	var sesion := preload("res://scenes/menu/game_session.gd")
+	var jugadores := int(sesion.jugadores)
+	if jugadores > 1 and sesion.en_red:
+		command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
+	elif jugadores > 1:
+		_revision_de_equipo(taller, jugadores)
+	else:
+		command.emit("design_start", {})
+
+
+## Falta un instrumento clave: se avisa de lo que se pierde y se pide confirmación. No bloquea.
+func _pedir_confirmacion(faltan: Array[String]) -> void:
+	_confirmacion = PanelContainer.new()
+	_confirmacion.add_theme_stylebox_override("panel", UI.box(0.96, 12, 0.5, 1, 24, 20))
+	UI.place(_confirmacion, "c", 0, 0, 520, 0)
+	root.add_child(_confirmacion)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	_confirmacion.add_child(col)
+	UI.label(col, tr("WS_MISSING_CONFIRM_TITLE"), 18, ORANGE)
+	for id in faltan:
+		var linea := UI.label(col, "• " + tr("WS_MISSING_KEY_" + id.to_upper()), UI.FONT_MIN + 1, Color("F3E6D4"))
+		linea.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var nota := UI.label(col, tr("WS_MISSING_CONFIRM"), UI.FONT_MIN, TEXT_DIM)
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var botones := HBoxContainer.new()
+	botones.add_theme_constant_override("separation", 10)
+	botones.alignment = BoxContainer.ALIGNMENT_END
+	col.add_child(botones)
+	var volver := Button.new()
+	volver.text = tr("WS_MISSING_BACK")
+	volver.pressed.connect(_cerrar_confirmacion)
+	botones.add_child(volver)
+	var igual := Button.new()
+	igual.text = tr("WS_LAUNCH_ANYWAY")
+	igual.pressed.connect(func() -> void:
+		_cerrar_confirmacion()
+		_despegar(snapshot.get("workshop", {})))
+	botones.add_child(igual)
+
+
+func _cerrar_confirmacion() -> void:
+	if is_instance_valid(_confirmacion):
+		_confirmacion.queue_free()
+	_confirmacion = null
 
 
 ## Modo equipo: antes de despegar, cada responsable vota GO / NO GO sobre su parte del diseño.

@@ -182,6 +182,9 @@ func _partida(semilla: int, modo: int, con_guardado: bool, inmortal: bool = fals
 				for clave in antes:
 					if clave in ["pausado", "en_movimiento", "movimiento_en_curso", "ocupado", "accion_en_curso", "transmitiendo", "revision_mapa"]:
 						continue
+					# var_to_str (el guardado real) redondea el último decimal: 1e-12 Wh no es un cambio.
+					if antes[clave] is float and despues.get(clave) is float and absf(antes[clave] - despues[clave]) < 1e-6:
+						continue
 					if JSON.stringify(antes[clave], "", true) != JSON.stringify(despues.get(clave), "", true):
 						problemas.append("s%d sol %d: «%s» cambió: %s ≠ %s" % [semilla, sol_guardado, clave, JSON.stringify(antes[clave], "", true).left(200), JSON.stringify(despues.get(clave), "", true).left(200)])
 				sim = otra

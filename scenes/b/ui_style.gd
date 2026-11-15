@@ -1,8 +1,10 @@
 extends RefCounted
 ## Tema cálido de GAIA según el diseño visual consolidado (superficie marrón translúcida, texto crema).
 ## Todo el estilo de la interfaz sale de aquí: HUD, pausa e informe usan estas constantes y este tema.
+## Estilo único (plan de mejoras 4.1), el de la consola de la plataforma: esquinas cortadas (chaflán) en vez de
+## redondeadas, borde fino ámbar, fondo oscuro translúcido y títulos con Oxanium, de letras cortadas como el logo.
 
-const SURFACE := Color("2E1E16")
+const SURFACE := Color("231812")
 const CREAM := Color("FFF5E4")
 const AMBER := Color("F0C079")
 const TEAL := Color("9AD7C6")
@@ -19,10 +21,11 @@ const MUTED := Color(1.0, 0.961, 0.894, 0.72)
 const ORANGE := AMBER
 const GREEN := TEAL
 
-const RADIUS_PILL := 18
-const RADIUS_BUTTON := 10
-const RADIUS_PANEL := 12
-const RADIUS_LABEL := 8
+## Con esquinas cortadas, el «radio» es el tamaño del chaflán.
+const RADIUS_PILL := 8
+const RADIUS_BUTTON := 6
+const RADIUS_PANEL := 10
+const RADIUS_LABEL := 5
 
 const ALPHA_NORMAL := 0.55
 const ALPHA_STRONG := 0.70
@@ -40,6 +43,8 @@ const FONT_MIN := 13
 ## Etiqueta OpenType del eje de grosor («wght») de las fuentes variables.
 const WGHT := 0x77676874
 
+const PanelNave := preload("res://scenes/b/panel_nave.gd")
+
 static var _fonts: Dictionary = {}
 
 
@@ -56,9 +61,11 @@ static func text_font(peso: int = 450) -> Font:
 	return _variable("text%d" % peso, "Inter.ttf", peso, 0)
 
 
-## Títulos, cifras y etiquetas: Space Grotesk (variable) con grosor y separación entre letras.
+## Títulos, cifras y etiquetas: Oxanium (variable, OFL; letras de esquinas cortadas como el logo) con grosor y
+## separación entre letras. Si falta, Space Grotesk.
 static func display_font(peso: int = 600, separacion: int = 0) -> Font:
-	return _variable("display%d_%d" % [peso, separacion], "SpaceGrotesk.ttf", peso, separacion)
+	var archivo := "Oxanium.ttf" if font("Oxanium.ttf") != null else "SpaceGrotesk.ttf"
+	return _variable("display%d_%d" % [peso, separacion], archivo, peso, separacion)
 
 
 static func _variable(clave: String, archivo: String, peso: int, separacion: int) -> Font:
@@ -85,10 +92,11 @@ static func display(l: Label, peso: int = 600, separacion: int = 0) -> void:
 
 
 static func box(alpha: float = ALPHA_NORMAL, radius: int = RADIUS_PANEL, border_alpha: float = 0.25, border_px: int = 1,
-		margin_x: float = 12.0, margin_y: float = 6.0, border_color: Color = CREAM) -> StyleBoxFlat:
+		margin_x: float = 12.0, margin_y: float = 6.0, border_color: Color = AMBER) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = Color(SURFACE, alpha)
 	s.set_corner_radius_all(radius)
+	s.corner_detail = 1  # esquinas cortadas
 	s.set_border_width_all(border_px if border_alpha > 0.0 else 0)
 	s.border_color = Color(border_color, border_alpha)
 	s.content_margin_left = margin_x
@@ -99,20 +107,39 @@ static func box(alpha: float = ALPHA_NORMAL, radius: int = RADIUS_PANEL, border_
 	return s
 
 
+## Panel «de nave» (degradado metálico, luz ámbar arriba y escuadras en las esquinas; ver panel_nave.gd). Mismos parámetros
+## que box(), para cambiar un panel de un estilo al otro sin tocar nada más.
+static func nave(alpha: float = ALPHA_STRONG, radius: int = RADIUS_PANEL, border_alpha: float = 0.3, border_px: int = 1,
+		margin_x: float = 12.0, margin_y: float = 6.0, border_color: Color = AMBER) -> StyleBox:
+	var s: StyleBox = PanelNave.new()
+	s.alpha = clampf(alpha + 0.08, 0.0, 1.0)  # la placa con degradado necesita algo más de cuerpo que el color liso
+	s.chaflan = float(radius)
+	s.borde_alpha = border_alpha
+	s.borde_px = float(border_px)
+	s.borde_color = border_color
+	s.content_margin_left = margin_x
+	s.content_margin_right = margin_x
+	s.content_margin_top = margin_y
+	s.content_margin_bottom = margin_y
+	return s
+
+
 ## Compatibilidad con el código anterior: color liso, radio y margen.
 static func style(color: Color, radius: int = 12, margin: int = 16) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
 	s.set_corner_radius_all(radius)
+	s.corner_detail = 1
 	s.set_content_margin_all(margin)
 	return s
 
 
-## Caja de botón: relleno cálido, borde fino, sombra suave y esquinas suaves.
+## Caja de botón: relleno cálido, borde fino, sombra suave y esquinas cortadas.
 static func button_box(relleno: Color, borde: Color, borde_px: int, radius: int, mx: float, my: float, sombra: int = 3) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = relleno
 	s.set_corner_radius_all(radius)
+	s.corner_detail = 1
 	s.set_border_width_all(borde_px if borde.a > 0.0 else 0)
 	s.border_color = borde
 	s.content_margin_left = mx
@@ -134,12 +161,13 @@ static func _focus(radius: int) -> StyleBoxFlat:
 	s.set_border_width_all(2)
 	s.border_color = Color(AMBER, 0.95)
 	s.set_corner_radius_all(radius)
+	s.corner_detail = 1
 	s.set_expand_margin_all(3)
 	return s
 
 
 static func _button_states(t: Theme, tipo: String, radius: int, mx: float, my: float) -> void:
-	t.set_stylebox("normal", tipo, button_box(Color("4A3629", 0.82), Color(CREAM, 0.22), 1, radius, mx, my))
+	t.set_stylebox("normal", tipo, button_box(Color("3A2A20", 0.85), Color(AMBER, 0.38), 1, radius, mx, my))
 	t.set_stylebox("hover", tipo, button_box(Color("5E4433", 0.93), Color(AMBER, 0.75), 1, radius, mx, my, 5))
 	t.set_stylebox("pressed", tipo, button_box(Color("2B1D15", 0.95), Color(AMBER, 1.0), 2, radius, mx, my, 0))
 	t.set_stylebox("disabled", tipo, button_box(Color("3A2A20", 0.5), Color(CREAM, 0.1), 1, radius, mx, my, 0))
@@ -171,7 +199,7 @@ static func theme() -> Theme:
 	t.set_color("font_shadow_color", "Label", SHADOW)
 	t.set_constant("shadow_offset_x", "Label", 0)
 	t.set_constant("shadow_offset_y", "Label", 1)
-	t.set_stylebox("panel", "PanelContainer", box(ALPHA_STRONG, RADIUS_PANEL, 0.22, 1, 16, 14))
+	t.set_stylebox("panel", "PanelContainer", nave(ALPHA_STRONG, RADIUS_PANEL, 0.22, 1, 16, 14))
 
 	_button_states(t, "Button", RADIUS_BUTTON, 14, 6)
 	t.set_font("font", "Button", text_font(560))

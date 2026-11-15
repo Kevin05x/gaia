@@ -15,6 +15,7 @@ const RUTA_COMBATE := "res://content/combate.json"
 const RUTA_TUTORIAL := "res://content/tutorial.json"
 const RUTA_HITOS := "res://content/hitos.json"
 const RUTA_IMPREVISTOS := "res://content/imprevistos.json"
+const ImprevistoPanel := preload("res://scenes/b/imprevisto_panel.gd")
 const ESCENA_VISTA := "res://scenes/b/mission.tscn"
 const Sesion := preload("res://scenes/menu/game_session.gd")
 const Musica := preload("res://scenes/menu/musica.gd")
@@ -36,6 +37,7 @@ const DISENO_INICIAL: Array[String] = ["cohete_ligero", "chasis_base", "panel_so
 ## true: este es el anfitrión de una partida en red (scenes/net/red.gd). Lleva la simulación sin dibujar nada: las órdenes
 ## llegan de los jugadores por el "port" que se le asigne (RedPort) y lo que pasa se reparte a todos. No guarda partida.
 var modo_red: bool = false
+var _aviso_datos := false  ## ya se explicó cómo se envían los datos a la Tierra
 
 var sim: Simulation
 var port: Node
@@ -50,7 +52,7 @@ const PERIODO_AUTOGUARDADO_S := 30.0  ## autoguardado ligero durante las operaci
 func _ready() -> void:
 	var Medidor := preload("res://scenes/a/medidor.gd")
 	if crear_vista and Medidor.pedido():
-		saltar_taller = true  # la medición usa siempre el mismo diseño inicial
+		saltar_taller = Medidor.escena() != "plataforma"  # la misión con el diseño inicial; la plataforma, en el taller
 		Sesion.cargar_al_iniciar = false
 		add_child(Medidor.new())
 	_crear_simulacion()
@@ -112,6 +114,9 @@ func _process(delta: float) -> void:
 			_aviso("NOTICE_ANTENNA_HIT")
 		elif evento.begins_with(CombatSystem.EVENTO_METEORITOS):
 			_aviso("NOTICE_METEORS")
+		elif evento.begins_with(ScienceSystem.EVENTO_ACCION_TERMINADA + ":") and not _aviso_datos and sim.estado.datos > 0.0:
+			_aviso_datos = true
+			_aviso("DATA_FIRST")
 		elif evento == ResourceSystem.EVENTO_PRIMERA_CARGA:
 			_aviso("CARGO_FIRST")
 		elif evento.begins_with(Simulation.EVENTO_DESCARGA + ":"):
@@ -190,7 +195,10 @@ func _crear_simulacion() -> void:
 			errores.append_array(opcional.errores)
 	aplicar_dificultad(reglas, combate, Sesion.dificultad)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
+		# En red no hay tutorial: bloquea órdenes y detiene el reloj de todo el equipo, y cada jugador lleva su rover.
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, null if modo_red else tutorial, hitos)
+		if (crear_vista or modo_red) and not preload("res://scenes/a/medidor.gd").pedido():  # pruebas y medición: el sol de balance.json
+			sim.fijar_duracion_sol(Sesion.duracion_sol_min * 60.0)
 		var imprevistos := ImprevistosSystem.desde_archivo(RUTA_IMPREVISTOS, destino)
 		if (crear_vista or modo_red) and imprevistos.errores.is_empty() and not saltar_taller:  # pruebas y medición: sin sorpresas
 			sim.usar_imprevistos(imprevistos, int(Time.get_unix_time_from_system()) % 100000)
@@ -221,6 +229,8 @@ static func aplicar_dificultad(reglas: Rules, combate: CombatData, id: String) -
 	if nivel.is_empty():
 		return
 	reglas.presupuesto_musd = float(nivel.get("presupuesto_musd", reglas.presupuesto_musd))
+	if Sesion.en_red and Sesion.jugadores > 1:  # cada jugador de más trae su parte (content/rules*.json › presupuesto_extra_por_jugador_musd)
+		reglas.presupuesto_musd += reglas.presupuesto_extra_por_jugador_musd * (Sesion.jugadores - 1)
 	var factor := float(nivel.get("factor_enemigos", 1.0))
 	if combate != null and not is_equal_approx(factor, 1.0):
 		for oleada in combate.oleadas:
@@ -238,6 +248,8 @@ func _empezar_con_diseno_inicial(agregar_piezas: bool = true) -> void:
 	var inicio := sim.ejecutar("design_start")
 	if not inicio["ok"]:
 		push_error("GAIA: el diseño inicial no es válido (%s)" % inicio["reason"])
+	elif saltar_taller:
+		sim.ejecutar("tutorial_skip")  # las pruebas operan directo: el tutorial bloquearía órdenes y detendría el reloj
 
 
 func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
@@ -263,6 +275,11 @@ func _al_recibir_orden(orden: String, carga: Dictionary) -> void:
 				_aviso("MOVE_STOPPED")
 		"act":
 			port.present_action(resultado["action"])
+		"event_choice":
+			# Lo que cambió la decisión se cuenta en un aviso; con desvío, el rover sale hacia el punto marcado.
+			if not Array(resultado.get("path", [])).is_empty():
+				port.present_path(resultado["path"], resultado["seconds_per_tile"])
+			_ui("aviso_imprevisto", [resultado.get("applied", {})])
 		"upgrade", "build", "build_module":
 			_ui("ping")
 			# Obra con rover: el rover sale hacia la obra (o irá en cuanto acabe lo que hace).
@@ -322,6 +339,11 @@ static func ui_en_vista(vista: Node, metodo: String, args: Array) -> void:
 		"aviso_descarga":
 			vista.hud.show_notice(TranslationServer.translate("CARGO_UNLOADED") % int(args[0]))
 			vista.al_descargar()
+		"aviso_imprevisto":
+			var aplicado: Dictionary = args[0]
+			vista.hud.show_notice("UNEXP_RESULT", [ImprevistoPanel.resumen(aplicado)], 8.0)
+			if aplicado.has("detour_tile"):
+				vista.terrain.marcar_hallazgo(aplicado["detour_tile"])
 		"hito":
 			vista.celebrar_hito(str(args[0]))
 		"ping":

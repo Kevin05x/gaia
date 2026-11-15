@@ -8,7 +8,7 @@ Lee este archivo antes de tocar nada. Resume qué es el proyecto, qué se decidi
 - **GAIA** (nombre provisional): juego 3D de diseño y operación de misiones espaciales para el **NASA Space Apps Challenge 2026**, reto *Space Mission Design Game*. Equipo **Full Galácticos** (sede Cajamarca).
 - Bucle: briefing → taller (masa, presupuesto 700 M$, energía, comunicaciones, instrumentos) → revisión Go/No-Go por roles → lanzamiento (foto real) → crucero (203 días a Marte, 3 a la Luna) → aterrizaje con grúa aérea → operaciones sol a sol → informe con causas y comparación con la misión real.
 - Dos destinos: **Marte** (cráter Jezero, con historia y combate) y **Luna** (polo sur, sin historia ni combate).
-- Meta de la partida: enviar 100 unidades de datos antes de que termine el sol 6. Un sol dura 300 s reales; el día va de 6:00 a 18:00; de noche no hay sol.
+- Meta de la partida: enviar 100 unidades de datos antes de que termine el sol 6. Un sol dura lo que elige el jugador (6, 8, 10 o 12 min reales; 12 por defecto; plan 3.1). La transmisión, las obras, las oleadas y el tutorial van en horas de juego (no cambian con la duración); el rover y las acciones, en segundos reales. `balance.json` (300 s) es el sol de referencia y el que usan las pruebas. El día va de 6:00 a 18:00; de noche no hay sol.
 - **Entrega: domingo 15 de noviembre, 23:59 (hora local). Meta interna: 2 horas de margen.**
 
 ## Equipo y ramas (acordado el 14 de nov)
@@ -46,19 +46,29 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 
 - **Multijugador en red** (rama `b/multijugador`, 15 nov): hasta 4 personas, cada una en su dispositivo y todas a la vez en la misma misión, cada una con su rol. El anfitrión lleva la simulación y valida las órdenes por rol; todo por WebSocket (sala en la misma Wi-Fi, o servidor dedicado / túnel para internet y navegador). Ver `docs/MULTIJUGADOR.md`. `sim/` y `EventBus` no cambiaron.
 
+- **Interfaz de la misión** (rama `c/mejoras-15nov`, 15 nov, plan 11): las acciones sin objetivo salen en un menú emergente (**Tab**; Q y E giran la cámara) y su modo se elige en Opciones; «Construir antena» vive en el menú Construir (B); el relé solo existe con antena; la carga se descarga con el marcador sobre el almacén o la tecla **G** (F centra la cámara en el rover). Teclas: B construir, C panorámica, V radar, Z dron, X minerales, U antena, T transmitir, G descargar, Tab acciones.
+- **Tutorial con bloqueo** (plan 11.4): `content/tutorial*.json` lista por paso las órdenes permitidas (`permite`), si el reloj espera (`espera`) y los requisitos (`requiere_instrumento`, `requiere_carga`). Lo aplica `sim/systems/tutorial_system.gd` (`TUTORIAL_LOCKED`). Las pruebas que operan directo (`saltar_taller`) saltan el tutorial.
+- **Multijugador, un rover por jugador** (15 nov): la simulación lleva varios rovers (`MissionState.usar_rover`); batería, datos y base son del equipo; en red no hay tutorial. Prueba real: `tools/e2e_red.sh`. Cuatro salas en el servidor (`deploy/servidor/nativo`). Ver `docs/MULTIJUGADOR.md`.
+- **Estilo «panel de nave»** (`scenes/b/panel_nave.gd`, `UI.nave()`) y **cordillera del horizonte hecha en Blender** (`tools/blender/horizonte.py`, `assets/horizonte/cordillera.glb`, `assets/_blender/horizonte.blend` con `.gdignore`; sin el `.glb` el juego usa las lomas por código).
+
+- **Presupuesto en red** (15 nov, pedido de Kevin): cada jugador de más suma 200 M$ al presupuesto (`presupuesto_extra_por_jugador_musd` en `content/rules*.json`: 2 jugadores 900, 3 → 1100, 4 → 1300). Los topes por rol (`presupuesto_por_rol`) se reparten sobre ese total. Prueba: `tests/test_red_sala.gd`.
+- **Web en el dominio** (15 nov): juego en `gaianasa.tech`, web del proyecto en `info.gaianasa.tech`, salas en `sala.gaianasa.tech/1..4` (guía en `docs/SERVIDOR.md`). La página que envuelve el juego (`deploy/web/gaia_shell.html`, la genera `tools/generar_shell_web.py`) tiene pantalla de carga con el rover de la NASA y el icono de GAIA; el preset Web ya **incluye los modelos de la NASA** (rover de la NASA también en la web) y **excluye `_shots/`, `sitio/` y `deploy/`**: el paquete pasó de ~350 MB a ~95 MB. Primera visita lenta (el navegador compila los sombreadores, 30–50 s en Intel UHD); Chrome los guarda y la segunda es rápida. `scenes/b/web_carga.gd` muestra el aviso animado en esos momentos.
+- **Material para el video** (fuera del repositorio): `../material_video/` (tomas 4K con `tools/grabar_escenas.gd`, música, imágenes). Ver su `LEEME.md`.
+- **Araña de combate** (`scenes/b/combat_view.gd › _modelo_arana`): caparazón bronce con puntos ámbar y ocho patas, parecida a la ilustración «Tres golpes bajo la base».
+
 ## Lo que sigue abierto
 
 - Qué es el **telescopio** (instrumento del rover, telescopio espacial como misión, o referencia del reto). Sin decidir.
 - La **historia nueva** de Tony ya está (commit 37abbb9, en `integracion`): 72 voces en `assets/historia/radio/`. Las voces de «mover el rover» y «despegue» no están en ninguna rama de GitHub.
 - Qué hacen los **bionutrientes** (para qué sirven) y cuántos da cada monstruo. Lo decide el equipo de historia.
-- `content/rules.json` pone la tormenta de polvo en el sol 3, pero el plan y la historia dicen sol 4–5. Unificar.
+- ~~Tormenta de polvo: sol 3 en `rules.json` frente a sol 4–5 en la historia.~~ Resuelto el 15 nov (plan 3.4): sol 4.
 - Comentario viejo en `scenes/b/sky_light.gd` ("casillas de 2 m"; ahora 4 m).
 - Hay que volver a renderizar las fichas `assets/edificios/*.png` con `tools/renderizar_fichas.gd`: aún muestran los edificios sin la chapa nueva.
 - El ancho de la antena no coincide: 3,4 m en `scenes/b/buildings.gd` y 3,8 m en `scenes/b/actors.gd`. Unificar.
 - Los minerales se ven como cobre, oro o plata (solo es aspecto visual), pero el recurso se sigue llamando «olivino» en los textos.
 - **Aviso de reglas:** Space Apps dice que no se puede empezar a trabajar en el reto antes del hackathon, y este repositorio tiene commits desde el 22 de octubre. El equipo debe consultarlo con el organizador local y la Guía de entrega. No ocultar ni reescribir el historial.
 - Entrega pendiente (equipo): video de máximo 30 s con subtítulos en inglés o máximo 7 diapositivas; texto en inglés; declaración de IA; menores de 18 no deben salir con cara ni voz.
-- Mediciones en GPU real: solo hay una, en una Intel UHD (`docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`): Alta da unos 20 FPS y Baja 60. La chapa de los edificios y el filtrado anisótropo 16× aún no se han medido. El equipo corre `Medir_rendimiento.bat` en Windows.
+- Mediciones en GPU real (Intel UHD): v4 (`docs/mediciones/v4_arte_intel_uhd_antes_despues.txt`) y v5 del 15 nov en el PC de Kevin (`docs/mediciones/v5_mision_y_plataforma_intel_uhd_antes_despues.txt`): misión Alta ≈ 29 FPS y Baja ≈ 59; plataforma Alta ≈ 20 y Baja ≈ 55. En esa GPU el límite es el coste por píxel, no las llamadas de dibujo. El equipo corre `Medir_rendimiento.bat` en Windows (mide misión y plataforma en Alta y Baja).
 
 ## Arquitectura (no romperla)
 
@@ -81,7 +91,7 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests,res://sce
 godot --path . -- --medir --preset=alta     # medición de rendimiento (alta|media|baja)
 ```
 
-Las pruebas deben pasar todas (587 en la rama `integracion`, 14 nov) antes de abrir un PR.
+Las pruebas deben pasar todas (651 en la rama `c/mejoras-15nov`, 15 nov) antes de abrir un PR.
 
 ## Flujo de Git (reglas)
 

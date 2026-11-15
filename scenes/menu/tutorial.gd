@@ -1,13 +1,17 @@
 extends Control
 ## Tutorial de GAIA en cinco páginas: la misión, el taller, despegue y aterrizaje, explorar y transmitir.
 ## Se abre desde «Cómo jugar» (termina con «Cerrar») y antes de la primera partida (termina con «¡Empezar la misión!»).
+## Cada página lleva una captura real del juego (las mismas del tutorial en ventana, assets/tutorial/marte/<idioma>/).
 const UI := preload("res://scenes/b/ui_style.gd")
+const TutorialVentana := preload("res://scenes/b/tutorial_panel.gd")
 const PAGINAS := 5
+const CAPTURAS: Array[String] = ["mover", "taller", "plataforma", "analizar", "transmitir"]  ## una por página
 signal cerrado(completo: bool)
 
 var empezar_al_final := false
 var pagina := 0
 var _numero: Label
+var _imagen: TextureRect
 var _titulo: Label
 var _cuerpo: Label
 var _puntos: HBoxContainer
@@ -26,7 +30,7 @@ func _ready() -> void:
 	add_child(velo)
 	var caja := PanelContainer.new()
 	caja.add_theme_stylebox_override("panel", UI.box(0.96, 14, 0.28, 1, 40, 32))
-	UI.place(caja, "c", 0, 0, 860, 430)
+	UI.place(caja, "c", 0, 0, 940, 470)
 	add_child(caja)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
@@ -34,23 +38,28 @@ func _ready() -> void:
 	var cabecera := UI.label(col, tr("M_TUT_TITLE").to_upper(), 13, Color(UI.AMBER, 0.9))
 	UI.display(cabecera, 700, 4)
 	var cuerpo := HBoxContainer.new()
-	cuerpo.add_theme_constant_override("separation", 36)
+	cuerpo.add_theme_constant_override("separation", 30)
 	cuerpo.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(cuerpo)
-	_numero = Label.new()
-	_numero.add_theme_font_override("font", UI.display_font(700, 0))
-	_numero.add_theme_font_size_override("font_size", 120)
-	_numero.add_theme_color_override("font_color", Color(UI.AMBER, 0.85))
-	_numero.custom_minimum_size = Vector2(190, 0)
-	_numero.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	cuerpo.add_child(_numero)
+	_imagen = TextureRect.new()
+	_imagen.custom_minimum_size = Vector2(416, 234)
+	_imagen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_imagen.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_imagen.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_imagen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cuerpo.add_child(_imagen)
 	var texto := VBoxContainer.new()
-	texto.add_theme_constant_override("separation", 14)
+	texto.add_theme_constant_override("separation", 10)
 	texto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cuerpo.add_child(texto)
-	_titulo = UI.label(texto, "", 34, UI.CREAM)
+	_numero = Label.new()
+	_numero.add_theme_font_override("font", UI.display_font(700, 0))
+	_numero.add_theme_font_size_override("font_size", 44)
+	_numero.add_theme_color_override("font_color", Color(UI.AMBER, 0.85))
+	texto.add_child(_numero)
+	_titulo = UI.label(texto, "", 30, UI.CREAM)
 	UI.display(_titulo, 700, 1)
-	_cuerpo = UI.label(texto, "", 19, Color(UI.CREAM, 0.88))
+	_cuerpo = UI.label(texto, "", 17, Color(UI.CREAM, 0.88))
 	_cuerpo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_cuerpo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cuerpo.add_theme_constant_override("line_spacing", 5)
@@ -97,6 +106,10 @@ func _ir(nueva: int) -> void:
 	_numero.text = "%02d" % (pagina + 1)
 	_titulo.text = tr("M_T%d_TITLE" % (pagina + 1))
 	_cuerpo.text = tr("M_T%d_BODY" % (pagina + 1))
+	var idioma := "en" if TranslationServer.get_locale().begins_with("en") else "es"
+	var ruta := TutorialVentana.ruta_captura(CAPTURAS[pagina], "marte", idioma)
+	_imagen.texture = load(ruta) if not ruta.is_empty() else null
+	_imagen.visible = _imagen.texture != null
 	_anterior.visible = pagina > 0
 	var ultima := pagina == PAGINAS - 1
 	_siguiente.text = tr("M_TUT_START") if ultima and empezar_al_final else (tr("M_TUT_CLOSE") if ultima else tr("M_TUT_NEXT"))

@@ -1,15 +1,40 @@
 # Multijugador en red (hasta 4 personas, cada una en su dispositivo)
 
-Rama `b/multijugador`. Todos juegan **la misma misión a la vez**: un solo rover y una sola simulación. Cada persona lleva un rol
+Rama `b/multijugador`; reformado el 15 nov en `c/mejoras-15nov`. Todos juegan **la misma misión a la vez**, en el mismo mapa y con una sola simulación, y **cada jugador conduce su propio rover** (todos con el mismo diseño; el taller es de todo el equipo, con una parte del presupuesto para cada rol). Cada persona lleva un rol
 (Dirección, Ingeniería, Ciencia, Comunicaciones) y solo puede dar las órdenes de su rol. El reparto de roles es el mismo del equipo
 de una sola pantalla (`content/rules.json › roles_equipo`): con 4 personas, uno por rol; con 2, dos roles cada uno; con 1, todos.
+
+## Un rover por jugador (15 nov)
+
+- La simulación (`sim/`) lleva varios rovers: cada uno tiene su **posición, su acción y su bodega**; la **batería, la memoria de datos, el enlace y la base son del equipo**.
+  Los sistemas siguen leyendo `casilla_rover`, `ocupado`…: lo que cambia es qué rover está cargado en esos campos (`MissionState.usar_rover`). Con un solo rover todo es igual que antes.
+- El anfitrión ejecuta cada orden con el rover de quien la da (la orden lleva `_rover`, que el anfitrión pone y no el cliente), manda a cada jugador su snapshot con su rover y la lista de los demás (`Simulation.snapshot_de`), y la animación de cada rover solo a su dueño.
+- Todos pueden mover su rover. Cada rol conserva lo suyo: Dirección decide la historia y los imprevistos, pausa y lanza; Ingeniería construye (su rover va a la obra); Ciencia analiza, perfora y descarga; Comunicaciones transmite los datos de todos.
+- Entrar con la misión en marcha da un rover nuevo junto a la estación; si alguien se va, su rover se va con él. Si se va el líder, manda el siguiente.
+- **Límites conocidos:** el combate, la sombra y la historia cuentan con el rover del **líder** (el primero en entrar); los demás rovers no reciben daño ni chocan entre sí; en red no hay tutorial (bloquearía a todo el equipo).
+- **Pantalla dividida (varios jugadores en un mismo PC, cada uno con su rover en un cuarto de pantalla): no está hecha.** Cuatro mundos 3D a la vez no caben en una GPU integrada (la misión sola va a ≈29 FPS en una Intel UHD). En un mismo PC se juega por red: el anfitrión abre la sala y los demás se unen a `127.0.0.1` desde otras ventanas.
+- La red local usa exactamente el mismo código que internet (el anfitrión de escritorio o el servidor sin pantalla).
+
+### Pruebas
+
+- `tests/test_varios_rovers.gd` y `tests/test_red_rovers.gd` (suite normal, sin sockets).
+- **Extremo a extremo, con sockets de verdad:** `GODOT=/ruta/godot bash tools/e2e_red.sh [2|4|tarde] [puerto]` lanza un servidor sin pantalla y clientes sin pantalla.
+  Comprueba entrar en la sala, el reparto de roles, que las piezas de otro rol y lo que excede el presupuesto del rol se rechazan, diseño y lanzamiento, un rover por jugador, que cada uno ve a los demás donde están, y que las órdenes de otro rol se rechazan.
+  Resultados del 15 nov en el PC de Kevin: **2 jugadores, 4 jugadores y «uno entra tarde»: los tres pasan.** No se probó con personas reales ni en redes distintas.
+- **Prueba a mano en un solo PC: con dos ventanas basta.** El PC de Kevin (GPU integrada) no aguanta cuatro mundos 3D abiertos a la vez, así que la comprobación manual se hace con dos ventanas del juego contra la misma sala (una crea la sala y la otra se une). Los casos de tres y cuatro jugadores los cubre `tools/e2e_red.sh 4` con clientes sin pantalla, no a mano.
+
+## Salas del servidor
+
+Un proceso de servidor lleva **una** sala. Para tener varias se levantan varios procesos y Caddy los reparte por la ruta: `wss://sala.gaianasa.tech/1` a `/4` (puertos 9080 a 9083; sin número, la sala 1).
+En el lobby de «Unirse» hay cuatro botones «Sala 1» a «Sala 4». Instalación en el servidor: `docs/SERVIDOR.md`, sección «Cuatro salas».
+Memoria: reposo medido en 58 MB por sala; con partida en marcha, sin medir.
 
 ## Cómo se juega
 
 1. **Quien crea la sala** (versión de escritorio): *Menú › MULTIJUGADOR › Crear sala*. Le aparecen sus direcciones IP.
 2. **Los demás**: *MULTIJUGADOR*, escriben la IP (o la dirección `wss://…` del servidor) y pulsan *Entrar*.
 3. El **jefe de sala** (el primero en entrar) elige destino y dificultad y pulsa *Empezar misión*. Quien llegue después **también puede entrar con la misión en marcha**: pasa directo a la partida y los roles se reparten de nuevo entre todos (máximo 4).
-4. En el taller todos ven el diseño en vivo. **Presupuesto y masa son uno solo para todo el equipo**, pero cada rol elige las piezas de su área: Dirección = cohete y trayectoria; Ingeniería = chasis y energía; Comunicaciones = antena; Ciencia = instrumentos. Con 1, 2, 3 o 4 personas siempre queda alguien a cargo de cada área. Al entrar sale una guía (reabrible con «¿Cómo funciona?») y un panel con tu rol, tus áreas y lo que gastó cada área; las áreas ajenas se ven apagadas y el anfitrión rechaza esas piezas. Cualquiera pulsa *Validar* y se abre el
+4. En el taller todos ven el diseño en vivo. **Cada rol tiene su parte del presupuesto** (`content/rules*.json › presupuesto_por_rol`, 15 nov; el rover y la masa siguen siendo uno solo) y solo gasta de la suya; con un solo jugador no hay reparto. Cada rol elige las piezas de su área, y las demás se ven **bloqueadas** con «Le toca a Ingeniería · nombre»: Dirección = cohete y trayectoria; Ingeniería = chasis y energía; Comunicaciones = antena; Ciencia = instrumentos. Con 1, 2, 3 o 4 personas siempre queda alguien a cargo de cada área. Al entrar sale una guía (reabrible con «¿Cómo funciona?») y un panel con tu rol, tus áreas y lo que gastó cada área; las áreas ajenas se ven apagadas y el anfitrión rechaza esas piezas. Cualquiera pulsa *Validar* y se abre el
    **Go / No-Go en todos los dispositivos**: cada persona vota los roles que le tocan; Dirección lanza cuando todos dicen GO.
 5. En operaciones cada rol hace lo suyo a la vez:
 
@@ -31,7 +56,7 @@ misión en marcha, sus roles pasan al jefe de sala.
 | --- | --- | --- |
 | **Misma red Wi-Fi** (anfitrión de escritorio que también juega) | Escritorio | Nada más. El anfitrión abre el puerto 9080 (Windows pregunta por el cortafuegos la primera vez: *Permitir*). |
 | **Por internet con un túnel** | Escritorio y navegador | El anfitrión de escritorio publica su sala con `cloudflared` (ver la sección de abajo). |
-| **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. |
+| **Servidor dedicado** | Escritorio y navegador | Un servicio que ejecute `Dockerfile.servidor` (Render, Fly…) y dé una URL `wss://`. Nadie tiene que dejar su PC encendida. Para un servidor propio con dominio (web + sala con HTTPS): `docs/SERVIDOR.md` y `deploy/servidor/` (preparado el 15 nov, sin probar en un servidor real). |
 
 ## Jugar entre redes distintas con Cloudflare (túnel)
 
