@@ -110,5 +110,13 @@ static func normalizar(g: Dictionary) -> Dictionary:
 	return g
 
 
+## Suavizado para la plataforma, el hangar y los visores de piezas: en una GPU integrada (Intel UHD) el MSAA 2x partía los
+## cuadros por la mitad (medido el 15 nov: 17,9 FPS con él y 35,6 sin él en la plataforma), así que ahí se empieza sin él.
+static func msaa_visor(g: Dictionary) -> Viewport.MSAA:
+	if RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU:
+		return Viewport.MSAA_DISABLED
+	return msaa(g)
+
+
 static func msaa(g: Dictionary) -> Viewport.MSAA:
 	return [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][int(g["aa"])]

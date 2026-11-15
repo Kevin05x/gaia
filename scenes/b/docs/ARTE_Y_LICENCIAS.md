@@ -29,7 +29,8 @@ Si el equipo decide sustituir el rover original por el modelo NASA específico d
 | Archivo | Uso | Licencia | Origen |
 | --- | --- | --- | --- |
 | `assets/fonts/Inter.ttf` (variable) | Texto de la interfaz | SIL Open Font License 1.1 (`assets/fonts/OFL-Inter.txt`) | Repositorio google/fonts (ofl/inter) |
-| `assets/fonts/SpaceGrotesk.ttf` (variable) | Títulos, cifras y etiquetas | SIL Open Font License 1.1 (`assets/fonts/OFL-SpaceGrotesk.txt`) | Repositorio google/fonts (ofl/spacegrotesk) |
+| `assets/fonts/SpaceGrotesk.ttf` (variable) | Respaldo de títulos y cifras (si falta Oxanium) | SIL Open Font License 1.1 (`assets/fonts/OFL-SpaceGrotesk.txt`) | Repositorio google/fonts (ofl/spacegrotesk) |
+| `assets/fonts/Oxanium.ttf` (variable, 200–800) | Títulos, cifras y etiquetas desde el 15 nov (plan de mejoras 4.1): letras de esquinas cortadas, parecidas a las del logo | SIL Open Font License 1.1 (`assets/fonts/OFL-Oxanium.txt`), © 2019 The Oxanium Project Authors | Repositorio google/fonts (ofl/oxanium, archivo `Oxanium[wght].ttf`), descargado el 15 nov 2026 |
 
 El emblema de GAIA (`scenes/b/gaia_mark.gd`) y el mapa se dibujan por código; no usan imágenes externas.
 
@@ -95,7 +96,7 @@ No integrados todavía: `25042_Perseverance.glb` (11 MB y unos 200 000 triángul
 
 ## Escenas ilustradas de la historia (24 oct 2026)
 
-Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro finales) están generadas con IA (generador de imágenes de Canva) a partir de capturas del propio juego como referencia, para que el rover, Rocky, los edificios, el terreno y las criaturas se vean como en el juego. El guion y las decisiones son del equipo (`Historia_Juego_GAIA.docx`). Son material provisional del equipo: la declaración de uso de IA debe constar en la entrega. El storyboard completo (con las criaturas y los minerales en 3D) está en Canva.
+Las 16 imágenes de `assets/historia/` (introducción, ocho escenas y cuatro finales) están generadas con IA (generador de imágenes de Canva, usado desde la app de escritorio de Claude como complemento; no se usó Gemini) a partir de capturas del propio juego como referencia, para que el rover, Rocky, los edificios, el terreno y las criaturas se vean como en el juego. El guion y las decisiones son del equipo (`Historia_Juego_GAIA.docx`). Son material provisional del equipo: la declaración de uso de IA debe constar en la entrega. El storyboard completo (con las criaturas y los minerales en 3D) está en Canva.
 
 Ronda E (25 oct 2026): las escenas se exportaron de nuevo desde Canva a 1920 × 1080, porque las anteriores eran de 1280 × 720 con mucha compresión. Se importan como WebP con pérdida leve (calidad 0,9) para que la descarga web no crezca. `nave_fuga.jpg` no está en el storyboard: se reescaló con Lanczos. Las fotos de las fichas de edificios (`assets/edificios/*.png`) se renderizan con `tools/renderizar_fichas.gd` a partir de los mismos modelos del juego.
 
@@ -244,7 +245,7 @@ Reglas de entrega:
 - `cohete_medio.glb` — **Atlas V 541**. Llegó ya en metros y de pie, con la base en `y = 0`: 5,4 × 58,3 m, que es su tamaño real. Cumple el contrato tal cual.
 - `cohete_super.glb` — **Saturn V**. Llegó **tumbado sobre Z y en otras unidades**. No se tocó el archivo: `launch_pad.gd` lo endereza, lo centra y lo apoya en `y = 0` al cargarlo.
 - Ambos se escalan a la altura real del lanzador que representan, declarada en `content/parts.json` (`alto_real_m`: 58,3 y 110,6 m), para respetar la escala 1:1 de `docs/ESCALAS.md`. `tests/test_cohetes.gd` lo comprueba.
-- Autoría y licencia de estos dos modelos: **pendiente de anotar por Evelyn**.
+- Autoría y licencia (según Evelyn, 15 nov 2026, por WhatsApp): **`cohete_super.glb` (Saturn V)** es «Cohete» de **albertomarun** en Sketchfab, licencia **CC BY 4.0** (https://sketchfab.com/3d-models/cohete-84ffd15ec9ee4be7b6b3bacb0be0bbfa; la página muestra «CC Attribution», comprobada el 15 nov). **Exige dar crédito**: está en los créditos del juego y en la entrega. **`cohete_medio.glb` (Atlas V 541)** fue «generado con un script de Python proporcionado por Claude» (Evelyn): obra del equipo con ayuda de IA, sin material de terceros.
 
 Qué es de cada quien: la **capacidad, el costo y el `ref_clave`** de cada cohete son datos del taller (`content/parts.json`); el **modelo y su aspecto** son del equipo de arte. Si al llegar los modelos cambian las capacidades o los costos, `tests/test_cohetes.gd` avisa en el momento si el balance se rompe.
 
@@ -292,7 +293,7 @@ copias numeradas (`Armado.001`…) que son la misma, y el juego se queda con la 
 Si al reexportar se renombra, el cohete vuelve a montarse por grúas sin avisar: hay una prueba que
 lo fija cohete por cohete (`tests/test_cohetes.gd`).
 
-Autoría y licencia de los cuatro modelos: **pendiente de anotar por Evelyn**.
+Autoría y licencia de los cuatro modelos: Saturn V, de albertomarun (CC BY 4.0, ver arriba); los otros tres (ligero, medio y pesado), generados con un script de Python proporcionado por Claude, según Evelyn (15 nov 2026). **Falta confirmar con Evelyn si las animaciones «Armado» se hicieron a mano en Blender o también por script.**
 
 ## Edificio de montaje — entregado el 14 de noviembre
 
@@ -335,3 +336,51 @@ y su base de lanzamiento: ver `HANGAR_FUERA` en `scenes/b/launch_pad.gd`). Se qu
 - Presupuesto: en `tests/test_optimizacion_arte.gd`, `ESCENARIO_UNICO` da un tope propio al hangar y al Saturno V
   (`cohete_super`), que se cargan una sola vez en la pantalla de la plataforma. Los demás modelos siguen con el tope de 2 500 triángulos.
 - Pendiente de medir en GPU real: la pantalla de la plataforma (con el hangar) con `Medir_rendimiento.bat`.
+
+## Capturas del tutorial (15 nov 2026 · plan de mejoras 2.2 y 2.3)
+
+| Archivos | Qué es | Origen |
+| --- | --- | --- |
+| `assets/tutorial/<marte\|luna>/<es\|en>/<paso>.jpg` (24 JPG de 640×360) | Captura real de cada paso del tutorial, en la ventana del tutorial y en «Cómo jugar» | Capturas del propio juego, sacadas jugando cada paso con `tools/capturar_tutorial.gd` (escrito con ayuda de Claude). Muestran el arte del juego descrito en este documento, incluido el modelo del Perseverance de la NASA. No hay imágenes generadas con IA. Para rehacerlas tras cambiar la interfaz: `godot --rendering-driver opengl3 --path . -s tools/capturar_tutorial.gd` e importar. |
+
+## Voces de radio del juego (15 nov 2026 · plan de mejoras 9.1 a 9.3)
+
+78 frases cortas de radio (Houston y el rover) para Marte y la Luna, en español e inglés: mover el rover, llegar, batería
+baja, despegue, aterrizaje en la Luna, noche, enlace abierto, memoria llena y tormenta. Guion en `content/voces.json`;
+archivos en `assets/voces/<marte|luna|comun>/` con el mismo esquema de nombres que la historia (evento, variante y 12
+caracteres del SHA-256 del hablante, un salto de línea y el texto). Las grabó Claude con `tools/voces/generar_voces.py`
+(escrito con ayuda de Claude) siguiendo el método de las voces de Tony:
+
+| Idioma · hablante | Voz | Licencia / origen |
+| --- | --- | --- |
+| Español · Perseverance (y el rover en la Luna) | Microsoft Pablo (voz de Windows), igual que en la historia | Voz incluida en Windows |
+| Español · Houston | **Piper es_MX «ald» (medium)**, de respaldo: en el PC donde se grabaron no estaba Microsoft Raúl, la voz de Houston de la historia | Datos de entrenamiento con licencia Unlicense ([ficha](https://huggingface.co/rhasspy/piper-voices/blob/main/es/es_MX/ald/medium/MODEL_CARD)) |
+| Inglés · Houston | Piper [John](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/john/medium/MODEL_CARD) (medium), igual que en la historia | Dominio público (LibriVox) |
+| Inglés · Perseverance | Piper [Joe](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/joe/medium/MODEL_CARD) (medium), igual que en la historia | CC0 |
+
+Piper: paquete `piper-tts` 1.8 (Joe necesita 1.5 o superior). El efecto de walkie-talkie no es el script de Tony (no estaba
+disponible) sino uno parecido hecho en Python: banda estrecha de 300 a 3000 Hz, saturación suave, estática baja durante la
+frase y ráfagas de estática al abrir y cerrar. **Pendiente**: si se instala la voz «Español (México)» de Windows (trae a
+Microsoft Raúl), volver a ejecutar `py tools/voces/generar_voces.py --modelos <carpeta de modelos> --piper-py <piper-tts>`
+para que Houston suene igual que en la historia; si llega el script de mezcla de Tony, regrabar con él.
+
+## Cordillera del horizonte hecha en Blender (15 nov 2026 · pedido de Kevin, hecha con Claude)
+
+- **Qué es:** el anillo de montañas que rodea el cráter (y el polo sur lunar), con picos, crestas, mesetas escalonadas y barrancos. Sustituye a las lomas y mesetas que generaba el código y a los bloques y mesetas grandes que parecían edificios. Es forma de **juego, no un lugar real**: no copia ninguna foto ni modelo de la NASA.
+- **Cómo se hizo:** `tools/blender/horizonte.py` (Blender 5.3, ruido «ridged multifractal» de Blender, semilla fija). Comando: `blender -b -P tools/blender/horizonte.py -- assets/horizonte/cordillera.glb assets/_blender/horizonte.blend`. Salen `assets/horizonte/cordillera.glb` (solo geometría, unos 42 000 vértices) y `assets/_blender/horizonte.blend`.
+- **Autoría y licencia:** el script y la malla los generó Claude (IA) por encargo del equipo; no usa texturas, imágenes ni modelos de terceros. Se declara como uso de IA igual que el resto del código (docs/CUMPLIMIENTO.md).
+- **Cómo se ve:** `scenes/b/horizonte.gd › cordillera()` carga el `.glb` y le pone el color, la neblina y la paleta de Marte o de la Luna con las mismas reglas de antes. Si falta el archivo, el juego vuelve a las lomas y mesetas por código.
+- **Carpeta `assets/_blender/`:** lleva un `.gdignore` para que Godot no intente importar el `.blend` (necesita Blender configurado en el editor).
+- **No medido:** no se midió el efecto en los FPS (82 000 triángulos fijos, siempre lejos). Hay que repetir `Medir_rendimiento.bat` antes de dar la cifra por buena.
+
+
+## Créditos de modelos de terceros (15 nov 2026)
+
+| Modelo | Autor y fuente | Licencia | Dónde se acredita |
+| --- | --- | --- | --- |
+| `cohete_super.glb` (Saturn V) | «Cohete» de **albertomarun**, Sketchfab (https://sketchfab.com/3d-models/cohete-84ffd15ec9ee4be7b6b3bacb0be0bbfa) | **CC BY 4.0** (exige crédito) | Créditos del menú, esta página, entrega |
+| Hangares, torretas, antena, hielo | **Kenney**, «Space Kit» (https://kenney.nl/assets/space-kit) | CC0 | Créditos del menú, esta página |
+| Taladro y focos | **Kay Lousberg**, «Space Base Bits» (https://www.kaylousberg.com/game-assets/space-base-bits) | CC0 («Free for personal and commercial use, no attribution required») | Créditos del menú, esta página |
+| `cohete_ligero.glb`, `cohete_medio.glb`, `cohete_pesado.glb` | Generados con un script de Python proporcionado por Claude (dicho por Evelyn) | Del equipo, con ayuda de IA | Créditos del menú, declaración de IA |
+
+Las licencias de Sketchfab, Kay Lousberg y Kenney se leyeron en sus páginas el 15 nov 2026. Lo que dicen los propios archivos (15 nov, mirando la cabecera de cada `.glb` y el historial de Git; es una lectura de los metadatos, no una confirmación de las personas): `hangar_gaia.glb` lo generó un script de Python con la biblioteca `trimesh` (generador `github.com/mikedh/trimesh`; mallas con nombres en español como «Suelo / concrete»), no se descargó de un repositorio de modelos, y lo añadió Amner el 14 nov; los tres cohetes `cohete_ligero/medio/pesado.glb` (Delta II, Titan IIIE, Atlas V 541) salieron de Blender 5.2 (exportador glTF), coherente con el script de Python que dijo Evelyn; los `cristal*.glb` y `mineral_2.glb` se exportaron con Blender 5.3 (mallas con nombres genéricos «Circle»), llegaron en el commit de Kevin del 24 oct 2026 y Arturo los reparó el 14 nov (`_fuentes/reparar_minerales.py`). **Los cristales (`cristal*.glb`) son diseños hechos por el equipo** (lo confirmó Kevin el 15 nov 2026); no vienen de ningún banco de modelos, así que no llevan licencia de terceros. Del `mineral_2.glb` no se ha dicho nada aparte: se da por del mismo origen mientras nadie diga lo contrario.

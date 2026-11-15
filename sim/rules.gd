@@ -5,6 +5,7 @@ extends RefCounted
 ## Los errores se guardan como códigos "CODIGO:detalle".
 
 var presupuesto_musd: float = 0.0
+var presupuesto_extra_por_jugador_musd: float = 0.0  ## en red: M$ que suma cada jugador además del primero
 var datos_requeridos: int = 0
 var sol_limite: int = 0
 var eventos: Array = []
@@ -52,6 +53,7 @@ func _cargar(texto: String) -> void:
 		return
 	var datos: Dictionary = json.data
 	presupuesto_musd = _numero(datos, "presupuesto_musd", "presupuesto_musd")
+	presupuesto_extra_por_jugador_musd = maxf(0.0, float(datos.get("presupuesto_extra_por_jugador_musd", 0.0)))
 
 	var victoria: Variant = datos.get("victoria")
 	if victoria is Dictionary:

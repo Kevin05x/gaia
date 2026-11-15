@@ -334,7 +334,7 @@ func test_la_salida_directa_verifica_en_dos_sensores_y_conecta_con_los_nidos() -
 	assert_eq(sim.estado.historia_falla, "falla_verificada")
 	assert_eq(sim.estado.historia_radio, "falla_verificada")
 	assert_eq(sim.snapshot()["story"]["field_sites"].size(), 1, "queda solo la secundaria")
-	sim.estado.sol = 3
+	sim.estado.sol = 4  # la tormenta (y con ella los nidos) llega el sol 4 (plan 3.4)
 	sim.estado.hora = 8.0
 	sim.avanzar(0.2)
 	sim.estado.hora = 12.0

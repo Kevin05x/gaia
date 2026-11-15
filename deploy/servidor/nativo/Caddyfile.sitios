@@ -1,0 +1,45 @@
+# Bloques de Caddy para gaianasa.tech (junto a los de gruasvp.com, que no se tocan):
+#   gaianasa.tech        el juego (exportación web de Godot) en /var/www/gaia-juego
+#   www.gaianasa.tech    redirige al juego
+#   info.gaianasa.tech   la web del proyecto (sitio/) en /var/www/gaia-sitio
+#   sala.gaianasa.tech   las cuatro salas del multijugador, /1 a /4 (y sin número, la sala 1)
+# Sustituyen al bloque «sala.gaianasa.tech» que ya está en /etc/caddy/Caddyfile.
+
+gaianasa.tech {
+	root * /var/www/gaia-juego
+	encode zstd gzip
+	file_server
+	# El .pck (unos 370 MB) y el .wasm no cambian de nombre al volver a exportar: «no-cache» hace que el navegador pregunte si
+	# cambiaron (Caddy responde 304 sin reenviar nada) y así nadie se queda con una mezcla de versiones.
+	header Cache-Control "no-cache"
+}
+
+www.gaianasa.tech {
+	redir https://gaianasa.tech{uri} permanent
+}
+
+info.gaianasa.tech {
+	root * /var/www/gaia-sitio
+	encode zstd gzip
+	file_server
+	header /img/* Cache-Control "public, max-age=604800"
+	header /fonts/* Cache-Control "public, max-age=2592000"
+}
+
+sala.gaianasa.tech {
+	handle_path /1 {
+		reverse_proxy localhost:9080
+	}
+	handle_path /2 {
+		reverse_proxy localhost:9081
+	}
+	handle_path /3 {
+		reverse_proxy localhost:9082
+	}
+	handle_path /4 {
+		reverse_proxy localhost:9083
+	}
+	handle {
+		reverse_proxy localhost:9080
+	}
+}

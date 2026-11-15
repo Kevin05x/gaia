@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:03,900
+Every space mission starts as a design.
+
+2
+00:00:04,000 --> 00:00:09,900
+Pick a rocket, a rover, power, an antenna
+and instruments, within mass and budget.
+
+3
+00:00:10,000 --> 00:00:14,900
+Launch with real NASA data and photos.
+
+4
+00:00:15,000 --> 00:00:20,900
+Then operate it: drive, drill, build,
+and send data to Earth.
+
+5
+00:00:21,000 --> 00:00:25,900
+Real NASA events force real decisions.
+
+6
+00:00:26,000 --> 00:00:29,900
+Design it. Fly it.
+Compare it with NASA's.

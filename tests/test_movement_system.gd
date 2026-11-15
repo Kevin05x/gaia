@@ -35,7 +35,7 @@ func test_mover_descuenta_toda_la_ruta_y_deja_al_rover_en_marcha() -> void:
 	assert_true(resultado["ok"])
 	assert_eq(resultado["path"].size(), 3)
 	assert_eq(resultado["seconds_per_tile"], _tramo())
-	assert_almost_eq(estado.bateria_wh, 1000.0 - 3 * _costo_casilla(), 0.001)
+	assert_almost_eq(estado.bateria_wh, balance.numero("energia.capacidad_base_wh") - 3 * _costo_casilla(), 0.001)
 	assert_true(estado.en_movimiento)
 	assert_eq(estado.casilla_rover, Vector2i(0, 0), "la posición se confirma al llegar")
 
@@ -86,7 +86,7 @@ func test_destinos_bloqueados_no_tienen_ruta() -> void:
 		var resultado := movimiento.iniciar_mover(estado, casilla)
 		assert_false(resultado["ok"], "se aceptó ir a %s" % [casilla])
 		assert_eq(resultado["reason"], "NO_PATH")
-	assert_eq(estado.bateria_wh, 1000.0)
+	assert_eq(estado.bateria_wh, balance.numero("energia.capacidad_base_wh"))
 
 
 func test_energia_insuficiente_rechaza_sin_gastar() -> void:
@@ -106,7 +106,7 @@ func test_ir_a_la_casilla_actual_no_hace_nada() -> void:
 	assert_true(resultado["ok"])
 	assert_eq(resultado["path"].size(), 0)
 	assert_false(estado.en_movimiento)
-	assert_eq(estado.bateria_wh, 1000.0)
+	assert_eq(estado.bateria_wh, balance.numero("energia.capacidad_base_wh"))
 
 
 func test_no_avanza_en_pausa() -> void:
@@ -164,7 +164,7 @@ func test_acercar_si_ya_esta_cerca_no_gasta_nada() -> void:
 	var resultado := movimiento.iniciar_acercar(estado, "JZ-01")
 	assert_true(resultado["ok"])
 	assert_eq(resultado["path"].size(), 0)
-	assert_eq(estado.bateria_wh, 1000.0)
+	assert_eq(estado.bateria_wh, balance.numero("energia.capacidad_base_wh"))
 	assert_false(estado.en_movimiento)
 
 

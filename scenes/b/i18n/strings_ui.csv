@@ -40,12 +40,13 @@ OPEN,Enlace disponible,Link available
 CLOSED,Esperando próxima pasada,Waiting for next pass
 DIRECT,DIRECTO A TIERRA,DIRECT TO EARTH
 RELAY,RELÉ ORBITAL,ORBITAL RELAY
-CONTROLS,"Clic: seleccionar o mover · Rueda: zoom · Q/E: girar la cámara · C, V, X: instrumentos · T: transmitir · F3: rendimiento · Esc: pausa","Click: select or move · Wheel: zoom · Q/E: rotate camera · C, V, X: instruments · T: transmit · F3: performance · Esc: pause"
+CONTROLS,"Clic: seleccionar o mover · Rueda: zoom · Q/E: girar la cámara · B: construir · Tab: acciones · C, V, Z, X: herramientas · G: descargar · T: transmitir · F3: rendimiento · Esc: pausa","Click: select or move · Wheel: zoom · Q/E: rotate camera · B: build · Tab: actions · C, V, Z, X: tools · G: unload · T: transmit · F3: performance · Esc: pause"
 PAUSE,Pausar,Pause
 RESUME,Continuar,Resume
 PAUSED,MISIÓN EN PAUSA,MISSION PAUSED
 SETTINGS,Ajustes,Settings
 SOUND,Sonido,Sound
+RADIO_VOICES,Voces de radio,Radio voices
 VOLUME,Volumen general,Master volume
 LANGUAGE,Idioma,Language
 QUALITY,Partículas y sombras,Particles & shadows
@@ -224,12 +225,21 @@ WS_OVER_MASS,La nave pesa más de lo que levanta el cohete,The ship weighs more 
 WS_OVER_BUDGET,El costo supera el presupuesto,The cost exceeds the budget
 WS_PENDING_DATA,%s: datos pendientes de definir,%s: data still to be defined
 WS_MISSING_BASIC,Sin %s: el rover sale sin una herramienta básica,No %s: the rover flies without a basic tool
+WS_MISSING_KEY_TALADRO,Sin taladro no podrás tomar muestras ni sacar recursos para construir,Without the drill you can't take samples or gather resources to build
+WS_MISSING_KEY_ESPECTROMETRO,"Sin espectrómetro no podrás analizar las rocas, que dan los datos de ciencia","Without the spectrometer you can't analyse rocks, which give science data"
+WS_MISSING_KEY_CAMARA,Sin cámara no podrás hacer panorámicas para descubrir rocas y minerales,Without the camera you can't take panoramas to find rocks and minerals
+WS_MISSING_CONFIRM_TITLE,¿Despegar sin todos los instrumentos?,Launch without every instrument?
+WS_MISSING_CONFIRM,"Se puede jugar igual, pero esas acciones no estarán en la misión. Puedes volver al taller y añadirlos.","You can still play, but those actions won't be available in the mission. You can go back and add them."
+WS_MISSING_BACK,Volver al taller,Back to the workshop
+WS_LAUNCH_ANYWAY,Despegar igual,Launch anyway
 WS_PREVIEW_NOTE,Vista previa del rover con tus piezas,Rover preview with your parts
 REDESIGN_SHORT,Rediseñar,Redesign
 ENERGY_PILL,Energía %d %%,Energy %d %%
 SCIENCE_PILL,Ciencia %d/%d,Science %d/%d
 CAT_TRAYECTORIA,Trayectoria,Trajectory
 WS_CHANGE_ROCKET,‹ Cambiar de cohete,‹ Change rocket
+WS_RECOMMENDED,Diseño recomendado,Recommended design
+WS_RECOMMENDED_TIP,Pone el diseño que recomendamos para este destino. Después puedes cambiar lo que quieras.,Sets the design we recommend for this destination. You can change anything afterwards.
 AI_MARK,Imagen generada con IA · AI-generated,Imagen generada con IA · AI-generated
 LP_TAG,TIERRA · EDIFICIO DE MONTAJE,EARTH · ASSEMBLY BUILDING
 LP_TITLE,Elige tu cohete,Choose your rocket
@@ -272,7 +282,7 @@ REF_TALADRO,Taladro de muestras. Dato real: Perseverance lleva 43 tubos de muest
 REF_CAMARA,"Inspirada en Mastcam-Z: unos 4 kg y 17,4 W (NASA).",Inspired by Mastcam-Z: about 4 kg and 17.4 W (NASA).
 REF_METEO,"Inspirada en MEDA: 5,5 kg y hasta 17 W; mide el clima y el polvo (NASA).",Inspired by MEDA: 5.5 kg and up to 17 W; measures weather and dust (NASA).
 REF_RADAR,Inspirado en RIMFAX: menos de 3 kg y de 5 a 10 W; ve capas bajo el suelo (NASA).,Inspired by RIMFAX: under 3 kg and 5 to 10 W; sees layers below the ground (NASA).
-REF_BATERIA,Más energía guardada para la noche y las tormentas. Valores de juego.,More stored energy for nights and storms. Game values.
+REF_BATERIA,"Suma 1000 Wh a la batería del rover (la base guarda 2000 Wh): más energía para la noche y las tormentas. Valores de juego.","Adds 1000 Wh to the rover battery (the base stores 2000 Wh): more energy for nights and storms. Game values."
 REF_DRON,"Inspirado en Ingenuity: 1,8 kg; construirlo costó unos 80 M USD (NASA/JPL). En el juego el costo está a escala.",Inspired by Ingenuity: 1.8 kg; it cost about 80 M USD to build (NASA/JPL). In the game the cost is scaled.
 REF_COMPANERO,"Compañero robótico ficticio, creado para el juego: no existe en la misión real.",Fictional robot companion created for the game: it does not exist in the real mission.
 WS_TIP_trayectoria,"Para ir a Marte se espera la ventana de lanzamiento. La ruta de mínima energía tarda más, pero deja llevar más masa. La rápida acorta el viaje y quita carga.",Missions to Mars wait for the launch window. The minimum-energy route takes longer but lets you carry more mass. The fast one shortens the trip and costs payload.
@@ -311,19 +321,22 @@ CMP_BACK,Volver al informe,Back to report
 INTRO_NASA_CREDIT,%s,%s
 M_SETUP_TITLE,Configura tu misión,Set up your mission
 M_SETUP_GOAL,Objetivo de la misión: buscar señales de vida antigua en el cráter Jezero (Marte) y enviar a la Tierra 100 unidades de datos científicos antes de que termine el sol 6. Primero diseñarás la nave; después la operarás.,Mission objective: search for signs of ancient life in Jezero Crater (Mars) and send 100 units of science data to Earth before sol 6 ends. First you design the spacecraft; then you operate it.
-M_SETUP_DIFF,Dificultad,Difficulty
+M_SETUP_DIFF,Dificultad (cambia el presupuesto y cuántos monstruos vienen),Difficulty (changes the budget and how many monsters come)
+M_SETUP_SOL,Duración de cada sol (día de misión),Length of each sol (mission day)
+M_SETUP_SOL_N,%d min,%d min
+M_SETUP_SOL_D,"%d soles ≈ %d min de partida. La base, la transmisión y las oleadas van al mismo ritmo de juego con cualquier duración; con soles largos tienes más tiempo para mover el rover y pensar.","%d sols ≈ %d min of play. The base, transmission and waves keep the same game pace at any length; longer sols give you more time to drive and think."
 M_SETUP_TEAM,Equipo,Team
 M_SETUP_SOLO,1 persona,1 person
 M_SETUP_PLAYERS,%d personas,%d people
 M_SETUP_SOLO_D,"Juegas con todos los roles: dirección, ingeniería, ciencia y comunicaciones.","You play every role: mission lead, engineering, science and communications."
-M_SETUP_TEAM_D,Se juega en la misma pantalla. Cada persona revisa su parte y vota GO / NO GO antes del lanzamiento.,Played on the same screen. Each person reviews their part and votes GO / NO GO before launch.
+M_SETUP_TEAM_D,Se juega en la misma pantalla y hay un solo rover. Cada persona revisa su parte y vota GO / NO GO antes del lanzamiento. Para que cada persona tenga su propio rover en su dispositivo, usa «Multijugador».,Played on the same screen with a single rover. Each person reviews their part and votes GO / NO GO before launch. To give each person their own rover on their own device, use Multiplayer.
 M_SETUP_START,Comenzar misión,Start mission
-DIFF_EXPLORACION,Exploración,Exploration
-DIFF_ESTANDAR,Estándar,Standard
-DIFF_EXPERTA,Experta,Expert
-DIFF_EXPLORACION_D,Presupuesto de 820 M USD y la mitad de monstruos: para aprender sin presión.,820 M USD budget and half the monsters: learn without pressure.
-DIFF_ESTANDAR_D,Presupuesto de 700 M USD: la misión tal como fue diseñada.,700 M USD budget: the mission as designed.
-DIFF_EXPERTA_D,Presupuesto de 620 M USD y 50 % más de monstruos: cada kilo y cada dólar cuentan.,620 M USD budget and 50 % more monsters: every kilo and every dollar counts.
+DIFF_EXPLORACION,Exploración (fácil),Exploration (easy)
+DIFF_ESTANDAR,Estándar (normal),Standard (normal)
+DIFF_EXPERTA,Experta (difícil),Expert (hard)
+DIFF_EXPLORACION_D,La más fácil: presupuesto de 820 M USD y la mitad de monstruos. Para aprender sin presión. En la Luna no hay monstruos: solo cambia el presupuesto.,The easiest: 820 M USD budget and half the monsters. Learn without pressure. There are no monsters on the Moon: only the budget changes.
+DIFF_ESTANDAR_D,"La normal: presupuesto de 700 M USD y los monstruos de la historia, tal como se diseñó la misión.","The normal one: 700 M USD budget and the story's monsters, the mission as designed."
+DIFF_EXPERTA_D,La difícil: presupuesto de 620 M USD y 50 % más de monstruos. Cada kilo y cada dólar cuentan.,The hard one: 620 M USD budget and 50 % more monsters. Every kilo and every dollar counts.
 ROLE_DIRECCION,Dirección de misión,Mission lead
 ROLE_INGENIERIA,Ingeniería de la nave,Spacecraft engineering
 ROLE_CIENCIA,Ciencia,Science
@@ -371,11 +384,37 @@ LC_EV_CHECKOUT,Pruebas de instrumentos en ruta,Instrument checkout en route
 LC_EV_APPROACH,Aproximación final a Marte,Final approach to Mars
 LC_ALTITUDE,Altitud %.0f km,Altitude %.0f km
 LC_SCALE_MOON,Círculo gris: órbita de la Luna (384.400 km). Distancias a escala.,"Grey circle: the Moon's orbit (384,400 km). Distances to scale."
-M_SETUP_DEST,Destino,Destination
+M_SETUP_DEST,Destino (Marte tiene historia y monstruos; la Luna es solo exploración),Destination (Mars has story and monsters; the Moon is exploration only)
 EVT_TAG,IMPREVISTO · LA MISIÓN SE DETIENE,UNEXPECTED EVENT · MISSION ON HOLD
 EVT_SOURCE,Basado en: %s,Based on: %s
 EVT_TEAM,Modo equipo: discutan las opciones y decidan juntos.,Team mode: discuss the options and decide together.
 EVT_REPORT,Imprevistos y decisiones,Unexpected events and decisions
+OBJ_TAG,TU MISIÓN,YOUR MISSION
+OBJ_GOAL,Envía %d datos de ciencia a la Tierra antes de que acabe el sol %d,Send %d science data to Earth before the end of sol %d
+OBJ_INTRO,Solo cuenta lo que llega a la Tierra. Tres cosas lo hacen posible:,Only what reaches Earth counts. Three things make it possible:
+OBJ_STEP1_T,Energía,Power
+OBJ_STEP1,Los paneles cargan la batería de día; de noche no hay sol. Sin batería el rover se detiene: planifica antes de que oscurezca.,Solar panels charge the battery by day; there is no sunlight at night. With an empty battery the rover stops: plan before dark.
+OBJ_STEP2_T,Instrumentos,Instruments
+OBJ_STEP2,Acércate a las rocas marcadas y analízalas con el espectrómetro: cada análisis guarda datos en la memoria del rover. El taladro saca muestras y recursos para construir.,Drive up to the marked rocks and analyse them with the spectrometer: each analysis stores data in the rover's memory. The drill takes samples and resources to build with.
+OBJ_STEP3_T,Antena y ventana de enlace,Antenna and link window
+OBJ_STEP3,Transmite la memoria cuando el enlace con la Tierra esté abierto. Subir de nivel la antena envía más datos y abre más ventanas.,Transmit your memory while the link with Earth is open. Upgrading the antenna sends more data and opens more windows.
+OBJ_OK,Entendido,Got it
+UNEXP_RESULT,Decisión aplicada: %s,Decision applied: %s
+UNEXP_ENERGY,%+d Wh de batería,%+d Wh battery
+UNEXP_DATA_IN,+%d datos en memoria: transmítelos en la próxima ventana,+%d data in memory: send them in the next link window
+UNEXP_DATA_LOST,%d datos perdidos: memoria llena,%d data lost: memory full
+UNEXP_DATA_OUT,%d datos a bordo perdidos,%d data on board lost
+UNEXP_HP,%+d %% de vida del rover,%+d %% rover health
+UNEXP_LINK,enlace cerrado %d h,link closed for %d h
+UNEXP_MOVE,sin moverse %d h,no driving for %d h
+UNEXP_DETOUR,el rover va al punto marcado,the rover heads to the marked spot
+UNEXP_NO_DETOUR,el rover no puede desviarse ahora,the rover can't take the detour now
+UNEXP_NOTHING,sin cambios,no change
+UNEXP_FX_ENERGY_H,%s Wh (unas %d h de consumo actual),%s Wh (about %d h of current use)
+UNEXP_FX_DATA,+%d datos en memoria,+%d data in memory
+UNEXP_FX_DATA_PCT,se pierde el %d %% de los datos a bordo,%d %% of the data on board is lost
+UNEXP_FX_DATA_PCT_N,se pierde el %d %% de los datos a bordo (unos %d),%d %% of the data on board is lost (about %d)
+UNEXP_FX_DETOUR,el rover se desvía unas %d casillas,the rover detours about %d tiles
 LINK_BLOCKED_EVENT,Enlace cerrado por un imprevisto,Link closed by an unexpected event
 MOVE_BLOCKED_EVENT,Rover detenido por un imprevisto,Rover stopped by an unexpected event
 PIEZA_TRAY_DIRECTA_LUNA,Transferencia directa,Direct transfer
@@ -399,3 +438,38 @@ WS_CODE_OTHER,Ese código es de una misión a otro destino.,That code is for a m
 CMP_VIEW_MODEL,Modelo 3D,3D model
 CMP_VIEW_PHOTO,Foto,Photo
 CMP_DRAG,arrastra para girar,drag to rotate
+TUTORIAL_NEXT,Siguiente,Next
+TUTORIAL_FOLD,Plegar,Collapse
+TUTORIAL_EXPAND,Desplegar,Expand
+TUTORIAL_LOCKED,Ahora no: sigue el paso del tutorial (o pulsa «Saltar tutorial»),"Not now: follow the tutorial step (or press ""Skip tutorial"")"
+TUT_CLOCK_STOPPED,Reloj detenido: empieza cuando hagas lo que pide el paso,Clock stopped: it starts when you do what the step asks
+TUT_CLOCK_RUNS,El reloj corre,The clock is running
+TUT_TOOL_ESPECTROMETRO,· Espectrómetro: analiza la roca y da ciencia,· Spectrometer: analyses the rock and gives science
+TUT_TOOL_TALADRO,· Taladro: toma una muestra y da recursos para construir,· Drill: takes a sample and gives resources to build
+TUT_TOOL_CAMARA,· Cámara (C): la panorámica descubre rocas y minerales,· Camera (C): the panorama reveals rocks and minerals
+TUT_TOOL_RADAR,· Radar de subsuelo (V): revela lo que hay enterrado,· Subsurface radar (V): reveals what is buried
+TUT_TOOL_DRON,· Dron (Z): vuela y descubre objetivos (una vez al día),· Drone (Z): flies and reveals targets (once a day)
+TUT_TOOL_COMPANERO,· Rocky (X): busca minerales y trae rocas a la base,· Rocky (X): searches for minerals and brings rocks to the base
+ACTIONS_MENU,Acciones,Actions
+ACTIONS_MENU_TIP,Herramientas del rover (tecla Tab). Cada una tiene su propia tecla.,Rover tools (Tab key). Each one has its own key.
+OPT_ACTIONS,Botones de acciones,Action buttons
+OPT_ACTIONS_ALWAYS,Siempre visibles,Always visible
+OPT_ACTIONS_POPUP,Emergentes,Pop-up
+OPT_ACTIONS_KEYS,Solo teclas,Keys only
+OPT_ACTIONS_HELP,Emergentes: se abren con Tab o con el botón «Acciones». Solo teclas: no hay botones en pantalla.,"Pop-up: open with Tab or the ""Actions"" button. Keys only: no buttons on screen."
+CARGO_MARKER,Almacén,Storage
+CARGO_MARKER_NEAR,[G] Descargar aquí,[G] Unload here
+CARGO_MARKER_FAR,[G] Ir a descargar,[G] Go unload
+STORY_CHANGES,Esta decisión cambiará: %s,This decision will change: %s
+STORY_CH_BATTERY,%+d %% de batería,%+d %% battery
+STORY_CH_DATA,%+d datos en memoria,%+d data in memory
+STORY_CH_ETHICS,ética %+d,ethics %+d
+STORY_CH_ROCKY,Rocky %+d %% de vida,Rocky %+d %% health
+STORY_CH_RES,%+d de %s,%+d %s
+STORY_CH_CARGO,%+d de %s en la bodega,%+d %s in the hold
+STORY_CH_SEND,completa la transmisión,completes the transmission
+STORY_CH_BRANCH_CIENTIFICA,la historia sigue por la rama científica,the story follows the science branch
+STORY_CH_BRANCH_MILITAR,la historia sigue por la rama militar,the story follows the military branch
+STORY_CH_ENDING,lleva al final «%s»,"leads to the ending ""%s"""
+STORY_CH_ENDS,termina la misión,ends the mission
+DATA_FIRST,Los datos quedan en la memoria del rover. Para enviarlos a la Tierra: construye la antena y pulsa Transmitir (T) cuando el enlace esté abierto.,Data is stored in the rover's memory. To send it to Earth: build the antenna and press Transmit (T) while the link is open.

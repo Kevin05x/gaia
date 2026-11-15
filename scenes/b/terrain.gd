@@ -31,9 +31,12 @@ var selection: MeshInstance3D
 var route_line: MeshInstance3D
 var cursor: MeshInstance3D
 var range_ring: MeshInstance3D  ## alcance de una torreta mientras se coloca
+var hallazgo: Node3D  ## baliza del punto de un desvío (imprevisto «Oportunidad científica»)
+var hallazgo_casilla := Vector2i.ZERO
 var obstacles: Array[Vector2i] = []
 var grid: Node3D
-var grid_manual := false
+var grid_manual := false  ## botón o tecla de la cuadrícula
+var grid_obra := false  ## mientras se coloca una obra (modo construir)
 var bounds_min := Vector2i(-LIMIT, -LIMIT)
 var bounds_max := Vector2i(LIMIT, LIMIT)
 
@@ -49,7 +52,6 @@ var _clock := 0.0
 var _heights := PackedFloat32Array()
 var _n := 0
 var _decor: Node3D
-var _grid_timer := 0.0
 
 ## Tamaño del mundo. Con un mapa grande todo lo que rodea al área jugable se aleja «_s» metros (múltiplo de 8)
 ## del mapa base de 23 m; las proporciones del diorama se conservan.
@@ -136,8 +138,13 @@ func _pasos_mundo() -> Array[Callable]:
 		func() -> void:
 			_build_basin()
 			_build_lake()
-			_world.add_child(Horizonte.lomas(_s, _fine))  # paisaje lejano: scenes/b/horizonte.gd
-			_world.add_child(Horizonte.mesetas(_s, _fine))
+			# Paisaje lejano (scenes/b/horizonte.gd): la cordillera de Blender; sin ese archivo, lomas y mesetas por código.
+			var cordillera := Horizonte.cordillera(_s, _fine)
+			if cordillera != null:
+				_world.add_child(cordillera)
+			else:
+				_world.add_child(Horizonte.lomas(_s, _fine))
+				_world.add_child(Horizonte.mesetas(_s, _fine))
 			_built = true
 			_firma = "%d|%s" % [int(_s), var_to_str(zones)],
 	]
@@ -683,6 +690,47 @@ func hide_cursor() -> void:
 	hide_range()
 
 
+## Baliza en el punto al que se desvía el rover: un haz ámbar y un anillo en el suelo. Se quita al llegar.
+func marcar_hallazgo(tile: Vector2i) -> void:
+	quitar_hallazgo()
+	hallazgo_casilla = tile
+	hallazgo = Node3D.new()
+	hallazgo.name = "Hallazgo"
+	var x := tile.x * TILE
+	var z := tile.y * TILE
+	hallazgo.position = Vector3(x, maxf(height_at(x, z), BASIN_Y), z)
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 0.72, 0.3, 0.55)
+	var haz := MeshInstance3D.new()
+	var cilindro := CylinderMesh.new()
+	cilindro.top_radius = 0.12
+	cilindro.bottom_radius = 0.22
+	cilindro.height = 9.0
+	haz.mesh = cilindro
+	haz.material_override = material
+	haz.position.y = 4.5
+	haz.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	hallazgo.add_child(haz)
+	var anillo := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 1.2
+	toro.outer_radius = 1.4
+	anillo.mesh = toro
+	anillo.material_override = material
+	anillo.position.y = 0.08
+	anillo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	hallazgo.add_child(anillo)
+	add_child(hallazgo)
+
+
+func quitar_hallazgo() -> void:
+	if is_instance_valid(hallazgo):
+		hallazgo.queue_free()
+	hallazgo = null
+
+
 ## Anillo del alcance (en casillas) alrededor de «tile»; 0 lo oculta.
 func show_range(tile: Vector2i, casillas: float) -> void:
 	if casillas <= 0.0:
@@ -726,11 +774,7 @@ func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= bounds_min.x and tile.y >= bounds_min.y and tile.x <= bounds_max.x and tile.y <= bounds_max.y
 
 
-## La retícula aparece unos segundos al elegir destino, o fija con su botón.
-func flash_grid(segundos: float = 2.5) -> void:
-	_grid_timer = segundos
-
-
+## La retícula solo se ve con su botón (o tecla) y en el modo construir; mover el rover no la enciende.
 func toggle_grid() -> void:
 	grid_manual = not grid_manual
 
@@ -740,9 +784,8 @@ func _process(delta: float) -> void:
 	if _outline_material != null:
 		# Pulso discreto: ciclo de 1600 ms, opacidad entre 70 y 100 %.
 		_outline_material.albedo_color.a = 0.85 + 0.15 * sin(_clock * TAU / 1.6)
-	_grid_timer = maxf(0.0, _grid_timer - delta)
 	if is_instance_valid(grid):
-		grid.visible = grid_manual or _grid_timer > 0.0
+		grid.visible = grid_manual or grid_obra
 
 
 ## Rocas decorativas en MultiMesh (3 familias). Dentro del área jugable solo guijarros que no parecen obstáculos;
@@ -783,6 +826,12 @@ func _build_decor() -> void:
 		{"id": "mesa1", "mesh": "mesa1", "count": int(20 * fr), "min": 2.2, "max": 5.5, "zone": "mesa", "clear": 4.0, "vis": 0.0, "variants": 1},
 		{"id": "mesa_big", "mesh": "mesa0", "count": int(12 * fr), "min": 6.0, "max": 11.0, "zone": "far", "clear": 8.0, "vis": 0.0, "variants": 1},
 	]
+	if Horizonte.hay_cordillera():
+		# Con la cordillera de Blender, las mesetas y los bloques grandes por código sobran (parecían edificios).
+		familias = familias.filter(func(d: Dictionary) -> bool: return not str(d["mesh"]).begins_with("mesa"))
+		for d in familias:
+			if d["id"] == "block":
+				d["count"] = int(int(d["count"]) * 0.3)
 	var paleta := [Color("AD8666"), Color("987256"), Color("A47C5F"), Color("C69D78"), Color("8A6850")]
 	# Cada familia pequeña usa 3 variantes de forma para que no se repita el mismo canto.
 	var expandidas: Array = []

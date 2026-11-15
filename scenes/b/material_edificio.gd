@@ -80,6 +80,7 @@ static func _ajustar(m: ShaderMaterial) -> void:
 	m.set_shader_parameter("detalle", 1.0 if calidad and hay_texturas() else 0.0)
 	m.set_shader_parameter("polvo_color", POLVO[destino])
 	m.set_shader_parameter("polvo", POLVO_CANTIDAD[destino])
+	m.set_shader_parameter("lunar", 1.0 if destino == "luna" else 0.0)
 
 
 ## Calidad alta (texturas) o baja (color liso), y el polvo del destino actual, en todos los materiales creados.

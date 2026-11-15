@@ -1,0 +1,37 @@
+# GAIA en un servidor propio (plan de mejoras, bloque 7): la web y la sala multijugador detrás de Caddy con HTTPS.
+# Uso (desde la raíz del repositorio, con un archivo .env junto a este; ver .env.ejemplo):
+#   docker compose -f deploy/servidor/docker-compose.yml --env-file deploy/servidor/.env up -d --build
+# Nombre fijo del proyecto: contenedores, red y volúmenes salen como gaia-*, sin chocar con otros proyectos del servidor.
+name: gaia
+
+services:
+  caddy:
+    build:
+      context: ../..
+      dockerfile: deploy/servidor/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO:?falta DOMINIO en el archivo .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_datos:/data  # certificados: que sobrevivan a reconstruir la imagen
+      - caddy_config:/config
+    depends_on:
+      - sala
+  sala:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.servidor
+    restart: unless-stopped
+    environment:
+      PORT: "9080"
+    expose:
+      - "9080"  # solo lo ve Caddy, no internet
+    mem_limit: 1g
+
+volumes:
+  caddy_datos:
+  caddy_config:

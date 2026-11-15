@@ -46,7 +46,7 @@ func _init(hud: Object) -> void:
 	UI.place(_critica, "tc", -70, 76, 340, 48)
 	_texto_critico = _critica.get_meta("text")
 	lista = PanelContainer.new()
-	lista.add_theme_stylebox_override("panel", UI.box(0.8, UI.RADIUS_PANEL, 0.3, 1, 14, 10, UI.WARN))
+	lista.add_theme_stylebox_override("panel", UI.nave(0.8, UI.RADIUS_PANEL, 0.3, 1, 14, 10, UI.WARN))
 	UI.place(lista, "tc", -70, 132, 340, 0)
 	_caja = VBoxContainer.new()
 	_caja.add_theme_constant_override("separation", 8)

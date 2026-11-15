@@ -105,6 +105,20 @@ static func mountain_material() -> StandardMaterial3D:
 	return _materials["mountain"]
 
 
+const ESCALA_CORDILLERA := 0.022  ## la cordillera está a 300-575 m: la textura repite cada ~45 m para que se vea en la distancia
+
+
+## Cordillera del horizonte (hecha en Blender): como las lomas, color de vértice más la roca del destino en triplanar, pero a una
+## escala mayor. Sin esta textura (solo color de vértice) las montañas se veían lisas, como de plástico.
+static func cordillera_material() -> StandardMaterial3D:
+	if not _materials.has("cordillera"):
+		var m := mountain_material().duplicate() as StandardMaterial3D
+		m.uv1_scale = Vector3(ESCALA_CORDILLERA, ESCALA_CORDILLERA, ESCALA_CORDILLERA)
+		_materials["cordillera"] = m
+		apply_quality()
+	return _materials["cordillera"]
+
+
 ## {"albedo", "normal", "rugosidad"} de una textura de Marte, o {} si falta algún archivo (se usan las de código).
 static func _tex_arte(nombre: String) -> Dictionary:
 	var clave := "tex_" + nombre
@@ -147,13 +161,14 @@ static func apply_quality() -> void:
 			suelo.normal_enabled = false
 			suelo.albedo_color = Color.WHITE
 			_rugosidad(suelo, {})
-	var lomas: StandardMaterial3D = _materials.get("mountain")
-	if lomas != null:
-		var lm := _tex_arte(texs["lomas"]) if quality else {}
-		lomas.albedo_texture = lm.get("albedo")
-		lomas.normal_enabled = not lm.is_empty()
-		lomas.normal_texture = lm.get("normal")
-		lomas.albedo_color = Color(1.25, 1.25, 1.25) if not lm.is_empty() else Color.WHITE
+	for clave in ["mountain", "cordillera"]:
+		var lomas: StandardMaterial3D = _materials.get(clave)
+		if lomas != null:
+			var lm := _tex_arte(texs["lomas"]) if quality else {}
+			lomas.albedo_texture = lm.get("albedo")
+			lomas.normal_enabled = not lm.is_empty()
+			lomas.normal_texture = lm.get("normal")
+			lomas.albedo_color = Color(1.25, 1.25, 1.25) if not lm.is_empty() else Color.WHITE
 	var roca: StandardMaterial3D = _materials.get("rock")
 	if roca != null:
 		if quality:

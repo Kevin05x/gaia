@@ -15,12 +15,22 @@ var entradas_modo_seguro: int = 0
 var sol: int = 1
 var hora: float = 8.0
 var casilla_rover: Vector2i = Vector2i.ZERO
+## Varios rovers en una misma misión (multijugador en red, plan 12 del 15 nov). Cada jugador lleva el suyo: su posición, lo que
+## hace y su bodega son suyos; la batería, la memoria de datos, el enlace y la base son del equipo. Los sistemas de sim/ siguen
+## leyendo «casilla_rover», «ocupado»… como siempre: lo que cambia es QUÉ rover está cargado en esos campos (usar_rover).
+const CAMPOS_DEL_ROVER: Array[String] = ["casilla_rover", "en_movimiento", "movimiento_en_curso", "ocupado", "accion_en_curso",
+	"carga", "descargar_al_llegar", "ir_a_obra", "volver_tras_obra", "casilla_vuelta", "obra_del_rover"]
+var rovers: Dictionary = {}  ## id -> campos de los rovers que NO están cargados ahora (el cargado vive en los campos de arriba)
+var rover_actual: int = 0  ## id del rover cargado en los campos (0: la misión de un solo rover, la de siempre)
+var rover_lider: int = 0  ## el primero: su posición cuenta para el combate, la sombra y la historia
 var casilla_estacion: Vector2i = Vector2i.ZERO
 var limite_min: Vector2i = Vector2i(-11, -11)  ## últimas casillas válidas del mapa
 var limite_max: Vector2i = Vector2i(11, 11)
 
 var bateria_wh: float = 0.0
 var bateria_capacidad_wh: float = 0.0
+## Segundos reales que dura un sol en esta partida (lo elige el jugador: 6 a 12 min; plan 3.1). Se guarda con la partida.
+var duracion_sol_s: float = 300.0
 var generacion_w: float = 0.0
 var carga_w: float = 0.0
 
@@ -92,6 +102,8 @@ var envio_max: float = -1.0  ## tope de datos enviados (con historia, hasta el c
 var tutorial_activo: bool = false
 var tutorial_paso: int = 0  ## índice del paso que se muestra
 var tutorial_t: float = 0.0  ## segundos reales que lleva el paso actual en pantalla
+var tutorial_espera: bool = false  ## el reloj de la misión está detenido hasta que el jugador haga algo en este paso
+var tutorial_visto: int = -1  ## último paso ya preparado (requisitos y pausa)
 var tutorial_contadores: Dictionary = {}  ## evento -> veces que ha ocurrido desde que empezó el tutorial
 
 ## Combate (content/combate.json). Todo son datos simples para poder guardarlos.
@@ -125,6 +137,7 @@ var _balance: Balance
 func _init(balance: Balance, reglas: Rules) -> void:
 	_balance = balance
 	hora = balance.numero("tiempo.hora_inicio")
+	duracion_sol_s = balance.numero("tiempo.duracion_sol_s")
 	bateria_capacidad_wh = balance.numero("energia.capacidad_base_wh")
 	bateria_wh = bateria_capacidad_wh
 	carga_w = balance.numero("energia.consumo_base_w")
@@ -195,3 +208,72 @@ func a_snapshot() -> Dictionary:
 		"targets": objetivos.duplicate(true),
 		"obstacles": obstaculos.duplicate(),
 	}
+
+
+# ---------------------------------------------------------------- varios rovers
+
+func ids_de_rovers() -> Array[int]:
+	var lista: Array[int] = [rover_actual]
+	for id in rovers:
+		lista.append(int(id))
+	return lista
+
+
+func hay_varios_rovers() -> bool:
+	return not rovers.is_empty()
+
+
+func _tomar_rover() -> Dictionary:
+	var d := {}
+	for campo in CAMPOS_DEL_ROVER:
+		var valor = get(campo)
+		d[campo] = valor.duplicate(true) if (valor is Array or valor is Dictionary) else valor
+	return d
+
+
+func _poner_rover(d: Dictionary) -> void:
+	for campo in CAMPOS_DEL_ROVER:
+		if d.has(campo):
+			var valor = d[campo]
+			set(campo, valor.duplicate(true) if (valor is Array or valor is Dictionary) else valor)
+
+
+## Carga en los campos el rover «id» (el que estaba cargado se guarda). false si no existe.
+func usar_rover(id: int) -> bool:
+	if id == rover_actual:
+		return true
+	if not rovers.has(id):
+		return false
+	rovers[rover_actual] = _tomar_rover()
+	_poner_rover(rovers[id])
+	rovers.erase(id)
+	rover_actual = id
+	return true
+
+
+## Un rover nuevo en la casilla dada, quieto y con la bodega vacía. El primero que se agrega es el líder.
+func agregar_rover(id: int, casilla: Vector2i) -> void:
+	if rover_lider == 0 and rovers.is_empty() and rover_actual == 0:
+		rover_actual = id  # la misión de un solo rover pasa a ser el rover de este jugador
+		rover_lider = id
+		return
+	if id == rover_actual or rovers.has(id):
+		return
+	rovers[id] = {"casilla_rover": casilla, "en_movimiento": false, "movimiento_en_curso": {}, "ocupado": false,
+		"accion_en_curso": {}, "carga": {}, "descargar_al_llegar": false, "ir_a_obra": false, "volver_tras_obra": false,
+		"casilla_vuelta": casilla, "obra_del_rover": ""}
+
+
+## Quita un rover (el jugador se fue). Si era el líder, manda el siguiente. Siempre queda al menos uno.
+func quitar_rover(id: int) -> void:
+	if rovers.is_empty():
+		return
+	if id == rover_actual:
+		var nuevo := int(rovers.keys()[0])
+		usar_rover(nuevo)  # guarda el que se va dentro de «rovers»
+		rovers.erase(id)
+	else:
+		rovers.erase(id)
+	if rover_lider == id:
+		rover_lider = rover_actual
+

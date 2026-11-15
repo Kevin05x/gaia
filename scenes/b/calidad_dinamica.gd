@@ -12,6 +12,7 @@ const SOBRADO_MS := 12.0  ## por debajo (más de ~80 cuadros/s) se puede subir u
 const ESPERA_SUBIR_S := 20.0
 
 var activa := true
+var ventana_s := VENTANA_S  ## segundos de cada medición (la plataforma y el hangar usan menos: no hay tiempo que perder)
 var medir: Callable  ## devuelve true si ahora se está jugando (si no, no se mide)
 ## Últimos recursos si aun así va lento: recibe 0 (todo como eligió el jugador), 1 (sin brillo ni postproceso) o 2 (además
 ## sin sombras). No toca lo guardado: solo esta partida.
@@ -90,7 +91,7 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_cuadros += 1
-	if _t < VENTANA_S:
+	if _t < ventana_s:
 		return
 	var ms := _t / maxf(_cuadros, 1) * 1000.0
 	_t = 0.0

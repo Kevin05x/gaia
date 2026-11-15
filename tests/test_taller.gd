@@ -115,7 +115,8 @@ func test_categoria_completa_y_piezas_desconocidas() -> void:
 func test_los_instrumentos_suman_masa_y_costo() -> void:
 	_agregar(["cohete_ligero", "chasis_base", "panel_solar", "antena_rele", "radar"])
 	var taller := _taller()
-	assert_eq(taller["notices"], [], "ya no quedan piezas con datos pendientes")
+	var pendientes := (taller["notices"] as Array).filter(func(c) -> bool: return str(c).begins_with("PENDING_DATA:"))
+	assert_eq(pendientes, [], "ya no quedan piezas con datos pendientes")
 	assert_true(taller["valid"])
 	assert_eq(float(taller["totals"]["mass_kg"]), 528.0)
 
@@ -198,7 +199,7 @@ func test_redisenar_vuelve_al_taller_conservando_las_piezas() -> void:
 	var datos := sim.snapshot()
 	assert_eq(datos["phase"], "workshop")
 	assert_eq(datos["rover_tile"], Vector2i(0, 0))
-	assert_eq(datos["battery"]["wh"], 1000.0)
+	assert_eq(datos["battery"]["wh"], datos["battery"]["capacity"], "batería llena")
 	assert_eq(datos["workshop"]["selection"]["cohetes"], ["cohete_ligero"])
 	assert_true(datos["workshop"]["valid"])
 	assert_eq(sim.ejecutar("redesign")["reason"], "WRONG_PHASE", "ya está en el taller")

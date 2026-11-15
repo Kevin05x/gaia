@@ -1,0 +1,23 @@
+# Exporta la web de GAIA con Godot y la sirve con Caddy. Se construye desde la raíz del repositorio:
+#   docker compose -f deploy/servidor/docker-compose.yml build web
+# Necesita el repositorio con sus archivos de Git LFS ya descargados (git lfs pull): si no, la imagen sale con punteros
+# de texto en vez de modelos y texturas. La construcción baja ~1 GB de plantillas de exportación (solo en la etapa de
+# construcción; la imagen final pesa unas decenas de MB) y tarda unos minutos.
+FROM debian:bookworm-slim AS exportar
+ARG GODOT=4.7.2
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl unzip libfontconfig1 libx11-6 \
+	libxcursor1 libxinerama1 libxrandr2 libxi6 libgl1 && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL -o /tmp/godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT}-stable/Godot_v${GODOT}-stable_linux.x86_64.zip" \
+	&& unzip -q /tmp/godot.zip -d /opt && mv "/opt/Godot_v${GODOT}-stable_linux.x86_64" /usr/local/bin/godot && rm /tmp/godot.zip
+RUN curl -fsSL -o /tmp/tpl.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT}-stable/Godot_v${GODOT}-stable_export_templates.tpz" \
+	&& mkdir -p /tmp/tpl "/root/.local/share/godot/export_templates/${GODOT}.stable" \
+	&& unzip -q /tmp/tpl.tpz -d /tmp/tpl && mv /tmp/tpl/templates/* "/root/.local/share/godot/export_templates/${GODOT}.stable/" \
+	&& rm -rf /tmp/tpl /tmp/tpl.tpz
+WORKDIR /app
+COPY . .
+RUN mkdir -p build/web && (godot --headless --path . --import || true) && godot --headless --path . --export-release "Web" build/web/index.html
+RUN test -f build/web/index.html && test -f build/web/index.pck
+
+FROM caddy:2
+COPY --from=exportar /app/build/web /srv
+COPY deploy/servidor/Caddyfile /etc/caddy/Caddyfile

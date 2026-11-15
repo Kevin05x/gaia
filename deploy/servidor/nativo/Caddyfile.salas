@@ -1,0 +1,19 @@
+# Bloque de Caddy para las 4 salas. Sustituye al bloque «sala.<dominio> { reverse_proxy localhost:9080 }» de antes.
+# /1 a /4 van a una sala cada una; sin número, a la sala 1 (compatible con lo que ya escribían los jugadores).
+sala.gaianasa.tech {
+	handle_path /1 {
+		reverse_proxy localhost:9080
+	}
+	handle_path /2 {
+		reverse_proxy localhost:9081
+	}
+	handle_path /3 {
+		reverse_proxy localhost:9082
+	}
+	handle_path /4 {
+		reverse_proxy localhost:9083
+	}
+	handle {
+		reverse_proxy localhost:9080
+	}
+}

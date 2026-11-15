@@ -6,13 +6,13 @@ extends RefCounted
 
 ## Órdenes que cualquiera puede dar. El taller es de todo el equipo: cada rol aporta su parte del diseño (instrumentos, antena,
 ## chasis…); lanzar, en cambio, lo decide Dirección tras el Go / No-Go.
-const LIBRES: Array[String] = ["select", "stop", "landing_finished", "tutorial_skip", "design_add", "design_remove", "design_validate"]
+const LIBRES: Array[String] = ["select", "stop", "move", "approach", "landing_finished", "tutorial_skip", "tutorial_next", "design_add", "design_remove", "design_validate"]
 
 ## Órdenes de cada rol (además de las libres).
 const POR_ROL := {
-	"direccion": ["move", "approach", "unload", "pause", "decide", "event_choice", "redesign", "design_start"],
+	"direccion": ["unload", "pause", "decide", "event_choice", "redesign", "design_start"],
 	"ingenieria": ["build", "build_module", "toggle_building"],
-	"ciencia": ["approach", "unload", "act", "inspect_story_site"],
+	"ciencia": ["unload", "act", "inspect_story_site"],
 	"comunicaciones": ["transmit", "upgrade"],
 }
 
@@ -85,10 +85,61 @@ static func categoria_de_pieza(pieza_id: String) -> String:
 	return str(_categorias_por_pieza.get(pieza_id, ""))
 
 
+## Presupuesto propio de cada rol (plan 12, pedido de Kevin el 15 nov): el rover y la masa siguen siendo uno solo, pero cada rol tiene su
+## parte del presupuesto total y no puede pasarse de ella. Las partes salen de content/rules*.json › presupuesto_por_rol (valores de
+## juego, sumados dan el presupuesto estándar) y se escalan al presupuesto de la dificultad. Solo con más de un jugador en la sala.
+static func topes_por_rol(presupuesto_total: float) -> Dictionary:
+	var config := Destino.config(Destino.id)
+	var datos = JSON.parse_string(FileAccess.get_file_as_string(str(config.get("reglas", "res://content/rules.json"))))
+	var partes: Dictionary = datos.get("presupuesto_por_rol", {}) if datos is Dictionary else {}
+	var suma := 0.0
+	for rol in partes:
+		suma += float(partes[rol])
+	var topes := {}
+	if suma <= 0.0:
+		return topes
+	for rol in partes:
+		topes[str(rol)] = float(partes[rol]) * presupuesto_total / suma
+	return topes
+
+
+## Cuánto lleva gastado cada rol: el costo de las piezas elegidas en las categorías de su área.
+static func gasto_por_rol(taller: Dictionary) -> Dictionary:
+	var costo := {}
+	for cat in taller.get("categories", []):
+		for pieza in cat.get("parts", []):
+			var valor = pieza.get("cost_musd")
+			costo[str(pieza.get("id", ""))] = float(valor) if valor != null else 0.0
+	var gasto := {}
+	for rol in AREAS:
+		gasto[rol] = 0.0
+	var seleccion: Dictionary = taller.get("selection", {})
+	for categoria in seleccion:
+		var rol := rol_de_categoria(str(categoria))
+		if rol.is_empty():
+			continue
+		for id in seleccion[categoria]:
+			gasto[rol] += float(costo.get(str(id), 0.0))
+	return gasto
+
+
+## M$ que le quedan a un rol para esta pieza; negativo si no cabe. null si no hay reparto (sala de uno, o sin datos).
+static func resto_de_rol(rol: String, costo_pieza: float, taller: Dictionary) -> Variant:
+	var total := float(taller.get("totals", {}).get("budget_musd", 0.0))
+	var topes := topes_por_rol(total)
+	if not topes.has(rol):
+		return null
+	return float(topes[rol]) - float(gasto_por_rol(taller).get(rol, 0.0)) - costo_pieza
+
+
 ## ¿Puede alguien con estos roles añadir o quitar esta pieza? Las piezas desconocidas pasan (las rechaza la simulación).
 static func permite_pieza(roles: Array, pieza_id: String) -> bool:
 	var categoria := categoria_de_pieza(pieza_id)
 	return categoria.is_empty() or roles.has(rol_de_categoria(categoria))
+
+
+## Razón de rechazo cuando la pieza no cabe en la parte del presupuesto de su rol.
+const RAZON_PRESUPUESTO := "NET_ROLE_BUDGET"
 
 
 ## Razón de rechazo para una pieza de otra área («Esa pieza es del área de Ingeniería»).

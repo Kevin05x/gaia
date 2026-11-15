@@ -23,6 +23,7 @@ uniform float fuerza_normal = 0.6;
 
 uniform vec3 polvo_color : source_color = vec3(0.45, 0.44, 0.42);
 uniform float polvo : hint_range(0.0, 1.0) = 0.5;
+uniform float lunar : hint_range(0.0, 1.0) = 0.0;  // 1 en la Luna: sin color cálido, chapa plateada y mate
 uniform float base_y = 0.0;  // altura local del suelo del modelo (en unidades del modelo)
 
 varying vec3 tri_pos;
@@ -79,7 +80,12 @@ void fragment() {
 	float arriba = smoothstep(0.45, 0.95, normal_mundo.y);
 	float abajo = 1.0 - smoothstep(0.0, 0.7, alto_m);
 	float p = clamp((arriba * (0.45 + 0.9 * pegado) + abajo * (0.35 + 0.6 * pegado)) * polvo, 0.0, 0.85);
-	ALBEDO = mix(c.rgb, polvo_color, p);
+	vec3 base_color = c.rgb;
+	if (lunar > 0.0) {
+		float lum = dot(base_color, vec3(0.299, 0.587, 0.114));
+		base_color = mix(base_color, vec3(lum * 0.92) * vec3(0.98, 0.99, 1.03), lunar * 0.9);
+	}
+	ALBEDO = mix(base_color, polvo_color, p);
 	ROUGHNESS = mix(rug, 0.95, p);
 	METALLIC = mix(met, 0.0, p);
 }

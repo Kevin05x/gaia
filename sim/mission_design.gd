@@ -17,6 +17,9 @@ const PIEZA_COMPANERO := "companero"
 ## salida en cuanto hay cohete, porque empezar con el rover desnudo deja al jugador delante de una
 ## lista en blanco sin saber por dónde entrar. Se pueden quitar, pero entonces el taller avisa.
 const HERRAMIENTAS_BASICAS: Array[String] = ["taladro", "camara"]
+## Instrumentos sin los que se pierde una parte del juego (la antena ya es obligatoria). Si falta uno, el taller avisa
+## en rojo y pide confirmación al despegar, pero no bloquea.
+const INSTRUMENTOS_CLAVE: Array[String] = ["taladro", "espectrometro", "camara"]
 
 var seleccion: Dictionary = {}  ## categoria -> Array de ids elegidos
 
@@ -125,15 +128,18 @@ func validar() -> PackedStringArray:
 	return errores
 
 
-## Avisos que no bloquean: PENDING_DATA:<id> por cada pieza elegida con datos pendientes.
-## (Que falte una herramienta básica también se avisa, pero eso lo mira el taller: es una ayuda
-## de la pantalla, no una regla de la simulación.)
+## Avisos que no bloquean: PENDING_DATA:<id> por cada pieza elegida con datos pendientes y, con cohete elegido,
+## MISSING_KEY:<id> por cada instrumento clave que no lleva el rover.
 func avisos() -> PackedStringArray:
 	var resultado := PackedStringArray()
 	for categoria in seleccion:
 		for id in seleccion[categoria]:
 			if id in _catalogo.pendientes:
 				resultado.append("PENDING_DATA:%s" % id)
+	if cantidad("cohetes") > 0:
+		for id in INSTRUMENTOS_CLAVE:
+			if _catalogo.tiene(id) and not (seleccion.get("extras", []) as Array).has(id):
+				resultado.append("MISSING_KEY:%s" % id)
 	return resultado
 
 
@@ -158,7 +164,7 @@ func a_configuracion() -> Dictionary:
 		elif INSTRUMENTO_POR_PIEZA.has(id) and not instrumentos.has(INSTRUMENTO_POR_PIEZA[id]):
 			instrumentos.append(INSTRUMENTO_POR_PIEZA[id])
 	return {"energia": energia, "enlace": enlace, "instrumentos": instrumentos, "companero": companero,
-		"potencia_nominal_w": potencia_nominal_w()}
+		"potencia_nominal_w": potencia_nominal_w(), "bateria_extra_wh": _suma("bateria_extra_wh", ["extras"])}
 
 
 func _suma(campo: String, categorias: Array) -> float:

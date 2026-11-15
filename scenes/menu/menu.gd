@@ -244,7 +244,7 @@ func _nueva_partida() -> void:
 
 ## Antes de jugar: objetivo de la misión, dificultad y cuántas personas juegan (modo equipo, hasta 4).
 func _configurar_mision() -> void:
-	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 590)
+	var cuerpo := _abrir_panel(tr("M_SETUP_TITLE"), 760, 680)
 	_subtitulo(cuerpo, tr("M_SETUP_DEST"))
 	var fila_dest := HBoxContainer.new()
 	fila_dest.add_theme_constant_override("separation", 8)
@@ -289,6 +289,7 @@ func _configurar_mision() -> void:
 			explicacion.text = tr("DIFF_" + id.to_upper() + "_D"))
 		fila_dif.add_child(b)
 	explicacion.text = tr("DIFF_" + Sesion.dificultad.to_upper() + "_D")
+	_selector_duracion_sol(cuerpo)
 	_subtitulo(cuerpo, tr("M_SETUP_TEAM"))
 	var fila_eq := HBoxContainer.new()
 	fila_eq.add_theme_constant_override("separation", 8)
@@ -322,6 +323,36 @@ func _configurar_mision() -> void:
 	var volver := pie.get_child(0) as Button
 	volver.theme_type_variation = ""
 	empezar.grab_focus.call_deferred()
+
+
+## Duración de cada sol (plan 3.1): 6, 8, 10 o 12 minutos reales.
+func _selector_duracion_sol(cuerpo: Control) -> void:
+	_subtitulo(cuerpo, tr("M_SETUP_SOL"))
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	cuerpo.add_child(fila)
+	var nota := UI.label(cuerpo, "", 13, Color(UI.CREAM, 0.7))
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nota.custom_minimum_size.x = 640
+	var grupo := ButtonGroup.new()
+	for minutos in Sesion.DURACIONES_SOL:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = grupo
+		b.text = tr("M_SETUP_SOL_N") % minutos
+		b.custom_minimum_size = Vector2(140, 40)
+		b.button_pressed = Sesion.duracion_sol_min == minutos
+		b.pressed.connect(func() -> void:
+			Sesion.duracion_sol_min = minutos
+			nota.text = texto_duracion_sol(minutos))
+		fila.add_child(b)
+	nota.text = texto_duracion_sol(Sesion.duracion_sol_min)
+
+
+## «6 soles ≈ 72 min de partida…» con el sol límite de content/rules.json.
+static func texto_duracion_sol(minutos: int) -> String:
+	var soles := Rules.desde_archivo("res://content/rules.json").sol_limite
+	return TranslationServer.translate("M_SETUP_SOL_D") % [soles, soles * minutos]
 
 
 ## «Persona 1: Dirección y Ciencia · Persona 2: ...» según cuántos juegan.
@@ -503,6 +534,8 @@ func _abrir_ajustes() -> void:
 	_interruptor(cuerpo, tr("M_SET_MUTE"), bool(prefs["muted"]), func(v: bool) -> void:
 		Texto.guardar("audio", "muted", v)
 		Texto.aplicar_audio())
+	_interruptor(cuerpo, tr("RADIO_VOICES"), bool(prefs.get("radio_voices", true)), func(v: bool) -> void:
+		Texto.guardar("audio", "radio_voices", v))  # plan 9.3
 	# Gráficos: ajuste predefinido y, en su panel, cada opción por separado.
 	fila = _fila(cuerpo, tr("M_SET_GRAPHICS"))
 	var mas := Button.new()
@@ -522,8 +555,9 @@ func _abrir_ajustes() -> void:
 		var aviso := UI.label(cuerpo, tr("M_SET_WINDOW_NOTE"), 13, Color(UI.CREAM, 0.6))
 		aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Pantalla completa y tutorial
-	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(v: bool) -> void:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if v else DisplayServer.WINDOW_MODE_WINDOWED))
+	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), Texto.en_pantalla_completa(), func(v: bool) -> void:
+		Texto.poner_pantalla_completa(v)
+		_abrir_ajustes.call_deferred())  # para que la fila de tamaños marque «Nativa» o el tamaño de ventana
 	_interruptor(cuerpo, tr("M_SET_TUTORIAL"), bool(prefs["tutorial"]), func(v: bool) -> void:
 		Texto.guardar("ui", "tutorial", v))
 
@@ -558,9 +592,9 @@ func _interruptor(padre: Control, titulo: String, valor: bool, al_cambiar: Calla
 
 
 func _abrir_creditos() -> void:
-	var cuerpo := _abrir_panel(tr("M_CREDITS_TITLE"), 760, 520)
+	var cuerpo := _abrir_panel(tr("M_CREDITS_TITLE"), 760, 640)
 	for par in [["M_CREDITS_TEAM", "M_CREDITS_ROLES"], ["M_CREDITS_DATA", "M_CREDITS_DATA_D"], ["M_CREDITS_ART", "M_CREDITS_ART_D"],
-			["M_CREDITS_MUSIC", "M_CREDITS_MUSIC_D"]]:
+			["M_CREDITS_MODELS", "M_CREDITS_MODELS_D"], ["M_CREDITS_MUSIC", "M_CREDITS_MUSIC_D"]]:
 		_subtitulo(cuerpo, tr(par[0]))
 		var t := UI.label(cuerpo, tr(par[1]), 16, Color(UI.CREAM, 0.85))
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

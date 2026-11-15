@@ -18,6 +18,8 @@ var crucero: CanvasLayer  ## lanzamiento y crucero orbital entre el taller y el 
 var _crucero_visto := false
 var _vio_taller := false  ## solo hay secuencia de lanzamiento si el jugador pasó por el taller
 var imprevisto: CanvasLayer  ## imprevistos de misión (decisión con el tiempo detenido)
+var objetivo: CanvasLayer  ## tarjeta de objetivo al empezar la misión (plan 2.1)
+var voces: Node  ## voces de radio de Houston y el rover (plan 9.3)
 var tarjeta_nasa: CanvasLayer  ## «Así lo hizo Perseverance» durante el aterrizaje (datos y fotos reales de la NASA)
 var explosions: Node3D
 var audio: Node
@@ -132,6 +134,7 @@ func _ready() -> void:
 	launch_pad.command.connect(_command)
 	launch_pad.options_requested.connect(func(): hud.open_options())
 	launch_pad.despegue_terminado.connect(func(diseno: Dictionary) -> void:
+		voces.decir("despegue_fin", "", true)
 		crucero.play(diseno))
 	report_view = preload("res://scenes/b/report.gd").new()
 	report_view.name = "Report"
@@ -152,6 +155,12 @@ func _ready() -> void:
 	imprevisto.opened.connect(func() -> void:
 		if is_instance_valid(audio):
 			audio.sfx("alarm", 0.0))
+	objetivo = preload("res://scenes/b/objetivo_panel.gd").new()
+	objetivo.name = "Objetivo"
+	add_child(objetivo)
+	voces = preload("res://scenes/b/voces_radio.gd").new()
+	voces.name = "VocesRadio"
+	add_child(voces)
 	tarjeta_nasa = preload("res://scenes/b/nasa_landing_card.gd").new()
 	tarjeta_nasa.name = "NasaCard"
 	add_child(tarjeta_nasa)
@@ -223,19 +232,27 @@ func _ready() -> void:
 	tutorial.command.connect(_command)
 	tutorial.step_changed.connect(func() -> void: audio.ping())
 	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
-	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta()
+	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta() or objetivo.is_open() 		or tutorial.is_expanded()  # la ventana del tutorial ocupa el rincón de la radio (plan 2.2)
+	objetivo.tapada = func() -> bool: return story.is_open() or story.intro_index >= 0 or imprevisto.is_open()
+	voces.ocupada = func() -> bool:  # la historia de Tony manda: sus voces no se pisan
+		return story.is_open() or story.intro_index >= 0 or story._voz_escena.playing or story._voz_radio.playing
 	hud.metas_tapadas = func() -> bool: return base_hud.menu.visible
 	base_hud.menu_cambiado.connect(func(_abierto: bool) -> void:
 		if not state.is_empty():
 			hud.update_snapshot(state))
 	tutorial.target_for = func(clave: String) -> Control:  # se consulta cada cuadro: el HUD puede reconstruirse
+		if clave == "carga":
+			return base_hud._bodega
 		return base_hud.build_button if clave == "construir" else hud.highlight_nodes().get(clave, null)
 	port.snapshot_received.connect(apply_snapshot)
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
 		actors.follow_path(tiles, seconds)
 		terrain.show_route(tiles)
-		terrain.flash_grid())
+		if tiles.size() > 1:
+			voces.decir("mover")
+		if is_instance_valid(terrain.hallazgo) and (tiles.is_empty() or tiles.back() != terrain.hallazgo_casilla):
+			terrain.quitar_hallazgo())  # el rover va a otro sitio: el desvío se abandonó
 	port.action_received.connect(func(action: Dictionary):
 		for t in port.snapshot.get("targets", []):
 			if str(t.get("id", "")) == str(action.get("target_id", "")) and t.has("tile"):
@@ -251,6 +268,8 @@ func _ready() -> void:
 		workshop.show_notice(key))
 	actors.landing_finished.connect(func():
 		landing_in_progress = false
+		if Destino.es_luna():  # en Marte habla la historia de Tony
+			voces.decir("aterrizaje_rover", "aterrizaje_houston", true)
 		port.submit("landing_finished"))
 	set_preferences(volume, muted, quality, false)
 	if not port.snapshot.is_empty():
@@ -448,7 +467,14 @@ func apply_snapshot(s: Dictionary) -> void:
 		terrain.configure(s.get("targets", []), s.get("obstacles", []), s.get("bounds", {}), s.get("zones", []))
 		map_signature = signature
 		tracks.clear()
+	if is_instance_valid(terrain.hallazgo) and not bool(s.get("moving", false)) \
+			and s.get("rover_tile", Vector2i(9999, 9999)) == terrain.hallazgo_casilla:
+		terrain.quitar_hallazgo()  # el rover llegó al punto del desvío
 	var en_taller: bool = s.get("phase", "") == "workshop"
+	# En el taller (plataforma y hangar tienen su propio visor 3D) el mundo de la misión no se ve: el 3D de la ventana
+	# se apaga entero, con su suavizado, brillo y niebla, que antes se pagaban sobre un cuadro vacío.
+	if get_viewport() != null and get_viewport().disable_3d != en_taller:
+		get_viewport().disable_3d = en_taller
 	terrain.visible = not en_taller
 	actors.visible = not en_taller
 	tracks.visible = not en_taller
@@ -467,7 +493,8 @@ func apply_snapshot(s: Dictionary) -> void:
 	ciencia.update_snapshot(s)
 	story.update_snapshot(s)
 	tutorial.update_snapshot(s)
-	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible)
+	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible or objetivo.is_open() \
+		or imprevisto.is_open())
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)
@@ -481,9 +508,14 @@ func apply_snapshot(s: Dictionary) -> void:
 		tarjeta_nasa.update_snapshot(s)
 	if is_instance_valid(imprevisto):
 		imprevisto.update_snapshot(s)
+	if is_instance_valid(objetivo):
+		objetivo.update_snapshot(s)
+	if is_instance_valid(voces):
+		voces.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)
+	actors.apply_others(s)
 	hud.update_snapshot(s)
 	lighting.set_state(float(s.get("hour", 8.0)), float(s.get("dust", 0.0)))
 	buildings.set_night(snappedf(lighting.noche_factor(), 0.05))
@@ -500,6 +532,7 @@ func apply_snapshot(s: Dictionary) -> void:
 				# plataforma dice que no puede y se va directo a la secuencia, como antes.
 				if launch_pad.puede_despegar():
 					launch_pad.despegar(s.get("design_summary", {}))
+					voces.decir("despegue_inicio", "", true)
 				else:
 					crucero.play(s.get("design_summary", {}))
 		else:
@@ -529,6 +562,7 @@ func start_placement(tipo: String) -> void:
 	if placing != tipo:
 		_puestos.clear()
 	placing = tipo
+	terrain.grid_obra = true
 	hud.close_actions()
 	var base: Dictionary = state["base"]
 	var centro: Vector2i = base.get("center", Vector2i.ZERO)
@@ -551,6 +585,7 @@ func start_placement(tipo: String) -> void:
 
 func cancel_placement() -> void:
 	placing = ""
+	terrain.grid_obra = false
 	_puestos.clear()
 	buildings.hide_zone()
 	terrain.hide_cursor()
@@ -624,6 +659,8 @@ func _command(command: String, payload: Dictionary) -> void:
 		return
 	if command == "act" or command == "approach":
 		payload["target_id"] = selected_target
+	if command == "design_start" or command == "landing_finished" or (command == "design_add" and str(payload.get("part_id", "")).begins_with("cohete_")):
+		WebCarga.mostrar("Preparando la siguiente escena.", "Preparing the next scene.")  # la primera vez compila gráficos nuevos
 	port.submit(command, payload)
 
 
@@ -857,6 +894,20 @@ func project_target(id: String) -> Dictionary:
 		var size := get_viewport().get_visible_rect().size
 		return {"pos": size / 2.0 + Vector2(local.x, absf(local.y) + 1.0).normalized() * size.length(), "behind": true}
 	return {"pos": camera.unproject_position(world), "behind": false}
+
+
+## Posición en pantalla de una casilla (por ejemplo, el almacén que marca el HUD). Como project_target, devuelve "behind".
+func project_tile(tile: Vector2i) -> Dictionary:
+	if rig == null or rig.camera == null:
+		return {}
+	var camera: Camera3D = rig.camera
+	var mundo := Escala.a_mundo(tile)
+	mundo.y = maxf(terrain.height_at(mundo.x, mundo.z), -0.55) + 3.2
+	if camera.is_position_behind(mundo):
+		var local := camera.global_transform.affine_inverse() * mundo
+		var size := get_viewport().get_visible_rect().size
+		return {"pos": size / 2.0 + Vector2(local.x, absf(local.y) + 1.0).normalized() * size.length(), "behind": true}
+	return {"pos": camera.unproject_position(mundo), "behind": false}
 
 
 ## Objetivo revelado más cercano al clic en pantalla (zona de 44×44 px), aunque lo tape una roca.
