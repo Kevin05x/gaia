@@ -95,7 +95,7 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 - [x] **2.5 Aviso si falta un instrumento clave** (taladro, espectrómetro, cámara o antena): en la validación de misión, una línea roja
   «Sin taladro no podrás tomar muestras: perderás X datos posibles» y una confirmación al pulsar DESPEGAR. No bloquea.
   Archivos: validación en `sim/simulation.gd` (`_taller()`), textos en `scenes/b/i18n/`.
-- [ ] **2.6 Imprevistos que explican qué implica cada opción**: debajo de cada opción, el efecto en lenguaje de juego
+- [x] **2.6 Imprevistos que explican qué implica cada opción**: debajo de cada opción, el efecto en lenguaje de juego
   («−90 Wh: unas 2 h menos de batería · +10 datos en memoria»). Rediseño visual en el bloque 4.
 - [ ] **2.7 Que las decisiones de la historia cambien algo que se vea**: cada opción de `content/historia.json` debe dejar una huella
   visible (un edificio, un recurso, un aviso de radio distinto, un final distinto). Revisar con Tony qué cambia hoy cada decisión y

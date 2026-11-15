@@ -476,7 +476,8 @@ func apply_snapshot(s: Dictionary) -> void:
 	ciencia.update_snapshot(s)
 	story.update_snapshot(s)
 	tutorial.update_snapshot(s)
-	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible or objetivo.is_open())
+	tutorial.set_hidden(story.is_open() or bool(s.get("paused", false)) or hud.settings.visible or objetivo.is_open() \
+		or imprevisto.is_open())
 	if not placing.is_empty() and (s.get("phase", "") != "operations" or story.is_open()):
 		cancel_placement()
 	workshop.update_snapshot(s)

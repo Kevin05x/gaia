@@ -11,6 +11,8 @@ signal opened
 
 var _raiz: Control
 var _id := ""
+var _carga_w := 0.0  ## consumo actual, para pasar Wh a horas en el efecto de cada opción
+var _datos := 0.0  ## datos en memoria al abrirse
 
 
 func _ready() -> void:
@@ -31,8 +33,46 @@ func update_snapshot(s: Dictionary) -> void:
 		_raiz.queue_free()
 		_raiz = null
 	if not id.is_empty():
+		_carga_w = float(s.get("battery", {}).get("load_w", 0.0))
+		_datos = float(s.get("data", 0.0))
 		_construir(dato)
 		opened.emit()
+
+
+## Lo que implica una opción antes de elegirla (plan 2.6), con los efectos de content/imprevistos.json: «−90 Wh
+## (unas 6 h de consumo actual) · +10 datos en memoria · el rover se desvía unas 5 casillas». «carga_w» es el
+## consumo actual del rover y la base (para pasar los Wh a horas); «datos» lo que hay ahora en memoria.
+static func efecto_previsto(efectos: Dictionary, carga_w: float, datos: float) -> String:
+	var partes: PackedStringArray = []
+	if efectos.has("energia_wh"):
+		var wh := roundi(float(efectos["energia_wh"]))
+		if carga_w > 0.5:
+			partes.append(TranslationServer.translate("UNEXP_FX_ENERGY_H") % ["%+d" % wh, maxi(1, roundi(absf(wh) / carga_w))])
+		else:
+			partes.append(TranslationServer.translate("UNEXP_ENERGY") % wh)
+	if efectos.has("datos"):
+		var n := roundi(float(efectos["datos"]))
+		if n > 0:
+			partes.append(TranslationServer.translate("UNEXP_FX_DATA") % n)
+		elif n < 0:
+			partes.append(TranslationServer.translate("UNEXP_DATA_OUT") % -n)
+	if efectos.has("datos_pct"):
+		var pct := roundi(absf(float(efectos["datos_pct"])) * 100.0)
+		if datos >= 1.0:
+			partes.append(TranslationServer.translate("UNEXP_FX_DATA_PCT_N") % [pct, roundi(datos * pct / 100.0)])
+		else:
+			partes.append(TranslationServer.translate("UNEXP_FX_DATA_PCT") % pct)
+	if efectos.has("rover_hp"):
+		partes.append(TranslationServer.translate("UNEXP_HP") % roundi(float(efectos["rover_hp"])))
+	if efectos.has("bloquear_enlace_h"):
+		partes.append(TranslationServer.translate("UNEXP_LINK") % roundi(float(efectos["bloquear_enlace_h"])))
+	if efectos.has("bloquear_movimiento_h"):
+		partes.append(TranslationServer.translate("UNEXP_MOVE") % roundi(float(efectos["bloquear_movimiento_h"])))
+	if efectos.has("desvio_casillas"):
+		partes.append(TranslationServer.translate("UNEXP_FX_DETOUR") % int(efectos["desvio_casillas"]))
+	if partes.is_empty():
+		partes.append(TranslationServer.translate("UNEXP_NOTHING"))
+	return " · ".join(partes)
 
 
 ## Frase con lo que cambió una decisión («applied» de la simulación), en el idioma de quien la lee:
@@ -116,6 +156,12 @@ func _construir(dato: Dictionary) -> void:
 			b.theme_type_variation = "PrimaryButton"
 		b.pressed.connect(func() -> void: command.emit("event_choice", {"choice": i}))
 		col.add_child(b)
+		var efectos: Array = dato.get("effects", [])
+		if i < efectos.size():  # qué implica, en lenguaje de juego (plan 2.6)
+			var efecto := UI.label(col, efecto_previsto(efectos[i], _carga_w, _datos), 13, UI.AMBER)
+			efecto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			efecto.custom_minimum_size.x = 580
+			efecto.name = "Efecto%d" % i
 	caja.modulate.a = 0.0
 	caja.scale = Vector2(0.96, 0.96)
 	caja.resized.connect(func() -> void: caja.pivot_offset = caja.size / 2.0)

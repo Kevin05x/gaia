@@ -406,6 +406,11 @@ UNEXP_MOVE,sin moverse %d h,no driving for %d h
 UNEXP_DETOUR,el rover va al punto marcado,the rover heads to the marked spot
 UNEXP_NO_DETOUR,el rover no puede desviarse ahora,the rover can't take the detour now
 UNEXP_NOTHING,sin cambios,no change
+UNEXP_FX_ENERGY_H,%s Wh (unas %d h de consumo actual),%s Wh (about %d h of current use)
+UNEXP_FX_DATA,+%d datos en memoria,+%d data in memory
+UNEXP_FX_DATA_PCT,se pierde el %d %% de los datos a bordo,%d %% of the data on board is lost
+UNEXP_FX_DATA_PCT_N,se pierde el %d %% de los datos a bordo (unos %d),%d %% of the data on board is lost (about %d)
+UNEXP_FX_DETOUR,el rover se desvía unas %d casillas,the rover detours about %d tiles
 LINK_BLOCKED_EVENT,Enlace cerrado por un imprevisto,Link closed by an unexpected event
 MOVE_BLOCKED_EVENT,Rover detenido por un imprevisto,Rover stopped by an unexpected event
 PIEZA_TRAY_DIRECTA_LUNA,Transferencia directa,Direct transfer

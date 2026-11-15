@@ -141,10 +141,12 @@ func para_la_vista(estado: MissionState) -> Dictionary:
 		return {}
 	var datos: Dictionary = imprevistos.get(str(estado.imprevisto["id"]), {})
 	var opciones: Array = []
+	var efectos: Array = []
 	for o in datos.get("opciones", []):
 		opciones.append(o.get("texto", {}))
+		efectos.append((o.get("efectos", {}) as Dictionary).duplicate(true))
 	return {"id": estado.imprevisto["id"], "title": datos.get("titulo", {}), "text": datos.get("texto", {}),
-		"real": datos.get("real", {}), "source": datos.get("fuente", ""), "options": opciones}
+		"real": datos.get("real", {}), "source": datos.get("fuente", ""), "options": opciones, "effects": efectos}
 
 
 static func enlace_bloqueado(estado: MissionState) -> bool:

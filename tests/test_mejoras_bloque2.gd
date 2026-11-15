@@ -325,3 +325,38 @@ func test_2_3_cada_pagina_de_como_jugar_tiene_su_captura() -> void:
 			assert_not_null(t._imagen.texture, "%s, página %d con captura" % [idioma, pagina + 1])
 			assert_string_contains(t._imagen.texture.resource_path, "/%s/" % idioma, "en su idioma")
 	TranslationServer.set_locale("es")
+
+
+# --- 2.6 Cada opción de un imprevisto dice qué implica ----------------------------------------------------------------
+
+const ImprevistoPanelScript := preload("res://scenes/b/imprevisto_panel.gd")
+
+
+func test_2_6_el_efecto_de_desviarse_en_lenguaje_de_juego() -> void:
+	var texto := ImprevistoPanelScript.efecto_previsto({"energia_wh": -90, "datos": 10, "desvio_casillas": 5}, 15.0, 0.0)
+	assert_eq(texto, "-90 Wh (unas 6 h de consumo actual) · +10 datos en memoria · el rover se desvía unas 5 casillas")
+
+
+func test_2_6_todas_las_opciones_de_los_9_imprevistos_explican_su_efecto() -> void:
+	for destino in ["marte", "luna"]:
+		var sistema := ImprevistosSystem.desde_archivo("res://content/imprevistos.json", destino)
+		for id in sistema.imprevistos:
+			var e := _sim("marte").estado
+			e.imprevisto = {"id": id}
+			var vista := sistema.para_la_vista(e)
+			assert_eq((vista["effects"] as Array).size(), (vista["options"] as Array).size(), id)
+			for efectos in vista["effects"]:
+				var texto := ImprevistoPanelScript.efecto_previsto(efectos, 20.0, 30.0)
+				assert_false(texto.is_empty() or texto.contains("UNEXP_"), "%s: %s" % [id, texto])
+
+
+func test_2_6_la_ventana_muestra_el_efecto_debajo_de_cada_opcion() -> void:
+	var panel: CanvasLayer = add_child_autofree(ImprevistoPanelScript.new())
+	var sistema := ImprevistosSystem.desde_archivo("res://content/imprevistos.json", "marte")
+	var e := _sim("marte").estado
+	e.imprevisto = {"id": "conjuncion_solar"}
+	panel.update_snapshot({"unexpected": sistema.para_la_vista(e), "data": 30.0, "battery": {"load_w": 30.0}})
+	var efectos: Array = panel.find_children("Efecto*", "Label", true, false)
+	assert_eq(efectos.size(), 2, "un efecto por opción")
+	assert_string_contains((efectos[0] as Label).text, "enlace cerrado 8 h")
+	assert_string_contains((efectos[1] as Label).text, "se pierde el 33 % de los datos a bordo (unos 10)")
