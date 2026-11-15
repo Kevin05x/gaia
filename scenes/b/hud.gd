@@ -98,6 +98,8 @@ var _rows: Dictionary = {}
 var _landing_text: PanelContainer
 var _dim: ColorRect
 var _menu: PanelContainer
+var _fila_tamanos: HFlowContainer  ## tamaños de ventana y «Nativa» en el menú de pausa
+var _casilla_completa: CheckButton
 var _menu_resume: Button
 var _hover_hint: PanelContainer
 var _hover_label: Label
@@ -598,18 +600,21 @@ func _build_pause() -> void:
 	cuerpo.add_child(sonido)
 	var completa := CheckButton.new()
 	completa.text = tr("FULLSCREEN")
-	completa.button_pressed = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	completa.button_pressed = Texto.en_pantalla_completa()
 	cuerpo.add_child(completa)
 	deslizador.value_changed.connect(func(valor: float): volume = valor; preferences_changed.emit(volume, muted, quality))
 	sonido.toggled.connect(func(on: bool): muted = not on; preferences_changed.emit(volume, muted, quality))
-	completa.toggled.connect(func(on: bool): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
+	completa.toggled.connect(func(on: bool) -> void:
+		Texto.poner_pantalla_completa(on)
+		_rehacer_tamanos())
 	if not Texto.tamanos_disponibles().is_empty():
 		UI.label(cuerpo, tr("WINDOW_SIZE"), UI.FONT_SECONDARY)
-		var ventana := HFlowContainer.new()
-		ventana.add_theme_constant_override("h_separation", 8)
-		ventana.add_theme_constant_override("v_separation", 6)
-		cuerpo.add_child(ventana)
-		Texto.botones_tamano(ventana, func(): completa.set_pressed_no_signal(false))
+		_fila_tamanos = HFlowContainer.new()
+		_fila_tamanos.add_theme_constant_override("h_separation", 8)
+		_fila_tamanos.add_theme_constant_override("v_separation", 6)
+		cuerpo.add_child(_fila_tamanos)
+		_casilla_completa = completa
+		Texto.botones_tamano(_fila_tamanos, _rehacer_tamanos)
 	UI.label(derecha, tr("GRAPHICS"), UI.FONT_TEXT, UI.AMBER)
 	var opciones_graficos := OpcionesGraficos.new(graficos if not graficos.is_empty() else Graficos.cargar(), 14)
 	derecha.add_child(opciones_graficos)
@@ -630,6 +635,18 @@ func _build_pause() -> void:
 		var texto := UI.label(ayuda, tr(clave), UI.FONT_TEXT if clave == "HELP_TEXT" else UI.FONT_SECONDARY)
 		texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		texto.custom_minimum_size.x = 440
+
+
+## Rehace la fila de tamaños y la casilla de pantalla completa para que marquen lo guardado.
+func _rehacer_tamanos() -> void:
+	if is_instance_valid(_casilla_completa):
+		_casilla_completa.set_pressed_no_signal(Texto.en_pantalla_completa())
+	if not is_instance_valid(_fila_tamanos):
+		return
+	for hijo in _fila_tamanos.get_children():
+		_fila_tamanos.remove_child(hijo)
+		hijo.queue_free()
+	Texto.botones_tamano(_fila_tamanos, _rehacer_tamanos)
 
 
 func _subview(titulo: String) -> PanelContainer:

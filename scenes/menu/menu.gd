@@ -522,8 +522,9 @@ func _abrir_ajustes() -> void:
 		var aviso := UI.label(cuerpo, tr("M_SET_WINDOW_NOTE"), 13, Color(UI.CREAM, 0.6))
 		aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Pantalla completa y tutorial
-	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(v: bool) -> void:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if v else DisplayServer.WINDOW_MODE_WINDOWED))
+	_interruptor(cuerpo, tr("M_SET_FULLSCREEN"), Texto.en_pantalla_completa(), func(v: bool) -> void:
+		Texto.poner_pantalla_completa(v)
+		_abrir_ajustes.call_deferred())  # para que la fila de tamaños marque «Nativa» o el tamaño de ventana
 	_interruptor(cuerpo, tr("M_SET_TUTORIAL"), bool(prefs["tutorial"]), func(v: bool) -> void:
 		Texto.guardar("ui", "tutorial", v))
 

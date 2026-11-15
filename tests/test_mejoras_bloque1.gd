@@ -146,3 +146,46 @@ func test_1_3_opciones_y_codigo_van_en_fila_sin_montarse() -> void:
 		assert_lte(b.end.x, WorkshopScript.MARGEN + WorkshopScript.SIDEBAR_ANCHO + 0.5, "%s: del ancho del catálogo" % idioma)
 		hangar.free()
 	TranslationServer.set_locale("es")
+
+
+# --- 1.4 Tamaño de ventana y pantalla completa: se guardan en un solo sitio y se respetan ---------------------------
+
+const Texto := preload("res://scenes/menu/menu_text.gd")
+
+
+func _con_preferencias_aparte(prueba: Callable) -> void:
+	var habia := FileAccess.file_exists(Texto.PREFERENCIAS)
+	var copia := FileAccess.get_file_as_bytes(Texto.PREFERENCIAS) if habia else PackedByteArray()
+	prueba.call()
+	if habia:
+		FileAccess.open(Texto.PREFERENCIAS, FileAccess.WRITE).store_buffer(copia)
+	elif FileAccess.file_exists(Texto.PREFERENCIAS):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(Texto.PREFERENCIAS))
+
+
+func test_1_4_ventana_y_pantalla_completa_se_guardan_por_separado() -> void:
+	_con_preferencias_aparte(func() -> void:
+		Texto.guardar("audio", "volume", 0.3)
+		Texto.poner_tamano_ventana(Vector2i(1920, 1080))
+		var p := Texto.preferencias()
+		assert_eq(p["window_size"], Vector2i(1920, 1080), "el tamaño elegido queda guardado")
+		assert_false(p["fullscreen"], "elegir un tamaño de ventana sale de pantalla completa")
+		Texto.poner_pantalla_completa(true)
+		p = Texto.preferencias()
+		assert_true(p["fullscreen"], "la pantalla completa también se guarda (antes se perdía al cerrar)")
+		assert_eq(p["window_size"], Vector2i(1920, 1080), "y no borra el tamaño de ventana")
+		assert_true(Texto.en_pantalla_completa())
+		Texto.poner_pantalla_completa(false)
+		p = Texto.preferencias()
+		assert_false(p["fullscreen"])
+		assert_eq(p["window_size"], Vector2i(1920, 1080), "al salir vuelve al último tamaño elegido")
+		assert_almost_eq(float(p["volume"]), 0.3, 0.001, "sin tocar las demás preferencias"))
+
+
+func test_1_4_se_ofrecen_tamanos_grandes_y_la_nativa() -> void:
+	assert_true(Vector2i(2560, 1440) in Texto.TAMANOS_VENTANA, "hay 2560×1440")
+	for idioma in ["es", "en"]:
+		var plantilla: String = Texto.TABLES[idioma].get("M_SET_NATIVE", "")
+		assert_eq(plantilla.count("%d"), 2, "%s: «Nativa» con su resolución" % idioma)
+	var texto := Texto.texto_nativa(Vector2i(2560, 1440))
+	assert_string_contains(texto, "2560×1440")

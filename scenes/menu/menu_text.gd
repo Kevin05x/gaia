@@ -46,7 +46,8 @@ const TABLES := {
 		"M_SET_GRAPHICS_NOTE": "Los gráficos ligeros quitan sombras y reducen las partículas: úsalos en equipos modestos.",
 		"M_SET_FULLSCREEN": "Pantalla completa",
 		"M_SET_WINDOW": "Tamaño de ventana",
-		"M_SET_WINDOW_NOTE": "Solo aparecen los tamaños que caben en tu pantalla. Para ocuparla entera usa «Pantalla completa».",
+		"M_SET_WINDOW_NOTE": "Solo aparecen los tamaños que caben en tu pantalla. «Nativa» la ocupa entera, a su resolución (pantalla completa).",
+		"M_SET_NATIVE": "Nativa · %d×%d",
 		"M_SET_TUTORIAL": "Mostrar el tutorial al empezar una partida",
 		"M_CONTROLS_TITLE": "Controles",
 		"M_CTRL_MOUSE": "Ratón",
@@ -138,7 +139,8 @@ const TABLES := {
 		"M_SET_GRAPHICS_NOTE": "Light graphics remove shadows and cut particles: use them on modest hardware.",
 		"M_SET_FULLSCREEN": "Fullscreen",
 		"M_SET_WINDOW": "Window size",
-		"M_SET_WINDOW_NOTE": "Only sizes that fit your screen are listed. To fill it completely use \"Fullscreen\".",
+		"M_SET_WINDOW_NOTE": "Only sizes that fit your screen are listed. \"Native\" fills it at its own resolution (fullscreen).",
+		"M_SET_NATIVE": "Native · %d×%d",
 		"M_SET_TUTORIAL": "Show the tutorial when starting a game",
 		"M_CONTROLS_TITLE": "Controls",
 		"M_CTRL_MOUSE": "Ratón",
@@ -226,7 +228,8 @@ static func install() -> void:
 
 ## Lee las preferencias guardadas con sus valores por defecto.
 static func preferencias() -> Dictionary:
-	var datos := {"language": "es", "volume": 0.65, "muted": false, "quality": true, "tutorial": true, "window_size": Vector2i.ZERO}
+	var datos := {"language": "es", "volume": 0.65, "muted": false, "quality": true, "tutorial": true, "window_size": Vector2i.ZERO,
+		"fullscreen": false}
 	var config := ConfigFile.new()
 	if config.load(PREFERENCIAS) == OK:
 		datos["language"] = config.get_value("ui", "language", "es")
@@ -235,6 +238,7 @@ static func preferencias() -> Dictionary:
 		datos["quality"] = config.get_value("visual", "quality", true)
 		datos["tutorial"] = config.get_value("ui", "tutorial", true)
 		datos["window_size"] = config.get_value("visual", "window_size", Vector2i.ZERO)
+		datos["fullscreen"] = bool(config.get_value("visual", "fullscreen", false))
 	return datos
 
 
@@ -274,12 +278,28 @@ static func tamanos_disponibles() -> Array[Vector2i]:
 	return libres
 
 
-## Pone la ventana en modo ventana con ese tamaño y la centra en su pantalla.
+## Tamaño de ventana y pantalla completa se guardan y se leen solo aquí («visual»: window_size y fullscreen), así el
+## menú y la pausa del juego no se contradicen y lo elegido sigue igual al cerrar y abrir.
+
+## Pone la ventana en modo ventana con ese tamaño, la centra en su pantalla y lo guarda (sale de pantalla completa).
 static func poner_tamano_ventana(t: Vector2i) -> void:
+	guardar("visual", "window_size", t)
+	guardar("visual", "fullscreen", false)
 	if OS.has_feature("web") or DisplayServer.get_name() == "headless":
 		return
 	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	_ajustar_ventana(t)
+	# Al salir de pantalla completa Windows devuelve la ventana a su tamaño anterior un cuadro después, y eso
+	# deshacía el cambio: se vuelve a aplicar en el cuadro siguiente.
+	var arbol := Engine.get_main_loop() as SceneTree
+	if arbol != null:
+		arbol.process_frame.connect(func() -> void: _ajustar_ventana(t), CONNECT_ONE_SHOT)
+
+
+static func _ajustar_ventana(t: Vector2i) -> void:
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return  # entretanto se eligió pantalla completa
 	DisplayServer.window_set_size(t)
 	var pantalla := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
 	@warning_ignore("integer_division")
@@ -287,19 +307,60 @@ static func poner_tamano_ventana(t: Vector2i) -> void:
 	DisplayServer.window_set_position(Vector2i(pos.x, maxi(pantalla.position.y, pos.y - 12)))
 
 
-## Aplica al arrancar el tamaño de ventana guardado, si todavía cabe en la pantalla.
-static func aplicar_ventana() -> void:
+## Pantalla completa a la resolución nativa del monitor (el modo de Godot la usa sola) o vuelta a la ventana
+## con el último tamaño elegido. Lo guarda.
+static func poner_pantalla_completa(activa: bool) -> void:
+	guardar("visual", "fullscreen", activa)
+	if DisplayServer.get_name() == "headless":
+		return
+	if activa:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		return
 	var t: Vector2i = preferencias()["window_size"]
+	if t != Vector2i.ZERO and t in tamanos_disponibles():  # en la web no hay tamaños: decide el navegador
+		poner_tamano_ventana(t)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+
+
+## Si el juego está (o debe estar) en pantalla completa. En la web manda el navegador (se sale con Esc), así que se
+## mira la ventana; en el escritorio, lo guardado.
+static func en_pantalla_completa() -> bool:
+	if OS.has_feature("web"):
+		return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	return bool(preferencias()["fullscreen"])
+
+
+## Resolución nativa del monitor donde está la ventana.
+static func resolucion_nativa() -> Vector2i:
+	return DisplayServer.screen_get_size(DisplayServer.window_get_current_screen())
+
+
+## Aplica al arrancar lo guardado: pantalla completa, o el tamaño de ventana si todavía cabe en la pantalla.
+static func aplicar_ventana() -> void:
+	var datos := preferencias()
+	if bool(datos["fullscreen"]) and not OS.has_feature("web"):  # el navegador no deja entrar sin un clic
+		poner_pantalla_completa(true)
+		return
+	var t: Vector2i = datos["window_size"]
 	if t != Vector2i.ZERO and t in tamanos_disponibles():
 		poner_tamano_ventana(t)
 
 
-## Fila de botones con los tamaños disponibles; al elegir uno lo aplica y lo guarda. `alterno` se avisa tras el cambio.
+## Fila de botones con los tamaños disponibles y «Nativa» (pantalla completa a la resolución del monitor); al elegir
+## uno lo aplica y lo guarda, y luego llama a «al_cambiar». El marcado sale de lo guardado, no del tamaño que tenga
+## la ventana en ese instante (el cambio llega un cuadro después).
 static func botones_tamano(fila: Control, al_cambiar: Callable = Callable()) -> void:
+	var libres := tamanos_disponibles()
+	if libres.is_empty():
+		return
 	var grupo := ButtonGroup.new()
-	var actual := DisplayServer.window_get_size()
-	var completa := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-	for t in tamanos_disponibles():
+	var datos := preferencias()
+	var completa := en_pantalla_completa()
+	var actual: Vector2i = datos["window_size"]
+	if actual == Vector2i.ZERO:
+		actual = DisplayServer.window_get_size()
+	for t in libres:
 		var b := Button.new()
 		b.text = "%d×%d" % [t.x, t.y]
 		b.toggle_mode = true
@@ -307,8 +368,24 @@ static func botones_tamano(fila: Control, al_cambiar: Callable = Callable()) -> 
 		b.custom_minimum_size = Vector2(98, 40)
 		b.button_pressed = not completa and t == actual
 		b.pressed.connect(func() -> void:
-			guardar("visual", "window_size", t)
 			poner_tamano_ventana(t)
 			if al_cambiar.is_valid():
 				al_cambiar.call())
 		fila.add_child(b)
+	var nativa := Button.new()
+	nativa.text = texto_nativa(resolucion_nativa())
+	nativa.toggle_mode = true
+	nativa.button_group = grupo
+	nativa.custom_minimum_size = Vector2(98, 40)
+	nativa.button_pressed = completa
+	nativa.pressed.connect(func() -> void:
+		poner_pantalla_completa(true)
+		if al_cambiar.is_valid():
+			al_cambiar.call())
+	fila.add_child(nativa)
+
+
+## «Nativa · 2560×1440». Sin traducciones cargadas (el texto no trae los dos %d), solo la resolución.
+static func texto_nativa(r: Vector2i) -> String:
+	var plantilla := TranslationServer.translate("M_SET_NATIVE")
+	return plantilla % [r.x, r.y] if plantilla.count("%d") == 2 else "%d×%d" % [r.x, r.y]
