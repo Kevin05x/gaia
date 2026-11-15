@@ -33,7 +33,8 @@ var cursor: MeshInstance3D
 var range_ring: MeshInstance3D  ## alcance de una torreta mientras se coloca
 var obstacles: Array[Vector2i] = []
 var grid: Node3D
-var grid_manual := false
+var grid_manual := false  ## botón o tecla de la cuadrícula
+var grid_obra := false  ## mientras se coloca una obra (modo construir)
 var bounds_min := Vector2i(-LIMIT, -LIMIT)
 var bounds_max := Vector2i(LIMIT, LIMIT)
 
@@ -49,7 +50,6 @@ var _clock := 0.0
 var _heights := PackedFloat32Array()
 var _n := 0
 var _decor: Node3D
-var _grid_timer := 0.0
 
 ## Tamaño del mundo. Con un mapa grande todo lo que rodea al área jugable se aleja «_s» metros (múltiplo de 8)
 ## del mapa base de 23 m; las proporciones del diorama se conservan.
@@ -726,11 +726,7 @@ func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= bounds_min.x and tile.y >= bounds_min.y and tile.x <= bounds_max.x and tile.y <= bounds_max.y
 
 
-## La retícula aparece unos segundos al elegir destino, o fija con su botón.
-func flash_grid(segundos: float = 2.5) -> void:
-	_grid_timer = segundos
-
-
+## La retícula solo se ve con su botón (o tecla) y en el modo construir; mover el rover no la enciende.
 func toggle_grid() -> void:
 	grid_manual = not grid_manual
 
@@ -740,9 +736,8 @@ func _process(delta: float) -> void:
 	if _outline_material != null:
 		# Pulso discreto: ciclo de 1600 ms, opacidad entre 70 y 100 %.
 		_outline_material.albedo_color.a = 0.85 + 0.15 * sin(_clock * TAU / 1.6)
-	_grid_timer = maxf(0.0, _grid_timer - delta)
 	if is_instance_valid(grid):
-		grid.visible = grid_manual or _grid_timer > 0.0
+		grid.visible = grid_manual or grid_obra
 
 
 ## Rocas decorativas en MultiMesh (3 familias). Dentro del área jugable solo guijarros que no parecen obstáculos;

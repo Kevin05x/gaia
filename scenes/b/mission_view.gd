@@ -234,8 +234,7 @@ func _ready() -> void:
 	port.report_received.connect(_report)
 	port.path_received.connect(func(tiles: Array, seconds: float):
 		actors.follow_path(tiles, seconds)
-		terrain.show_route(tiles)
-		terrain.flash_grid())
+		terrain.show_route(tiles))
 	port.action_received.connect(func(action: Dictionary):
 		for t in port.snapshot.get("targets", []):
 			if str(t.get("id", "")) == str(action.get("target_id", "")) and t.has("tile"):
@@ -529,6 +528,7 @@ func start_placement(tipo: String) -> void:
 	if placing != tipo:
 		_puestos.clear()
 	placing = tipo
+	terrain.grid_obra = true
 	hud.close_actions()
 	var base: Dictionary = state["base"]
 	var centro: Vector2i = base.get("center", Vector2i.ZERO)
@@ -551,6 +551,7 @@ func start_placement(tipo: String) -> void:
 
 func cancel_placement() -> void:
 	placing = ""
+	terrain.grid_obra = false
 	_puestos.clear()
 	buildings.hide_zone()
 	terrain.hide_cursor()
