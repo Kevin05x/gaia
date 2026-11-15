@@ -291,6 +291,9 @@ Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con ma
 - [ ] **12.3 Sonidos que faltan (despegue, rover rodando hacia el cohete, rover desplegado en Marte).** Amner dice que ya los agregó en su rama (`b/cohetes-telescopio`); falta integrarlos y comprobar que suenan.
 - [ ] **12.4 Minerales que no suben el inventario (Arturo).** Por diseño, lo recogido va a la bodega del rover y solo suma al almacén al descargar (marcador del almacén o tecla G). Si además hay minerales que «no estaban en el campo», es otro fallo: Arturo lo revisa.
 - [ ] **12.5 Pregunta del equipo: «¿los modos de juego solo dan dinero extra?»** Exploración da 820 M$ y la mitad de monstruos; Estándar, 700 M$; Experta, 620 M$ y 50 % más monstruos (en la Luna no hay monstruos, solo cambia el presupuesto). Ya está explicado en la pantalla de configuración.
+- [x] **12.6 Un rover por jugador (pedido de Kevin, 15 nov).** Ver `docs/MULTIJUGADOR.md`. Probado con pruebas y con `tools/e2e_red.sh` (2, 4 y «entra tarde»). **Sin probar con personas reales.**
+- [ ] **12.7 Pantalla dividida (4 cuartos en un PC).** No hecha: cuatro mundos 3D no caben en una GPU integrada. Alternativa que ya funciona: varias ventanas contra la misma sala.
+- [x] **12.8 Cuatro salas** (`deploy/servidor/nativo`). Preparadas y probadas solo en local; falta instalarlas en el VPS (pasos en `docs/SERVIDOR.md`).
 - [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
 
 ---

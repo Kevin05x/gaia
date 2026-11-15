@@ -48,6 +48,7 @@ Kevin (Kevin05x) abre el PR final a `main`. Arturo Valdivieso y Evelyn hicieron 
 
 - **Interfaz de la misión** (rama `c/mejoras-15nov`, 15 nov, plan 11): las acciones sin objetivo salen en un menú emergente (**Tab**; Q y E giran la cámara) y su modo se elige en Opciones; «Construir antena» vive en el menú Construir (B); el relé solo existe con antena; la carga se descarga con el marcador sobre el almacén o la tecla **G** (F centra la cámara en el rover). Teclas: B construir, C panorámica, V radar, Z dron, X minerales, U antena, T transmitir, G descargar, Tab acciones.
 - **Tutorial con bloqueo** (plan 11.4): `content/tutorial*.json` lista por paso las órdenes permitidas (`permite`), si el reloj espera (`espera`) y los requisitos (`requiere_instrumento`, `requiere_carga`). Lo aplica `sim/systems/tutorial_system.gd` (`TUTORIAL_LOCKED`). Las pruebas que operan directo (`saltar_taller`) saltan el tutorial.
+- **Multijugador, un rover por jugador** (15 nov): la simulación lleva varios rovers (`MissionState.usar_rover`); batería, datos y base son del equipo; en red no hay tutorial. Prueba real: `tools/e2e_red.sh`. Cuatro salas en el servidor (`deploy/servidor/nativo`). Ver `docs/MULTIJUGADOR.md`.
 - **Estilo «panel de nave»** (`scenes/b/panel_nave.gd`, `UI.nave()`) y **cordillera del horizonte hecha en Blender** (`tools/blender/horizonte.py`, `assets/horizonte/cordillera.glb`, `assets/_blender/horizonte.blend` con `.gdignore`; sin el `.glb` el juego usa las lomas por código).
 
 ## Lo que sigue abierto

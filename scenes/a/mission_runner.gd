@@ -195,7 +195,8 @@ func _crear_simulacion() -> void:
 			errores.append_array(opcional.errores)
 	aplicar_dificultad(reglas, combate, Sesion.dificultad)
 	if errores.is_empty():
-		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, tutorial, hitos)
+		# En red no hay tutorial: bloquea órdenes y detiene el reloj de todo el equipo, y cada jugador lleva su rover.
+		sim = Simulation.new(balance, reglas, mapa, catalogo, economia, historia, combate, null if modo_red else tutorial, hitos)
 		if (crear_vista or modo_red) and not preload("res://scenes/a/medidor.gd").pedido():  # pruebas y medición: el sol de balance.json
 			sim.fijar_duracion_sol(Sesion.duracion_sol_min * 60.0)
 		var imprevistos := ImprevistosSystem.desde_archivo(RUTA_IMPREVISTOS, destino)

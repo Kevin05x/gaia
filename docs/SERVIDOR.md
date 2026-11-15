@@ -95,3 +95,19 @@ compose de arriba: se instala solo la sala como servicio `gaia-sala` y se añade
 Desde el propio VPS, `curl --http1.1` con las cabeceras de WebSocket recibe `101 Switching Protocols` tanto directo (`127.0.0.1:9080`) como por
 `https://sala.gaianasa.tech`. **Aún no se ha jugado una partida** (unirse desde el juego, 2 o más personas, redes distintas): eso sigue pendiente.
 Las visitas de navegador a `https://sala.gaianasa.tech/` dan 502 en el registro de Caddy: es normal (la sala solo habla WebSocket).
+
+
+## Cuatro salas (15 nov, tarde)
+
+Un proceso lleva una sala. Para cuatro: `gaia-sala@9080` a `@9083` (plantilla `deploy/servidor/nativo/gaia-sala@.service`) y un bloque de Caddy que reparte por ruta (`deploy/servidor/nativo/Caddyfile.salas`).
+
+1. En el VPS: `bash /opt/gaia/repo/deploy/servidor/nativo/instalar_salas.sh` (actualiza el repositorio, desactiva la sala única `gaia-sala` y enciende las cuatro instancias).
+2. Caddy: volver a la copia anterior al bloque de GAIA y añadir el bloque nuevo:
+   ```
+   sudo cp /etc/caddy/Caddyfile.bak-gaia /etc/caddy/Caddyfile
+   sudo tee -a /etc/caddy/Caddyfile < /opt/gaia/repo/deploy/servidor/nativo/Caddyfile.salas
+   sudo caddy validate --config /etc/caddy/Caddyfile
+   sudo systemctl reload caddy
+   ```
+3. Probar: `sala.gaianasa.tech/1` a `/4` desde el lobby, o `sala.gaianasa.tech` (= sala 1).
+Si algo falla, la copia `Caddyfile.bak-gaia` deja el Caddy como estaba antes de GAIA.
