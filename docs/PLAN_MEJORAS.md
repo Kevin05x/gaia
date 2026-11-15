@@ -88,7 +88,7 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
   movible o anclada abajo a la izquierda, con **captura real** del paso, flecha a lo que hay que pulsar y «Siguiente / Saltar».
   Las capturas se generan con el propio juego (modo `--capturas` que recorra los pasos y guarde PNG en `assets/tutorial/`).
   Archivos: `sim/systems/tutorial_system.gd` (pasos), `content/tutorial.json`, panel del tutorial en `scenes/b/`.
-- [ ] **2.3 «Cómo jugar» del menú con imágenes reales** (las mismas capturas de 2.2) en cada una de sus 5 páginas. `scenes/menu/`.
+- [x] **2.3 «Cómo jugar» del menú con imágenes reales** (las mismas capturas de 2.2) en cada una de sus 5 páginas. `scenes/menu/`.
 - [x] **2.4 Configuración del rover por defecto** en el taller: entrar con un diseño válido ya armado (cohete medio, trayectoria rápida,
   chasis base, panel solar, antena relé, cámara, espectrómetro y taladro) y un botón «Diseño recomendado». El jugador puede cambiarlo.
   Archivos: `scenes/b/workshop.gd`, `content/parts.json` (marcar `"recomendada": true`), la simulación (`design_add`).

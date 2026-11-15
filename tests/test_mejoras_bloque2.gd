@@ -300,3 +300,28 @@ func test_2_2_la_ventana_muestra_captura_y_botones_y_se_pliega() -> void:
 	assert_false(panel.is_expanded(), "plegada: la radio puede hablar")
 	assert_true(panel.is_showing())
 	assert_false(panel._cuerpo.visible)
+
+
+func test_2_4_el_hangar_dibuja_el_diseno_recomendado_y_no_la_foto_vieja() -> void:
+	var sim := _sim("marte")
+	sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+	var hangar := _hangar(sim)
+	hangar.update_snapshot(sim.snapshot())
+	assert_eq(hangar.snapshot["workshop"]["selection"], sim.snapshot()["workshop"]["selection"],
+		"lo que se ve es el diseño ya armado")
+
+
+# --- 2.3 «Cómo jugar» con capturas reales en sus 5 páginas -------------------------------------------------------------
+
+func test_2_3_cada_pagina_de_como_jugar_tiene_su_captura() -> void:
+	var MenuTutorial := preload("res://scenes/menu/tutorial.gd")
+	assert_eq(MenuTutorial.CAPTURAS.size(), MenuTutorial.PAGINAS)
+	for idioma in ["es", "en"]:
+		TranslationServer.set_locale(idioma)
+		var t: Control = MenuTutorial.new()
+		add_child_autofree(t)
+		for pagina in range(MenuTutorial.PAGINAS):
+			t._ir(pagina)
+			assert_not_null(t._imagen.texture, "%s, página %d con captura" % [idioma, pagina + 1])
+			assert_string_contains(t._imagen.texture.resource_path, "/%s/" % idioma, "en su idioma")
+	TranslationServer.set_locale("es")

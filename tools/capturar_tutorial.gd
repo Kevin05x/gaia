@@ -2,7 +2,8 @@ extends SceneTree
 ## Herramienta de desarrollo (plan de mejoras 2.2 y 2.3): saca las capturas reales de cada paso del tutorial jugando
 ## de verdad: arranca la misión, hace lo que pide el paso (mover el rover, elegir una roca, abrir Construir…) y
 ## fotografía la parte de la pantalla que el paso señala. Guarda JPG de 640×360 en
-## assets/tutorial/<destino>/<idioma>/<paso>.jpg, para Marte y la Luna en español e inglés.
+## assets/tutorial/<destino>/<idioma>/<paso>.jpg, para Marte y la Luna en español e inglés. Para «Cómo jugar» saca
+## además el hangar (taller.jpg) y la plataforma de lanzamiento (plataforma.jpg) de Marte en los dos idiomas.
 ## Uso (necesita GPU):  godot --rendering-driver opengl3 --path . -s tools/capturar_tutorial.gd [-- <carpeta>]
 ## Sin carpeta escribe en res://assets/tutorial/. Después: godot --headless --path . --import (y revisar git status).
 
@@ -37,6 +38,11 @@ func _correr() -> void:
 		for idioma in ["es", "en"]:
 			Texto.guardar("ui", "language", idioma)  # la vista toma el idioma de las preferencias al arrancar
 			await _capturar(destino, idioma)
+	Sesion.destino = "marte"
+	Destino.id = "marte"
+	Destino.aplicar_textos()
+	for idioma in ["es", "en"]:
+		await _capturar_taller(idioma)
 	Graficos.guardar_fps(fps_antes)
 	Texto.guardar("ui", "language", idioma_antes)
 	quit()
@@ -125,6 +131,36 @@ func _capturar(destino: String, idioma: String) -> void:
 
 	juego.queue_free()
 	await _esperar(10)
+
+
+## «Cómo jugar», páginas 2 y 3: la plataforma de lanzamiento con el cohete recomendado y el hangar con el diseño
+## recomendado (Marte).
+func _capturar_taller(idioma: String) -> void:
+	TranslationServer.set_locale(idioma)
+	var carpeta := "%smarte/%s/" % [_salida, idioma]
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	MissionRunner.adaptar_catalogo(catalogo, "marte", 1.0)
+	var sim := Simulation.new(Balance.desde_archivo("res://content/balance.json"),
+		Rules.desde_archivo("res://content/rules.json"), MapData.desde_archivo("res://content/mapa.json"), catalogo)
+	var plataforma: CanvasLayer = preload("res://scenes/b/launch_pad.gd").new()
+	root.add_child(plataforma)
+	plataforma.update_snapshot(sim.snapshot())
+	await _esperar(5)
+	plataforma._t += plataforma._duracion_montaje() + 4.0  # el cohete ya montado
+	await _esperar(60)
+	_guardar(carpeta + "plataforma.jpg", _centro())
+	plataforma.queue_free()
+	sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+	var hangar: CanvasLayer = preload("res://scenes/b/workshop.gd").new()
+	root.add_child(hangar)
+	hangar.command.connect(func(orden: String, carga: Dictionary) -> void:
+		sim.ejecutar(orden, carga)
+		hangar.update_snapshot(sim.snapshot()))
+	hangar.update_snapshot(sim.snapshot())
+	await _esperar(60)
+	_guardar(carpeta + "taller.jpg", _centro())
+	hangar.queue_free()
+	await _esperar(5)
 
 
 ## Objetivo revelado más cerca del rover ("" si no hay).
