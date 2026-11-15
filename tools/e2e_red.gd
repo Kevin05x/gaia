@@ -77,7 +77,8 @@ func _n() -> int:
 
 func _correr() -> void:
 	var nombre := str(_args.get("nombre", "Jugador"))
-	var err := Red.unirse(str(_args.get("dir", "ws://127.0.0.1:9099")), nombre)
+	# --anfitrion: la red local, donde uno de los jugadores abre la sala y además juega (en vez de un servidor sin pantalla).
+	var err := Red.crear_sala(nombre, int(_args.get("puerto", 9090))) if _args.has("anfitrion") else Red.unirse(str(_args.get("dir", "ws://127.0.0.1:9099")), nombre)
 	if err != OK:
 		return _fallo("no se pudo abrir la conexión: %d" % err)
 	if not await _esperar(func() -> bool: return Red.mi_id != 0 and Red.sala.numero(Red.mi_id) > 0, 10.0, "entrar en la sala"):
