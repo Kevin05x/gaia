@@ -61,6 +61,7 @@ var _tip_text: Label
 var _cambiar_cohete: Button
 var _fila_opciones: HBoxContainer  ## «Opciones» y «Código», bajo el catálogo
 var _recomendado: Button  ## «Diseño recomendado», sobre el catálogo
+var _confirmacion: PanelContainer  ## «¿Despegar sin todo?» cuando falta un instrumento clave
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_until := 0.0
@@ -1214,6 +1215,8 @@ func _rebuild_summary(taller: Dictionary) -> void:
 	for codigo in taller.get("notices", []):
 		if str(codigo).begins_with("PENDING_DATA:"):
 			pendientes.append(str(codigo))
+		elif str(codigo).begins_with("MISSING_KEY:"):  # instrumento clave: en rojo, con lo que se pierde
+			_check_line(tr("WS_MISSING_KEY_" + str(codigo).get_slice(":", 1).to_upper()), "critical", UI.CORAL)
 		else:
 			_check_line(_message(str(codigo)), "warning", ORANGE)
 	if pendientes.size() == 1:
@@ -1225,7 +1228,8 @@ func _rebuild_summary(taller: Dictionary) -> void:
 		var linea := _check_line(tr("WS_PENDING_MANY") % pendientes.size(), "warning", ORANGE)
 		linea.tooltip_text = ", ".join(nombres)
 	for id in basicas_que_faltan(taller):
-		_check_line(tr("WS_MISSING_BASIC") % tr(str(_names.get(id, id))), "warning", ORANGE)
+		if not MissionDesign.INSTRUMENTOS_CLAVE.has(id):  # los clave ya salen en rojo (MISSING_KEY)
+			_check_line(tr("WS_MISSING_BASIC") % tr(str(_names.get(id, id))), "warning", ORANGE)
 	if taller.get("valid", false):
 		_check_line(tr("WS_VALID_OK"), "check_circle", UI.TEAL)
 
@@ -1289,22 +1293,76 @@ func _message(codigo: String) -> String:
 	return codigo
 
 
+## Instrumentos clave que faltan en el diseño (avisos MISSING_KEY de la simulación).
+static func clave_que_faltan(taller: Dictionary) -> Array[String]:
+	var faltan: Array[String] = []
+	for codigo in taller.get("notices", []):
+		if str(codigo).begins_with("MISSING_KEY:"):
+			faltan.append(str(codigo).get_slice(":", 1))
+	return faltan
+
+
 func _on_action() -> void:
 	var taller: Dictionary = snapshot.get("workshop", {})
 	if validated and taller.get("valid", false):
-		var sesion := preload("res://scenes/menu/game_session.gd")
-		var jugadores := int(sesion.jugadores)
-		if jugadores > 1 and sesion.en_red:
-			command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
-		elif jugadores > 1:
-			_revision_de_equipo(taller, jugadores)
-		else:
-			command.emit("design_start", {})
+		var faltan := clave_que_faltan(taller)
+		if faltan.is_empty():
+			_despegar(taller)
+		elif not is_instance_valid(_confirmacion):
+			_pedir_confirmacion(faltan)
 		return
 	command.emit("design_validate", {})
 	validated = bool(snapshot.get("workshop", {}).get("valid", false))
 	_signature = ""
 	update_snapshot(snapshot)
+
+
+func _despegar(taller: Dictionary) -> void:
+	var sesion := preload("res://scenes/menu/game_session.gd")
+	var jugadores := int(sesion.jugadores)
+	if jugadores > 1 and sesion.en_red:
+		command.emit("net_review_open", {})  # en red, la revisión se abre en todos los dispositivos (scenes/net/cliente_juego.gd)
+	elif jugadores > 1:
+		_revision_de_equipo(taller, jugadores)
+	else:
+		command.emit("design_start", {})
+
+
+## Falta un instrumento clave: se avisa de lo que se pierde y se pide confirmación. No bloquea.
+func _pedir_confirmacion(faltan: Array[String]) -> void:
+	_confirmacion = PanelContainer.new()
+	_confirmacion.add_theme_stylebox_override("panel", UI.box(0.96, 12, 0.5, 1, 24, 20))
+	UI.place(_confirmacion, "c", 0, 0, 520, 0)
+	root.add_child(_confirmacion)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	_confirmacion.add_child(col)
+	UI.label(col, tr("WS_MISSING_CONFIRM_TITLE"), 18, ORANGE)
+	for id in faltan:
+		var linea := UI.label(col, "• " + tr("WS_MISSING_KEY_" + id.to_upper()), UI.FONT_MIN + 1, Color("F3E6D4"))
+		linea.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var nota := UI.label(col, tr("WS_MISSING_CONFIRM"), UI.FONT_MIN, TEXT_DIM)
+	nota.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var botones := HBoxContainer.new()
+	botones.add_theme_constant_override("separation", 10)
+	botones.alignment = BoxContainer.ALIGNMENT_END
+	col.add_child(botones)
+	var volver := Button.new()
+	volver.text = tr("WS_MISSING_BACK")
+	volver.pressed.connect(_cerrar_confirmacion)
+	botones.add_child(volver)
+	var igual := Button.new()
+	igual.text = tr("WS_LAUNCH_ANYWAY")
+	igual.pressed.connect(func() -> void:
+		_cerrar_confirmacion()
+		_despegar(snapshot.get("workshop", {})))
+	botones.add_child(igual)
+
+
+func _cerrar_confirmacion() -> void:
+	if is_instance_valid(_confirmacion):
+		_confirmacion.queue_free()
+	_confirmacion = null
 
 
 ## Modo equipo: antes de despegar, cada responsable vota GO / NO GO sobre su parte del diseño.

@@ -117,6 +117,13 @@ func _correr() -> void:
 	await _esperar(45)
 	_guardar(salida + "4_hangar_sidebar.png")
 
+	# 4a) Al despegar sin taladro ni espectrómetro, el hangar pide confirmación (no bloquea).
+	hangar.validated = true
+	hangar._on_action()
+	await _esperar(10)
+	_guardar(salida + "4a_falta_instrumento.png")
+	hangar._cerrar_confirmacion()
+
 	# 4b) El mismo hangar rumbo a la Luna: por el portón se ve el horizonte gris y la Tierra.
 	hangar.queue_free()
 	var antes := Destino.id

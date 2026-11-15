@@ -224,6 +224,13 @@ WS_OVER_MASS,La nave pesa más de lo que levanta el cohete,The ship weighs more 
 WS_OVER_BUDGET,El costo supera el presupuesto,The cost exceeds the budget
 WS_PENDING_DATA,%s: datos pendientes de definir,%s: data still to be defined
 WS_MISSING_BASIC,Sin %s: el rover sale sin una herramienta básica,No %s: the rover flies without a basic tool
+WS_MISSING_KEY_TALADRO,Sin taladro no podrás tomar muestras ni sacar recursos para construir,Without the drill you can't take samples or gather resources to build
+WS_MISSING_KEY_ESPECTROMETRO,"Sin espectrómetro no podrás analizar las rocas, que dan los datos de ciencia","Without the spectrometer you can't analyse rocks, which give science data"
+WS_MISSING_KEY_CAMARA,Sin cámara no podrás hacer panorámicas para descubrir rocas y minerales,Without the camera you can't take panoramas to find rocks and minerals
+WS_MISSING_CONFIRM_TITLE,¿Despegar sin todos los instrumentos?,Launch without every instrument?
+WS_MISSING_CONFIRM,"Se puede jugar igual, pero esas acciones no estarán en la misión. Puedes volver al taller y añadirlos.","You can still play, but those actions won't be available in the mission. You can go back and add them."
+WS_MISSING_BACK,Volver al taller,Back to the workshop
+WS_LAUNCH_ANYWAY,Despegar igual,Launch anyway
 WS_PREVIEW_NOTE,Vista previa del rover con tus piezas,Rover preview with your parts
 REDESIGN_SHORT,Rediseñar,Redesign
 ENERGY_PILL,Energía %d %%,Energy %d %%

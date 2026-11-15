@@ -104,3 +104,58 @@ func test_2_4_la_plataforma_llega_con_el_cohete_medio_marcado() -> void:
 	plataforma._signature = ""
 	plataforma.update_snapshot(sim.snapshot())
 	assert_eq(plataforma.elegido, "cohete_ligero", "la marca recomendada no pisa la elección del jugador")
+
+
+# --- 2.5 Aviso si falta un instrumento clave, con confirmación al despegar (sin bloquear) ----------------------------
+
+func _textos_del_resumen(hangar: CanvasLayer) -> String:
+	var textos := ""
+	for etiqueta in hangar._summary_box.find_children("*", "Label", true, false):
+		textos += (etiqueta as Label).text + "\n"
+	return textos
+
+
+func test_2_5_sin_taladro_se_avisa_en_rojo_y_no_bloquea() -> void:
+	var sim := _sim("marte")
+	sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+	var hangar := _hangar(sim)
+	hangar.update_snapshot(sim.snapshot())
+	sim.ejecutar("design_remove", {"part_id": "taladro"})
+	var taller: Dictionary = sim.snapshot()["workshop"]
+	assert_has(taller["notices"], "MISSING_KEY:taladro", "la simulación avisa")
+	assert_true(taller["valid"], "pero no bloquea")
+	hangar.update_snapshot(sim.snapshot())
+	assert_string_contains(_textos_del_resumen(hangar), "Sin taladro no podrás tomar muestras")
+
+
+func test_2_5_despegar_sin_un_instrumento_clave_pide_confirmacion() -> void:
+	var sim := _sim("marte")
+	sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+	var hangar := _hangar(sim)
+	hangar.update_snapshot(sim.snapshot())
+	sim.ejecutar("design_remove", {"part_id": "espectrometro"})
+	hangar.update_snapshot(sim.snapshot())
+	var ordenes: Array[String] = []
+	hangar.command.connect(func(orden: String, _c: Dictionary) -> void: ordenes.append(orden))
+	hangar.validated = true
+	hangar._on_action()
+	assert_false(ordenes.has("design_start"), "no despega todavía")
+	assert_true(is_instance_valid(hangar._confirmacion), "pregunta antes")
+	var botones: Array = hangar._confirmacion.find_children("*", "Button", true, false)
+	assert_eq(botones.size(), 2, "«Volver al taller» y «Despegar igual»")
+	(botones[1] as Button).pressed.emit()
+	assert_true(ordenes.has("design_start"), "«Despegar igual» despega")
+
+
+func test_2_5_con_todos_los_instrumentos_despega_sin_preguntar() -> void:
+	var sim := _sim("marte")
+	sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+	var hangar := _hangar(sim)
+	hangar.update_snapshot(sim.snapshot())
+	assert_eq(WorkshopScript.clave_que_faltan(sim.snapshot()["workshop"]), [])
+	var ordenes: Array[String] = []
+	hangar.command.connect(func(orden: String, _c: Dictionary) -> void: ordenes.append(orden))
+	hangar.validated = true
+	hangar._on_action()
+	assert_true(ordenes.has("design_start"))
+	assert_false(is_instance_valid(hangar._confirmacion))
