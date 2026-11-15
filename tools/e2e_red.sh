@@ -2,6 +2,7 @@
 # Prueba de extremo a extremo del multijugador: un servidor sin pantalla y clientes sin pantalla, de verdad, por WebSocket.
 # Comprueba: entrar en la sala, reparto de roles, piezas de otro rol rechazadas, tope de presupuesto por rol, diseño y lanzamiento,
 # un rover por jugador, cada uno ve a los demás donde están, y órdenes de otro rol rechazadas.
+# Contra un servidor ya en marcha (p. ej. el real):  DIR_EXTERNO=wss://sala.gaianasa.tech/4 GODOT=... bash tools/e2e_red.sh 2
 # Uso:  GODOT=/ruta/a/godot bash tools/e2e_red.sh [2|4|tarde|lan] [puerto]   (RUTA=/2 para entrar por una sala de ruta)
 #   2      dos jugadores (por defecto)       4      cuatro jugadores, un rol cada uno
 #   tarde  dos empiezan y un tercero entra con la misión en marcha
@@ -12,7 +13,9 @@ MODO="${1:-2}"
 PUERTO="${2:-9099}"
 SALIDA="$(mktemp -d)"
 SERVIDOR=0
-if [ "$MODO" != "lan" ]; then
+if [ -n "${DIR_EXTERNO:-}" ]; then
+  : > "$SALIDA/servidor.txt"  # el servidor ya existe (no se lanza uno local)
+elif [ "$MODO" != "lan" ]; then
   PORT="$PUERTO" "$GODOT" --headless --path . scenes/net/servidor.tscn -- --servidor > "$SALIDA/servidor.txt" 2>&1 &
   SERVIDOR=$!
   for _ in $(seq 1 60); do grep -q "GAIA servidor" "$SALIDA/servidor.txt" && break; sleep 1; done  # espera a que de verdad escuche
@@ -20,7 +23,7 @@ if [ "$MODO" != "lan" ]; then
 else
   : > "$SALIDA/servidor.txt"
 fi
-DIR="ws://127.0.0.1:$PUERTO${RUTA:-}"  # RUTA=/2 prueba entrar por una sala de ruta (sala.<dominio>/2)
+DIR="${DIR_EXTERNO:-ws://127.0.0.1:$PUERTO${RUTA:-}}"  # RUTA=/2 prueba entrar por una sala de ruta (sala.<dominio>/2)
 lanzar() {  # nombre, argumentos...
   local nombre="$1"; shift
   "$GODOT" --headless --path . res://tools/e2e_red.tscn -- --dir=$DIR --nombre=$nombre "$@" > "$SALIDA/$nombre.txt" 2>&1 &

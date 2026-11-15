@@ -165,20 +165,20 @@ func _taller(nombre: String, roles: Array) -> bool:
 	if not _rechazos[0].begins_with("NET_AREA_"):
 		_fallo("el rechazo de la pieza ajena no fue por el área: " + _rechazos[0])
 		return false
-	if roles.has("direccion"):
-		_rechazos.clear()
-		Red.enviar_orden("design_add", {"part_id": "cohete_super"})
-		if not await _esperar(func() -> bool: return _rechazos.size() > 0, 5.0, "rechazo por presupuesto"):
-			return false
-		print("E2E %s cohete_super rechazado: %s" % [nombre, _rechazos[0]])
-		if _rechazos[0] != "NET_ROLE_BUDGET":
-			_fallo("el cohete_super debía rechazarse por presupuesto del rol: " + _rechazos[0])
-			return false
 	for categoria in Permisos.categorias_de(roles):
 		if categoria == "extras":
 			for id in EXTRAS:
 				Red.enviar_orden("design_add", {"part_id": id})
 				await get_tree().create_timer(0.3).timeout
+			if _n() == 2:  # con dos jugadores a Ciencia le tocan 150 M$ (130 en la Luna): tras las tres piezas de arriba el dron (30) ya no cabe
+				_rechazos.clear()
+				Red.enviar_orden("design_add", {"part_id": "dron"})
+				if not await _esperar(func() -> bool: return _rechazos.size() > 0, 5.0, "rechazo por presupuesto del rol"):
+					return false
+				print("E2E %s dron rechazado: %s" % [nombre, _rechazos[0]])
+				if _rechazos[0] != "NET_ROLE_BUDGET":
+					_fallo("el dron debía rechazarse por presupuesto del rol: " + _rechazos[0])
+					return false
 		else:
 			Red.enviar_orden("design_add", {"part_id": PIEZAS[categoria]})
 			await get_tree().create_timer(0.3).timeout

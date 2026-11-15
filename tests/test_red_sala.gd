@@ -274,16 +274,17 @@ func test_el_reparto_suma_el_presupuesto_y_se_escala_a_la_dificultad() -> void:
 
 
 func test_el_diseno_recomendado_cabe_en_las_partes_de_cada_rol() -> void:
+	# Con dos jugadores el presupuesto es 700 + 200 = 900 (content/rules*.json › presupuesto_extra_por_jugador_musd).
 	# Marte: cohete medio 250 + trayectoria rápida 10 · chasis 180 + panel solar 20 · antena relé 30 · espectrómetro, taladro y cámara 105.
 	Destino.id = "marte"
-	var t := Permisos.topes_por_rol(700.0)
+	var t := Permisos.topes_por_rol(900.0)
 	assert_lte(260.0, float(t["direccion"]))
 	assert_lte(200.0, float(t["ingenieria"]))
 	assert_lte(30.0, float(t["comunicaciones"]))
 	assert_lte(105.0, float(t["ciencia"]))
 	# Luna: cohete medio 250 + directa 15 · chasis 180 + MMRTG 120 · antena 30 · 105 de instrumentos.
 	Destino.id = "luna"
-	t = Permisos.topes_por_rol(700.0)
+	t = Permisos.topes_por_rol(900.0)
 	assert_lte(265.0, float(t["direccion"]))
 	assert_lte(300.0, float(t["ingenieria"]))
 	assert_lte(30.0, float(t["comunicaciones"]))
@@ -293,8 +294,29 @@ func test_el_diseno_recomendado_cabe_en_las_partes_de_cada_rol() -> void:
 
 func test_el_resto_de_un_rol_dice_cuanto_le_queda_y_si_no_cabe() -> void:
 	Destino.id = "marte"
-	var taller := _taller_de_prueba(150)  # Ingeniería tiene 200: lleva 150
-	assert_almost_eq(float(Permisos.resto_de_rol("ingenieria", 20.0, taller)), 30.0, 0.01, "caben 20 y sobran 30")
+	var taller := _taller_de_prueba(150)  # el taller de prueba tiene 700 M$; Ingeniería recibe 280/900 de eso y lleva 150
+	var tope_ing := 280.0 * 700.0 / 900.0
+	assert_almost_eq(float(Permisos.resto_de_rol("ingenieria", 20.0, taller)), tope_ing - 150.0 - 20.0, 0.01, "caben 20 y sobra el resto")
 	assert_lt(float(Permisos.resto_de_rol("ingenieria", 80.0, taller)), 0.0, "80 no caben")
 	assert_not_null(Permisos.resto_de_rol("direccion", 0.0, taller))
 	assert_null(Permisos.resto_de_rol("rol_inexistente", 0.0, taller), "sin reparto no hay tope")
+
+
+func test_cada_jugador_de_mas_suma_su_presupuesto_en_red() -> void:
+	var sesion := preload("res://scenes/menu/game_session.gd")
+	var runner := preload("res://scenes/a/mission_runner.gd")
+	var antes_red: bool = sesion.en_red
+	var antes_n: int = sesion.jugadores
+	sesion.en_red = true
+	for caso in [[1, 700.0], [2, 900.0], [3, 1100.0], [4, 1300.0]]:
+		sesion.jugadores = caso[0]
+		var reglas := Rules.desde_archivo("res://content/rules.json")
+		runner.aplicar_dificultad(reglas, null, "estandar")
+		assert_almost_eq(reglas.presupuesto_musd, float(caso[1]), 0.01, "%d jugadores" % caso[0])
+	sesion.en_red = false  # fuera de la red no se suma nada, aunque la sesión recuerde varios jugadores
+	sesion.jugadores = 4
+	var sola := Rules.desde_archivo("res://content/rules.json")
+	runner.aplicar_dificultad(sola, null, "estandar")
+	assert_almost_eq(sola.presupuesto_musd, 700.0, 0.01, "una partida local no suma")
+	sesion.en_red = antes_red
+	sesion.jugadores = antes_n

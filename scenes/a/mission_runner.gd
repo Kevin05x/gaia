@@ -229,6 +229,8 @@ static func aplicar_dificultad(reglas: Rules, combate: CombatData, id: String) -
 	if nivel.is_empty():
 		return
 	reglas.presupuesto_musd = float(nivel.get("presupuesto_musd", reglas.presupuesto_musd))
+	if Sesion.en_red and Sesion.jugadores > 1:  # cada jugador de más trae su parte (content/rules*.json › presupuesto_extra_por_jugador_musd)
+		reglas.presupuesto_musd += reglas.presupuesto_extra_por_jugador_musd * (Sesion.jugadores - 1)
 	var factor := float(nivel.get("factor_enemigos", 1.0))
 	if combate != null and not is_equal_approx(factor, 1.0):
 		for oleada in combate.oleadas:

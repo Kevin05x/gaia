@@ -11,7 +11,8 @@ if systemctl list-unit-files | grep -q '^gaia-sala.service'; then
   sudo systemctl disable --now gaia-sala  # la sala única de antes: su puerto 9080 pasa a la instancia @9080
 fi
 for puerto in 9080 9081 9082 9083; do
-  sudo systemctl enable --now "gaia-sala@$puerto"
+  sudo systemctl enable "gaia-sala@$puerto"
+  sudo systemctl restart "gaia-sala@$puerto"  # con el código nuevo (una sala ya en marcha seguiría con el viejo)
 done
 sleep 4
 for puerto in 9080 9081 9082 9083; do
