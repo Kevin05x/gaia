@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-es="El reto | GAIA" data-en="The challenge | GAIA">El reto | GAIA</title>
+<meta name="description" content="Qué problema quisimos resolver con GAIA para el NASA Space Apps Challenge 2026.">
+<meta property="og:title" content="El reto | GAIA">
+<meta property="og:description" content="Qué problema quisimos resolver con GAIA para el NASA Space Apps Challenge 2026.">
+<meta property="og:image" content="img/hero.jpg">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="grano" aria-hidden="true"></div>
+<div class="vineta" aria-hidden="true"></div>
+
+<nav id="nav">
+  <div class="ancho">
+    <a class="marca" href="index.html" aria-label="GAIA"><img src="img/gaia_logo.png" alt="GAIA"></a>
+    <ul>
+      <li><a class="activa" href="reto.html"><span class="es">El reto</span><span class="en">The challenge</span></a></li>
+      <li><a href="nacio.html"><span class="es">Cómo nació</span><span class="en">How it began</span></a></li>
+      <li><a href="juego.html"><span class="es">Cómo se juega</span><span class="en">How to play</span></a></li>
+      <li><a href="mundo.html"><span class="es">El mundo</span><span class="en">The world</span></a></li>
+      <li><a href="equipo.html"><span class="es">El equipo</span><span class="en">The team</span></a></li>
+    </ul>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="idioma"><button data-l="es" type="button">ES</button><button data-l="en" type="button">EN</button></div>
+      <a class="boton principal" href="https://gaianasa.tech" style="padding:10px 20px;font-size:.8rem"><span class="es">Jugar</span><span class="en">Play</span></a>
+    </div>
+  </div>
+</nav>
+
+<header class="cabecera">
+  <div class="fondo" style="background-image:url(img/nasa_aterrizaje.jpg)" aria-hidden="true"></div>
+  <div class="barra arriba"></div>
+  <div class="ancho contenido">
+    <div class="etiqueta"><span class="es">El reto</span><span class="en">The challenge</span></div>
+    <h1><span class="es">Un simulador para entender cómo se diseña una misión</span><span class="en">A simulator to understand how a mission is designed</span></h1>
+  </div>
+</header>
+<main>
+<section>
+  <div class="ancho">
+    <div class="cols2" style="align-items:start">
+      <div class="rev">
+        <h2><span class="es">El problema</span><span class="en">The problem</span></h2>
+        <p class="es tenue">El diseño de misiones espaciales suele verse como un tema complejo y teórico. A estudiantes y público general les cuesta entender cómo los límites físicos, de presupuesto y de ambiente moldean la exploración espacial real.</p>
+        <p class="en tenue">Space mission design is often seen as a complex, theoretical field. Students and the general public find it hard to understand how physical, budgetary and environmental constraints shape real space exploration.</p>
+        <p class="es tenue">Nuestro objetivo fue crear un simulador accesible e interactivo que lleve la ingeniería aeroespacial y las decisiones científicas a una experiencia práctica.</p>
+        <p class="en tenue">Our objective was to create an accessible, interactive simulator that brings aerospace engineering and scientific decision-making into a hands-on experience.</p>
+      </div>
+      <div class="rev d1">
+        <h2><span class="es">Qué es GAIA</span><span class="en">What GAIA is</span></h2>
+        <p class="es tenue">GAIA es un juego de estrategia 3D y web, hecho con Godot Engine 4, para 1 a 4 jugadores. Responde al reto Space Mission Design Game.</p>
+        <p class="en tenue">GAIA is a 3D and web strategy game built in Godot Engine 4 for 1 to 4 players. It addresses the Space Mission Design Game challenge.</p>
+        <p class="es tenue">Diseñas una misión con límites estrictos de masa y presupuesto, pasas una revisión Go/No-Go por roles y operas en Marte, en el cráter Jezero, o en el polo sur de la Luna. Usa modelos 3D oficiales de la NASA y datos abiertos del JPL. Al terminar, un informe compara tu resultado con misiones reales como Mars 2020 y Apolo.</p>
+        <p class="en tenue">You design a mission under strict mass and budget limits, run a role-based Go/No-Go review and operate on Mars, in Jezero Crater, or at the Moon's south pole. It uses official NASA 3D models and open JPL data. Afterwards a report compares your results with real missions like Mars 2020 and Apollo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,var(--fondo),#1A110C 50%,var(--fondo))">
+  <div class="ancho">
+    <div class="cols4">
+      <div class="panel rev"><span class="luz"></span><div class="cifra">700<small>M USD</small></div><p class="pequeno" style="margin:8px 0 0"><span class="es">Presupuesto estándar. Cada kilo y cada dólar cuentan. Es un valor de juego.</span><span class="en">Standard budget. Every kilo and every dollar counts. It is a game value.</span></p></div>
+      <div class="panel rev d1"><span class="luz"></span><div class="cifra">203<small><span class="es">DÍAS</span><span class="en">DAYS</span></small></div><p class="pequeno" style="margin:8px 0 0"><span class="es">De viaje a Marte, igual que Perseverance según la NASA. A la Luna son 3 días.</span><span class="en">Trip to Mars, the same as Perseverance according to NASA. To the Moon it is 3 days.</span></p></div>
+      <div class="panel rev d2"><span class="luz"></span><div class="cifra">100<small><span class="es">DATOS</span><span class="en">DATA</span></small></div><p class="pequeno" style="margin:8px 0 0"><span class="es">La meta es enviarlos a la Tierra antes de que termine el sol 6.</span><span class="en">The goal is to send them to Earth before sol 6 ends.</span></p></div>
+      <div class="panel rev d3"><span class="luz"></span><div class="cifra">1-4<small><span class="es">JUGADORES</span><span class="en">PLAYERS</span></small></div><p class="pequeno" style="margin:8px 0 0"><span class="es">Solo o en equipo, cada quien con su rover y su rol.</span><span class="en">Alone or as a team, each with their own rover and role.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="ancho">
+    <div class="cols2" style="align-items:start">
+      <div class="rev">
+        <h2><span class="es">Lo que queremos que quede</span><span class="en">What we want players to take away</span></h2>
+        <p class="es tenue">Explorar otros mundos exige equilibrar decisiones técnicas, administrar recursos limitados y actuar con responsabilidad científica.</p>
+        <p class="en tenue">Exploring other worlds requires balancing technical trade-offs, managing limited resources and acting with scientific responsibility.</p>
+        <h3 style="margin-top:26px"><span class="es">Lo real y lo de juego</span><span class="en">What is real and what is game</span></h3>
+        <ul class="marcas tenue es">
+          <li>Real: el lanzamiento del 30 de julio de 2020 en un Atlas V 541, el aterrizaje del 18 de febrero de 2021 y los 203 días de viaje, según la NASA.</li>
+          <li>Real: el rover Perseverance y el helicóptero Ingenuity a escala 1:1, el módulo lunar de Apolo y la altura de los cohetes.</li>
+          <li>De juego: costos, masas, cargas y trayectorias. Están a escala o simplificadas, y se marcan como valores de juego.</li>
+        </ul>
+        <ul class="marcas tenue en">
+          <li>Real: the launch on 30 July 2020 on an Atlas V 541, the landing on 18 February 2021 and the 203-day trip, according to NASA.</li>
+          <li>Real: the Perseverance rover and the Ingenuity helicopter at 1:1 scale, the Apollo lunar module and the height of the rockets.</li>
+          <li>Game: costs, masses, payloads and trajectories. They are scaled or simplified, and marked as game values.</li>
+        </ul>
+      </div>
+      <div class="rev d1" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div><div class="encuadre" style="aspect-ratio:3/2"><img loading="lazy" src="img/nasa_lanzamiento.jpg" alt="Lanzamiento de Mars 2020"></div><p class="pie">NASA/Frank Michaux, KSC-20200730-PH-FMX01_0042</p></div>
+        <div><div class="encuadre" style="aspect-ratio:3/2"><img loading="lazy" src="img/nasa_aterrizaje.jpg" alt="Perseverance aterrizando"></div><p class="pie">NASA/JPL-Caltech, PIA24319, <span class="es">ilustración</span><span class="en">illustration</span></p></div>
+        <div><div class="encuadre" style="aspect-ratio:3/2"><img loading="lazy" src="img/nasa_jezero.jpg" alt="Cráter Jezero"></div><p class="pie">NASA/JPL-Caltech/MSSS/JHU-APL, PIA23239</p></div>
+        <div><div class="encuadre" style="aspect-ratio:3/2"><img loading="lazy" src="img/nasa_luna_polo.jpg" alt="Polo sur lunar"></div><p class="pie">NASA/JPL/USGS, PIA00001</p></div>
+      </div>
+    </div>
+    <div class="siguiente rev">
+      <span></span>
+      <a class="boton secundario" href="nacio.html"><span class="es">Siguiente: cómo nació</span><span class="en">Next: how it began</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="ancho">
+    <div class="cols3">
+      <div><h4>GAIA</h4>
+        <p><span class="es">Un juego de Full Galácticos para el NASA Space Apps Challenge 2026, reto Space Mission Design Game. GAIA no está afiliado a la NASA ni a ninguna agencia espacial. El nombre es provisional.</span><span class="en">A game by Full Galácticos for the NASA Space Apps Challenge 2026, Space Mission Design Game challenge. GAIA is not affiliated with NASA or any space agency. The name is provisional.</span></p></div>
+      <div><h4><span class="es">Créditos</span><span class="en">Credits</span></h4><ul>
+        <li><span class="es">Datos e imágenes de la NASA, cada uno con su crédito: NASA/JPL, NASA Science, NASA Image and Video Library y NASA 3D Resources.</span><span class="en">NASA data and images, each with its credit: NASA/JPL, NASA Science, NASA Image and Video Library and NASA 3D Resources.</span></li>
+        <li><span class="es">Cohete Saturno V: «Cohete» de albertomarun en Sketchfab, licencia <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</span><span class="en">Saturn V rocket: "Cohete" by albertomarun on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> license.</span></li>
+        <li>Kenney, Space Kit, y Kay Lousberg, Space Base Bits, ambos CC0.</li>
+        <li><span class="es">Tipografías Oxanium e Inter, licencia OFL.</span><span class="en">Typefaces Oxanium and Inter, OFL license.</span></li></ul></div>
+      <div><h4><span class="es">Honestidad</span><span class="en">Honesty</span></h4><p><span class="es">Las imágenes de la historia están hechas con IA y llevan la marca «Imagen generada con IA». Parte del código se hizo con ayuda de IA, Claude de Anthropic, bajo la dirección del equipo.</span><span class="en">The story images are made with AI and carry the mark "AI-generated". Part of the code was written with AI help, Claude by Anthropic, under the team's direction.</span></p><p class="pequeno">© Full Galácticos, Cajamarca, Perú</p>
+        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
+    </div>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-es="El equipo | GAIA" data-en="The team | GAIA">El equipo | GAIA</title>
+<meta name="description" content="Quiénes hicimos GAIA, cómo está hecho y qué parte se hizo con IA.">
+<meta property="og:title" content="El equipo | GAIA">
+<meta property="og:description" content="Quiénes hicimos GAIA, cómo está hecho y qué parte se hizo con IA.">
+<meta property="og:image" content="img/hero.jpg">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="grano" aria-hidden="true"></div>
+<div class="vineta" aria-hidden="true"></div>
+
+<nav id="nav">
+  <div class="ancho">
+    <a class="marca" href="index.html" aria-label="GAIA"><img src="img/gaia_logo.png" alt="GAIA"></a>
+    <ul>
+      <li><a href="reto.html"><span class="es">El reto</span><span class="en">The challenge</span></a></li>
+      <li><a href="nacio.html"><span class="es">Cómo nació</span><span class="en">How it began</span></a></li>
+      <li><a href="juego.html"><span class="es">Cómo se juega</span><span class="en">How to play</span></a></li>
+      <li><a href="mundo.html"><span class="es">El mundo</span><span class="en">The world</span></a></li>
+      <li><a class="activa" href="equipo.html"><span class="es">El equipo</span><span class="en">The team</span></a></li>
+    </ul>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="idioma"><button data-l="es" type="button">ES</button><button data-l="en" type="button">EN</button></div>
+      <a class="boton principal" href="https://gaianasa.tech" style="padding:10px 20px;font-size:.8rem"><span class="es">Jugar</span><span class="en">Play</span></a>
+    </div>
+  </div>
+</nav>
+
+<header class="cabecera">
+  <div class="fondo" style="background-image:url(img/juego_equipo.jpg)" aria-hidden="true"></div>
+  <div class="barra arriba"></div>
+  <div class="ancho contenido">
+    <div class="etiqueta"><span class="es">El equipo</span><span class="en">The team</span></div>
+    <h1><span class="es">Full Galácticos, Cajamarca</span><span class="en">Full Galácticos, Cajamarca</span></h1>
+  </div>
+</header>
+<main>
+<section>
+  <div class="ancho">
+    <p class="rev tenue es">Cajamarca, Perú. <span class="pendiente">[Completar con nombres completos, fotos de mayores de 18 años y roles]</span></p>
+    <p class="rev tenue en">Cajamarca, Peru. <span class="pendiente">[Complete with full names, photos of adults only and roles]</span></p>
+    <div class="cols3" style="margin-top:30px">
+      <div class="panel persona rev"><span class="luz"></span><div class="avatar">K</div><h3>Kevin</h3><p class="pequeno" style="margin:0"><span class="es">Simulación, datos, taller y publicación.</span><span class="en">Simulation, data, workshop and release.</span></p></div>
+      <div class="panel persona rev d1"><span class="luz"></span><div class="avatar">A</div><h3>Amner</h3><p class="pequeno" style="margin:0"><span class="es">Mundo 3D, interfaz, HUD, informe y sonido.</span><span class="en">3D world, interface, HUD, report and sound.</span></p></div>
+      <div class="panel persona rev d2"><span class="luz"></span><div class="avatar">E</div><h3>Evelyn</h3><p class="pequeno" style="margin:0"><span class="es">Modelos 3D de cohetes y edificios.</span><span class="en">3D models of rockets and buildings.</span> <span class="pendiente">[rol por completar]</span></p></div>
+      <div class="panel persona rev"><span class="luz"></span><div class="avatar">A</div><h3>Arturo</h3><p class="pequeno" style="margin:0"><span class="es">Arte y realismo gráfico.</span><span class="en">Art and visual realism.</span> <span class="pendiente">[rol por completar]</span></p></div>
+      <div class="panel persona rev d1"><span class="luz"></span><div class="avatar">S</div><h3>Scarlett</h3><p class="pequeno" style="margin:0"><span class="es">Historia y bionutrientes.</span><span class="en">Story and bionutrients.</span> <span class="pendiente">[rol por completar]</span></p></div>
+      <div class="panel persona rev d2"><span class="luz"></span><div class="avatar">T</div><h3>Tony</h3><p class="pequeno" style="margin:0"><span class="es">Historia, diálogos y voces.</span><span class="en">Story, dialogue and voices.</span> <span class="pendiente">[rol por completar]</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,var(--fondo),#1A110C)">
+  <div class="ancho">
+    <div class="etiqueta rev"><span class="es">Cómo está hecho</span><span class="en">How it is made</span></div>
+    <div class="cols3">
+      <div class="panel rev"><span class="luz"></span><h3>Godot 4.7</h3><p class="pequeno" style="margin:0"><span class="es">GDScript, escritorio con Forward+ y web con un solo hilo. Una base de código para Windows y navegador.</span><span class="en">GDScript, desktop with Forward+ and single-threaded web. One code base for Windows and the browser.</span></p></div>
+      <div class="panel rev d1"><span class="luz"></span><h3><span class="es">Tres capas</span><span class="en">Three layers</span></h3><p class="pequeno" style="margin:0"><span class="es">Datos en JSON, simulación pura y la vista. La simulación se prueba sola, con más de 670 pruebas automáticas y una prueba completa del juego en red.</span><span class="en">JSON data, a pure simulation and the view. The simulation is tested on its own, with over 670 automated tests and a full test of online play.</span></p></div>
+      <div class="panel rev d2"><span class="luz"></span><h3><span class="es">Hecho con IA, y lo decimos</span><span class="en">Made with AI, and we say so</span></h3><p class="pequeno" style="margin:0"><span class="es">La idea, el diseño, las reglas y la supervisión son del equipo. Parte del código se escribió con Claude, de Anthropic. Las imágenes de la historia son de IA y llevan marca visible. Las voces son síntesis de voz.</span><span class="en">The idea, design, rules and supervision are the team's. Part of the code was written with Claude, by Anthropic. The story images are AI-made and carry a visible mark. The voices are synthetic speech.</span></p></div>
+    </div>
+    <div style="margin-top:50px;display:flex;flex-wrap:wrap;gap:16px" class="rev">
+      <a class="boton principal" href="https://gaianasa.tech"><span class="es">Jugar GAIA</span><span class="en">Play GAIA</span></a>
+      <a class="boton secundario" href="https://github.com/Kevin05x/gaia"><span class="es">Código en GitHub</span><span class="en">Code on GitHub</span></a>
+      <a class="boton secundario" href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/"><span class="es">Nuestro proyecto en Space Apps</span><span class="en">Our Space Apps project</span></a>
+    </div>
+    <div class="siguiente rev">
+      <a class="boton secundario" href="mundo.html"><span class="es">Anterior: el mundo</span><span class="en">Previous: the world</span></a>
+      <span></span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="ancho">
+    <div class="cols3">
+      <div><h4>GAIA</h4>
+        <p><span class="es">Un juego de Full Galácticos para el NASA Space Apps Challenge 2026, reto Space Mission Design Game. GAIA no está afiliado a la NASA ni a ninguna agencia espacial. El nombre es provisional.</span><span class="en">A game by Full Galácticos for the NASA Space Apps Challenge 2026, Space Mission Design Game challenge. GAIA is not affiliated with NASA or any space agency. The name is provisional.</span></p></div>
+      <div><h4><span class="es">Créditos</span><span class="en">Credits</span></h4><ul>
+        <li><span class="es">Datos e imágenes de la NASA, cada uno con su crédito: NASA/JPL, NASA Science, NASA Image and Video Library y NASA 3D Resources.</span><span class="en">NASA data and images, each with its credit: NASA/JPL, NASA Science, NASA Image and Video Library and NASA 3D Resources.</span></li>
+        <li><span class="es">Cohete Saturno V: «Cohete» de albertomarun en Sketchfab, licencia <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</span><span class="en">Saturn V rocket: "Cohete" by albertomarun on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> license.</span></li>
+        <li>Kenney, Space Kit, y Kay Lousberg, Space Base Bits, ambos CC0.</li>
+        <li><span class="es">Tipografías Oxanium e Inter, licencia OFL.</span><span class="en">Typefaces Oxanium and Inter, OFL license.</span></li></ul></div>
+      <div><h4><span class="es">Honestidad</span><span class="en">Honesty</span></h4><p><span class="es">Las imágenes de la historia están hechas con IA y llevan la marca «Imagen generada con IA». Parte del código se hizo con ayuda de IA, Claude de Anthropic, bajo la dirección del equipo.</span><span class="en">The story images are made with AI and carry the mark "AI-generated". Part of the code was written with AI help, Claude by Anthropic, under the team's direction.</span></p><p class="pequeno">© Full Galácticos, Cajamarca, Perú</p>
+        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
+    </div>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

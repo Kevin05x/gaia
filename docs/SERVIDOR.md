@@ -111,3 +111,22 @@ Un proceso lleva una sala. Para cuatro: `gaia-sala@9080` a `@9083` (plantilla `d
    ```
 3. Probar: `sala.gaianasa.tech/1` a `/4` desde el lobby, o `sala.gaianasa.tech` (= sala 1).
 Si algo falla, la copia `Caddyfile.bak-gaia` deja el Caddy como estaba antes de GAIA.
+
+
+## El juego en el dominio y la web en un subdominio (15 nov, tarde)
+
+| Dirección | Qué sirve | De dónde sale |
+| --- | --- | --- |
+| `https://gaianasa.tech` | El juego (exportación web de Godot) | `build/web/`, exportado en el PC y subido con `scp` |
+| `https://www.gaianasa.tech` | Redirige a `gaianasa.tech` | Caddy |
+| `https://info.gaianasa.tech` | La web del proyecto (6 páginas, ES/EN) | `sitio/` del repositorio, generado con `py tools/generar_sitio.py` |
+| `wss://sala.gaianasa.tech/1` a `/4` | Las cuatro salas | `gaia-sala@9080` a `@9083` |
+
+**DNS** (en el panel del dominio): cambiar el registro `A` de `@` a `2.25.146.107` (hoy apunta al aparcamiento de Hostinger), y añadir `A` con nombre `info` hacia la misma IP. `www` ya apunta a `gaianasa.tech` por CNAME. Los registros `gaia` y `sala` ya existen.
+
+**Pasos** (cada uno con su comando en la conversación del 15 nov):
+1. En el PC: `& "C:\Godot\Godot_v4.7.2-stable_win64_console.exe" --headless --path . --export-release "Web" build/web/index.html` (unos 40 s) y `scp -r build\web kevin@2.25.146.107:/tmp/gaia-juego`.
+2. En el VPS: `bash /opt/gaia/repo/deploy/servidor/nativo/publicar_sitios.sh`.
+3. En el VPS: restaurar la copia de Caddy anterior a GAIA, añadir `Caddyfile.sitios` (reemplaza al bloque de la sala), `sudo caddy validate` y `sudo systemctl reload caddy`.
+
+**Peso del juego web:** `index.pck` pesa unos **370 MB** (más 40 MB de `.wasm`). Es lo mismo que publica GitHub Pages con su exportación: la primera carga es larga y las siguientes salen de la caché del navegador. Para una conexión lenta es mejor la versión de escritorio. Reducir el peso (texturas, duplicados s3tc/etc2, voces) queda pendiente.

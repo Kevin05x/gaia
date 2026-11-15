@@ -297,6 +297,8 @@ Decisiones (preguntadas el 15 nov): acciones emergentes con teclas; carga con ma
 - [x] **12.9 Textura del fondo en la Luna y Marte (pedido de Kevin, 15 nov).** La cordillera de Blender llevaba solo color de vértice y se veía lisa: ahora lleva la roca del destino en triplanar (`W.cordillera_material`) y un faldón que tapa la franja negra entre el suelo y las montañas. Comprobado en capturas; falta mirarlo en el PC de Kevin.
 - [x] **12.10 Créditos y licencias de modelos (WhatsApp, 15 nov).** Saturn V: «Cohete» de albertomarun, CC BY 4.0 (exige crédito) → créditos del menú y `ARTE_Y_LICENCIAS.md`; los cohetes ligero, medio y pesado, generados con un script de Python proporcionado por Claude (según Evelyn); Kenney y Kay Lousberg, CC0. Las voces de Windows se declaran en la declaración de IA. **Falta:** origen de `hangar_gaia.glb`, cristales y minerales, y confirmar con Evelyn las animaciones «Armado».
 - [ ] **12.11 Diapositivas nuevas con el estilo del juego** y **12.12 página web del juego (landing)** y **12.13 publicar el juego en el dominio y la web en un subdominio**: en curso.
+- [x] **12.12 Web del proyecto** en `sitio/` (6 páginas, ES/EN, estilo del juego); se genera con `py tools/generar_sitio.py` desde `tools/sitio_fuentes/`. Texto sobrio y sin guiones largos. Datos del reto tomados de la descripción que ya tiene el equipo en Space Apps. **Falta:** nombres, roles y la historia propia del equipo (marcados `[EQUIPO]`).
+- [ ] **12.13 Publicación** (`deploy/servidor/nativo/Caddyfile.sitios`, `publicar_sitios.sh`, `docs/SERVIDOR.md`): preparada y probada solo en local; falta DNS, subir el juego e instalarlo en el VPS.
 - [ ] **11.9 Diapositivas.** Actualizar la diapositiva de multijugador y la de interfaz cuando el servidor funcione.
 
 ---
