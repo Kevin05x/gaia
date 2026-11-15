@@ -399,3 +399,69 @@ func test_2_7_la_rama_y_los_finales_se_anuncian() -> void:
 	var silencio := StoryPanelScript.resumen_cambios(sistema.cambios(e, datos.nodos["climax_destructivo"]["opciones"][2]))
 	assert_string_contains(silencio, "lleva al final «Final 4 · Silencio orbital»")
 	assert_string_contains(silencio, "termina la misión")
+
+
+# --- 2.8 «Nueva partida» → Marte: salen la introducción y las escenas de Tony ----------------------------------------
+
+func test_2_8_la_introduccion_las_escenas_y_los_finales_tienen_imagen() -> void:
+	var datos := StoryData.desde_archivo("res://content/historia.json")
+	var sistema := StorySystem.new(datos, null)
+	var paginas: Array = sistema.intro()
+	assert_gt(paginas.size(), 0, "hay introducción («de qué trata el juego»)")
+	for pagina in paginas:
+		assert_not_null(StoryPanelScript.image_of(str(pagina.get("image", ""))), "intro: %s" % pagina.get("image", ""))
+	for id in datos.nodos:
+		var imagen := str(datos.nodos[id].get("imagen", ""))
+		if not imagen.is_empty():
+			assert_not_null(StoryPanelScript.image_of(imagen), "escena %s: %s" % [id, imagen])
+	for id in datos.finales:
+		var imagen := str(datos.finales[id].get("imagen", "final_" + str(id)))
+		assert_not_null(StoryPanelScript.image_of(imagen), "final %s" % id)
+
+
+func test_2_8_las_escenas_de_tony_tienen_voz() -> void:
+	var datos := StoryData.desde_archivo("res://content/historia.json")
+	var con_voz := {"es": 0, "en": 0}
+	var lineas := 0
+	for id in datos.nodos:
+		var dialogos: Array = datos.nodos[id].get("dialogos", [])
+		for i in range(dialogos.size()):
+			lineas += 1
+			for idioma in ["es", "en"]:
+				var frase := str(dialogos[i].get("texto", {}).get(idioma, ""))
+				var linea := {"speaker": str(dialogos[i].get("quien", ""))}
+				if StoryPanelScript._toma_dialogo(id, i, linea, frase) != null:
+					con_voz[idioma] += 1
+	gut.p("Voces de la historia: %d líneas · con voz ES %d · EN %d" % [lineas, con_voz["es"], con_voz["en"]])
+	assert_gt(con_voz["es"], 0, "las voces de Tony están conectadas")
+
+
+func test_2_8_nueva_partida_a_marte_abre_la_introduccion() -> void:
+	var Sesion := preload("res://scenes/menu/game_session.gd")
+	var destino_antes: String = Sesion.destino
+	Sesion.destino = "marte"
+	Sesion.cargar_al_iniciar = false
+	var juego: Node = load("res://scenes/a/game.tscn").instantiate()
+	add_child_autofree(juego)
+	await get_tree().process_frame
+	assert_eq(juego.view.story.intro_index, 0, "la introducción sale al empezar")
+	assert_true(juego.sim.intro_historia().size() > 0)
+	Sesion.destino = destino_antes
+
+
+func test_2_8_tras_aterrizar_llega_la_primera_escena() -> void:
+	var cfg := Destino.config("marte")
+	var catalogo := Catalog.desde_archivo("res://content/parts.json")
+	MissionRunner.adaptar_catalogo(catalogo, "marte", 1.0)
+	var sim := Simulation.new(Balance.desde_archivo(cfg["balance"]), Rules.desde_archivo(cfg["reglas"]),
+		MapData.desde_archivo(cfg["mapa"]), catalogo, Economy.desde_archivo(cfg["economia"]),
+		StoryData.desde_archivo("res://content/historia.json"))
+	for id in ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "espectrometro", "taladro"]:
+		sim.ejecutar("design_add", {"part_id": id})
+	sim.ejecutar("design_start")
+	sim.ejecutar("landing_finished")
+	sim.avanzar(0.1)
+	var historia: Dictionary = sim.snapshot().get("story", {})
+	# «aterrizaje» es de modo radio: Houston habla en la tarjeta de radio, sin detener el juego.
+	assert_eq(str(historia.get("radio", {}).get("id", "")), "aterrizaje", "la radio del aterrizaje de Tony")
+	assert_gt((historia["radio"]["dialogue"] as Array).size(), 0)

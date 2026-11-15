@@ -106,8 +106,11 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
     añadirles `efectos` en `content/historia.json` y quitarlas de `SIN_HUELLA` en `tests/test_mejoras_bloque2.gd`:
     `falla_sismografo` · «Verificar en el segundo sensor» (el coste llega después, al medir) y
     `estacion_auxiliar` · «Volver más tarde» (deja la estación pendiente).
-- [ ] **2.8 Escenas que faltan**: confirmar con «Nueva partida» que salen la introducción («de qué trata el juego») y las escenas de Tony.
+- [x] **2.8 Escenas que faltan**: confirmar con «Nueva partida» que salen la introducción («de qué trata el juego») y las escenas de Tony.
   Si alguna no sale, revisar `scenes/b/story_panel.gd` (`intro_pages`) y `content/historia.json`.
+  - Comprobado (15 nov, pruebas en `tests/test_mejoras_bloque2.gd`): «Nueva partida» → Marte abre la introducción; la
+    introducción, las escenas y los 4 finales tienen imagen; tras aterrizar llega la radio de Houston del aterrizaje; las 36 líneas
+    de diálogo de la historia tienen voz en español e inglés. No faltaba nada. Con «Continuar» la introducción no se repite (a propósito).
 
 ---
 
