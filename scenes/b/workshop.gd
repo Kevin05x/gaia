@@ -59,6 +59,7 @@ var _action: Button
 var _hint: Label
 var _tip_text: Label
 var _cambiar_cohete: Button
+var _fila_opciones: HBoxContainer  ## «Opciones» y «Código», bajo el catálogo
 var _toast: PanelContainer
 var _toast_label: Label
 var _toast_until := 0.0
@@ -266,9 +267,16 @@ func _build_header() -> void:
 	root.add_child(_cambiar_cohete)
 
 
-## Se crea al final para quedar por encima de todo lo demás.
+## Se crea al final para quedar por encima de todo lo demás. «Opciones» y «Código» van en una fila
+## anclada abajo a la izquierda, del ancho del catálogo y con separación fija: así no se montan uno
+## sobre otro aunque el texto (o el idioma) sea más largo.
 func _build_options() -> void:
+	_fila_opciones = HBoxContainer.new()
+	_fila_opciones.add_theme_constant_override("separation", 8)
+	UI.place(_fila_opciones, "bl", MARGEN, 10, SIDEBAR_ANCHO, 28)
+	root.add_child(_fila_opciones)
 	var opciones := Button.new()
+	opciones.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	opciones.focus_mode = Control.FOCUS_NONE
 	opciones.tooltip_text = tr("OPTIONS")
 	opciones.text = "      " + tr("WS_HELP").to_upper()
@@ -285,10 +293,10 @@ func _build_options() -> void:
 	engranaje.offset_top = -7
 	engranaje.offset_bottom = 7
 	opciones.add_child(engranaje)
-	UI.place(opciones, "bl", 24, 10, 96, 28)
-	root.add_child(opciones)
+	_fila_opciones.add_child(opciones)
 	opciones.pressed.connect(func(): options_requested.emit())
 	var codigo := Button.new()
+	codigo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	codigo.focus_mode = Control.FOCUS_NONE
 	codigo.text = tr("WS_CODE").to_upper()
 	codigo.tooltip_text = tr("WS_CODE_TIP")
@@ -297,8 +305,7 @@ func _build_options() -> void:
 	codigo.add_theme_color_override("font_hover_color", ORANGE)
 	codigo.add_theme_stylebox_override("normal", UI.button_box(Color("120A06", 0.85), Color(ORANGE, 0.35), 1, 14, 12, 4, 0))
 	codigo.add_theme_stylebox_override("hover", UI.button_box(Color("2A170B", 0.95), Color(ORANGE, 0.9), 1, 14, 12, 4, 0))
-	UI.place(codigo, "bl", 128, 10, 150, 28)
-	root.add_child(codigo)
+	_fila_opciones.add_child(codigo)
 	codigo.pressed.connect(_abrir_codigo)
 
 

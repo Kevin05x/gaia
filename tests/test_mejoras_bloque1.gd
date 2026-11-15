@@ -114,3 +114,35 @@ func test_1_2_el_rover_sube_por_la_rampa_sin_atravesarla() -> void:
 	plataforma._abordar(0.0)
 	assert_almost_eq(plataforma._rover.position.y, 0.0, 0.01, "al salir del todo vuelve al suelo")
 	assert_almost_eq(plataforma._rover.rotation.x, 0.0, 0.01, "y derecho")
+
+
+# --- 1.3 «Opciones» y «Código» no se montan uno sobre otro -----------------------------------------------------------
+
+const WorkshopScript := preload("res://scenes/b/workshop.gd")
+
+
+func test_1_3_opciones_y_codigo_van_en_fila_sin_montarse() -> void:
+	for idioma in ["es", "en"]:
+		TranslationServer.set_locale(idioma)
+		var sim := Simulation.new(Balance.desde_archivo("res://content/balance.json"),
+			Rules.desde_archivo("res://content/rules.json"), MapData.desde_archivo("res://content/mapa.json"),
+			Catalog.desde_archivo("res://content/parts.json"))
+		sim.ejecutar("design_add", {"part_id": "cohete_medio"})
+		var hangar: CanvasLayer = add_child_autofree(WorkshopScript.new())
+		hangar.update_snapshot(sim.snapshot())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var fila: HBoxContainer = hangar._fila_opciones
+		assert_eq(fila.get_child_count(), 2, "Opciones y Código en la misma fila")
+		var opciones := fila.get_child(0) as Button
+		var codigo := fila.get_child(1) as Button
+		var a := opciones.get_global_rect()
+		var b := codigo.get_global_rect()
+		assert_false(a.intersects(b), "%s: no se montan" % idioma)
+		assert_gte(b.position.x - a.end.x, 6.0, "%s: con separación entre los dos" % idioma)
+		for boton in [opciones, codigo]:
+			assert_gte(boton.size.x + 0.5, boton.get_combined_minimum_size().x, "%s: el texto cabe en su botón" % idioma)
+		assert_almost_eq(a.position.x, WorkshopScript.MARGEN, 0.5, "%s: alineada con el catálogo" % idioma)
+		assert_lte(b.end.x, WorkshopScript.MARGEN + WorkshopScript.SIDEBAR_ANCHO + 0.5, "%s: del ancho del catálogo" % idioma)
+		hangar.free()
+	TranslationServer.set_locale("es")

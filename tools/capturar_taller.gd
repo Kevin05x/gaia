@@ -1,7 +1,8 @@
 extends SceneTree
 ## Herramienta de desarrollo: fotografía la plataforma de la Tierra y el hangar para revisar la
 ## composición sin abrir el juego. No forma parte de la partida.
-## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta>
+## Uso (necesita GPU):  godot --rendering-driver opengl3 -s tools/capturar_taller.gd -- <carpeta> [--ventana=1024x600]
+## Con --ventana la ventana toma ese tamaño (la interfaz se escala igual que en el juego, base 1280×720).
 
 const LaunchPad := preload("res://scenes/b/launch_pad.gd")
 
@@ -16,12 +17,17 @@ func _initialize() -> void:
 func _correr() -> void:
 	var salida := "user://"
 	var args := OS.get_cmdline_user_args()
-	if args.size() > 0:
-		salida = args[0]
+	var ventana := Vector2i(ANCHO, ALTO)
+	for a in args:
+		if a.begins_with("--ventana="):
+			var partes := a.get_slice("=", 1).split("x")
+			ventana = Vector2i(int(partes[0]), int(partes[1]))
+		else:
+			salida = a
 	if not salida.ends_with("/"):
 		salida += "/"
 
-	DisplayServer.window_set_size(Vector2i(ANCHO, ALTO))
+	DisplayServer.window_set_size(ventana)
 	root.content_scale_size = Vector2i(ANCHO, ALTO)
 
 	# Traducciones, igual que MissionView.setup_locale().
