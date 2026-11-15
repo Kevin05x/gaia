@@ -534,6 +534,8 @@ func _abrir_ajustes() -> void:
 	_interruptor(cuerpo, tr("M_SET_MUTE"), bool(prefs["muted"]), func(v: bool) -> void:
 		Texto.guardar("audio", "muted", v)
 		Texto.aplicar_audio())
+	_interruptor(cuerpo, tr("RADIO_VOICES"), bool(prefs.get("radio_voices", true)), func(v: bool) -> void:
+		Texto.guardar("audio", "radio_voices", v))  # plan 9.3
 	# Gráficos: ajuste predefinido y, en su panel, cada opción por separado.
 	fila = _fila(cuerpo, tr("M_SET_GRAPHICS"))
 	var mas := Button.new()

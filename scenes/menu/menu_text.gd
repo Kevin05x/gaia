@@ -229,7 +229,7 @@ static func install() -> void:
 ## Lee las preferencias guardadas con sus valores por defecto.
 static func preferencias() -> Dictionary:
 	var datos := {"language": "es", "volume": 0.65, "muted": false, "quality": true, "tutorial": true, "window_size": Vector2i.ZERO,
-		"fullscreen": false}
+		"fullscreen": false, "radio_voices": true}
 	var config := ConfigFile.new()
 	if config.load(PREFERENCIAS) == OK:
 		datos["language"] = config.get_value("ui", "language", "es")
@@ -239,6 +239,7 @@ static func preferencias() -> Dictionary:
 		datos["tutorial"] = config.get_value("ui", "tutorial", true)
 		datos["window_size"] = config.get_value("visual", "window_size", Vector2i.ZERO)
 		datos["fullscreen"] = bool(config.get_value("visual", "fullscreen", false))
+		datos["radio_voices"] = bool(config.get_value("audio", "radio_voices", true))
 	return datos
 
 

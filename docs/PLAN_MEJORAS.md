@@ -223,17 +223,17 @@ El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU p
 Las voces de Tony solo existen para las escenas de la historia de Marte. Tony no hizo las de mover el rover ni las del despegue:
 las hacemos nosotros, para **Marte y Luna**, en español e inglés.
 
-- [ ] **9.1 Guion** (`content/voces.json`, nuevo): frases cortas de radio con 3 variantes cada una para no repetir.
+- [x] **9.1 Guion** (`content/voces.json`, nuevo): frases cortas de radio con 3 variantes cada una para no repetir.
   - Mover el rover: «Perseverance en marcha», «Ruta confirmada», «Llegando al objetivo», «Batería baja, vuelvo a la base».
   - Despegue (plataforma): cuenta atrás de Houston, «Ignición», «Despegue confirmado», «Separación de etapas».
   - Aterrizaje y primer enlace, para la Luna (Marte ya tiene el de Tony): «Contacto con la superficie», «Enlace con la Tierra abierto».
   - Avisos de juego: noche que llega, ventana de relé abierta, memoria llena, tormenta.
   - En la Luna, «Houston» habla con la referencia de Apolo; en Marte, igual que en la historia de Tony.
-- [ ] **9.2 Grabación con el mismo método que Tony** (documentado en `scenes/b/docs/ARTE_Y_LICENCIAS.md`): español con las voces de
+- [x] **9.2 Grabación con el mismo método que Tony** (documentado en `scenes/b/docs/ARTE_Y_LICENCIAS.md`): español con las voces de
   Windows Microsoft Raúl (Houston) y Microsoft Pablo (Perseverance); inglés con Piper, voces John (Houston) y Joe (Perseverance);
   el mismo efecto de walkie-talkie. Nombres de archivo con el mismo esquema (nodo, línea y 12 caracteres del SHA-256 del hablante y
   el texto) en `assets/voces/` (por destino: `marte/`, `luna/`). Pedirle a Tony su script de mezcla para que suenen igual.
-- [ ] **9.3 Reproducirlas sin cansar**: un reproductor de voces en la vista (no en `sim/`) que escuche eventos ya existentes
+- [x] **9.3 Reproducirlas sin cansar**: un reproductor de voces en la vista (no en `sim/`) que escuche eventos ya existentes
   (ruta recibida, despegue, aterrizaje, avisos), con una pausa mínima entre voces (~20 s), sin pisar las voces de la historia, y
   con opción «Voces de radio: sí/no» en Configuración. Pruebas: que cada frase tenga archivo en los dos idiomas.
 - [ ] **9.4 Autoría y licencia de los 5 modelos de Amner** (P0, antes de entregar): `cohete_ligero/medio/pesado/super.glb` y

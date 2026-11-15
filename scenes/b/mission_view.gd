@@ -19,6 +19,7 @@ var _crucero_visto := false
 var _vio_taller := false  ## solo hay secuencia de lanzamiento si el jugador pasó por el taller
 var imprevisto: CanvasLayer  ## imprevistos de misión (decisión con el tiempo detenido)
 var objetivo: CanvasLayer  ## tarjeta de objetivo al empezar la misión (plan 2.1)
+var voces: Node  ## voces de radio de Houston y el rover (plan 9.3)
 var tarjeta_nasa: CanvasLayer  ## «Así lo hizo Perseverance» durante el aterrizaje (datos y fotos reales de la NASA)
 var explosions: Node3D
 var audio: Node
@@ -133,6 +134,7 @@ func _ready() -> void:
 	launch_pad.command.connect(_command)
 	launch_pad.options_requested.connect(func(): hud.open_options())
 	launch_pad.despegue_terminado.connect(func(diseno: Dictionary) -> void:
+		voces.decir("despegue_fin", "", true)
 		crucero.play(diseno))
 	report_view = preload("res://scenes/b/report.gd").new()
 	report_view.name = "Report"
@@ -156,6 +158,9 @@ func _ready() -> void:
 	objetivo = preload("res://scenes/b/objetivo_panel.gd").new()
 	objetivo.name = "Objetivo"
 	add_child(objetivo)
+	voces = preload("res://scenes/b/voces_radio.gd").new()
+	voces.name = "VocesRadio"
+	add_child(voces)
 	tarjeta_nasa = preload("res://scenes/b/nasa_landing_card.gd").new()
 	tarjeta_nasa.name = "NasaCard"
 	add_child(tarjeta_nasa)
@@ -229,6 +234,8 @@ func _ready() -> void:
 	story.escena_abierta.connect(func() -> void: audio.sfx("escena", 0.0))
 	story.radio_tapada = func() -> bool: return base_hud.menu.visible or base_hud.ficha_abierta() or objetivo.is_open() 		or tutorial.is_expanded()  # la ventana del tutorial ocupa el rincón de la radio (plan 2.2)
 	objetivo.tapada = func() -> bool: return story.is_open() or story.intro_index >= 0 or imprevisto.is_open()
+	voces.ocupada = func() -> bool:  # la historia de Tony manda: sus voces no se pisan
+		return story.is_open() or story.intro_index >= 0 or story._voz_escena.playing or story._voz_radio.playing
 	hud.metas_tapadas = func() -> bool: return base_hud.menu.visible
 	base_hud.menu_cambiado.connect(func(_abierto: bool) -> void:
 		if not state.is_empty():
@@ -240,6 +247,8 @@ func _ready() -> void:
 	port.path_received.connect(func(tiles: Array, seconds: float):
 		actors.follow_path(tiles, seconds)
 		terrain.show_route(tiles)
+		if tiles.size() > 1:
+			voces.decir("mover")
 		if is_instance_valid(terrain.hallazgo) and (tiles.is_empty() or tiles.back() != terrain.hallazgo_casilla):
 			terrain.quitar_hallazgo())  # el rover va a otro sitio: el desvío se abandonó
 	port.action_received.connect(func(action: Dictionary):
@@ -257,6 +266,8 @@ func _ready() -> void:
 		workshop.show_notice(key))
 	actors.landing_finished.connect(func():
 		landing_in_progress = false
+		if Destino.es_luna():  # en Marte habla la historia de Tony
+			voces.decir("aterrizaje_rover", "aterrizaje_houston", true)
 		port.submit("landing_finished"))
 	set_preferences(volume, muted, quality, false)
 	if not port.snapshot.is_empty():
@@ -493,6 +504,8 @@ func apply_snapshot(s: Dictionary) -> void:
 		imprevisto.update_snapshot(s)
 	if is_instance_valid(objetivo):
 		objetivo.update_snapshot(s)
+	if is_instance_valid(voces):
+		voces.update_snapshot(s)
 	terrain.update_targets(s.get("targets", []))
 	terrain.select(selected_target)
 	actors.apply_state(s)
@@ -512,6 +525,7 @@ func apply_snapshot(s: Dictionary) -> void:
 				# plataforma dice que no puede y se va directo a la secuencia, como antes.
 				if launch_pad.puede_despegar():
 					launch_pad.despegar(s.get("design_summary", {}))
+					voces.decir("despegue_inicio", "", true)
 				else:
 					crucero.play(s.get("design_summary", {}))
 		else:

@@ -629,3 +629,65 @@ func test_6_4_el_medidor_sabe_que_escena_mide() -> void:
 	assert_eq(Medidor.escena(), "mision", "sin --escena se mide la misión")
 	assert_true(FileAccess.get_file_as_string("res://tools/paquete_windows/Medir_rendimiento.bat").contains("--escena=plataforma"),
 		"el .bat mide también la plataforma")
+
+
+# --- 9 Voces de radio (Houston y el rover) en Marte y Luna, español e inglés ----------------------------------------
+
+const VocesScript := preload("res://scenes/b/voces_radio.gd")
+
+
+func _eventos_voces() -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string("res://content/voces.json"))["eventos"]
+
+
+func test_9_1_cada_evento_tiene_tres_variantes_en_los_dos_idiomas() -> void:
+	var eventos := _eventos_voces()
+	for nombre in ["mover", "llegada", "bateria", "despegue_inicio", "despegue_fin", "aterrizaje_rover",
+			"aterrizaje_houston", "noche", "ventana", "memoria", "tormenta"]:
+		assert_true(eventos.has(nombre), nombre)
+		for variante in eventos[nombre]["variantes"] + eventos[nombre].get("luna", []):
+			assert_false(str(variante.get("es", "")).is_empty() or str(variante.get("en", "")).is_empty(), nombre)
+		assert_eq((eventos[nombre]["variantes"] as Array).size(), 3, "%s: 3 variantes" % nombre)
+
+
+func test_9_3_cada_frase_tiene_su_archivo_en_los_dos_idiomas_y_destinos() -> void:
+	var eventos := _eventos_voces()
+	var revisadas := 0
+	for nombre in eventos:
+		for destino in ["marte", "luna"]:
+			for n in range(1, 4):
+				for idioma in ["es", "en"]:
+					var ruta := VocesScript.ruta(eventos, nombre, n, destino, idioma)
+					if ruta.is_empty():
+						continue  # el evento no va en ese destino (tormenta en la Luna, aterrizaje en Marte)
+					revisadas += 1
+					assert_true(ResourceLoader.exists(ruta), "%s %s %d %s: %s" % [nombre, destino, n, idioma, ruta])
+	assert_gt(revisadas, 100)
+	assert_eq(VocesScript.ruta(eventos, "tormenta", 1, "luna", "es"), "", "en la Luna no hay tormenta de polvo")
+	assert_eq(VocesScript.ruta(eventos, "aterrizaje_rover", 1, "marte", "es"), "", "en Marte el aterrizaje es de Tony")
+
+
+func test_9_3_pausa_minima_historia_y_opcion_de_apagarlas() -> void:
+	var Texto := preload("res://scenes/menu/menu_text.gd")
+	var habia := FileAccess.file_exists(Texto.PREFERENCIAS)
+	var copia := FileAccess.get_file_as_bytes(Texto.PREFERENCIAS) if habia else PackedByteArray()
+	Texto.guardar("audio", "radio_voices", true)
+	var voces: Node = add_child_autofree(VocesScript.new())
+	var historia := [false]
+	voces.ocupada = func() -> bool: return historia[0]
+	assert_true(voces.decir("mover"), "habla")
+	assert_false(voces.decir("llegada"), "no dentro de la pausa mínima")
+	assert_true(voces.decir("despegue_fin", "", true), "el despegue no espera la pausa")
+	voces._jugador.stop()
+	voces._t = 100.0
+	historia[0] = true
+	assert_false(voces.decir("noche"), "nunca encima de las voces de la historia")
+	historia[0] = false
+	Texto.guardar("audio", "radio_voices", false)
+	assert_false(voces.decir("noche"), "apagadas en Configuración")
+	Texto.guardar("audio", "radio_voices", true)
+	assert_true(voces.decir("noche"))
+	if habia:
+		FileAccess.open(Texto.PREFERENCIAS, FileAccess.WRITE).store_buffer(copia)
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(Texto.PREFERENCIAS))

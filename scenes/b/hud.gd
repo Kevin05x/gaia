@@ -617,6 +617,11 @@ func _build_pause() -> void:
 	sonido.text = tr("SOUND")
 	sonido.button_pressed = not muted
 	cuerpo.add_child(sonido)
+	var voces := CheckButton.new()  # voces de radio de Houston y el rover (plan 9.3)
+	voces.text = tr("RADIO_VOICES")
+	voces.button_pressed = bool(Texto.preferencias().get("radio_voices", true))
+	voces.toggled.connect(func(on: bool) -> void: Texto.guardar("audio", "radio_voices", on))
+	cuerpo.add_child(voces)
 	var completa := CheckButton.new()
 	completa.text = tr("FULLSCREEN")
 	completa.button_pressed = Texto.en_pantalla_completa()
