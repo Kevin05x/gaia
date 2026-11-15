@@ -199,7 +199,7 @@ func test_redisenar_vuelve_al_taller_conservando_las_piezas() -> void:
 	var datos := sim.snapshot()
 	assert_eq(datos["phase"], "workshop")
 	assert_eq(datos["rover_tile"], Vector2i(0, 0))
-	assert_eq(datos["battery"]["wh"], 1000.0)
+	assert_eq(datos["battery"]["wh"], datos["battery"]["capacity"], "batería llena")
 	assert_eq(datos["workshop"]["selection"]["cohetes"], ["cohete_ligero"])
 	assert_true(datos["workshop"]["valid"])
 	assert_eq(sim.ejecutar("redesign")["reason"], "WRONG_PHASE", "ya está en el taller")

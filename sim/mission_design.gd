@@ -164,7 +164,7 @@ func a_configuracion() -> Dictionary:
 		elif INSTRUMENTO_POR_PIEZA.has(id) and not instrumentos.has(INSTRUMENTO_POR_PIEZA[id]):
 			instrumentos.append(INSTRUMENTO_POR_PIEZA[id])
 	return {"energia": energia, "enlace": enlace, "instrumentos": instrumentos, "companero": companero,
-		"potencia_nominal_w": potencia_nominal_w()}
+		"potencia_nominal_w": potencia_nominal_w(), "bateria_extra_wh": _suma("bateria_extra_wh", ["extras"])}
 
 
 func _suma(campo: String, categorias: Array) -> float:

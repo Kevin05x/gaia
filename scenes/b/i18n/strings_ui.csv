@@ -281,7 +281,7 @@ REF_TALADRO,Taladro de muestras. Dato real: Perseverance lleva 43 tubos de muest
 REF_CAMARA,"Inspirada en Mastcam-Z: unos 4 kg y 17,4 W (NASA).",Inspired by Mastcam-Z: about 4 kg and 17.4 W (NASA).
 REF_METEO,"Inspirada en MEDA: 5,5 kg y hasta 17 W; mide el clima y el polvo (NASA).",Inspired by MEDA: 5.5 kg and up to 17 W; measures weather and dust (NASA).
 REF_RADAR,Inspirado en RIMFAX: menos de 3 kg y de 5 a 10 W; ve capas bajo el suelo (NASA).,Inspired by RIMFAX: under 3 kg and 5 to 10 W; sees layers below the ground (NASA).
-REF_BATERIA,Más energía guardada para la noche y las tormentas. Valores de juego.,More stored energy for nights and storms. Game values.
+REF_BATERIA,"Suma 1000 Wh a la batería del rover (la base guarda 2000 Wh): más energía para la noche y las tormentas. Valores de juego.","Adds 1000 Wh to the rover battery (the base stores 2000 Wh): more energy for nights and storms. Game values."
 REF_DRON,"Inspirado en Ingenuity: 1,8 kg; construirlo costó unos 80 M USD (NASA/JPL). En el juego el costo está a escala.",Inspired by Ingenuity: 1.8 kg; it cost about 80 M USD to build (NASA/JPL). In the game the cost is scaled.
 REF_COMPANERO,"Compañero robótico ficticio, creado para el juego: no existe en la misión real.",Fictional robot companion created for the game: it does not exist in the real mission.
 WS_TIP_trayectoria,"Para ir a Marte se espera la ventana de lanzamiento. La ruta de mínima energía tarda más, pero deja llevar más masa. La rápida acorta el viaje y quita carga.",Missions to Mars wait for the launch window. The minimum-energy route takes longer but lets you carry more mass. The fast one shortens the trip and costs payload.

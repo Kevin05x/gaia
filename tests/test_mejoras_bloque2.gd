@@ -465,3 +465,27 @@ func test_2_8_tras_aterrizar_llega_la_primera_escena() -> void:
 	# «aterrizaje» es de modo radio: Houston habla en la tarjeta de radio, sin detener el juego.
 	assert_eq(str(historia.get("radio", {}).get("id", "")), "aterrizaje", "la radio del aterrizaje de Tony")
 	assert_gt((historia["radio"]["dialogue"] as Array).size(), 0)
+
+
+# --- 3.2 Más batería (Marte y Luna) y la batería extra suma de verdad ---------------------------------------------------
+
+func _empezar(destino: String, piezas: Array[String]) -> Simulation:
+	var sim := _sim(destino)
+	for id in piezas:
+		sim.ejecutar("design_add", {"part_id": id})
+	assert_true(sim.ejecutar("design_start")["ok"], "%s: diseño válido" % destino)
+	return sim
+
+
+func test_3_2_la_bateria_base_es_de_2000_wh_en_marte_y_en_la_luna() -> void:
+	var marte := _empezar("marte", ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara"])
+	assert_eq(marte.estado.bateria_capacidad_wh, 2000.0)
+	assert_eq(marte.estado.bateria_wh, 2000.0, "sale llena")
+	var luna := _empezar("luna", ["cohete_medio", "chasis_base", "mmrtg", "antena_rele", "camara"])
+	assert_eq(luna.estado.bateria_capacidad_wh, 2000.0)
+
+
+func test_3_2_la_bateria_extra_suma_1000_wh() -> void:
+	var sim := _empezar("marte", ["cohete_medio", "chasis_base", "panel_solar", "antena_rele", "camara", "bateria"])
+	assert_eq(sim.estado.bateria_capacidad_wh, 3000.0, "antes la pieza no sumaba nada")
+	assert_eq(sim.estado.bateria_wh, 3000.0)

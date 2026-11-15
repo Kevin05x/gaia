@@ -126,8 +126,11 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
     medido en **horas de juego**, para que cambiar la duración no cambie el balance. Revisarlo y probarlo con 6 y con 12 minutos.
   - Pruebas: una que cree la simulación con 360 s y otra con 720 s y compruebe que un sol dura eso y que el resultado de un día
     de juego es el mismo.
-- [ ] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
+- [x] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
   y volver a correr el bot de balance (`tools/`) para que la partida siga siendo ganable pero no trivial.
+  - Hecho (15 nov): 2000 Wh en Marte y Luna; la «Batería extra», que no sumaba nada, ahora suma +1000 Wh. **Pendiente**: no existe
+    un bot de balance con estrategia (el de `tools/` es el de la red); hay que comprobar jugando que no quedó trivial
+    (`scenes/b/docs/BALANCE.md`).
 - [ ] **3.3 Coherencia de ritmos**: con sol más largo, revisar ventanas de relé, carga solar, construcción y oleadas.
 - [x] **3.4 Tormenta de polvo**: `content/rules.json` la pone en el sol 3 y la historia dice 4–5. Unificar.
 - [ ] **3.5 Marte y Luna con objetivos distintos** (hoy comparten meta). Propuesta:

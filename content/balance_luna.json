@@ -8,7 +8,7 @@
   "atardecer": 20.0
  },
  "energia": {
-  "capacidad_base_wh": 1000,
+  "capacidad_base_wh": 2000,
   "consumo_base_w": 15,
   "calefaccion_nocturna_w": {
    "solar": 35,

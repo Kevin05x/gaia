@@ -765,6 +765,9 @@ func _comenzar_mision() -> Dictionary:
 	if not configurar_diseno(configuracion["energia"], configuracion["enlace"], configuracion["instrumentos"],
 			configuracion["companero"], configuracion["potencia_nominal_w"]):
 		return {"ok": false, "reason": "INVALID_DESIGN"}
+	# Batería: la base del destino más la de las baterías extra del diseño (parts.json › bateria_extra_wh). Sale llena.
+	estado.bateria_capacidad_wh = _balance.numero("energia.capacidad_base_wh") + float(configuracion.get("bateria_extra_wh", 0.0))
+	estado.bateria_wh = estado.bateria_capacidad_wh
 	iniciar_aterrizaje()
 	return {"ok": true, "reason": ""}
 

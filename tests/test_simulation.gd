@@ -233,7 +233,7 @@ func test_el_modo_seguro_cancela_la_accion_y_el_movimiento() -> void:
 func test_avisos_de_bateria_memoria_y_tormenta() -> void:
 	_operar()
 	assert_eq(sim.snapshot()["warnings"].size(), 0)
-	sim.estado.bateria_wh = 150.0
+	sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh * 0.15
 	sim.estado.datos = 55.0
 	var ids: Array[String] = []
 	for aviso in sim.snapshot()["warnings"]:
@@ -321,7 +321,7 @@ func test_reiniciar_vuelve_al_taller_con_la_mision_limpia() -> void:
 	assert_eq(datos["rover_tile"], Vector2i(0, 0))
 	assert_eq(datos["sent"], 0.0)
 	assert_eq(datos["sol"], 1)
-	assert_eq(datos["battery"]["wh"], 1000.0)
+	assert_eq(datos["battery"]["wh"], datos["battery"]["capacity"], "batería llena")
 	assert_eq(sim.objetivo_seleccionado(), "")
 	assert_true(sim.configurar_diseno("rtg", "direct", todos, false, 110.0))
 
