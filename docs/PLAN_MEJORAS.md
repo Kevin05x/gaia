@@ -20,7 +20,7 @@ Reglas que no cambian: arquitectura de tres capas (`content/` → `sim/` → `sc
 
 ---
 
-## Bloque 0 · Estado de las ramas (revisado el 14 nov, 20:10)
+## Bloque 0 · Estado de las ramas (revisado el 14 nov, 20:10; actualizado 20:15)
 
 - [x] `integracion` contiene **todas** las ramas: `b/dias-y-realismo` (con `b/arte-realista` de Arturo), `b/cohetes-telescopio` (Amner),
   `a/historia-sin-monstruos` (Tony) y `b/multijugador`. Se comprobó commit por commit (`git rev-list origin/integracion..<rama>` = 0).
@@ -33,8 +33,9 @@ Reglas que no cambian: arquitectura de tres capas (`content/` → `sim/` → `sc
   una rama nueva desde `develop` (por ejemplo `a/voces-rover`).
 - [ ] Las voces solo suenan en **Marte con historia** y en **partida nueva**. Con «Continuar» de una partida guardada antes de la
   integración no salen la introducción ni las escenas. Para probar: «Nueva partida» → Marte.
-- [ ] Unir: PR `integracion` → `develop` (Create a merge commit) y luego PR `develop` → `main` (publica la web).
-- [ ] Amner: autoría y licencia de los 5 modelos (4 cohetes y hangar); el telescopio no se hizo y sigue sin decidirse qué es.
+- [x] Unir: PR #56 `integracion` → `develop` y PR #57 `develop` → `main` (14 nov, 20:05). La web publicada ya es la integración.
+- [ ] Las voces de mover el rover y del despegue las hacemos nosotros (Tony no las hizo): ver **Bloque 9**.
+- [ ] Autoría y licencia de los modelos de Amner: ver **9.4**. Telescopio: ver **Bloque 10**.
 
 ---
 
@@ -82,9 +83,16 @@ El problema principal: **un jugador nuevo no sabe cuál es el objetivo ni qué h
 
 ## Bloque 3 · Lógica del juego (P1, 2–3 h, con decisión del equipo)
 
-- [ ] **3.1 Sol de 12 minutos**: `content/balance.json` → `"duracion_sol_s": 720` (hoy 300). **Ojo**: 6 soles serían 72 minutos de partida.
-  Propuesta: sol de 12 min **y** botón de tiempo ×1 / ×2 / ×4 en el HUD, o bajar `sol_limite` a 4. Decidir antes de cambiar.
-  Revisar las pruebas que dependen de la duración del sol.
+- [ ] **3.1 Duración del sol a elección del jugador** (decidido por Kevin el 14 nov): antes de empezar la partida, un selector
+  **«Duración de cada sol: 6 · 8 · 10 · 12 minutos»** (por defecto 12). La partida dura lo que tenga que durar (6 soles = 36 a 72 min).
+  - Dónde se elige: pantalla previa a la misión (después de elegir destino y dificultad) y, en red, en la sala (lo fija el anfitrión
+    y lo ven todos; `scenes/net/sala.gd` → `config`).
+  - Cómo llega a la simulación: como dato de configuración al crear la `Simulation` (sustituye a `duracion_sol_s` de
+    `content/balance.json`, hoy 300 s), sin que la vista toque el estado. Guardarlo en la partida guardada.
+  - Todo lo que hoy depende de segundos reales (ventanas de relé, construcción, oleadas, carga de la batería, tutorial) debe seguir
+    medido en **horas de juego**, para que cambiar la duración no cambie el balance. Revisarlo y probarlo con 6 y con 12 minutos.
+  - Pruebas: una que cree la simulación con 360 s y otra con 720 s y compruebe que un sol dura eso y que el resultado de un día
+    de juego es el mismo.
 - [ ] **3.2 Más batería**: `content/balance.json` → `capacidad_base_wh` (hoy 1000). Subir a ~2000 y la batería extra en proporción,
   y volver a correr el bot de balance (`tools/`) para que la partida siga siendo ganable pero no trivial.
 - [ ] **3.3 Coherencia de ritmos**: con sol más largo, revisar ventanas de relé, carga solar, construcción y oleadas.
@@ -133,6 +141,10 @@ Luna 42–60 FPS (427–517 llamadas, 483k–567k triángulos). Arturo midió 20
   modelos del equipo), `MultiMesh` para rocas y cráteres, LOD (`meshes/generate_lods` ya está activo en el hangar).
 - [ ] **6.2 Sombras**: en Alta, distancia de sombras más corta y 2 cascadas; en Ultra, 4.
 - [ ] **6.3 Medir** con `Medir_rendimiento.bat` antes y después, y guardar los resultados en `docs/mediciones/`.
+- [ ] **6.4 Medir la pantalla de la plataforma en GPU real** (hangar de 70 944 triángulos y los 4 cohetes). Hoy `--medir`
+  (`scenes/a/medidor.gd`) entra directo a la misión; añadir `--medir --escena=plataforma` que abra la plataforma con el Saturno V
+  elegido, y añadir esa línea a `Medir_rendimiento.bat`. Medir en Alta y Baja en el PC de Kevin y en una Intel UHD, y guardar en
+  `docs/mediciones/v5_plataforma_*.txt`. Si en la Intel UHD baja de 30 FPS en Alta, simplificar el hangar en Blender (5.3).
 
 ---
 
@@ -161,17 +173,59 @@ El servidor de GAIA es Godot sin pantalla: unos 100–200 MB de RAM y poca CPU p
 
 ---
 
+## Bloque 9 · Voces nuevas y licencias (P1, 2–3 h)
+
+Las voces de Tony solo existen para las escenas de la historia de Marte. Tony no hizo las de mover el rover ni las del despegue:
+las hacemos nosotros, para **Marte y Luna**, en español e inglés.
+
+- [ ] **9.1 Guion** (`content/voces.json`, nuevo): frases cortas de radio con 3 variantes cada una para no repetir.
+  - Mover el rover: «Perseverance en marcha», «Ruta confirmada», «Llegando al objetivo», «Batería baja, vuelvo a la base».
+  - Despegue (plataforma): cuenta atrás de Houston, «Ignición», «Despegue confirmado», «Separación de etapas».
+  - Aterrizaje y primer enlace, para la Luna (Marte ya tiene el de Tony): «Contacto con la superficie», «Enlace con la Tierra abierto».
+  - Avisos de juego: noche que llega, ventana de relé abierta, memoria llena, tormenta.
+  - En la Luna, «Houston» habla con la referencia de Apolo; en Marte, igual que en la historia de Tony.
+- [ ] **9.2 Grabación con el mismo método que Tony** (documentado en `scenes/b/docs/ARTE_Y_LICENCIAS.md`): español con las voces de
+  Windows Microsoft Raúl (Houston) y Microsoft Pablo (Perseverance); inglés con Piper, voces John (Houston) y Joe (Perseverance);
+  el mismo efecto de walkie-talkie. Nombres de archivo con el mismo esquema (nodo, línea y 12 caracteres del SHA-256 del hablante y
+  el texto) en `assets/voces/` (por destino: `marte/`, `luna/`). Pedirle a Tony su script de mezcla para que suenen igual.
+- [ ] **9.3 Reproducirlas sin cansar**: un reproductor de voces en la vista (no en `sim/`) que escuche eventos ya existentes
+  (ruta recibida, despegue, aterrizaje, avisos), con una pausa mínima entre voces (~20 s), sin pisar las voces de la historia, y
+  con opción «Voces de radio: sí/no» en Configuración. Pruebas: que cada frase tenga archivo en los dos idiomas.
+- [ ] **9.4 Autoría y licencia de los 5 modelos de Amner** (P0, antes de entregar): `cohete_ligero/medio/pesado/super.glb` y
+  `hangar_gaia.glb`. Preguntar a Amner y Evelyn de dónde salen (hechos por el equipo en Blender, descargados de Sketchfab u otro
+  sitio, o generados con IA). Anotar en `ARTE_Y_LICENCIAS.md`: autor, herramienta, licencia y enlace. Si alguno no tiene licencia
+  que permita usarlo, sustituirlo antes de entregar. Corregir también la frase «Arturo y Evelyn hicieron los modelos 3D» en
+  `CLAUDE.md` y `docs/CUMPLIMIENTO.md` si no es exacta.
+
+---
+
+## Bloque 10 · Telescopio (P2; propuesta para decidir)
+
+Propuesta: el telescopio sirve para **ver el cielo real desde donde está el rover**, con imágenes reales de la NASA.
+
+- [ ] **10.1 Qué es en el juego**: un edificio de la base («Telescopio», Marte y Luna) que solo funciona **de noche**, cuando los
+  paneles no dan energía y hoy no hay mucho que hacer. Cada noche se puede observar un objetivo.
+- [ ] **10.2 Qué se ve** (una tarjeta con la foto real, el dato y la fuente):
+  - Desde Marte: la Tierra y la Luna vistas desde Marte (foto real de Curiosity), Fobos y Deimos, el Sol (más pequeño que desde la Tierra).
+  - Desde la Luna: la Tierra en el cielo (salida de la Tierra del Apolo 8), el Sol rasante del polo sur, Marte.
+  - Cada foto, con su fuente en `docs/DATOS_NASA.md`; sin logos de la NASA en la interfaz.
+- [ ] **10.3 Qué da**: datos de ciencia (por ejemplo +5 por observación nueva) y un logro por completar el catálogo.
+- [ ] **10.4 Modelo 3D**: telescopio de Evelyn si lo tiene; si no, uno sencillo en Blender (cúpula y tubo).
+- [ ] Decidir con el equipo antes de empezar. Si no da tiempo el domingo, queda para después del reto.
+
+---
+
 ## Orden sugerido para el domingo
 
 | Hora | Trabajo |
 |---|---|
-| 08:00–12:00 | Bloque 1 completo + 2.4, 2.5, 1.5 |
+| 08:00–12:00 | Bloque 1 completo + 2.4, 2.5, 1.5 + 9.4 (preguntar a Amner y Evelyn) |
 | 12:00–15:00 | Bloque 2 (objetivo, tutorial en ventana con capturas, Cómo jugar) |
-| 15:00–17:00 | Bloque 4.1–4.2 (estilo único y menos ruido) + 3.1/3.2 si el equipo lo decide |
-| 17:00–18:00 | Bloque 6 (medir y ajustar) |
+| 15:00–17:00 | Bloque 4.1–4.2 (estilo único y menos ruido) + 3.1 (duración del sol) y 3.2 (batería) |
+| 17:00–18:00 | Bloque 6 (medir y ajustar, incluida la plataforma) + Bloque 9 (voces) si hay quien grabe en paralelo |
 | 18:00–20:00 | Bloque 8 (video y diapositivas) en paralelo con Bloque 7 (servidor) |
 | 20:00–21:59 | PR final a `main`, publicar, probar la web publicada y enviar |
 
 ## Después del reto
 
-Logo en Blender si no dio tiempo, despegue con partículas, objetivos propios de la Luna, telescopio, más voces de Tony.
+Logo en Blender si no dio tiempo, despegue con partículas, objetivos propios de la Luna, telescopio (Bloque 10), más voces.
