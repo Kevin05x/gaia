@@ -51,6 +51,30 @@ Reglas que no cambian: arquitectura de tres capas (`content/` → `sim/` → `sc
 | [x] 1.6 | En el taller rumbo a la Luna se ve Marte al fondo | Fondo del hangar en `scenes/b/workshop.gd` / escena del hangar | Elegir el fondo según `Destino.id` (Luna: horizonte gris y la Tierra en el cielo) | Abrir el taller con Luna |
 | [x] 1.7 | «Oportunidad científica → Desviarse» no hace nada visible | `content/imprevistos.json` (`oportunidad`), `sim/systems/imprevistos_system.gd` (`datos` va a la **memoria** del rover, no a «Ciencia 0/100», y se recorta si la memoria está llena) | Al elegir, mostrar el resultado: aviso «+10 datos en memoria: transmítelos en la próxima ventana», marcar un punto en el mapa y mover el rover hasta él. Revisar los 9 imprevistos con el mismo criterio | Elegir cada opción y ver un cambio en pantalla |
 
+Decisiones de Kevin para 1.7 (15 nov): los +10 datos entran en memoria **al decidir**; el rover sale solo hacia una casilla
+libre a unas 5 casillas, y los 90 Wh incluyen el viaje. Si la memoria está llena, lo que no cabe se pierde y el aviso lo dice.
+
+### Decisiones de Kevin para el resto del plan (15 nov, mañana)
+
+| Tarea | Decisión |
+|---|---|
+| 2.4 | La plataforma llega con el **cohete medio ya marcado**; el hangar llega con el resto del diseño recomendado y el botón «Diseño recomendado» lo restaura. En la **Luna**, el diseño recomendado lleva **MMRTG** en vez de panel solar (y la trayectoria directa lunar). |
+| 2.5 | El aviso **no lleva cifra**: «Sin taladro no podrás tomar muestras». |
+| 2.1 | La Luna **mantiene la meta** (100 datos antes del día 6) con textos lunares en su tarjeta. La 3.5 queda para después del reto. |
+| 2.2 | Ventana **anclada abajo a la izquierda** (se puede arrastrar); la radio de Houston espera mientras está abierta. |
+| 2.2 y 2.3 | Capturas en **español e inglés** (`assets/tutorial/es` y `/en`). |
+| 2.6, 2.7, 2.8 | Se hacen las tres. En 2.7 no se inventan consecuencias: se muestra lo que hoy cambia cada decisión y se listan para Tony las que no cambian nada visible. |
+| 3.4 | La tormenta pasa al **sol 4** en `content/rules.json`. |
+| 3.1 | El selector va en la **pantalla de destino**; en red, en la sala (lo fija el anfitrión). |
+| 3.2 | Más batería en **Marte y Luna**. |
+| 4.1 | Estilo en **todo el juego**. Títulos con una **fuente OFL parecida al logo** (con su licencia, anotada en `ARTE_Y_LICENCIAS.md`). Con la 4.1 se arreglan también las etiquetas cortadas de la barra de pasos del hangar. |
+| 1.6 (extra) | El consejo de trayectoria del hangar lunar deja de decir «Marte». |
+| 6 | Se mide en el **PC de Kevin**; la Intel UHD la mide el equipo. |
+| 9 | Las voces las **genera Claude** (voces de Windows y Piper, efecto de walkie-talkie propio, anotado en `ARTE_Y_LICENCIAS.md`); si llega el script de Tony, se regraban. |
+| 8 | Claude prepara las **7 diapositivas** (presentación web descargable como PPTX/PDF), el **texto del proyecto** en inglés y el **guion y subtítulos** del video. El montaje del video es del equipo. |
+| 7 | Claude prepara los **archivos y la guía**; Kevin los corre en su servidor. |
+| 10 | Solo **si sobra tiempo**. |
+
 ---
 
 ## Bloque 2 · Que se entienda el juego (P0, 4–5 h)
