@@ -909,6 +909,8 @@ func update_snapshot(s: Dictionary) -> void:
 		for part in cat.get("parts", []):
 			_names[str(part["id"])] = str(part.get("name_key", ""))
 	_equipar_basicas(taller)
+	if not is_same(snapshot, s):
+		return  # al equipar, cada orden trajo una foto más nueva y ya se dibujó: esta se quedó vieja
 	var firma := "%s|%s|%s|%s|%s" % [category, str(taller.get("selection")), str(taller.get("totals")), str(taller.get("validation")), TranslationServer.get_locale()]
 	if firma == _signature:
 		return
