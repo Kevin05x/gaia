@@ -999,7 +999,13 @@ func update_snapshot(s: Dictionary) -> void:
 	var porcentaje := roundi(float(bateria.get("wh", 0.0)) / capacidad * 100.0)
 	var baja := HudAvisos.hay(s, "LOW_BATTERY") if s.has("warnings") else porcentaje <= 20
 	var tono := UI.CORAL if seguro else (UI.AMBER if baja else UI.CREAM)
-	_energy_text.text = tr("ENERGY_PILL") % porcentaje
+	# Hacia dónde va la batería: lo que generan los paneles menos lo que se gasta (turquesa si carga, sin cambiar el color si descarga).
+	var neto_w := float(bateria.get("generation_w", 0.0)) - float(bateria.get("load_w", 0.0))
+	if not seguro and not baja and neto_w > 1.0 and porcentaje < 100:
+		tono = Color("9AD7C6")
+	_energy_text.text = tr("ENERGY_PILL") % porcentaje + ("  %+d W" % roundi(neto_w) if absf(neto_w) >= 1.0 and en_operacion else "")
+	_energy_pill.tooltip_text = tr("ENERGY") + "
+" + tr("ENERGY_TIP") % [roundi(float(bateria.get("generation_w", 0.0))), roundi(float(bateria.get("load_w", 0.0)))]
 	if tono != _tono_energia:
 		_tono_energia = tono
 		_energy_text.add_theme_color_override("font_color", tono)
