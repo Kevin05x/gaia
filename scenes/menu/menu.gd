@@ -10,7 +10,7 @@ const Logo := preload("res://scenes/menu/gaia_logo.gd")
 const FONDO := "res://assets/menu/menu_fondo.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
 const VERSION := "v0.2"
-const URL_WINDOWS := "https://github.com/Kevin05x/gaia/releases/latest"
+const URL_WINDOWS := "https://info.gaianasa.tech/juego.html#descargar"
 
 var fondo: TextureRect
 var velo: ColorRect

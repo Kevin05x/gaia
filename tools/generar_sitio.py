@@ -75,7 +75,7 @@ PIE = """<footer>
         <li>%(c3)s</li>
         <li>%(c4)s</li></ul></div>
       <div><h4>%(honestidad)s</h4><p>%(h1)s</p><p class="pequeno">© Full Galácticos, Cajamarca, Perú</p>
-        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="https://github.com/Kevin05x/gaia/releases/latest">Windows</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
+        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="juego.html#descargar">Windows</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
     </div>
   </div>
 </footer>"""

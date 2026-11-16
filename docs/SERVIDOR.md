@@ -146,3 +146,14 @@ Lo que se hace a mano, una vez (Google Search Console, https://search.google.com
 4. En «Inspección de URLs» pegar cada dirección (la portada del juego y las 6 páginas de la web) y pulsar «Solicitar indexación».
 
 Google tarda de unos días a un par de semanas en mostrar la web en los resultados; no hay forma de forzarlo ni de garantizar la posición. El juego es un lienzo de Godot: Google leerá su título y su descripción, no su contenido, así que el texto que se encuentra al buscar «GAIA Full Galácticos» saldrá sobre todo de la web del proyecto.
+
+### La descarga para Windows en la web del proyecto (15 nov, noche)
+
+El juego para Windows se ofrece en `https://info.gaianasa.tech/descargas/GAIA_Windows.zip` (botón en la portada y en «Cómo se juega»). El `.zip` (unos 120 MB) lleva `GAIA.exe`, **`Jugar GAIA.bat`** (OpenGL, la forma recomendada: en una Intel UHD da 59 FPS frente a 26 con Vulkan), `LEEME.txt` y `Medir_rendimiento.bat`. Se hace así:
+
+1. Exportar: `godot --headless --path . --export-release "Windows Desktop" build/windows/GAIA.exe`.
+2. Armar la carpeta `GAIA_Windows` con ese `.exe` y lo de `tools/paquete_windows/` (`Jugar GAIA.bat`, `LEEME.txt`, `Medir_rendimiento.bat`) y comprimirla como `GAIA_Windows.zip`.
+3. Subirlo desde el PC: `scp build\GAIA_Windows.zip kevin@2.25.146.107:/tmp/gaia-descargas/GAIA_Windows.zip` (antes, `ssh kevin@2.25.146.107 "mkdir -p /tmp/gaia-descargas"`).
+4. En el VPS: `bash /opt/gaia/repo/deploy/servidor/nativo/publicar_sitios.sh`. La carpeta `/var/www/gaia-sitio/descargas` no se borra al republicar la web; el script copia el `.zip` si está en `/tmp/gaia-descargas`.
+
+Medido el 15 nov en la Intel UHD: la primera vez que se abre, el juego tarda unos 30 s en compilar sombreadores (la ventana parece quieta); después abre rápido. El `.exe` no está firmado, así que Windows muestra el aviso de SmartScreen (explicado en la web y en el `LEEME.txt`).

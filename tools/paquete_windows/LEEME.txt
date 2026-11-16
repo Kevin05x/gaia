@@ -1,35 +1,39 @@
 GAIA - Space Mission Design Game (NASA Space Apps Challenge 2026)
 Equipo Full Galacticos - Version de escritorio para Windows (x86_64)
+Web del proyecto: https://info.gaianasa.tech   Juego en el navegador: https://gaianasa.tech
 
-COMO ABRIRLO
+COMO ABRIRLO (lo recomendado)
 1. Descomprime toda la carpeta (no lo abras desde dentro del .zip).
-2. Doble clic en GAIA.exe.
-3. Si Windows muestra "Windows protegio su PC" (SmartScreen), pulsa
+2. Doble clic en "Jugar GAIA.bat". Abre el juego con OpenGL, que va fluido incluso
+   con graficos integrados (en una Intel UHD: 59 FPS, frente a 26 con Vulkan).
+3. La primera vez el juego tarda hasta medio minuto en preparar los graficos y la
+   ventana parece quieta: es normal. Las siguientes veces abre rapido.
+4. Si Windows muestra "Windows protegio su PC" (SmartScreen), pulsa
    "Mas informacion" y luego "Ejecutar de todas formas". Aparece porque el
    ejecutable no esta firmado con un certificado comercial; no es un virus.
 
-SI NO ABRE, SE VE MAL O VA LENTO
-- Usa "GAIA (modo compatible).bat": abre el juego con OpenGL, que funciona en
-  casi cualquier PC (se pierden sombras suaves, oclusion ambiental y niebla).
+TARJETA GRAFICA DEDICADA (NVIDIA, AMD Radeon RX)
+- Puedes abrir GAIA.exe directamente: usa Vulkan (Forward+) con sombras suaves,
+  oclusion ambiental y niebla volumetrica. Si no abre, usa "Jugar GAIA.bat".
+
+SI SE VE MAL O VA LENTO
 - Configuracion > Graficos: Baja / Media / Alta / Ultra.
 
 REQUISITOS
-- Windows 10 u 11 de 64 bits. GAIA.exe usa Vulkan (Forward+); si el equipo no lo
-  soporta, el juego intenta abrir con OpenGL 3.3 por si solo.
-- No necesita instalar nada ni conexion a internet (con internet, el informe
-  final consulta en vivo el archivo de imagenes de la NASA).
+- Windows 10 u 11 de 64 bits. No necesita instalar nada ni conexion a internet
+  (con internet, el informe final consulta en vivo el archivo de imagenes de la NASA).
 
-MEDIR EL RENDIMIENTO (para la sustentacion)
+MEDIR EL RENDIMIENTO
 - Doble clic en "Medir_rendimiento.bat". Tarda unos 2 minutos, no toques nada.
   Deja medicion_forward_plus.txt y medicion_compatible.txt en esta carpeta.
 
 CONTROLES UTILES
 - P: muestra/oculta el contador de FPS (cuadros por segundo, RAM y VRAM).
-- Esc: pausa.
+- Esc: pausa. Tab: menu de acciones. B: construir. G: descargar la carga.
 
 La partida se guarda sola al salir y al empezar cada sol.
 
 GAIA es un proyecto independiente: no esta afiliado a la NASA ni cuenta con su
 respaldo. Las fotos y modelos 3D de la NASA se usan con su credito (ver
-docs/DATOS_NASA.md en el repositorio). Imagenes del menu e historia generadas
-con IA (marca de agua visible).
+docs/DATOS_NASA.md en el repositorio: https://github.com/Kevin05x/gaia).
+Imagenes del menu e historia generadas con IA (marca de agua visible).
