@@ -69,6 +69,12 @@ func _correr() -> void:
 			await _hangar(carpeta)
 		"base":
 			await _construir_base(carpeta)
+		"monstruos":
+			await _batalla(carpeta, "ola_2", 3, 21.0)
+		"coloso":
+			await _batalla(carpeta, "ola_coloso", 5, 11.0)
+		"batalla_final":
+			await _batalla(carpeta, "ola_final", 6, 9.0)
 		"hud":
 			await _con_interfaz(carpeta, "marte")
 		"hud_luna":
@@ -360,3 +366,74 @@ func _construir_base(carpeta: String) -> void:
 		await _cuadro(carpeta, "%02d" % (i / (FPS * 8)) if i % (FPS * 8) == 0 else "")
 		if fin_obras >= 0 and i > fin_obras + FPS * 22:
 			break
+
+
+## Una oleada de criaturas contra la base ya construida (con torretas y muros): se prepara la defensa sin dibujar y se graba el ataque.
+func _batalla(carpeta: String, ola: String, sol: int, hora: float) -> void:
+	var juego: Node = await _nuevo_juego("marte", true)
+	await _listo_y_en(juego, "landing")
+	juego.port.submit("landing_finished")
+	await _listo_y_en(juego, "operations")
+	var vista: Node = juego.view
+	var sim: Simulation = juego.sim
+	await _esperar(40)
+	_limpiar(vista)
+	sim.fijar_duracion_sol(8.0)
+	sim.estado.hora = 11.0
+	sim.estado.recursos = {"rocas": 2500, "olivino": 900, "hielo": 400, "xenolito": 100}
+	sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh
+	for id in ["ola_1", "ola_2", "ola_3", "ola_coloso", "ola_final"]:
+		sim.estado.oleadas_hechas.append(id)  # ninguna sale mientras se prepara la defensa
+	juego._publicar()
+	var centro: Vector2i = sim.estado.casilla_estacion
+	var sitios := [Vector2i(4, 0), Vector2i(-4, 0), Vector2i(0, 4), Vector2i(0, -4), Vector2i(4, 4), Vector2i(-4, 4), Vector2i(4, -4), Vector2i(-4, -4), Vector2i(3, 2), Vector2i(-3, -2), Vector2i(2, 4), Vector2i(-2, -4)]
+	var trabajos: Array = ["hangar", "luz", "panel_solar", "torreta", "torreta", "torreta_2", "luz", "domo"]
+	var muros: Array[Vector2i] = []
+	for d in range(-7, 8):
+		for borde in [Vector2i(d, -7), Vector2i(d, 7), Vector2i(-7, d), Vector2i(7, d)]:
+			if not muros.has(borde):
+				muros.append(borde)
+	root.disable_3d = true  # la defensa se prepara sin dibujar: es mucho más rápido
+	var indice := 0
+	var sitio := 0
+	var muro := 0
+	for i in range(30 * 150):
+		sim.estado.hora = 11.0
+		sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh
+		if indice < trabajos.size() and i % 8 == 0 and not sim._edificios.hay_obra(sim.estado):
+			var r := sim.ejecutar("build", {"building": trabajos[indice], "tile": centro + sitios[sitio % sitios.size()]})
+			if bool(r.get("ok", false)):
+				indice += 1
+				sitio += 1
+			elif str(r.get("reason", "")) != "BUILD_BUSY":
+				sitio += 1
+		if i % 3 == 0 and muro < muros.size():
+			var tipo := "compuerta" if (muros[muro] == Vector2i(0, 7) or muros[muro] == Vector2i(7, 0)) else "barrera"
+			sim.ejecutar("build", {"building": tipo, "tile": centro + muros[muro]})
+			muro += 1
+		await process_frame
+		if indice >= trabajos.size() and muro >= muros.size() and not sim._edificios.hay_obra(sim.estado) and not sim._edificios.hay_obra(sim.estado, true):
+			break
+	await _esperar(60)
+	root.disable_3d = false
+	# Llega la oleada: se le quita a la lista de las ya hechas y se pone el reloj justo antes.
+	sim.estado.oleadas_hechas.erase(ola)
+	sim.estado.sol = sol
+	sim.estado.hora = hora - 0.05
+	sim.fijar_duracion_sol(30.0)
+	vista.rig.follow = vista.actors.station
+	vista.rig.zoom_target = 36.0  # lejos: el ataque ocurre contra los muros, a unos 30-40 m de la estación
+	var noche := hora >= 19.0 or hora < 5.0
+	var cuadros := _seg * FPS
+	for i in range(cuadros):
+		if i > FPS:
+			sim.estado.hora = hora + (1.2 if noche else 0.4)  # el reloj se queda quieto: de día o de noche según la oleada
+			sim.estado.bateria_wh = sim.estado.bateria_capacidad_wh
+		if i == FPS * 2:
+			var k := 0
+			for e in sim.estado.enemigos:  # las criaturas salen de más cerca para que el ataque llegue pronto
+				e["pos"] = Vector2(sim.estado.casilla_estacion) + Vector2.from_angle(float(k) * TAU / maxf(sim.estado.enemigos.size(), 1.0) + 0.4) * (15.0 + float(k % 3) * 1.5)
+				e["hp"] = float(e["hp"]) * 10.0  # aguantan más: así se ve la batalla y no mueren de un tiro
+				k += 1
+		vista.rig.yaw += deg_to_rad(0.22)
+		await _cuadro(carpeta, "%02d" % (i / (FPS * 6)) if i % (FPS * 6) == 0 else "")
