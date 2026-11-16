@@ -449,7 +449,7 @@ func _mostrar_rayos(disparos: Array) -> void:
 		var rayo := _rayos[usados]
 		usados += 1
 		rayo.visible = true
-		rayo.global_transform = Transform3D(Basis.looking_at((hasta - desde).normalized(), Vector3.UP).scaled(Vector3(1, 1, largo)), (desde + hasta) / 2.0)
+		rayo.global_transform = Transform3D(Basis.looking_at((hasta - desde).normalized(), Vector3.UP).scaled_local(Vector3(1, 1, largo)), (desde + hasta) / 2.0)
 		if buildings != null and buildings.has_method("aim_at"):
 			buildings.aim_at(origen, hasta)
 	for i in range(usados, MAX_RAYOS):

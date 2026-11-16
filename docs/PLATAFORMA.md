@@ -43,7 +43,7 @@ Lo que se hizo para contener el costo: texturas del Perseverance a 512 px (−46
 
 - **Sí:** el banco de simulación pura no depende de la GPU. En este equipo, la web tarda **≈1,3 veces más** (0,903 frente a 0,67–0,71 ms por paso) que el código nativo. Es una diferencia real y repetible de CPU.
 - **No:** los FPS de arriba **no representan una PC con tarjeta gráfica**. Con render por software todo está limitado por el procesador, y un cuadro de Forward+ en alta calidad cuesta mucho más que uno en Compatibility. En una GPU real se espera lo contrario a ese orden de magnitud, pero **no está medido**.
-- **No medido todavía:** el rendimiento en la PC del equipo (Intel UHD). Para medirlo: abrir la carpeta del juego y ejecutar `Medir_rendimiento.bat` (≈2 minutos, deja `medicion_forward_plus.txt` y `medicion_compatible.txt`). Si Forward+ va lento, `GAIA (modo compatible).bat` abre el juego con OpenGL.
+- **No medido todavía:** el rendimiento en la PC del equipo (Intel UHD). Para medirlo: abrir la carpeta del juego y ejecutar `Medir_rendimiento.bat` (≈2 minutos, deja `medicion_forward_plus.txt` y `medicion_compatible.txt`). Si Forward+ va lento, `Jugar GAIA.bat` abre el juego con OpenGL.
 
 ## Cómo se mide
 

@@ -134,6 +134,14 @@ func _correr() -> void:
 	if not await _esperar(func() -> bool: return _rechazos.size() > 0, 5.0, "respuesta a una orden de otro rol"):
 		return
 	print("E2E %s orden %s: %s" % [nombre, ajena, _rechazos[0]])
+	# Ir hasta una roca lo puede pedir cualquier rol: la sala puede decir «no hay objetivo», pero nunca «no es tu rol».
+	_rechazos.clear()
+	Red.enviar_orden("approach", {"target_id": "JZ-01"})
+	await get_tree().create_timer(1.5).timeout
+	var razon_approach: String = _rechazos[0] if not _rechazos.is_empty() else "(aceptada)"
+	print("E2E %s approach: %s" % [nombre, razon_approach])
+	if razon_approach.begins_with("NET_NOT_YOUR_ROLE") or razon_approach.begins_with("NET_ONLY_"):
+		return _fallo("approach debe poder darlo cualquier rol: " + razon_approach)
 	if esperados > _n():
 		if not await _esperar(func() -> bool: return _vistos.size() >= esperados - 1, 90.0, "ver llegar a quien entra tarde"):
 			return

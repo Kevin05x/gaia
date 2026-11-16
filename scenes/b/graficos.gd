@@ -23,10 +23,40 @@ const FACTOR_DISTANCIA := [0.7, 1.0, 1.45]
 const CLAVES: Array[String] = ["sombras", "aa", "resolucion", "post", "texturas", "polvo", "distancia", "auto"]
 
 
-## Ajuste con el que se empieza si nunca se eligió uno: en el navegador (WebGL) Media, que va bien en gráficos
-## integrados; en el escritorio Alta.
+## Ajuste con el que se empieza si nunca se eligió uno. En el escritorio, Alta. En el navegador el juego mira qué tarjeta gráfica
+## tiene el equipo: con una dedicada (NVIDIA, AMD Radeon RX, Apple…) empieza en Media; con una integrada (Intel UHD, Iris…) o si no
+## puede saberlo, en Baja. Medido el 15 nov con Chrome en una Intel UHD: Media no llegaba a compilar sombreadores en un minuto y se
+## quedaba a tirones; Baja da unos 28 FPS a pantalla completa. Siempre se puede cambiar en Configuración (y la calidad automática
+## baja sola si el equipo no llega).
 static func defecto() -> String:
-	return "media" if OS.has_feature("web") else DEFECTO
+	if not OS.has_feature("web"):
+		return DEFECTO
+	return "media" if es_gpu_dedicada(nombre_gpu_web()) else "baja"
+
+
+static var _gpu_web := ""  ## «sin leer todavía»
+
+
+## Nombre real de la tarjeta gráfica que usa el navegador (WEBGL_debug_renderer_info); vacío si el navegador no lo da.
+static func nombre_gpu_web() -> String:
+	if _gpu_web != "":
+		return _gpu_web
+	_gpu_web = ""
+	if OS.has_feature("web"):
+		var r: Variant = JavaScriptBridge.eval("(function(){try{var c=document.createElement('canvas');var g=c.getContext('webgl2')||c.getContext('webgl');var e=g&&g.getExtension('WEBGL_debug_renderer_info');return e?String(g.getParameter(e.UNMASKED_RENDERER_WEBGL)):'';}catch(x){return '';}})()", true)
+		_gpu_web = str(r)
+	return _gpu_web
+
+
+## ¿Es una tarjeta dedicada (y no una integrada o emulada por software)? Lo que no se reconoce cuenta como integrada.
+static func es_gpu_dedicada(nombre: String) -> bool:
+	var s := nombre.to_lower()
+	if s.contains("swiftshader") or s.contains("llvmpipe") or s.contains("microsoft basic"):
+		return false
+	for marca in ["nvidia", "geforce", "quadro", "rtx ", "gtx ", "radeon rx", "radeon pro", "apple m", "apple gpu", "arc(tm) a", "arc a"]:
+		if s.contains(marca):
+			return true
+	return false
 
 
 ## Valores de un ajuste predefinido (copia).
@@ -45,6 +75,10 @@ static func cargar() -> Dictionary:
 		for a in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 			if a.begins_with("--preset="):
 				nombre = a.get_slice("=", 1)
+		if OS.has_feature("web"):  # en la web el ajuste se pide en la dirección: ?medir=1&preset=baja
+			var pedido: Variant = JavaScriptBridge.eval("String(new URLSearchParams(window.location.search).get('preset') || '')", true)
+			if str(pedido) != "":
+				nombre = str(pedido)
 		var fijo := de_preset(nombre)
 		fijo["auto"] = false
 		return fijo

@@ -64,7 +64,9 @@ func configurar(msaa: Viewport.MSAA, resolucion: float, auto: bool, con_post: bo
 	if msaa != Viewport.MSAA_DISABLED:
 		_niveles.append([Viewport.MSAA_DISABLED, resolucion, 0])
 	var ultima := resolucion
-	for e in [0.9, 0.8]:
+	# En el navegador, con gráficos integrados, 0,8 no basta (medido: 4 cuadros/s con la ventana grande): se puede bajar hasta 0,5.
+	var escalones: Array = [0.9, 0.8, 0.7, 0.6, 0.5] if OS.has_feature("web") else [0.9, 0.8]
+	for e in escalones:
 		if e < resolucion - 0.01:
 			_niveles.append([Viewport.MSAA_DISABLED, e, 0])
 			ultima = e

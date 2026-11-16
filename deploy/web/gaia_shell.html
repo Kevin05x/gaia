@@ -39,6 +39,9 @@ body { color: #FFF5E4; background-color: #120A08; overflow: hidden; touch-action
 @keyframes girar { to { transform: translate(-50%, -50%) rotate(-360deg); } }
 #texto { margin-top: 26px; font-size: 15px; letter-spacing: .16em; text-transform: uppercase; color: #F0C079; font-family: 'Oxanium', 'Noto Sans', Arial, sans-serif; }
 #aviso { margin-top: 10px; font-size: 13px; color: rgba(255,245,228,.62); text-align: center; max-width: min(82vw, 560px); line-height: 1.4; }
+#descarga { margin-top: 14px; font-size: 13px; }
+#descarga a { color: #9AD7C6; text-decoration: none; border-bottom: 1px solid rgba(154,215,198,.5); }
+#descarga a:hover { color: #FFF5E4; }
 #notice {
 	display: none; background-color: #5b3943; border-radius: .5rem; border: 1px solid #9b3943; color: #e0e0e0;
 	line-height: 1.3; margin: 1.5rem 2rem 0; overflow: hidden; padding: 1rem; text-align: center; max-width: 80vw;
@@ -63,6 +66,7 @@ body { color: #FFF5E4; background-color: #120A08; overflow: hidden; touch-action
 			</div>
 			<div id="texto">...</div>
 			<div id="aviso"></div>
+			<div id="descarga"><a id="enlace-windows" href="https://info.gaianasa.tech/juego.html#descargar" target="_blank" rel="noopener"></a></div>
 			<div id="notice"></div>
 		</div>
 
@@ -80,6 +84,7 @@ const engine = new Engine(GODOT_CONFIG);
 	const texto = document.getElementById('texto');
 	const aviso = document.getElementById('aviso');
 	const notice = document.getElementById('notice');
+	document.getElementById('enlace-windows').textContent = ES ? 'Más fluido y con gráficos completos: descarga la versión de Windows' : 'Smoother, with full graphics: download the Windows version';
 	let oculto = false;
 
 	// El icono de la pestaña es el de GAIA: el motor intenta poner el suyo al arrancar, así que se vuelve a poner.

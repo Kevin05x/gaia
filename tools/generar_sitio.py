@@ -22,7 +22,7 @@ PAGINAS = [
     ("reto", "El reto", "The challenge", "El reto | GAIA", "The challenge | GAIA",
      "Qué problema quisimos resolver con GAIA para el NASA Space Apps Challenge 2026.",
      "The problem we wanted to solve with GAIA for the NASA Space Apps Challenge 2026.",
-     "nasa_aterrizaje", "El reto", "The challenge", "Un simulador para entender cómo se diseña una misión", "A simulator to understand how a mission is designed"),
+     "juego_plataforma", "El reto", "The challenge", "Un simulador para entender cómo se diseña una misión", "A simulator to understand how a mission is designed"),
     ("nacio", "Cómo nació", "How it began", "Cómo nació | GAIA", "How it began | GAIA",
      "La pregunta de la que salió GAIA y cómo fue creciendo.", "The question GAIA came from and how it grew.",
      "hist_intro3", "Cómo nació", "How it began", "De una pregunta a un juego completo", "From one question to a full game"),
@@ -35,7 +35,7 @@ PAGINAS = [
      "hist_noche", "El mundo", "The world", "Una historia que cambia con lo que decides", "A story that changes with what you decide"),
     ("equipo", "El equipo", "The team", "El equipo | GAIA", "The team | GAIA",
      "Quiénes hicimos GAIA, cómo está hecho y qué parte se hizo con IA.", "Who made GAIA, how it is built and what was done with AI.",
-     "juego_equipo", "El equipo", "The team", "Full Galácticos, Cajamarca", "Full Galácticos, Cajamarca"),
+     "juego_luna", "El equipo", "The team", "Full Galácticos, Cajamarca", "Full Galácticos, Cajamarca"),
 ]
 
 
@@ -75,7 +75,7 @@ PIE = """<footer>
         <li>%(c3)s</li>
         <li>%(c4)s</li></ul></div>
       <div><h4>%(honestidad)s</h4><p>%(h1)s</p><p class="pequeno">© Full Galácticos, Cajamarca, Perú</p>
-        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
+        <p class="pequeno"><a href="https://github.com/Kevin05x/gaia">GitHub</a> · <a href="juego.html#descargar">Windows</a> · <a href="https://www.spaceappschallenge.org/2026/find-a-team/full-galacticos/">Space Apps</a></p></div>
     </div>
   </div>
 </footer>"""
