@@ -67,8 +67,14 @@ func _correr() -> void:
 			await _taller(carpeta, true)
 		"hangar":
 			await _hangar(carpeta)
+		"base":
+			await _construir_base(carpeta)
 		"hud":
-			await _con_interfaz(carpeta)
+			await _con_interfaz(carpeta, "marte")
+		"hud_luna":
+			await _con_interfaz(carpeta, "luna")
+		"menu_construir":
+			await _con_interfaz(carpeta, "marte", true)
 		_:
 			push_error("toma desconocida: " + toma)
 	Graficos.guardar(graficos_antes)  # los ajustes del jugador vuelven a como estaban
@@ -264,8 +270,8 @@ func _hangar(carpeta: String) -> void:
 
 
 ## Una foto de la misión con la interfaz puesta (para la web del proyecto): el rover, el minimapa, la energía y los avisos.
-func _con_interfaz(carpeta: String) -> void:
-	var juego: Node = await _nuevo_juego("marte", true)
+func _con_interfaz(carpeta: String, destino: String, con_menu: bool = false) -> void:
+	var juego: Node = await _nuevo_juego(destino, true)
 	await _listo_y_en(juego, "landing")
 	juego.port.submit("landing_finished")
 	await _listo_y_en(juego, "operations")
@@ -279,6 +285,78 @@ func _con_interfaz(carpeta: String) -> void:
 		vista.story.pulsar()
 		vista.story.pulsar()
 	juego.sim.estado.hora = 10.0
+	juego.sim.estado.bateria_wh = juego.sim.estado.bateria_capacidad_wh * 0.7  # batería a medias para ver cómo carga
 	juego._publicar()
 	await _esperar(300)  # que se apaguen los avisos pasajeros
-	await _cuadro(carpeta, "hud")
+	if con_menu:
+		vista.base_hud.toggle_menu()  # el menú Construir (B), con «Construir antena» arriba
+		await _esperar(30)
+		await _cuadro(carpeta, "menu_construir")
+		return
+	await _cuadro(carpeta, "hud_" + destino)
+
+
+## El rover construyendo la base de la estación pieza a pieza (con la antena y los muros con su puerta) y, al final, la base completa.
+func _construir_base(carpeta: String) -> void:
+	var juego: Node = await _nuevo_juego("marte", true)
+	await _listo_y_en(juego, "landing")
+	juego.port.submit("landing_finished")
+	await _listo_y_en(juego, "operations")
+	var vista: Node = juego.view
+	var sim: Simulation = juego.sim
+	await _esperar(40)
+	_limpiar(vista)
+	sim.fijar_duracion_sol(24.0)  # la obra dura horas de juego: así se ve entera en pocos segundos
+	sim.estado.hora = 11.0
+	sim.estado.recursos = {"rocas": 1500, "olivino": 600, "hielo": 300, "xenolito": 100}
+	juego._publicar()
+	await _esperar(30)
+	var centro: Vector2i = sim.estado.casilla_estacion
+	var sitios := [Vector2i(4, 0), Vector2i(-4, 0), Vector2i(0, 4), Vector2i(0, -4), Vector2i(4, 4), Vector2i(-4, 4), Vector2i(4, -4), Vector2i(-4, -4),
+			Vector2i(3, 2), Vector2i(-3, -2)]
+	# Primero la antena (nivel 1), luego el resto de la base; la antena sube de nivel cuando hay hangar.
+	var trabajos: Array = [["upgrade", ""], ["build", "panel_solar"], ["build", "domo"], ["build", "luz"], ["build", "hangar"], ["upgrade", ""],
+			["build", "extractor_hielo"], ["build", "panel_solar"], ["build", "torreta"], ["build", "luz"], ["upgrade", ""], ["build", "torreta"]]
+	# Muro alrededor de la base (a 7 casillas, el límite de la zona de muros) con la puerta al sur y otra al este.
+	var muros: Array[Vector2i] = []
+	for d in range(-7, 8):
+		for borde in [Vector2i(d, -7), Vector2i(d, 7), Vector2i(-7, d), Vector2i(7, d)]:
+			if not muros.has(borde):
+				muros.append(borde)
+	var indice := 0
+	var sitio := 0
+	var muro := 0
+	var fin_obras := -1
+	var cuadros := _seg * FPS
+	vista.rig.zoom_target = 15.0
+	for i in range(cuadros):
+		if indice < trabajos.size() and i % 15 == 0 and not sim._edificios.hay_obra(sim.estado):
+			var trabajo: Array = trabajos[indice]
+			var r: Dictionary
+			if trabajo[0] == "upgrade":
+				r = sim.ejecutar("upgrade", {})
+			else:
+				r = sim.ejecutar("build", {"building": trabajo[1], "tile": centro + sitios[sitio % sitios.size()]})
+			if bool(r.get("ok", false)):
+				indice += 1
+				if trabajo[0] == "build":
+					sitio += 1
+			elif trabajo[0] == "build" and str(r.get("reason", "")) != "BUILD_BUSY":
+				sitio += 1  # ese sitio no vale: se prueba otro
+			elif trabajo[0] == "upgrade" and i > FPS * 90:
+				indice += 1  # la antena no puede subir ahora: se sigue
+		if i > FPS * 10 and i % 6 == 0 and muro < muros.size():  # los muros empiezan a los 10 s y se imprimen solos
+			var casilla: Vector2i = centro + muros[muro]
+			var tipo := "compuerta" if (muros[muro] == Vector2i(0, 7) or muros[muro] == Vector2i(7, 0)) else "barrera"
+			sim.ejecutar("build", {"building": tipo, "tile": casilla})
+			muro += 1
+		if indice >= trabajos.size() and muro >= muros.size() and fin_obras < 0 and not sim._edificios.hay_obra(sim.estado) and not sim._edificios.hay_obra(sim.estado, true):
+			fin_obras = i
+		sim.estado.hora = 11.0  # siempre de día: la obra corre deprisa pero la luz no parpadea
+		vista.rig.yaw += deg_to_rad(0.28)
+		if fin_obras >= 0 and i == fin_obras + FPS * 3:
+			vista.rig.follow = vista.actors.station  # terminada la obra: la base completa, desde más lejos
+			vista.rig.zoom_target = 30.0
+		await _cuadro(carpeta, "%02d" % (i / (FPS * 8)) if i % (FPS * 8) == 0 else "")
+		if fin_obras >= 0 and i > fin_obras + FPS * 22:
+			break

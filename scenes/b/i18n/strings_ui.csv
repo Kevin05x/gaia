@@ -235,6 +235,8 @@ WS_LAUNCH_ANYWAY,Despegar igual,Launch anyway
 WS_PREVIEW_NOTE,Vista previa del rover con tus piezas,Rover preview with your parts
 REDESIGN_SHORT,Rediseñar,Redesign
 ENERGY_PILL,Energía %d %%,Energy %d %%
+ENERGY_TIP,Los paneles dan %d W y el rover gasta %d W.,The panels give %d W and the rover uses %d W.
+BUILD_MISSING,Te falta: %s,You need: %s
 SCIENCE_PILL,Ciencia %d/%d,Science %d/%d
 CAT_TRAYECTORIA,Trayectoria,Trajectory
 WS_CHANGE_ROCKET,‹ Cambiar de cohete,‹ Change rocket

@@ -703,6 +703,8 @@ const TABLES = {
   "WS_HINT_READY": "Todo listo: puedes iniciar el aterrizaje.",
   "REDESIGN_SHORT": "Rediseñar",
   "ENERGY_PILL": "Energía %d %%",
+  "ENERGY_TIP": "Los paneles dan %d W y el rover gasta %d W.",
+  "BUILD_MISSING": "Te falta: %s",
   "SCIENCE_PILL": "Ciencia %d/%d"
  },
  "en": {
@@ -1408,6 +1410,8 @@ const TABLES = {
   "WS_HINT_READY": "All set: you can start the landing.",
   "REDESIGN_SHORT": "Redesign",
   "ENERGY_PILL": "Energy %d %%",
+  "ENERGY_TIP": "The panels give %d W and the rover uses %d W.",
+  "BUILD_MISSING": "You need: %s",
   "SCIENCE_PILL": "Science %d/%d"
  }
 }

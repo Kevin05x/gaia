@@ -10,6 +10,7 @@ const Logo := preload("res://scenes/menu/gaia_logo.gd")
 const FONDO := "res://assets/menu/menu_fondo.jpg"
 const LOGOTIPO := "res://assets/menu/gaia_logo.png"
 const VERSION := "v0.2"
+const URL_WINDOWS := "https://github.com/Kevin05x/gaia/releases/latest"
 
 var fondo: TextureRect
 var velo: ColorRect
@@ -110,9 +111,15 @@ func _construir_interfaz() -> void:
 	_item(tr("M_CREDITS"), _abrir_creditos, col)
 	if not OS.has_feature("web"):
 		_item(tr("M_QUIT"), func() -> void: get_tree().quit(), col)
+	else:  # en el navegador, la versión de Windows va más fluida (gráficos completos y sin compilar sombreadores)
+		_item(tr("M_DOWNLOAD"), func() -> void: OS.shell_open(URL_WINDOWS), col)
 	var pie := UI.label(_capa, tr("M_FOOTER"), 12, Color(UI.CREAM, 0.5))
 	UI.display(pie, 500, 1)
 	UI.place(pie, "bl", 96, 26, 600, 18)
+	if OS.has_feature("web"):
+		var auto := UI.label(_capa, tr("M_GFX_AUTO") % tr("M_GFX_" + str(Graficos.cargar().get("preset", "baja"))), 12, Color(UI.CREAM, 0.5))
+		UI.display(auto, 500, 1)
+		UI.place(auto, "bl", 96, 48, 800, 18)
 	var version := UI.label(_capa, VERSION, 12, Color(UI.CREAM, 0.5))
 	UI.display(version, 500, 1)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

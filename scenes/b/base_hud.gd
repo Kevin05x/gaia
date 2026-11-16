@@ -323,11 +323,21 @@ func _fijar_antena(s: Dictionary) -> void:
 	var nombre := tr("ANTENNA_MAX") if al_maximo else (tr("BUILD_ANTENNA") if nivel == 0 else tr("UPGRADE_ANTENNA") % (nivel + 1))
 	var texto := nombre
 	if not al_maximo:
-		var costo := cost_text(base.get("antenna_next_cost", {}))
+		var costo_dic: Dictionary = base.get("antenna_next_cost", {})
+		var costo := cost_text(costo_dic)
 		if not costo.is_empty():
 			texto += "\n" + costo
-		if not bool(disp.get("enabled", false)) and not str(disp.get("reason", "")).is_empty():
-			texto += "\n— " + tr(str(disp["reason"]))
+		var motivo := str(disp.get("reason", ""))
+		if not bool(disp.get("enabled", false)) and not motivo.is_empty():
+			if motivo == "NO_RESOURCES":  # dice qué falta, no solo que falta algo
+				var tengo: Dictionary = s.get("resources", {})
+				var faltan := {}
+				for r in costo_dic:
+					if int(tengo.get(r, 0)) < int(costo_dic[r]):
+						faltan[r] = int(costo_dic[r]) - int(tengo.get(r, 0))
+				texto += "\n— " + (tr("BUILD_MISSING") % cost_text(faltan) if not faltan.is_empty() else tr(motivo))
+			else:
+				texto += "\n— " + tr(motivo)
 	if _antena_fila.text != texto:
 		_antena_fila.text = texto
 	_antena_fila.disabled = al_maximo or not bool(disp.get("enabled", false))
